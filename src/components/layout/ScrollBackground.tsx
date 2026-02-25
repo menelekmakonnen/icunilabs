@@ -123,7 +123,7 @@ function SystemNode({ data, progress }: { data: any, progress: any }) {
                 borderWidth: "1px",
                 borderColor: border,
                 borderRadius,
-                boxShadow: useTransform(progress, (p) => p < 0.3 ? paperShadow.get() : systemShadow.get())
+                boxShadow: useTransform(progress, (p: number) => p < 0.3 ? paperShadow.get() : systemShadow.get())
             }}
         >
             {/* PAPER DECORATION (Lines of text) - Fades out */}
