@@ -4,10 +4,7 @@ import { Activity, Users, Clock, CheckCircle2, LayoutDashboard, GanttChartSquare
 
 export default function LabDemos() {
     return (
-        <section id="demo" className="py-24 md:py-32 bg-[#050505] border-t border-neutral-900 overflow-hidden relative">
-            {/* Background Machinery Pattern */}
-            <div className="absolute inset-0 z-0 opacity-[0.02]"
-                style={{ backgroundImage: 'linear-gradient(45deg, #fff 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+        <section id="demo" className="py-24 md:py-32 border-t border-neutral-900 overflow-hidden relative bg-transparent">
 
             <div className="max-w-7xl mx-auto px-6 relative z-10">
 

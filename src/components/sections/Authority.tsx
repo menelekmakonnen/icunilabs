@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 export default function Authority() {
     return (
-        <section className="py-32 bg-neutral-900 border-t border-neutral-800 text-center px-6">
+        <section className="py-32 border-t border-neutral-800 text-center px-6 relative">
             <div className="max-w-4xl mx-auto">
 
                 <motion.h2
@@ -14,7 +14,7 @@ export default function Authority() {
                     transition={{ duration: 0.5 }}
                 >
                     Built for Businesses Growing<br />
-                    <span className="text-orange-500 drop-shadow-[0_0_15px_rgba(255,107,0,0.4)]">Faster Than Their Operations.</span>
+                    <span className="text-[#ff6600] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]">Faster Than Their Operations.</span>
                 </motion.h2>
 
                 <div className="space-y-6 text-xl md:text-2xl font-medium text-neutral-300">
@@ -24,7 +24,7 @@ export default function Authority() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: 0.1 }}
                     >
-                        We don’t sell software. We build <span className="text-cyan-400 drop-shadow-[0_0_8px_rgba(0,229,255,0.4)] font-bold">systems.</span>
+                        We don’t sell software. We build <span className="text-[#00bfff] drop-shadow-[0_0_8px_rgba(0,191,255,0.4)] font-bold">systems.</span>
                     </motion.p>
 
                     <motion.div

@@ -50,7 +50,7 @@ export default function Contact() {
     };
 
     return (
-        <section id="contact" className="py-24 md:py-32 bg-neutral-950 border-t border-neutral-900">
+        <section id="contact" className="py-24 md:py-32 border-t border-neutral-900 bg-transparent">
             <div className="max-w-3xl mx-auto px-6">
 
                 <div className="text-center mb-16">
@@ -75,14 +75,14 @@ export default function Contact() {
                 </div>
 
                 {/* Fake Interactive Form / System Intake Demo */}
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-6 md:p-10 relative overflow-hidden min-h-[400px]">
+                <div className="bg-neutral-950/60 backdrop-blur-xl border border-neutral-800 rounded-xl p-6 md:p-10 relative overflow-hidden min-h-[400px] shadow-[0_8px_32px_rgba(0,0,0,0.4)]" style={{ boxShadow: 'inset 0 1px 0 0 rgba(255,255,255,0.02)' }}>
 
-                    <div className="absolute top-0 left-0 w-full h-1 bg-neutral-800">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-neutral-900">
                         <motion.div
-                            className="h-full bg-neutral-100"
+                            className="h-full bg-gradient-to-r from-[#ff6600] to-[#00bfff] shadow-[0_0_10px_rgba(0,191,255,0.5)]"
                             initial={{ width: '33%' }}
                             animate={{ width: `${(step / 3) * 100}%` }}
-                            transition={{ duration: 0.3 }}
+                            transition={{ duration: 0.5, ease: "easeOut" }}
                         />
                     </div>
 
@@ -96,12 +96,12 @@ export default function Contact() {
                                     exit={{ opacity: 0, x: -20 }}
                                     className="space-y-6"
                                 >
-                                    <h3 className="text-xl font-semibold mb-6">Basic Information</h3>
+                                    <h3 className="text-xl font-semibold mb-6 text-white">Basic Information</h3>
                                     <div>
                                         <label className="block text-sm font-medium text-neutral-400 mb-2">Name</label>
                                         <input
                                             type="text" required
-                                            className="w-full bg-neutral-950 border border-neutral-800 rounded px-4 py-3 text-white focus:outline-none focus:border-neutral-500 transition-colors"
+                                            className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00bfff] focus:ring-1 focus:ring-[#00bfff] focus:shadow-[0_0_15px_rgba(0,191,255,0.15)] transition-all duration-300 placeholder:text-neutral-600"
                                             placeholder="Jane Doe"
                                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         />
@@ -110,12 +110,12 @@ export default function Contact() {
                                         <label className="block text-sm font-medium text-neutral-400 mb-2">Work Email</label>
                                         <input
                                             type="email" required
-                                            className="w-full bg-neutral-950 border border-neutral-800 rounded px-4 py-3 text-white focus:outline-none focus:border-neutral-500 transition-colors"
+                                            className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00bfff] focus:ring-1 focus:ring-[#00bfff] focus:shadow-[0_0_15px_rgba(0,191,255,0.15)] transition-all duration-300 placeholder:text-neutral-600"
                                             placeholder="jane@company.com"
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         />
                                     </div>
-                                    <button type="submit" className="w-full bg-white text-black font-semibold py-3 rounded mt-8 hover:bg-neutral-200 transition-colors">
+                                    <button type="submit" className="w-full bg-gradient-to-r from-[#00bfff] to-[#0080ff] text-white font-bold py-3 rounded-lg mt-8 shadow-[0_4px_14px_rgba(0,191,255,0.2)] hover:shadow-[0_6px_20px_rgba(0,191,255,0.4)] hover:-translate-y-[1px] transition-all duration-300">
                                         Continue
                                     </button>
                                 </motion.div>
@@ -129,11 +129,11 @@ export default function Contact() {
                                     exit={{ opacity: 0, x: -20 }}
                                     className="space-y-6"
                                 >
-                                    <h3 className="text-xl font-semibold mb-6">Current Operations</h3>
+                                    <h3 className="text-xl font-semibold mb-6 text-white">Current Operations</h3>
                                     <div>
                                         <label className="block text-sm font-medium text-neutral-400 mb-2">Team Size</label>
                                         <select
-                                            className="w-full bg-neutral-950 border border-neutral-800 rounded px-4 py-3 text-white focus:outline-none focus:border-neutral-500 transition-colors appearance-none"
+                                            className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00bfff] focus:ring-1 focus:ring-[#00bfff] focus:shadow-[0_0_15px_rgba(0,191,255,0.15)] transition-all duration-300 appearance-none cursor-pointer"
                                             onChange={(e) => setFormData({ ...formData, businessSize: e.target.value })}
                                         >
                                             <option>1-10</option>
@@ -146,19 +146,19 @@ export default function Contact() {
                                         <label className="block text-sm font-medium text-neutral-400 mb-2">Primary Bottleneck</label>
                                         <textarea
                                             required rows={3}
-                                            className="w-full bg-neutral-950 border border-neutral-800 rounded px-4 py-3 text-white focus:outline-none focus:border-neutral-500 transition-colors"
+                                            className="w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00bfff] focus:ring-1 focus:ring-[#00bfff] focus:shadow-[0_0_15px_rgba(0,191,255,0.15)] transition-all duration-300 placeholder:text-neutral-600 resize-none"
                                             placeholder="e.g., Client onboarding takes too long and steps get missed..."
                                             onChange={(e) => setFormData({ ...formData, bottleneck: e.target.value })}
                                         />
                                     </div>
                                     <div className="flex gap-4 mt-8">
-                                        <button type="button" onClick={() => setStep(1)} className="w-1/3 bg-transparent border border-neutral-700 text-white font-semibold py-3 rounded hover:bg-neutral-800 transition-colors">
+                                        <button type="button" onClick={() => setStep(1)} className="w-1/3 bg-transparent border border-neutral-700 text-neutral-300 font-medium py-3 rounded-lg hover:border-neutral-500 hover:text-white transition-colors duration-300">
                                             Back
                                         </button>
                                         <button
                                             type="submit"
                                             disabled={isSubmitting}
-                                            className="w-2/3 bg-white text-black font-semibold py-3 rounded hover:bg-neutral-200 transition-colors disabled:opacity-50 flex justify-center items-center gap-2"
+                                            className="w-2/3 bg-gradient-to-r from-[#00bfff] to-[#0080ff] text-white font-bold py-3 rounded-lg hover:shadow-[0_6px_20px_rgba(0,191,255,0.4)] hover:-translate-y-[1px] transition-all duration-300 disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none flex justify-center items-center gap-2"
                                         >
                                             {isSubmitting ? (
                                                 <>
@@ -178,20 +178,34 @@ export default function Contact() {
                                     key="step3"
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="text-center py-12"
+                                    className="text-center py-8"
                                 >
-                                    <div className="w-16 h-16 bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                                        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 relative">
+                                        <div className="absolute inset-0 bg-[#00bfff]/20 rounded-full animate-ping"></div>
+                                        <div className="absolute inset-0 bg-[#00bfff]/30 rounded-full blur-md"></div>
+                                        <svg className="w-8 h-8 text-[#00bfff] relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
                                     </div>
                                     <h3 className="text-2xl font-bold mb-4">You're a great fit.</h3>
                                     <p className="text-neutral-400 mb-8 max-w-md mx-auto">
-                                        We've auto-scored your intake. Our systems indicate we can eliminate your primary bottleneck. Let's schedule your audit.
+                                        We've auto-scored your intake. Our systems indicate we can eliminate your primary bottleneck. Please select a time for your audit below.
                                     </p>
-                                    <a href="mailto:labs@icuni.org" className="inline-block bg-white text-black font-semibold px-8 py-4 rounded hover:bg-neutral-200 transition-colors">
-                                        Access Calendar
-                                    </a>
+
+                                    <div className="w-full h-[600px] bg-white rounded-lg overflow-hidden border border-neutral-800 relative">
+                                        <iframe
+                                            src="https://calendar.google.com/calendar/appointments/schedules/AcZssZ2-placeholder"
+                                            style={{ border: 0 }}
+                                            width="100%"
+                                            height="100%"
+                                            frameBorder="0"
+                                            title="Select a Date & Time"
+                                        ></iframe>
+                                        {/* Fallback/Loading State Overlay if needed, or just let iframe load */}
+                                    </div>
+                                    <p className="text-xs text-neutral-500 mt-4">
+                                        Powered by Google Calendar
+                                    </p>
                                 </motion.div>
                             )}
                         </AnimatePresence>

@@ -1,5 +1,5 @@
 
-import { Settings } from 'lucide-react';
+
 
 export default function Navbar() {
     return (
@@ -7,10 +7,10 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between mt-1">
 
                 {/* Logo */}
-                <div className="flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-neutral-400" />
+                <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
+                    <img src="/icuni_logo.png" alt="ICUNI Labs Logo" className="w-8 h-8 rounded-md object-contain" />
                     <span className="font-bold text-lg tracking-tight">ICUNI Labs</span>
-                </div>
+                </a>
 
                 {/* Desktop Nav */}
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-400">

@@ -23,7 +23,55 @@
   body {
     background-color: var(--background);
     color: var(--foreground);
-    @apply antialiased min-h-screen selection:bg-neutral-800 selection:text-white;
+    @apply antialiased min-h-screen selection:bg-[#00bfff]/20 selection:text-white select-none relative cursor-default;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Force default arrow pointer over all text elements */
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  span,
+  label,
+  li,
+  div {
+    @apply cursor-default;
+  }
+
+  /* Global noise texture for premium tactile feel */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.015;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+
+  /* Interactive elements: hand pointer */
+  a,
+  button,
+  select {
+    @apply select-auto cursor-pointer;
+  }
+
+  /* Text input elements: I-beam cursor */
+  input,
+  textarea {
+    @apply select-auto cursor-text;
+  }
+
+  /* Specifically allowed selectable text elements */
+  p.allow-select,
+  h1.allow-select,
+  h2.allow-select,
+  h3.allow-select,
+  span.allow-select {
+    @apply select-auto cursor-text;
   }
 }

@@ -19,7 +19,7 @@ const services = [
 
 export default function WhatWeDo() {
     return (
-        <section id="services" className="py-24 md:py-32 bg-neutral-950 border-t border-neutral-900 overflow-hidden">
+        <section id="services" className="py-24 md:py-32 border-t border-neutral-900 overflow-hidden relative">
             <div className="max-w-7xl mx-auto px-6">
 
                 <div className="text-center mb-16 md:mb-24">
