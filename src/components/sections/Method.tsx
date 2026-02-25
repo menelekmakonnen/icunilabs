@@ -40,7 +40,7 @@ export default function Method() {
     const lineWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
 
     return (
-        <section id="method" className="py-24 md:py-32 border-t border-neutral-900 bg-transparent">
+        <section id="method" className="py-24 md:py-32 border-t border-neutral-900 relative bg-neutral-950/90 backdrop-blur-md z-10">
             <div className="max-w-7xl mx-auto px-6" ref={containerRef}>
 
                 <div className="mb-16 md:mb-24 flex flex-col items-center text-center">

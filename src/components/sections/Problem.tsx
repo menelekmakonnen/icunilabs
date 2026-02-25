@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 
 export default function Problem() {
     return (
-        <section id="problem" className="py-24 md:py-32 border-t border-neutral-900 relative">
+        <section id="problem" className="py-24 md:py-32 border-t border-neutral-900 relative bg-neutral-950/90 backdrop-blur-md z-10">
             <div className="max-w-4xl mx-auto px-6">
 
                 <div className="mb-16">
