@@ -47,8 +47,8 @@ export default function ScrollBackground() {
         }));
     }, []);
 
-    // Delay the transform slightly so we see papers first
-    const systemProgress = useTransform(smoothProgress, [0.1, 1], [0, 1]);
+    // Transform progress directly so papers start moving instantly on scroll
+    const systemProgress = useTransform(smoothProgress, [0, 1], [0, 1]);
 
     // Global Opacity Control
     const gridOpacity = useTransform(systemProgress, [0.5, 1], [0, 1]);
