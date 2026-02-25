@@ -7,14 +7,14 @@ export default function Authority() {
             <div className="max-w-4xl mx-auto">
 
                 <motion.h2
-                    className="text-3xl md:text-5xl font-extrabold tracking-tight mb-12"
+                    className="text-3xl md:text-5xl font-black tracking-tight mb-12"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5 }}
                 >
                     Built for Businesses Growing<br />
-                    <span className="text-neutral-400">Faster Than Their Operations.</span>
+                    <span className="text-orange-500 drop-shadow-[0_0_15px_rgba(255,107,0,0.4)]">Faster Than Their Operations.</span>
                 </motion.h2>
 
                 <div className="space-y-6 text-xl md:text-2xl font-medium text-neutral-300">
@@ -24,7 +24,7 @@ export default function Authority() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: 0.1 }}
                     >
-                        We don’t sell software. We build systems.
+                        We don’t sell software. We build <span className="text-cyan-400 drop-shadow-[0_0_8px_rgba(0,229,255,0.4)] font-bold">systems.</span>
                     </motion.p>
 
                     <motion.div

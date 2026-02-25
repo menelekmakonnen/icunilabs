@@ -49,8 +49,8 @@ export default function Offers() {
                         <motion.div
                             key={index}
                             className={`p-8 rounded-xl border flex flex-col ${offer.featured
-                                    ? 'bg-neutral-900 border-neutral-700 shadow-2xl relative mt-0 md:-mt-4 md:mb-4'
-                                    : 'bg-neutral-950 border-neutral-800'
+                                ? 'bg-neutral-900 border-orange-500/30 shadow-[0_0_30px_rgba(255,107,0,0.15)] relative mt-0 md:-mt-4 md:mb-4'
+                                : 'bg-neutral-950 border-neutral-800 hover:border-cyan-500/30 hover:shadow-[0_0_20px_rgba(0,229,255,0.05)] transition-all'
                                 }`}
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
@@ -58,18 +58,18 @@ export default function Offers() {
                             transition={{ duration: 0.5, delay: offer.delay }}
                         >
                             {offer.featured && (
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 bg-neutral-100 text-neutral-900 text-xs font-bold rounded-full">
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 bg-gradient-to-r from-orange-500 to-amber-500 shadow-[0_0_10px_rgba(255,107,0,0.4)] text-white text-xs font-bold rounded-full">
                                     Most Popular
                                 </div>
                             )}
 
-                            <offer.icon className={`w-10 h-10 mb-6 ${offer.featured ? 'text-neutral-100' : 'text-neutral-400'}`} />
+                            <offer.icon className={`w-10 h-10 mb-6 ${offer.featured ? 'text-orange-400 drop-shadow-[0_0_8px_rgba(255,107,0,0.5)]' : 'text-cyan-400 drop-shadow-[0_0_8px_rgba(0,229,255,0.3)]'}`} />
                             <h3 className="text-xl font-bold text-white mb-4">{offer.title}</h3>
                             <p className="text-neutral-400 mb-8 flex-grow">{offer.desc}</p>
 
                             <a
                                 href="#contact"
-                                className={`inline-flex items-center gap-2 font-medium transition-colors ${offer.featured ? 'text-white hover:text-neutral-300' : 'text-neutral-400 hover:text-white'
+                                className={`inline-flex items-center gap-2 font-medium transition-colors ${offer.featured ? 'text-orange-400 hover:text-orange-300' : 'text-cyan-400 hover:text-cyan-300'
                                     }`}
                             >
                                 Get Started <ArrowRight className="w-4 h-4" />

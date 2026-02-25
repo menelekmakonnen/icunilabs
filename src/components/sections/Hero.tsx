@@ -18,47 +18,48 @@ export default function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, ease: "easeOut" }}
                 >
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-800 bg-neutral-900/50 text-xs font-medium text-neutral-400 mb-8">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-800 bg-neutral-900/50 text-xs font-medium text-neutral-400 mb-8 shadow-[0_0_10px_rgba(0,229,255,0.1)]">
+                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(0,229,255,0.8)]"></span>
                         Accepting New Projects
                     </div>
                 </motion.div>
 
                 <motion.h1
-                    className="text-6xl md:text-7xl lg:text-8xl font-extrabold tracking-tighter text-white mb-6 leading-[1.1]"
+                    className="text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white mb-6 leading-[1.1]"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
                 >
-                    From <span className="text-neutral-500 line-through decoration-2">Chaos</span>
-                    <br /> to <span className="bg-clip-text text-transparent bg-gradient-to-r from-neutral-50 to-neutral-500">System.</span>
+                    FROM <br className="md:hidden" />
+                    <span className="bg-clip-text text-transparent bg-gradient-to-br from-orange-400 to-orange-600 drop-shadow-[0_0_15px_rgba(255,107,0,0.4)]">CHAOS</span>
+                    <br /> TO <span className="bg-clip-text text-transparent bg-gradient-to-br from-cyan-300 to-cyan-600 drop-shadow-[0_0_20px_rgba(0,229,255,0.4)]">SYSTEM</span>
                 </motion.h1>
 
                 <motion.p
-                    className="text-xl md:text-2xl text-neutral-400 mb-10 max-w-2xl font-light leading-relaxed"
+                    className="text-xl md:text-2xl text-neutral-300 mb-10 max-w-2xl font-light leading-relaxed drop-shadow-md"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
                 >
-                    We design and build custom business systems, internal tools, and practical automations for growing teams.
+                    Turning messy operations into efficient workflows. We design and build custom business systems, internal tools, and practical automations.
                 </motion.p>
 
                 <motion.div
-                    className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+                    className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mt-4"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
                 >
                     <a
                         href="#contact"
-                        className="group flex items-center justify-center gap-2 px-8 py-4 bg-neutral-50 text-neutral-950 font-bold rounded hover:bg-neutral-200 transition-all"
+                        className="group flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_20px_rgba(0,229,255,0.3)] text-white font-bold rounded hover:shadow-[0_0_30px_rgba(0,229,255,0.5)] transition-all"
                     >
                         Book a Systems Audit
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </a>
                     <a
                         href="#contact"
-                        className="flex items-center justify-center px-8 py-4 bg-transparent border border-neutral-800 text-neutral-300 font-medium rounded hover:bg-neutral-900 hover:text-white transition-all"
+                        className="flex items-center justify-center px-8 py-4 bg-transparent border border-orange-500/50 text-orange-400 font-bold rounded hover:bg-orange-500/10 hover:border-orange-500 transition-all shadow-[inset_0_0_10px_rgba(255,107,0,0.05)]"
                     >
                         Start a Build Sprint
                     </a>

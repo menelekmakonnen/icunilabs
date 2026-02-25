@@ -8,20 +8,20 @@ export default function Problem() {
 
                 <div className="mb-16">
                     <motion.h2
-                        className="text-4xl md:text-5xl font-bold tracking-tight mb-6"
+                        className="text-4xl md:text-5xl font-black tracking-tight mb-6"
                         initial={{ opacity: 0, y: 20 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.5 }}
                     >
                         Your Business Isn’t Broken.<br />
-                        <span className="text-neutral-500">Your Operations Are.</span>
+                        <span className="text-orange-500 drop-shadow-[0_0_15px_rgba(255,107,0,0.4)]">Your Operations Are.</span>
                     </motion.h2>
 
                     <motion.div
-                        className="h-1 w-12 bg-neutral-800"
+                        className="h-1 bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_10px_rgba(0,229,255,0.5)]"
                         initial={{ width: 0 }}
-                        whileInView={{ width: 48 }}
+                        whileInView={{ width: 64 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: 0.2 }}
                     />
@@ -34,7 +34,7 @@ export default function Problem() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: 0.1 }}
                     >
-                        <p className="text-2xl font-medium text-neutral-300 mb-6 leading-relaxed">
+                        <p className="text-2xl font-medium text-neutral-200 mb-6 leading-relaxed">
                             Most businesses don’t need more staff. They need better systems.
                         </p>
                         <p className="text-neutral-400 text-lg leading-relaxed">
@@ -45,7 +45,7 @@ export default function Problem() {
                     </motion.div>
 
                     <motion.div
-                        className="bg-neutral-900/50 p-8 rounded-lg border border-neutral-800/50 relative overflow-hidden"
+                        className="bg-neutral-900/40 p-8 rounded-lg border border-cyan-900/30 relative overflow-hidden shadow-[inset_0_0_20px_rgba(0,229,255,0.02)]"
                         initial={{ opacity: 0, x: 20 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
@@ -56,7 +56,7 @@ export default function Problem() {
                             style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
                         <div className="relative z-10 flex flex-col h-full justify-center">
-                            <h3 className="text-xl font-semibold mb-4 text-emerald-400">The ICUNI Solution</h3>
+                            <h3 className="text-xl font-bold mb-4 text-cyan-400 drop-shadow-[0_0_8px_rgba(0,229,255,0.4)]">The ICUNI Solution</h3>
                             <p className="text-neutral-300 leading-relaxed">
                                 ICUNI Labs builds the structure behind your business — so it runs consistently, visibly, and efficiently.
                                 We replace chaos with deterministic workflows.
