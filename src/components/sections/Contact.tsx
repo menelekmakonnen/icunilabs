@@ -194,7 +194,7 @@ export default function Contact() {
 
                                     <div className="w-full h-[600px] bg-white rounded-lg overflow-hidden border border-neutral-800 relative">
                                         <iframe
-                                            src="https://calendar.app.google/iLhYMFoXFwvhptYz9"
+                                            src="https://calendar.app.google/V27jaS7QNUALdhXJ9"
                                             style={{ border: 0 }}
                                             width="100%"
                                             height="100%"
