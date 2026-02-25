@@ -15,8 +15,8 @@ export default function ScrollBackground() {
     const { scrollYProgress } = useScroll();
 
     const smoothProgress = useSpring(scrollYProgress, {
-        stiffness: 50,
-        damping: 20,
+        stiffness: 150,
+        damping: 30,
         restDelta: 0.001
     });
 
@@ -47,8 +47,9 @@ export default function ScrollBackground() {
         }));
     }, []);
 
-    // Transform progress directly so papers start moving instantly on scroll
-    const systemProgress = useTransform(smoothProgress, [0, 1], [0, 1]);
+    // The page is long. We want the transformation to finish early.
+    // Map the first 30% of the page scroll to the full 100% of the animation.
+    const systemProgress = useTransform(smoothProgress, [0, 0.3], [0, 1]);
 
     // Global Opacity Control
     const gridOpacity = useTransform(systemProgress, [0.5, 1], [0, 1]);

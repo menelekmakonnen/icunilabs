@@ -35,18 +35,18 @@ export default function WhatWeDo() {
                     </motion.h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-16">
                     {services.map((service, index) => (
                         <motion.div
                             key={index}
-                            className="p-6 bg-neutral-900/30 border border-neutral-800/50 rounded-lg hover:border-cyan-500/30 transition-colors group hover:shadow-[0_0_15px_rgba(0,229,255,0.05)]"
+                            className="p-4 md:p-6 bg-neutral-900/30 border border-neutral-800/50 rounded-lg hover:border-cyan-500/30 transition-colors group hover:shadow-[0_0_15px_rgba(0,229,255,0.05)] flex flex-col items-center text-center justify-start"
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ duration: 0.4, delay: index * 0.1 }}
                         >
-                            <service.icon className="w-8 h-8 text-neutral-500 mb-4 group-hover:text-cyan-400 group-hover:drop-shadow-[0_0_8px_rgba(0,229,255,0.5)] transition-all" />
-                            <h3 className="text-lg font-medium text-neutral-200 group-hover:text-white transition-colors">{service.title}</h3>
+                            <service.icon className="w-6 h-6 md:w-8 md:h-8 text-neutral-500 mb-3 md:mb-4 group-hover:text-cyan-400 group-hover:drop-shadow-[0_0_8px_rgba(0,229,255,0.5)] transition-all" />
+                            <h3 className="text-sm md:text-lg font-medium text-neutral-200 group-hover:text-white transition-colors">{service.title}</h3>
                         </motion.div>
                     ))}
                 </div>

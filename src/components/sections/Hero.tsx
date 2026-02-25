@@ -61,7 +61,7 @@ export default function Hero() {
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </a>
                     <a
-                        href="#contact"
+                        href="#offers"
                         className="flex items-center justify-center px-8 py-4 bg-transparent border border-[#ff6600]/50 text-[#ff6600] font-bold rounded hover:bg-[#ff6600]/10 hover:border-[#ff6600] transition-all shadow-[inset_0_0_10px_rgba(255,102,0,0.05)]"
                     >
                         Start a Build Sprint
