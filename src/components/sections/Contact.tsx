@@ -27,13 +27,22 @@ export default function Contact() {
 
                 if (scriptUrl) {
                     // Real submission to Apps Script
-                    await fetch(scriptUrl, {
+                    const response = await fetch(scriptUrl, {
                         method: 'POST',
                         body: JSON.stringify(formData),
                         headers: {
                             'Content-Type': 'text/plain;charset=utf-8', // Bypass CORS preflight for simple requests
                         }
                     });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json().catch(() => null);
+                    if (result && result.status !== 200) {
+                        throw new Error(result.message || 'Server error from Apps Script');
+                    }
                 } else {
                     // Simulated submission for the demo if URL isn't set yet
                     await new Promise(resolve => setTimeout(resolve, 1500));
@@ -203,9 +212,47 @@ export default function Contact() {
                                         ></iframe>
                                         {/* Fallback/Loading State Overlay if needed, or just let iframe load */}
                                     </div>
+                                    <div className="mt-8">
+                                        <button
+                                            type="button"
+                                            onClick={() => setStep(4)}
+                                            className="w-full sm:w-auto px-10 py-4 bg-gradient-to-r from-[#00bfff] to-[#0080ff] text-white font-bold rounded-lg hover:shadow-[0_6px_20px_rgba(0,191,255,0.4)] hover:-translate-y-[1px] transition-all duration-300"
+                                        >
+                                            I've Selected My Time
+                                        </button>
+                                    </div>
                                     <p className="text-xs text-neutral-500 mt-4">
                                         Powered by Google Calendar
                                     </p>
+                                </motion.div>
+                            )}
+
+                            {step === 4 && (
+                                <motion.div
+                                    key="step4"
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    className="text-center py-16"
+                                >
+                                    <div className="w-20 h-20 bg-[#00bfff]/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                                        <svg className="w-10 h-10 text-[#00bfff]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <h3 className="text-3xl font-bold mb-4 text-white">Intake Complete</h3>
+                                    <p className="text-neutral-400 mb-8 max-w-md mx-auto">
+                                        We look forward to diving into your systems. You will receive a calendar invitation and further details shortly.
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setStep(1);
+                                            setFormData({ name: '', email: '', businessSize: '1-10', bottleneck: '' });
+                                        }}
+                                        className="px-8 py-3 bg-neutral-800 text-white font-medium rounded-lg hover:bg-neutral-700 transition-colors"
+                                    >
+                                        Return Home
+                                    </button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
