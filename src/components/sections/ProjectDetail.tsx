@@ -115,6 +115,25 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                     )}
                 </motion.div>
 
+                {/* Explicit Cover Image */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                    className="mb-16 rounded-2xl overflow-hidden border border-neutral-800 shadow-[0_0_40px_rgba(0,0,0,0.5)] relative"
+                >
+                    <div className="aspect-video w-full relative bg-neutral-900">
+                        <img
+                            src={project.imageUrl}
+                            alt={`${project.title} Cover Interface`}
+                            className="w-full h-full object-cover"
+                        />
+                        {/* Subtle inner shadow overlay */}
+                        <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent opacity-80" />
+                    </div>
+                </motion.div>
+
                 {/* Content Sections */}
                 <motion.div
                     initial={{ opacity: 0, y: 40 }}
@@ -130,7 +149,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                                 The Challenge
                             </h2>
                         </div>
-                        <p className="text-lg text-neutral-300 leading-relaxed font-light pl-9 border-l-2 border-neutral-800/80">
+                        <p className="text-lg text-neutral-300 leading-relaxed font-light pl-9 border-l-2 border-neutral-800/80 whitespace-pre-line">
                             {project.clientProblem}
                         </p>
                     </section>
@@ -143,7 +162,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                                 The Solution
                             </h2>
                         </div>
-                        <p className="text-lg text-neutral-300 leading-relaxed font-light pl-9 border-l-2 border-neutral-800/80">
+                        <p className="text-lg text-neutral-300 leading-relaxed font-light pl-9 border-l-2 border-neutral-800/80 whitespace-pre-line">
                             {project.solution}
                         </p>
                     </section>
@@ -158,7 +177,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                         </div>
                         <div className="pl-9">
                             <div className="p-6 rounded-xl bg-blue-900/10 border border-blue-900/30 backdrop-blur-md shadow-2xl relative overflow-hidden group-hover:border-blue-900/50 transition-colors">
-                                <p className="text-lg text-blue-100 leading-relaxed font-medium relative z-10">
+                                <p className="text-lg text-blue-100 leading-relaxed font-medium relative z-10 whitespace-pre-line">
                                     "{project.businessImpact}"
                                 </p>
                             </div>
