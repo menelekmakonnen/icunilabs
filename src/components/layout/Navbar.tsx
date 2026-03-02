@@ -17,6 +17,7 @@ export default function Navbar() {
                     <a href="#method" className="hover:text-neutral-50 transition-colors">The Method</a>
                     <a href="#offers" className="hover:text-neutral-50 transition-colors">Services</a>
                     <a href="#demo" className="hover:text-neutral-50 transition-colors">Systems</a>
+                    <a href="#portfolio" className="hover:text-neutral-50 transition-colors">Portfolio</a>
                 </nav>
 
                 {/* CTA */}

@@ -10,6 +10,7 @@ import Authority from './components/sections/Authority';
 import LabDemos from './components/sections/LabDemos';
 import Contact from './components/sections/Contact';
 import ClientPortal from './components/portal/ClientPortal';
+import Portfolio from './components/sections/Portfolio';
 
 function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash);
@@ -22,6 +23,10 @@ function App() {
 
   if (currentHash === '#portal') {
     return <ClientPortal />;
+  }
+
+  if (currentHash === '#portfolio') {
+    return <Portfolio />;
   }
 
   return (
