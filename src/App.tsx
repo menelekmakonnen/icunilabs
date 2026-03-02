@@ -11,6 +11,8 @@ import LabDemos from './components/sections/LabDemos';
 import Contact from './components/sections/Contact';
 import ClientPortal from './components/portal/ClientPortal';
 import Portfolio from './components/sections/Portfolio';
+import ProjectDetail from './components/sections/ProjectDetail';
+import { portfolioProjects } from './data/portfolioData';
 
 function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash);
@@ -26,6 +28,16 @@ function App() {
   }
 
   if (currentHash === '#portfolio') {
+    return <Portfolio />;
+  }
+
+  if (currentHash.startsWith('#project/')) {
+    const projectId = currentHash.replace('#project/', '');
+    const project = portfolioProjects.find(p => p.id === projectId);
+    if (project) {
+      return <ProjectDetail project={project} />;
+    }
+    // Fallback if not found
     return <Portfolio />;
   }
 
