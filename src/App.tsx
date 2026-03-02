@@ -27,7 +27,7 @@ function App() {
     return <ClientPortal />;
   }
 
-  if (currentHash === '#portfolio') {
+  if (currentHash === '#portfolio' || currentHash.startsWith('#portfolio?')) {
     return <Portfolio />;
   }
 
