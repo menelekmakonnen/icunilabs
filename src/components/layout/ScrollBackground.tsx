@@ -47,9 +47,9 @@ export default function ScrollBackground() {
         }));
     }, []);
 
-    // The page is long. We want the transformation to finish early.
-    // Map the first 30% of the page scroll to the full 100% of the animation.
-    const systemProgress = useTransform(smoothProgress, [0, 0.3], [0, 1]);
+    // Connect the transformation to the majority of the page scroll.
+    // Map the first 85% of the page scroll to the full 100% of the animation.
+    const systemProgress = useTransform(smoothProgress, [0, 0.85], [0, 1]);
 
     // Global Opacity Control
     const gridOpacity = useTransform(systemProgress, [0.5, 1], [0, 1]);
