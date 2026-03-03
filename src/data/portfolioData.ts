@@ -20,6 +20,21 @@ export interface ProjectData {
 
 export const portfolioProjects: ProjectData[] = [
     {
+        id: 'popout-studios',
+        title: 'PopOut Studios',
+        subtitle: 'Printflow Processing System',
+        description: 'A dedicated internal web application built for systematic image manipulation, cropping, and workflow authentication.',
+        tags: ['Next.js 16', 'React 19', 'Image Processing', 'Authentication'],
+        icon: Aperture,
+        color: 'from-fuchsia-500/20 to-purple-600/20',
+        border: 'group-hover:border-fuchsia-500/50',
+        imageUrl: '/images/covers/popout-studios.png',
+        clientProblem: 'Managing and structuring high-volume print media pipelines requires strict image dimension controls and secure user access. Without a dedicated cropping architecture, print workflows inevitably suffer from inconsistent resolutions, manual back-and-forth edits, and disorganized output.',
+        solution: 'Built the Printflow system explicitly for PopOut Studios—a heavily authenticated Next.js environment designed for robust image manipulation. It centralizes strict image cropping logic directly into the web interface prior to any high-volume print processing.',
+        businessImpact: 'Brought absolute consistency to physical print dimensions and drastically fortified the internal access pipelines, entirely eliminating misformatted media uploads and securing the overarching studio workflow.',
+        expertDeepDive: 'The core feature is a rigorous client-side image manipulation interface seamlessly connected to a heavily guarded Next.js 16 App Router backend. The platform utilizes strict JSON Web Token (JWT) strategies alongside localized bcrypt salting to provide ironclad user authentication. The frontend relies heavily on dynamic React image cropping boundaries to perfectly enforce exact aspect ratios and dimensional mathematical purity before any dense graphical data is allowed to hit the secure backend endpoints.'
+    },
+    {
         id: 'mmmedia-pro',
         title: 'MMM Media Manager Pro',
         subtitle: 'Professional Media Management',
