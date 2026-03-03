@@ -19,7 +19,7 @@ const services = [
 
 export default function WhatWeDo() {
     return (
-        <section id="services" className="py-24 md:py-32 border-t border-neutral-900 overflow-hidden relative bg-neutral-950/90 backdrop-blur-md z-10">
+        <section id="services" className="py-24 md:py-32 border-t border-neutral-900 overflow-hidden relative z-10">
             <div className="max-w-7xl mx-auto px-6">
 
                 <div className="text-center mb-16 md:mb-24">
@@ -39,7 +39,7 @@ export default function WhatWeDo() {
                     {services.map((service, index) => (
                         <motion.div
                             key={index}
-                            className="p-4 md:p-6 bg-neutral-900/30 border border-neutral-800/50 rounded-lg hover:border-cyan-500/30 transition-colors group hover:shadow-[0_0_15px_rgba(0,229,255,0.05)] flex flex-col items-center text-center justify-start"
+                            className="p-4 md:p-6 bg-neutral-950/90 backdrop-blur-md border border-neutral-800/50 rounded-lg hover:border-cyan-500/30 transition-colors group hover:shadow-[0_0_15px_rgba(0,229,255,0.05)] flex flex-col items-center text-center justify-start"
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
