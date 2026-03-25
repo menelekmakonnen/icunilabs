@@ -1,5 +1,21 @@
 
 import { motion } from 'framer-motion';
+import { Eye, Wrench, Zap } from 'lucide-react';
+
+const pillars = [
+    {
+        icon: Eye,
+        title: "Strategic enough to see the real bottleneck",
+    },
+    {
+        icon: Wrench,
+        title: "Practical enough to build what actually works",
+    },
+    {
+        icon: Zap,
+        title: "Lean enough to move without enterprise drag",
+    },
+];
 
 export default function Authority() {
     return (
@@ -7,47 +23,40 @@ export default function Authority() {
             <div className="max-w-4xl mx-auto">
 
                 <motion.h2
-                    className="text-3xl md:text-5xl font-black tracking-tight mb-12"
+                    className="text-3xl md:text-5xl font-black tracking-tight mb-6"
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.5 }}
                 >
-                    Built for Businesses Growing<br />
-                    <span className="text-[#ff6600] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]">Faster Than Their Operations.</span>
+                    Built for Businesses That Need{' '}
+                    <span className="text-[#00bfff] drop-shadow-[0_0_15px_rgba(0,191,255,0.4)]">More Than Advice</span>
                 </motion.h2>
 
-                <div className="space-y-6 text-xl md:text-2xl font-medium text-neutral-300">
-                    <motion.p
-                        initial={{ opacity: 0, y: 10 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5, delay: 0.1 }}
-                    >
-                        We don’t sell software. We build <span className="text-[#00bfff] drop-shadow-[0_0_8px_rgba(0,191,255,0.4)] font-bold">systems.</span>
-                    </motion.p>
+                <motion.p
+                    className="text-neutral-400 text-lg md:text-xl leading-relaxed max-w-3xl mx-auto mb-16"
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                >
+                    A lot of firms can explain your problem back to you in expensive language. ICUNI Labs is for teams that need the system designed and built around the way the work really happens. The goal is not to make the business sound sophisticated. The goal is to make it run better.
+                </motion.p>
 
-                    <motion.div
-                        className="flex flex-col gap-2 text-neutral-500 text-lg md:text-xl"
-                        initial={{ opacity: 0, y: 10 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                    >
-                        <p className="line-through">No bloated enterprise tools.</p>
-                        <p className="line-through">No unnecessary complexity.</p>
-                        <p className="line-through">No theoretical AI decks.</p>
-                    </motion.div>
-
-                    <motion.p
-                        className="text-xl md:text-3xl font-bold text-white pt-6"
-                        initial={{ opacity: 0, y: 10 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5, delay: 0.3 }}
-                    >
-                        Just practical implementation that works.
-                    </motion.p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                    {pillars.map((pillar, i) => (
+                        <motion.div
+                            key={i}
+                            className="p-6 md:p-8 rounded-xl border border-neutral-800/50 bg-neutral-950/60 backdrop-blur-xl flex flex-col items-center gap-4"
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
+                        >
+                            <pillar.icon className="w-8 h-8 text-[#00bfff] drop-shadow-[0_0_8px_rgba(0,191,255,0.4)]" />
+                            <p className="text-white font-semibold text-lg leading-snug">{pillar.title}</p>
+                        </motion.div>
+                    ))}
                 </div>
 
             </div>

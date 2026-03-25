@@ -2,6 +2,7 @@ import Navbar from './Navbar';
 import Footer from './Footer';
 import ScrollBackground from './ScrollBackground';
 import ScrollNavigation from './ScrollNavigation';
+import PortfolioDrawer from './PortfolioDrawer';
 
 interface MainLayoutProps {
     children: React.ReactNode;
@@ -16,6 +17,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 {children}
             </main>
             <ScrollNavigation />
+            <PortfolioDrawer />
             <Footer />
         </div>
     );

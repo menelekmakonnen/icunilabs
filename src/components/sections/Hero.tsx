@@ -1,17 +1,145 @@
 
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function Hero() {
-    return (
-        <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20">
+interface SubheadlineSegment {
+    text: string;
+    color?: string;
+}
 
-            {/* Abstract Background Grid/Machinery Hint */}
+type Subheadline = SubheadlineSegment[];
+
+const allSubheadlines: Subheadline[] = [
+    // Original 8
+    [{ text: "We build the " }, { text: "operations systems", color: "#00bfff" }, { text: " your team actually needs." }],
+    [{ text: "Less chaos. Fewer handoffs. " }, { text: "Better execution.", color: "#ff6600" }],
+    [{ text: "Your workflows are broken. " }, { text: "We fix that.", color: "#00bfff" }],
+    [{ text: "Stop duct-taping processes. Start " }, { text: "building systems.", color: "#ff6600" }],
+    [{ text: "Dashboards, automations, internal tools — " }, { text: "built to run.", color: "#00bfff" }],
+    [{ text: "AI that actually helps. " }, { text: "Not AI that sits in a deck.", color: "#ff6600" }],
+    [{ text: "We replace " }, { text: "spreadsheet chaos", color: "#ff6600" }, { text: " with real infrastructure." }],
+    [{ text: "Your ops shouldn't depend on " }, { text: "one person's memory.", color: "#00bfff" }],
+    // 12 new
+    [{ text: "Hustle got you here. " }, { text: "Systems", color: "#00bfff" }, { text: " get you further." }],
+    [{ text: "We don't sell software. We build " }, { text: "how your team works.", color: "#ff6600" }],
+    [{ text: "Manual processes don't scale. " }, { text: "We do.", color: "#00bfff" }],
+    [{ text: "Your business isn't broken. Your " }, { text: "operations", color: "#ff6600" }, { text: " are." }],
+    [{ text: "We build the layer between " }, { text: "ambition and execution.", color: "#00bfff" }],
+    [{ text: "Good teams, bad systems. " }, { text: "We fix the second part.", color: "#ff6600" }],
+    [{ text: "If your approval flow lives in WhatsApp, " }, { text: "we need to talk.", color: "#00bfff" }],
+    [{ text: "Workflows that " }, { text: "actually workflow.", color: "#ff6600" }],
+    [{ text: "We make ops " }, { text: "invisible.", color: "#00bfff" }, { text: " That's the point." }],
+    [{ text: "No 200-slide decks. " }, { text: "Just working systems.", color: "#ff6600" }],
+    [{ text: "You need fewer meetings. You need " }, { text: "better systems.", color: "#00bfff" }],
+    [{ text: "Built for companies that " }, { text: "move fast", color: "#ff6600" }, { text: " and break ops." }],
+];
+
+function shuffleArray<T>(arr: T[]): T[] {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+function flattenLine(line: Subheadline): string {
+    return line.map(s => s.text).join('');
+}
+
+function renderTypedText(line: Subheadline, charCount: number) {
+    let remaining = charCount;
+    const elements: React.ReactNode[] = [];
+
+    for (let i = 0; i < line.length && remaining > 0; i++) {
+        const seg = line[i];
+        const visibleChars = Math.min(remaining, seg.text.length);
+        const visibleText = seg.text.slice(0, visibleChars);
+        remaining -= visibleChars;
+
+        elements.push(
+            <span key={i} style={seg.color ? { color: seg.color } : undefined}>
+                {visibleText}
+            </span>
+        );
+    }
+
+    return elements;
+}
+
+type Phase = 'typing' | 'blinking' | 'deleting';
+
+export default function Hero() {
+    const [shuffled] = useState(() => shuffleArray(allSubheadlines));
+    const [lineIndex, setLineIndex] = useState(0);
+    const [charIndex, setCharIndex] = useState(0);
+    const [phase, setPhase] = useState<Phase>('typing');
+    const [blinkCount, setBlinkCount] = useState(0);
+    const [cursorVisible, setCursorVisible] = useState(true);
+    const blinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const currentLine = shuffled[lineIndex];
+    const fullLength = flattenLine(currentLine).length;
+
+    // Typing & deleting
+    const tick = useCallback(() => {
+        if (phase === 'typing') {
+            if (charIndex < fullLength) {
+                setCharIndex(prev => prev + 1);
+            } else {
+                setPhase('blinking');
+                setBlinkCount(0);
+                setCursorVisible(true);
+            }
+        } else if (phase === 'deleting') {
+            if (charIndex > 0) {
+                setCharIndex(prev => prev - 1);
+            } else {
+                setPhase('typing');
+                setLineIndex(prev => (prev + 1) % shuffled.length);
+            }
+        }
+    }, [charIndex, fullLength, phase, shuffled.length]);
+
+    useEffect(() => {
+        if (phase === 'typing' || phase === 'deleting') {
+            const speed = phase === 'deleting' ? 5 : 8;
+            const timer = setTimeout(tick, speed);
+            return () => clearTimeout(timer);
+        }
+    }, [tick, phase]);
+
+    // Blinking phase: 3 full blinks (on/off cycles), then start deleting
+    useEffect(() => {
+        if (phase !== 'blinking') return;
+
+        if (blinkCount >= 10) {
+            // 10 toggles = 5 full blinks (~4.5s hold)
+            setCursorVisible(true);
+            setPhase('deleting');
+            return;
+        }
+
+        blinkTimerRef.current = setTimeout(() => {
+            setCursorVisible(prev => !prev);
+            setBlinkCount(prev => prev + 1);
+        }, 400);
+
+        return () => {
+            if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
+        };
+    }, [phase, blinkCount]);
+
+    return (
+        <section id="hero" className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20">
+
+            {/* Dot grid */}
             <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none"
                 style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}
             />
 
-            {/* Ambient Center Glow */}
+            {/* Ambient glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-[#00bfff]/10 to-[#ff6600]/5 blur-[120px] rounded-full pointer-events-none z-0" />
 
             <div className="max-w-4xl mx-auto px-6 relative z-10 text-center flex flex-col items-center">
@@ -28,45 +156,70 @@ export default function Hero() {
                 </motion.div>
 
                 <motion.h1
-                    className="text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white mb-6 leading-[1.1]"
+                    className="text-6xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white mb-8 leading-[1.1]"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
                 >
                     FROM <br className="md:hidden" />
-                    <span className="bg-clip-text text-transparent bg-gradient-to-br from-[#ff8533] to-[#ff5500] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]">CHAOS</span>
-                    <br /> TO <span className="bg-clip-text text-transparent bg-gradient-to-br from-[#33ccff] to-[#0099cc] drop-shadow-[0_0_20px_rgba(0,191,255,0.4)]">SYSTEM</span>
+                    <motion.span 
+                        className="inline-block cursor-pointer bg-clip-text text-transparent bg-gradient-to-br from-[#ff8533] to-[#ff5500] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]"
+                        whileHover={{ x: [-3, 3, -1, 1, -2, 2, 0], y: [1, -1, 2, -2, 1, -1, 0] }}
+                        transition={{ duration: 0.3, repeat: Infinity, repeatType: "mirror" }}
+                    >
+                        CHAOS
+                    </motion.span>
+                    <br /> TO {' '}
+                    <span className="relative inline-block cursor-pointer group whitespace-nowrap transition-transform duration-300 group-hover:scale-105">
+                        <span className="relative z-10 bg-clip-text text-transparent bg-gradient-to-br from-[#33ccff] to-[#0099cc] drop-shadow-[0_0_20px_rgba(0,191,255,0.4)] transition-all duration-500 group-hover:drop-shadow-[0_0_35px_rgba(0,191,255,0.7)]">SYSTEM</span>
+                        <div className="absolute -inset-x-2 -inset-y-1 bg-[#00bfff]/0 group-hover:bg-[#00bfff]/[0.06] rounded-lg transition-all duration-500 pointer-events-none" />
+                    </span>
                 </motion.h1>
 
-                <motion.p
-                    className="text-lg md:text-xl text-neutral-400 mb-10 max-w-2xl font-light leading-relaxed drop-shadow-md"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-                >
-                    Turning messy operations into efficient workflows. We design and build custom business systems, internal tools, and practical automations.
-                </motion.p>
+                {/* Code-style typewriter subheadline */}
+                <div className="min-h-[2.5rem] md:min-h-[2rem] flex items-start justify-center mb-10 max-w-2xl w-full">
+                    <p className="text-base md:text-lg text-neutral-300 font-bold leading-relaxed font-mono tracking-tight">
+                        <span className="text-neutral-600 mr-1">{'>'}</span>
+                        {renderTypedText(currentLine, charIndex)}
+                        <span
+                            className="inline-block w-[8px] h-[1.15em] ml-[2px] align-middle transition-opacity duration-100"
+                            style={{
+                                backgroundColor: cursorVisible ? '#00bfff' : 'transparent',
+                                boxShadow: cursorVisible ? '0 0 6px rgba(0,191,255,0.6)' : 'none',
+                            }}
+                        />
+                    </p>
+                </div>
 
                 <motion.div
-                    className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mt-4"
+                    className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
                 >
                     <a
-                        href="#portfolio"
+                        href="#contact"
                         className="group flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-[#00bfff] to-[#0080ff] shadow-[0_0_20px_rgba(0,191,255,0.3)] text-white font-bold rounded hover:shadow-[0_0_30px_rgba(0,191,255,0.5)] transition-all"
                     >
-                        View Enterprise Solutions
+                        Let's Fix the Chaos!
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </a>
                     <a
-                        href="#offers"
+                        href="#portfolio"
                         className="flex items-center justify-center px-8 py-4 bg-transparent border border-[#ff6600]/50 text-[#ff6600] font-bold rounded hover:bg-[#ff6600]/10 hover:border-[#ff6600] transition-all shadow-[inset_0_0_10px_rgba(255,102,0,0.05)]"
                     >
-                        Start a Build Sprint
+                        View Portfolio
                     </a>
                 </motion.div>
+
+                <motion.p
+                    className="text-sm text-neutral-500 mt-6 max-w-lg"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.7 }}
+                    transition={{ duration: 0.8, delay: 0.5 }}
+                >
+                    Built for growing teams, creative businesses, and operations-heavy companies that have outgrown hustle.
+                </motion.p>
 
             </div>
 

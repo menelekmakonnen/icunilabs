@@ -79,7 +79,7 @@ export default function Contact() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: 0.2 }}
                     >
-                        Book your systems audit to get started.
+                        If operations are slowing growth, creating confusion, or relying too much on manual effort, ICUNI Labs can help you map the bottleneck and build the right system around it.
                     </motion.p>
                 </div>
 
