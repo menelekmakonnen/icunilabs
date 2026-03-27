@@ -12,7 +12,7 @@ export default function PortfolioDrawer() {
             {/* Toggle Tab — fixed right edge */}
             <button
                 onClick={() => setOpen(true)}
-                className="fixed right-0 top-1/2 -translate-y-1/2 z-40 flex items-center gap-2 bg-neutral-900/90 backdrop-blur-md border border-neutral-800 border-r-0 rounded-l-lg px-3 py-4 text-neutral-400 hover:text-white hover:bg-neutral-800/90 transition-all shadow-lg cursor-pointer group"
+                className="fixed right-0 top-1/2 -translate-y-[calc(100%+4px)] z-40 flex items-center gap-2 bg-neutral-900/90 backdrop-blur-md border border-neutral-800 border-r-0 rounded-l-lg px-3 py-4 text-neutral-400 hover:text-white hover:bg-neutral-800/90 transition-all shadow-lg cursor-pointer group"
                 aria-label="Open Portfolio"
             >
                 <FolderOpen className="w-5 h-5 group-hover:text-[#00bfff] transition-colors" />

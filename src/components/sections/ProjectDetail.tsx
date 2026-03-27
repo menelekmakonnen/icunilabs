@@ -100,18 +100,31 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                     </div>
 
                     {/* Links */}
-                    {project.githubUrl && (
-                        <a
-                            href={project.githubUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-100/10 backdrop-blur-md border border-neutral-100/20 text-white font-bold rounded-lg hover:bg-neutral-100/20 transition-all shadow-lg"
-                        >
-                            <Github size={18} />
-                            <span>View Source Code</span>
-                            <ExternalLink size={16} className="ml-1 opacity-70" />
-                        </a>
-                    )}
+                    <div className="flex flex-wrap gap-4">
+                        {project.projectUrl && (
+                            <a
+                                href={project.projectUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-[#00bfff]/20 backdrop-blur-md border border-[#00bfff]/40 text-white font-bold rounded-lg hover:bg-[#00bfff]/30 transition-all shadow-lg"
+                            >
+                                <ExternalLink size={18} />
+                                <span>Visit Live Site</span>
+                            </a>
+                        )}
+                        {project.githubUrl && (
+                            <a
+                                href={project.githubUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-neutral-100/10 backdrop-blur-md border border-neutral-100/20 text-white font-bold rounded-lg hover:bg-neutral-100/20 transition-all shadow-lg"
+                            >
+                                <Github size={18} />
+                                <span>View Source Code</span>
+                                <ExternalLink size={16} className="ml-1 opacity-70" />
+                            </a>
+                        )}
+                    </div>
                 </motion.div>
 
                 {/* Explicit Cover Image */}

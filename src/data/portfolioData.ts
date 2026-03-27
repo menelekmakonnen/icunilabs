@@ -16,6 +16,7 @@ export interface ProjectData {
     businessImpact: string;
     expertDeepDive: string;
     githubUrl?: string;
+    projectUrl?: string;
 }
 
 export const portfolioProjects: ProjectData[] = [
@@ -32,7 +33,8 @@ export const portfolioProjects: ProjectData[] = [
         clientProblem: 'High-volume print studios often suffer from severe operational fragmentation, relying on disjointed software to track active print jobs, manage physical raw material inventory, process internal accounting, and oversee daily employee tasks. This disconnect inevitably leads to delayed production pipelines and lost revenue.',
         solution: 'Architected and deployed PrintFlow as a completely unified Print Office Operations suite. The platform centralizes all critical business functions—including job queuing, expense tracking, inventory management, and product cataloging—into a single, secure web portal.',
         businessImpact: 'Unified the entire administrative overhead of the studio, eliminating the need for scattered spreadsheets. This drastically improved the speed of job fulfillment and provided management with immediate, real-time oversight over inventory supply lines and unit economics.',
-        expertDeepDive: 'The architecture employs a robust Next.js 16 App Router foundation connected to a comprehensive API backend. The system fundamentally handles complex relational data, linking active print jobs directly to inventory consumption and automated accounting ledgers. The frontend leverages modern React 19 paradigms to deliver a highly responsive dashboard, handling massive operational datasets and dynamic queuing systems while ensuring strict, role-based JWT authentication secures the sensitive financial and structural data.'
+        expertDeepDive: 'The architecture employs a robust Next.js 16 App Router foundation connected to a comprehensive API backend. The system fundamentally handles complex relational data, linking active print jobs directly to inventory consumption and automated accounting ledgers. The frontend leverages modern React 19 paradigms to deliver a highly responsive dashboard, handling massive operational datasets and dynamic queuing systems while ensuring strict, role-based JWT authentication secures the sensitive financial and structural data.',
+        projectUrl: 'https://popout.icuni.org'
     },
     {
         id: 'mmmedia-pro',
@@ -93,7 +95,8 @@ export const portfolioProjects: ProjectData[] = [
         clientProblem: 'Within large organizations, tracking crucial vendor relationships, purchasing workflows, and procurement states across disconnected communication channels frequently leads to critical pipeline slowdowns and administrative confusion.',
         solution: 'Deployed the KASL Hub: a centralized web application serving as the definitive source of truth for tracking B2B procurement pipelines and managing real-time supplier interaction.',
         businessImpact: 'Brought intense transparency to previously chaotic purchasing procedures, ensuring stakeholders have immediate visibility into procurement status, fundamentally accelerating operational timelines.',
-        expertDeepDive: 'Constructed utilizing a highly-responsive React and Vite architecture, the KASL Portal serves as a modernized counterpoint to notoriously slow legacy ERP interfaces. The frontend was tightly engineered with TypeScript to enforce strict structural data contracts throughout the complex procurement pipelines. Emphasizing a frictionless user experience, the system breaks down intricate purchasing funnels into accessible, state-driven interfaces that significantly improve onboarding and compliance verification for external suppliers.'
+        expertDeepDive: 'Constructed utilizing a highly-responsive React and Vite architecture, the KASL Portal serves as a modernized counterpoint to notoriously slow legacy ERP interfaces. The frontend was tightly engineered with TypeScript to enforce strict structural data contracts throughout the complex procurement pipelines. Emphasizing a frictionless user experience, the system breaks down intricate purchasing funnels into accessible, state-driven interfaces that significantly improve onboarding and compliance verification for external suppliers.',
+        projectUrl: 'https://kasl.kezeah.com'
     },
     {
         id: 'shuno-recap',
@@ -109,7 +112,8 @@ export const portfolioProjects: ProjectData[] = [
         clientProblem: 'Users deeply appreciate engaging, retrospective analytics regarding their digital habits, but uploading highly sensitive personal browser history to remote third-party servers presents severe privacy and security concerns.',
         solution: 'Architected the "Browser History Recap" project, focusing exclusively on running robust chronological categorization and visually engaging storytelling interfaces completely localized to the user\'s machine.',
         businessImpact: 'Provided a uniquely engaging tool that perfectly bridges the gap between high-end digital analytics and absolute data privacy, building intense user trust and organic product engagement.',
-        expertDeepDive: 'The core technical mandate for this project was strict data localization. Rather than defaulting to a typical server-client API model, the entire logical engine processes data inputs entirely within the user\'s local environment. The user interface translates complex timeline history into sweeping, accessible visual graphics, proving that compelling analytics do not fundamentally require the compromise of sensitive, deeply personal user tracking information.'
+        expertDeepDive: 'The core technical mandate for this project was strict data localization. Rather than defaulting to a typical server-client API model, the entire logical engine processes data inputs entirely within the user\'s local environment. The user interface translates complex timeline history into sweeping, accessible visual graphics, proving that compelling analytics do not fundamentally require the compromise of sensitive, deeply personal user tracking information.',
+        projectUrl: 'https://recap.icuni.org'
     },
     {
         id: 'connect',
@@ -124,7 +128,8 @@ export const portfolioProjects: ProjectData[] = [
         clientProblem: 'Large networks often suffer from extreme talent siloing, making it incredibly difficult for project leaders to identify specific internal colleagues with the necessary skillset for specialized, cross-departmental engagements.',
         solution: 'Launched "ICUNI Connect," a dedicated central platform functioning as a deeply searchable talent directory embedded directly alongside functional project management dashboards.',
         businessImpact: 'Effectively dismantled corporate communication barriers by granting instant visibility into organizational talent, resulting in substantially faster team building and better internal resource utilization.',
-        expertDeepDive: 'The platform serves as a vital connective tissue for the organization, bridging the gap between flat employee tracking systems and active workflow management. By intertwining individual user profiles with current project scopes, the interface inherently creates a dynamic map of ongoing initiatives. The architecture utilizes modern React workflows to ensure that the directory remains hyper-responsive during searches, facilitating rapid discovery and fostering a culture of organic structural collaboration.'
+        expertDeepDive: 'The platform serves as a vital connective tissue for the organization, bridging the gap between flat employee tracking systems and active workflow management. By intertwining individual user profiles with current project scopes, the interface inherently creates a dynamic map of ongoing initiatives. The architecture utilizes modern React workflows to ensure that the directory remains hyper-responsive during searches, facilitating rapid discovery and fostering a culture of organic structural collaboration.',
+        projectUrl: 'https://connect.icuni.org'
     },
     {
         id: 'a1-director',
@@ -185,7 +190,8 @@ export const portfolioProjects: ProjectData[] = [
         clientProblem: 'Authors managing expansive, multi-volume narrative worlds frequently struggle to maintain canonical consistency, tracking complex character timelines and location histories entirely through fragmented notes.',
         solution: 'Engineered "Loremaker", a dedicated relationship mapping platform. The application translates linear storytelling notes into structured relational datasets, providing a true database for narrative continuity.',
         businessImpact: 'Replaced disjointed word processors with a dedicated structural source of truth, drastically empowering narrative teams to maintain flawless lore continuity during rapid creative drafting.',
-        expertDeepDive: 'Loremaker functionally shifts the paradigm of creative tracking from flat text into explicit programmatic architecture. Integrating a stable Node.js server backbone, the application provides an interactive front-end mapped against complex continuous data structures. The UI enables writers to systematically tether events, personas, and geographies into highly organized, easily searchable trees, treating immense fictional world-building with strict organizational fidelity.'
+        expertDeepDive: 'Loremaker functionally shifts the paradigm of creative tracking from flat text into explicit programmatic architecture. Integrating a stable Node.js server backbone, the application provides an interactive front-end mapped against complex continuous data structures. The UI enables writers to systematically tether events, personas, and geographies into highly organized, easily searchable trees, treating immense fictional world-building with strict organizational fidelity.',
+        projectUrl: 'https://loremaker.cloud'
     },
     {
         id: 'scholarships',
@@ -201,7 +207,8 @@ export const portfolioProjects: ProjectData[] = [
         clientProblem: 'Potential students continuously struggled to locate and parse appropriate funding opportunities due to disjointed websites and poor categorization of critical scholarship guidelines.',
         solution: 'Overhauled the digital entry point by deploying a centralized, highly focused repository explicitly categorized by differing grant structures and student-need classifications.',
         businessImpact: 'Severely lowered the barrier to entry regarding information discovery, ensuring that philanthropic scholarship funds successfully reached the qualified candidates who actively needed them.',
-        expertDeepDive: 'The engineering strategy prioritized immense clarity and rapid accessibility above complex functionality. The application serves as a strictly focused directory interface, presenting dense, highly-specific financial and academic requirements via an intuitive, easily scannable visual grid. By prioritizing a clean React architecture and robust semantic HTML, the digital platform directly combats the inherent administrative friction usually associated with sprawling educational subdomains.'
+        expertDeepDive: 'The engineering strategy prioritized immense clarity and rapid accessibility above complex functionality. The application serves as a strictly focused directory interface, presenting dense, highly-specific financial and academic requirements via an intuitive, easily scannable visual grid. By prioritizing a clean React architecture and robust semantic HTML, the digital platform directly combats the inherent administrative friction usually associated with sprawling educational subdomains.',
+        projectUrl: 'https://scholarships.icuni.org'
     },
     {
         id: 'film-icuni',
@@ -217,7 +224,8 @@ export const portfolioProjects: ProjectData[] = [
         clientProblem: 'Independent, micro-budget film creators lack a centralized hub for efficiently organizing casting calls, locating specific technical crew, and reviewing local talent portfolios.',
         solution: 'Built the ICUNI Film Database, functioning as a highly focused collaborative network. It introduces structured talent profiles alongside centralized project pitching and casting boards.',
         businessImpact: 'Effectively consolidated disjointed creative networks into a fully searchable database, significantly accelerating the difficult pre-production and active casting phases for localized independent projects.',
-        expertDeepDive: 'The platform successfully abstracts the chaos of social media casting into a highly functional web directory. Driven by a robust React frontend, the architecture bridges individual profiles (showcasing roles and acting histories) directly to overarching production hubs. The application logic is specifically designed to facilitate immediate discovery, mapping specific creative requirements to a focused talent roster, fully accelerating the independent film community workflow.'
+        expertDeepDive: 'The platform successfully abstracts the chaos of social media casting into a highly functional web directory. Driven by a robust React frontend, the architecture bridges individual profiles (showcasing roles and acting histories) directly to overarching production hubs. The application logic is specifically designed to facilitate immediate discovery, mapping specific creative requirements to a focused talent roster, fully accelerating the independent film community workflow.',
+        projectUrl: 'https://films.icuni.org'
     },
     {
         id: 'keystore',
@@ -232,6 +240,7 @@ export const portfolioProjects: ProjectData[] = [
         clientProblem: 'Fragmenting critical environment variables and credentials arbitrarily across various front-end repositories dramatically exposes organizational codebases to severe security vulnerabilities.',
         solution: 'Designed the KeyStore architectural mandate to enforce an unyielding, centralized structure for securing project variables away from client-facing applications.',
         businessImpact: 'Established a strict baseline security perimeter for internal deployments, mitigating unauthorized access points and drastically simplifying the security auditing process.',
-        expertDeepDive: 'The methodology behind KeyStore is purely structural engineering. Rather than an interactive graphical interface, the project emphasizes a resilient, invisible backend topology. It functions to isolate sensitive information logically from the active UI rendering cycle, emphasizing middleware compliance. This enforces a standardized security pattern, ensuring subsequent software suites are built utilizing a secure-by-default foundational layer.'
+        expertDeepDive: 'The methodology behind KeyStore is purely structural engineering. Rather than an interactive graphical interface, the project emphasizes a resilient, invisible backend topology. It functions to isolate sensitive information logically from the active UI rendering cycle, emphasizing middleware compliance. This enforces a standardized security pattern, ensuring subsequent software suites are built utilizing a secure-by-default foundational layer.',
+        projectUrl: 'https://key.icuni.org'
     }
 ];
