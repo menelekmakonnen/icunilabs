@@ -1,5 +1,5 @@
 import {
-    Rocket, Settings, Puzzle, Clapperboard, BrainCircuit,
+    Rocket, Settings, Puzzle, Clapperboard, BrainCircuit, Eye,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -162,6 +162,34 @@ export const personas: PersonaData[] = [
             { label: "Workflow integration", desc: "AI embedded into how your business actually operates." },
         ],
         ctaText: "Start Your AI Adoption Plan",
+    },
+    {
+        id: 'remote-owner',
+        slug: 'remote-owner',
+        icon: Eye,
+        accentColor: '#f59e0b',
+        title: 'The Remote Owner',
+        subtitle: 'Business Owner · Investor · Silent Partner · Absentee Owner',
+        tileLine: 'For Owners Managing from Afar',
+        tileTeaser: "You need to know your business is running honestly and efficiently without being there every day.",
+        heroHeadline: "Trust, but Verify. Systems Make It Possible.",
+        heroSub: "You step away from daily operations, but blind spots make you anxious. You shouldn't have to be on-site every day just to prevent revenue leakage or ensure things run correctly.",
+        painIntro: "Sound familiar?",
+        painSignals: [
+            "I'm worried about revenue leakage when I'm not there.",
+            "Reports don't always match reality.",
+            "I need an unvarnished view of daily operations.",
+            "Inventory or cash flow often seems inconsistent.",
+            "I can't reliably tell if the team is genuinely productive.",
+        ],
+        solutionHeadline: "Gain unbreakable visibility into your operations from anywhere.",
+        solutionBody: "We build transparent reporting systems, inventory tracking, and operational dashboards that give you the raw truth. Replace assumptions and blind trust with hard, ungameable data that safeguards your business.",
+        proofPoints: [
+            { label: "Plug revenue leaks", desc: "Financial and operational controls that make discrepancies obvious." },
+            { label: "Unalterable truth", desc: "Dashboards that report actual system data, not human interpretations." },
+            { label: "Peace of mind", desc: "Know exactly what is happening in your business from across the world." },
+        ],
+        ctaText: "Secure Your Operations",
     },
 ];
 
