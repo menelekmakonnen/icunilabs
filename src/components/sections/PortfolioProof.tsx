@@ -1,14 +1,26 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, ExternalLink } from 'lucide-react';
+import { ArrowRight, ExternalLink, Layers, Rocket, Globe2, Cpu } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { portfolioProjects } from '../../data/portfolioData';
+import { portfolioProjects, TOTAL_PROJECT_COUNT, PRODUCTION_PROJECT_COUNT, ACTIVE_REVENUE_COUNT } from '../../data/portfolioData';
+
+const stats = [
+    { value: `${TOTAL_PROJECT_COUNT}+`, label: 'Projects Built', icon: Layers },
+    { value: `${PRODUCTION_PROJECT_COUNT}`, label: 'In Production', icon: Rocket },
+    { value: `${ACTIVE_REVENUE_COUNT}`, label: 'Active Revenue', icon: Globe2 },
+    { value: '7+', label: 'Platforms', icon: Cpu },
+];
 
 export default function PortfolioProof() {
     const [randomProjects, setRandomProjects] = useState<typeof portfolioProjects>([]);
 
     useEffect(() => {
-        const shuffled = [...portfolioProjects].sort(() => 0.5 - Math.random());
-        setRandomProjects(shuffled.slice(0, 3));
+        // Prioritize flagship projects for the preview
+        const flagships = portfolioProjects.filter(p => p.tier === 'flagship');
+        const others = portfolioProjects.filter(p => p.tier !== 'flagship');
+        const shuffledOthers = [...others].sort(() => 0.5 - Math.random());
+        const shuffledFlagships = [...flagships].sort(() => 0.5 - Math.random());
+        // Pick 2 flagships + 1 other for variety
+        setRandomProjects([...shuffledFlagships.slice(0, 2), ...shuffledOthers.slice(0, 1)]);
     }, []);
 
     return (
@@ -27,15 +39,32 @@ export default function PortfolioProof() {
                         <span className="text-[#00bfff] drop-shadow-[0_0_15px_rgba(0,191,255,0.4)]">See the Work.</span>
                     </motion.h2>
                     <motion.p
-                        className="text-neutral-400 text-lg max-w-2xl"
+                        className="text-neutral-400 text-lg max-w-3xl"
                         initial={{ opacity: 0, y: 10 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: 0.1 }}
                     >
-                        ERPs, media pipelines, procurement portals, AI operating systems — real systems built for real companies. Browse the portfolio and judge us by what we ship.
+                        {TOTAL_PROJECT_COUNT}+ projects across Electron desktop apps, VS Code extensions, Chrome extensions, Adobe Premiere Pro plugins, Google Apps Script ERPs, .NET WPF applications, and Python AI pipelines — real systems built for real companies. Browse the portfolio and judge us by what we ship.
                     </motion.p>
                 </div>
+
+                {/* Stats Bar */}
+                <motion.div
+                    className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: 0.15 }}
+                >
+                    {stats.map((stat, i) => (
+                        <div key={i} className="p-5 rounded-xl border border-neutral-800/50 bg-neutral-950/60 backdrop-blur-xl text-center">
+                            <stat.icon className="w-5 h-5 text-[#00bfff]/60 mx-auto mb-2" />
+                            <p className="text-2xl md:text-3xl font-black text-white tracking-tight">{stat.value}</p>
+                            <p className="text-neutral-500 text-xs font-bold uppercase tracking-[0.15em] mt-1">{stat.label}</p>
+                        </div>
+                    ))}
+                </motion.div>
 
                 <motion.div
                     className="p-8 md:p-12 rounded-xl border border-neutral-800/60 bg-neutral-950/60 backdrop-blur-xl relative overflow-hidden mb-12"
@@ -50,7 +79,7 @@ export default function PortfolioProof() {
                     <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
                         <div className="flex-1">
                             <p className="text-neutral-300 text-lg md:text-xl leading-relaxed">
-                                From internal tools and operational workflows to AI-enabled platforms and production pipelines — every project in the portfolio was designed to solve a real problem, not pad a slide deck.
+                                From construction inventory ERPs and embassy operations centers to AI video generation suites and Premiere Pro editing engines — every project in the portfolio was designed to solve a real problem, not pad a slide deck.
                             </p>
                         </div>
 
@@ -87,8 +116,15 @@ export default function PortfolioProof() {
                                         <div className="p-2.5 bg-neutral-950/70 rounded-lg border border-neutral-800/80 text-white backdrop-blur-md">
                                             <Icon size={20} strokeWidth={1.5} />
                                         </div>
-                                        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
-                                            <ExternalLink size={18} className="text-white drop-shadow-md" />
+                                        <div className="flex items-center gap-2">
+                                            {project.status && (
+                                                <span className="px-2 py-0.5 text-[9px] font-bold bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 uppercase tracking-wider">
+                                                    {project.tier === 'flagship' ? '★ Flagship' : project.status}
+                                                </span>
+                                            )}
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-x-2 group-hover:translate-x-0">
+                                                <ExternalLink size={18} className="text-white drop-shadow-md" />
+                                            </div>
                                         </div>
                                     </div>
                                     <h3 className="text-xl font-bold text-white mb-1 drop-shadow-md">{project.title}</h3>
@@ -108,9 +144,9 @@ export default function PortfolioProof() {
                 {/* Proof framing cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[
-                        { label: "Built to reduce", text: "manual coordination and give teams operational visibility." },
-                        { label: "Built to structure", text: "delivery, approvals, and internal accountability." },
-                        { label: "Built to turn", text: "messy workflows into repeatable operating systems." },
+                        { label: "Built across", text: "Electron, Chrome Extensions, Adobe Premiere, VS Code, .NET WPF, Python, and Google Apps Script." },
+                        { label: "Built to deliver", text: "embassy operations centers, construction ERPs, and streaming platform backends." },
+                        { label: "Built to ship", text: "with NSIS installers, VS Code Marketplace releases, and clasp deployments." },
                     ].map((item, i) => (
                         <motion.div
                             key={i}

@@ -1,6 +1,7 @@
 
 import { motion } from 'framer-motion';
-import { Eye, Wrench, Zap } from 'lucide-react';
+import { Eye, Wrench, Zap, Monitor, Globe2, Code2 } from 'lucide-react';
+import { TOTAL_PROJECT_COUNT } from '../../data/portfolioData';
 
 const pillars = [
     {
@@ -17,6 +18,12 @@ const pillars = [
     },
 ];
 
+const techStack = [
+    { icon: Monitor, label: 'Electron Desktop Apps' },
+    { icon: Code2, label: 'VS Code & Chrome Extensions' },
+    { icon: Globe2, label: 'React, Next.js, Vite' },
+];
+
 export default function Authority() {
     return (
         <section className="py-32 border-t border-neutral-800 text-center px-6 relative">
@@ -29,8 +36,8 @@ export default function Authority() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.5 }}
                 >
-                    Built for Businesses That Need{' '}
-                    <span className="text-[#00bfff] drop-shadow-[0_0_15px_rgba(0,191,255,0.4)]">More Than Advice</span>
+                    {TOTAL_PROJECT_COUNT}+ Projects.{' '}
+                    <span className="text-[#00bfff] drop-shadow-[0_0_15px_rgba(0,191,255,0.4)]">One Developer.</span>
                 </motion.h2>
 
                 <motion.p
@@ -40,7 +47,7 @@ export default function Authority() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: 0.1 }}
                 >
-                    A lot of firms can explain your problem back to you in expensive language. ICUNI Labs is for teams that need the system designed and built around the way the work really happens. The goal is not to make the business sound sophisticated. The goal is to make it run better.
+                    A lot of firms can explain your problem back to you in expensive language. ICUNI Labs is for teams that need the system designed and built around the way the work really happens. From Google Apps Script ERPs to Adobe Premiere extensions to .NET WPF media managers — the goal is not to make the business sound sophisticated. The goal is to make it run better.
                 </motion.p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">

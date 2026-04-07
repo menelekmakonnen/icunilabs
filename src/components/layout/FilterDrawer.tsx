@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Filter, ChevronRight } from 'lucide-react';
 import { useEffect } from 'react';
+import { portfolioProjects } from '../../data/portfolioData';
 
 interface FilterDrawerProps {
     isOpen: boolean;
@@ -91,7 +92,10 @@ export default function FilterDrawer({ isOpen, onClose, availableTags, selectedT
                                     `}
                                 >
                                     <span>All Projects</span>
-                                    {selectedTag === null && <ChevronRight size={16} className="opacity-70" />}
+                                    <span className="flex items-center gap-2">
+                                        <span className={`text-xs ${selectedTag === null ? 'text-blue-200' : 'text-neutral-500'}`}>({portfolioProjects.length})</span>
+                                        {selectedTag === null && <ChevronRight size={16} className="opacity-70" />}
+                                    </span>
                                 </button>
 
                                 {/* Dynamic Tags */}
@@ -108,7 +112,10 @@ export default function FilterDrawer({ isOpen, onClose, availableTags, selectedT
                                         `}
                                     >
                                         <span>{tag}</span>
-                                        {selectedTag === tag && <ChevronRight size={16} className="opacity-70" />}
+                                        <span className="flex items-center gap-2">
+                                            <span className={`text-xs ${selectedTag === tag ? 'text-neutral-600' : 'text-neutral-500'}`}>({portfolioProjects.filter(p => p.tags.includes(tag)).length})</span>
+                                            {selectedTag === tag && <ChevronRight size={16} className="opacity-70" />}
+                                        </span>
                                     </button>
                                 ))}
                             </div>

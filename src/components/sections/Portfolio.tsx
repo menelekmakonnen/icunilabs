@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ExternalLink, Filter, ChevronLeft, ChevronRight, ArrowRight, Search, X } from 'lucide-react';
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { portfolioProjects } from '../../data/portfolioData';
+import { portfolioProjects, TOTAL_PROJECT_COUNT } from '../../data/portfolioData';
 import FilterDrawer from '../layout/FilterDrawer';
 import ScrollNavigation from '../layout/ScrollNavigation';
 
@@ -211,29 +211,6 @@ export default function Portfolio() {
                     </div>
                 </section>
 
-                {/* ====== STICKY TAG FILTER STRIP ====== */}
-                <div className="border-t border-b border-neutral-800/60 bg-neutral-950/90 backdrop-blur-md sticky top-16 z-30">
-                    <div className="max-w-7xl mx-auto px-6 py-3 flex items-center gap-3 overflow-x-auto scrollbar-none">
-                        <button
-                            onClick={() => handleSelectTag(null)}
-                            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${!selectedTag ? 'bg-[#00bfff] text-white shadow-[0_0_10px_rgba(0,191,255,0.3)]' : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700 hover:text-white border border-neutral-800'}`}
-                        >
-                            All ({portfolioProjects.length})
-                        </button>
-                        {availableTags.map(tag => {
-                            const count = portfolioProjects.filter(p => p.tags.includes(tag)).length;
-                            return (
-                                <button
-                                    key={tag}
-                                    onClick={() => handleSelectTag(tag)}
-                                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0 cursor-pointer ${selectedTag === tag ? 'bg-white text-neutral-950 shadow-lg' : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700 hover:text-white border border-neutral-800'}`}
-                                >
-                                    {tag} ({count})
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
 
                 {/* ====== GRID HEADER ====== */}
                 <div ref={gridRef} className="max-w-7xl mx-auto px-6 pt-12 pb-8 scroll-mt-32">
@@ -243,7 +220,7 @@ export default function Portfolio() {
                                 The Work
                             </h1>
                             <p className="text-neutral-500 text-sm">
-                                {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''}{selectedTag ? ` in "${selectedTag}"` : ''}{searchQuery ? ` matching "${searchQuery}"` : ''} — click any card to read the full case study
+                                Showing {filteredProjects.length} of {TOTAL_PROJECT_COUNT}+ projects{selectedTag ? ` in "${selectedTag}"` : ''}{searchQuery ? ` matching "${searchQuery}"` : ''} — click any card to read the full case study
                             </p>
                         </div>
                         {(selectedTag || searchQuery) && (
@@ -311,6 +288,16 @@ export default function Portfolio() {
 
                                                 <h3 className="text-2xl font-bold text-white mb-1 drop-shadow-md">{project.title}</h3>
                                                 <p className="text-xs font-bold text-neutral-400 mb-3 tracking-[0.15em] uppercase drop-shadow-sm">{project.subtitle}</p>
+                                                {project.status && (
+                                                    <span className={`inline-block mb-3 px-2.5 py-1 text-[10px] font-bold rounded-full border uppercase tracking-wider ${
+                                                        project.tier === 'flagship' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' :
+                                                        project.tier === 'production' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                        project.tier === 'spec' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' :
+                                                        'bg-neutral-500/10 text-neutral-400 border-neutral-500/20'
+                                                    }`}>
+                                                        {project.tier === 'flagship' ? '★ ' : ''}{project.status}
+                                                    </span>
+                                                )}
                                                 <p className="text-neutral-300 text-sm leading-relaxed mb-4 flex-grow font-medium line-clamp-3">{project.description}</p>
 
                                                 {/* Hover impact statement */}
