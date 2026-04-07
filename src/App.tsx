@@ -82,11 +82,11 @@ function App() {
       {/* Floating 'Who We Help' trigger */}
       <button
         onClick={() => setPersonaDrawerOpen(true)}
-        className="fixed right-0 top-1/2 translate-y-[4px] z-50 bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 border-r-0 rounded-l-xl px-3 py-6 text-neutral-400 hover:text-white transition-all shadow-xl group cursor-pointer"
+        className="fixed right-0 top-1/2 translate-y-[4px] z-50 bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 border-r-0 rounded-l-xl px-2 py-4 sm:px-3 sm:py-6 text-neutral-400 hover:text-white transition-all shadow-xl group cursor-pointer"
         aria-label="Open Who We Help drawer"
         style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
       >
-        <span className="text-xs font-bold tracking-widest uppercase">Who We Help</span>
+        <span className="text-[10px] sm:text-xs font-bold tracking-widest uppercase">Who We Help</span>
       </button>
 
       <PersonaDrawer isOpen={personaDrawerOpen} onClose={() => setPersonaDrawerOpen(false)} />

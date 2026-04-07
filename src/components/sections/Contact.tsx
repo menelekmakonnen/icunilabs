@@ -124,7 +124,7 @@ export default function Contact() {
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                         />
                                     </div>
-                                    <button type="submit" className="w-full bg-gradient-to-r from-[#00bfff] to-[#0080ff] text-white font-bold py-3 rounded-lg mt-8 shadow-[0_4px_14px_rgba(0,191,255,0.2)] hover:shadow-[0_6px_20px_rgba(0,191,255,0.4)] hover:-translate-y-[1px] transition-all duration-300">
+                                    <button type="submit" className="w-full bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold py-3 rounded-lg mt-8 hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] hover:-translate-y-[1px] transition-all duration-300">
                                         Continue
                                     </button>
                                 </motion.div>
@@ -167,7 +167,7 @@ export default function Contact() {
                                         <button
                                             type="submit"
                                             disabled={isSubmitting}
-                                            className="w-2/3 bg-gradient-to-r from-[#00bfff] to-[#0080ff] text-white font-bold py-3 rounded-lg hover:shadow-[0_6px_20px_rgba(0,191,255,0.4)] hover:-translate-y-[1px] transition-all duration-300 disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none flex justify-center items-center gap-2"
+                                            className="w-2/3 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold py-3 rounded-lg hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] hover:-translate-y-[1px] transition-all duration-300 disabled:opacity-70 disabled:hover:translate-y-0 disabled:hover:shadow-none disabled:hover:bg-transparent flex justify-center items-center gap-2"
                                         >
                                             {isSubmitting ? (
                                                 <>
@@ -216,7 +216,7 @@ export default function Contact() {
                                         <button
                                             type="button"
                                             onClick={() => setStep(4)}
-                                            className="w-full sm:w-auto px-10 py-4 bg-gradient-to-r from-[#00bfff] to-[#0080ff] text-white font-bold rounded-lg hover:shadow-[0_6px_20px_rgba(0,191,255,0.4)] hover:-translate-y-[1px] transition-all duration-300"
+                                            className="w-full sm:w-auto px-10 py-4 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded-lg hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] hover:-translate-y-[1px] transition-all duration-300"
                                         >
                                             I've Selected My Time
                                         </button>

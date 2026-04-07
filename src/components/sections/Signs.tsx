@@ -5,6 +5,7 @@ import {
     RotateCcw, UserCheck, TrendingUp,
     Package, BrainCircuit,
 } from 'lucide-react';
+import ClientPortalSVG from '../animations/ClientPortalSVG';
 
 const signs = [
     { icon: Users, text: "Your team keeps chasing people for updates" },
@@ -43,20 +44,26 @@ export default function Signs() {
                     Most operational problems do not start as disasters. They start as small inefficiencies that quietly become the culture.
                 </motion.p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 mb-14">
-                    {signs.map((sign, index) => (
-                        <motion.div
-                            key={index}
-                            className="flex items-center gap-4 p-4 md:p-5 rounded-lg border border-neutral-800/50 bg-neutral-950/60 backdrop-blur-xl hover:border-neutral-700 transition-colors group"
-                            initial={{ opacity: 0, y: 12 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.35, delay: index * 0.05 }}
-                        >
-                            <sign.icon className="w-5 h-5 text-neutral-600 group-hover:text-[#ff6600] transition-colors shrink-0" />
-                            <span className="text-neutral-300 text-sm md:text-base">{sign.text}</span>
-                        </motion.div>
-                    ))}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-14">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                        {signs.map((sign, index) => (
+                            <motion.div
+                                key={index}
+                                className="flex items-center gap-4 p-4 md:p-5 rounded-lg border border-neutral-800/50 bg-neutral-950/60 backdrop-blur-xl hover:border-neutral-700 transition-colors group"
+                                initial={{ opacity: 0, y: 12 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                viewport={{ once: true }}
+                                transition={{ duration: 0.35, delay: index * 0.05 }}
+                            >
+                                <sign.icon className="w-5 h-5 text-neutral-600 group-hover:text-[#ff6600] transition-colors shrink-0" />
+                                <span className="text-neutral-300 text-sm md:text-base">{sign.text}</span>
+                            </motion.div>
+                        ))}
+                    </div>
+                    
+                    <div className="relative lg:sticky lg:top-24 mt-8 lg:mt-0">
+                        <ClientPortalSVG />
+                    </div>
                 </div>
 
                 <motion.p

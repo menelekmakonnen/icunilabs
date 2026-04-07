@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, FolderOpen, ArrowRight, ExternalLink } from 'lucide-react';
+import { X, ArrowRight, ExternalLink } from 'lucide-react';
 import { portfolioProjects } from '../../data/portfolioData';
 
 export default function PortfolioDrawer() {
@@ -12,11 +12,10 @@ export default function PortfolioDrawer() {
             {/* Toggle Tab — fixed right edge */}
             <button
                 onClick={() => setOpen(true)}
-                className="fixed right-0 top-1/2 -translate-y-[calc(100%+4px)] z-40 flex items-center gap-2 bg-neutral-900/90 backdrop-blur-md border border-neutral-800 border-r-0 rounded-l-lg px-3 py-4 text-neutral-400 hover:text-white hover:bg-neutral-800/90 transition-all shadow-lg cursor-pointer group"
+                className="fixed right-0 top-1/2 -translate-y-[calc(100%+4px)] z-40 flex items-center gap-2 bg-neutral-900/90 backdrop-blur-md border border-neutral-800 border-r-0 rounded-l-lg px-2 py-3 sm:px-3 sm:py-4 text-neutral-400 hover:text-white hover:bg-neutral-800/90 transition-all shadow-lg cursor-pointer group"
                 aria-label="Open Portfolio"
             >
-                <FolderOpen className="w-5 h-5 group-hover:text-[#00bfff] transition-colors" />
-                <span className="text-xs font-bold uppercase tracking-wider [writing-mode:vertical-lr] rotate-180">
+                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider [writing-mode:vertical-lr] rotate-180">
                     Portfolio
                 </span>
             </button>

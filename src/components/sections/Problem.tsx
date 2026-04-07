@@ -15,7 +15,7 @@ export default function Problem() {
                         transition={{ duration: 0.5 }}
                     >
                         We Build{' '}
-                        <span className="text-[#00bfff] drop-shadow-[0_0_15px_rgba(0,191,255,0.4)]">Operations Systems</span>
+                        <span className="text-[#00bfff] drop-shadow-[0_0_15px_rgba(0,191,255,0.4)]">Business Operations Systems</span>
                     </motion.h2>
 
                     <motion.div

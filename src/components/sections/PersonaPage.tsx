@@ -4,6 +4,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { personas, type PersonaData } from '../../data/personaData';
 import MainLayout from '../layout/MainLayout';
 import Contact from './Contact';
+import PersonaChaosSVG from '../animations/PersonaChaosSVG';
 
 interface PersonaPageProps {
     persona: PersonaData;
@@ -69,35 +70,43 @@ export default function PersonaPage({ persona }: PersonaPageProps) {
             </section>
 
             {/* Pain Signals */}
-            <section className="py-20 md:py-28 border-t border-neutral-900 relative bg-neutral-950/90 backdrop-blur-md z-10">
-                <div className="max-w-3xl mx-auto px-6">
-                    <motion.h2
-                        className="text-3xl md:text-4xl font-bold tracking-tight mb-12"
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        {persona.painIntro}
-                    </motion.h2>
-
-                    <div className="space-y-4">
-                        {persona.painSignals.map((signal, i) => (
-                            <motion.div
-                                key={i}
-                                className="flex items-start gap-4 p-5 rounded-lg border border-neutral-800/50 bg-neutral-950/60 backdrop-blur-xl hover:border-neutral-700 transition-colors"
-                                initial={{ opacity: 0, x: -20 }}
-                                whileInView={{ opacity: 1, x: 0 }}
+            <section className="py-20 md:py-28 border-t border-neutral-900 relative bg-neutral-950/90 backdrop-blur-md z-10 overflow-hidden">
+                <div className="max-w-6xl mx-auto px-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+                        <div>
+                            <motion.h2
+                                className="text-3xl md:text-4xl font-bold tracking-tight mb-12"
+                                initial={{ opacity: 0, y: 20 }}
+                                whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
-                                transition={{ duration: 0.4, delay: i * 0.08 }}
+                                transition={{ duration: 0.5 }}
                             >
-                                <span
-                                    className="mt-1 w-2 h-2 rounded-full shrink-0"
-                                    style={{ backgroundColor: persona.accentColor, boxShadow: `0 0 8px ${persona.accentColor}80` }}
-                                />
-                                <p className="text-neutral-300 text-lg italic">"{signal}"</p>
-                            </motion.div>
-                        ))}
+                                {persona.painIntro}
+                            </motion.h2>
+
+                            <div className="space-y-4">
+                                {persona.painSignals.map((signal, i) => (
+                                    <motion.div
+                                        key={i}
+                                        className="flex items-start gap-4 p-5 rounded-lg border border-neutral-800/50 bg-neutral-950/60 backdrop-blur-xl hover:border-neutral-700 transition-colors"
+                                        initial={{ opacity: 0, x: -20 }}
+                                        whileInView={{ opacity: 1, x: 0 }}
+                                        viewport={{ once: true }}
+                                        transition={{ duration: 0.4, delay: i * 0.08 }}
+                                    >
+                                        <span
+                                            className="mt-1 w-2 h-2 rounded-full shrink-0"
+                                            style={{ backgroundColor: persona.accentColor, boxShadow: `0 0 8px ${persona.accentColor}80` }}
+                                        />
+                                        <p className="text-neutral-300 text-lg italic">"{signal}"</p>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div className="relative">
+                            <PersonaChaosSVG accentColor={persona.accentColor} />
+                        </div>
                     </div>
                 </div>
             </section>

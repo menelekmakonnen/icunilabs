@@ -11,6 +11,12 @@ export default function Portfolio() {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [heroIndex, setHeroIndex] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
+    const [sortOption, setSortOption] = useState<'random' | 'a-z' | 'z-a'>('random');
+    
+    // Create a stable random array on mount so it doesn't re-shuffle on every render
+    const [randomizedProjects] = useState(() => {
+        return [...portfolioProjects].sort(() => Math.random() - 0.5);
+    });
     const [selectedTag, setSelectedTag] = useState<string | null>(() => {
         try {
             const hash = window.location.hash;
@@ -33,7 +39,14 @@ export default function Portfolio() {
     }, []);
 
     const filteredProjects = useMemo(() => {
-        let projects = portfolioProjects;
+        let projects = sortOption === 'random' ? randomizedProjects : [...portfolioProjects];
+        
+        if (sortOption === 'a-z') {
+            projects.sort((a, b) => a.title.localeCompare(b.title));
+        } else if (sortOption === 'z-a') {
+            projects.sort((a, b) => b.title.localeCompare(a.title));
+        }
+
         if (selectedTag) {
             projects = projects.filter(p => p.tags.includes(selectedTag));
         }
@@ -47,7 +60,7 @@ export default function Portfolio() {
             );
         }
         return projects;
-    }, [selectedTag, searchQuery]);
+    }, [selectedTag, searchQuery, sortOption, randomizedProjects]);
 
     const handleSelectTag = (tag: string | null) => {
         setSelectedTag(tag);
@@ -113,11 +126,21 @@ export default function Portfolio() {
 
                         <button
                             onClick={() => setIsFilterOpen(true)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs transition-all cursor-pointer ${selectedTag ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/20' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white border border-neutral-700'}`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs transition-all cursor-pointer ${selectedTag ? 'bg-[#00bfff] text-white shadow-lg shadow-[#00bfff]/20' : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white border border-neutral-700'}`}
                         >
                             <Filter size={14} />
                             {selectedTag ? `${selectedTag}` : 'Filter'}
                         </button>
+
+                        <select
+                            value={sortOption}
+                            onChange={(e) => setSortOption(e.target.value as 'random' | 'a-z' | 'z-a')}
+                            className="bg-neutral-800 text-neutral-300 border border-neutral-700 rounded-full px-3 py-2 text-xs font-bold focus:outline-none focus:border-[#00bfff] cursor-pointer"
+                        >
+                            <option value="random">Random</option>
+                            <option value="a-z">A-Z</option>
+                            <option value="z-a">Z-A</option>
+                        </select>
 
                         <span className="font-bold text-[10px] tracking-[0.2em] uppercase text-neutral-500 hidden md:inline-block border-l border-neutral-800 pl-3">
                             Portfolio
@@ -129,8 +152,8 @@ export default function Portfolio() {
             <main className="relative z-10">
 
                 {/* ====== SLIDING HERO CAROUSEL ====== */}
-                <section className="pt-20 relative overflow-hidden">
-                    <div className="relative h-[420px] md:h-[500px]">
+                <section className="relative overflow-hidden">
+                    <div className="relative h-[480px] md:h-[580px] pt-20">
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={currentFeatured.id}
@@ -149,7 +172,7 @@ export default function Portfolio() {
                                 <div className={`absolute inset-0 bg-gradient-to-br ${currentFeatured.color} opacity-20`} />
 
                                 {/* Content */}
-                                <div className="relative z-10 h-full max-w-7xl mx-auto px-6 flex items-center">
+                                <div className="relative z-10 h-full max-w-7xl mx-auto px-6 flex items-center pt-8">
                                     <motion.div
                                         className="max-w-xl"
                                         initial={{ opacity: 0, x: -30 }}
@@ -173,7 +196,7 @@ export default function Portfolio() {
                                         <div className="flex gap-3 items-center">
                                             <a
                                                 href={`#project/${currentFeatured.id}`}
-                                                className="group inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00bfff] to-[#0080ff] shadow-[0_0_20px_rgba(0,191,255,0.25)] text-white font-bold rounded hover:shadow-[0_0_30px_rgba(0,191,255,0.4)] transition-all text-sm"
+                                                className="group inline-flex items-center gap-2 px-6 py-3 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] transition-all text-sm"
                                             >
                                                 Read Case Study
                                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -340,7 +363,7 @@ export default function Portfolio() {
                         </p>
                         <a
                             href="/#contact"
-                            className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#00bfff] to-[#0080ff] shadow-[0_0_20px_rgba(0,191,255,0.25)] text-white font-bold rounded hover:shadow-[0_0_30px_rgba(0,191,255,0.4)] transition-all"
+                            className="group inline-flex items-center gap-2 px-8 py-4 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] transition-all"
                         >
                             Let's Fix the Chaos
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

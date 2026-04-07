@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, ExternalLink, Layers, Rocket, Globe2, Cpu } from 'lucide-react';
-import { useState, useEffect } from 'react';
+
 import { portfolioProjects, TOTAL_PROJECT_COUNT, PRODUCTION_PROJECT_COUNT, ACTIVE_REVENUE_COUNT } from '../../data/portfolioData';
 
 const stats = [
@@ -10,18 +10,16 @@ const stats = [
     { value: '7+', label: 'Platforms', icon: Cpu },
 ];
 
-export default function PortfolioProof() {
-    const [randomProjects, setRandomProjects] = useState<typeof portfolioProjects>([]);
+const initialRandomProjects = (() => {
+    const flagships = portfolioProjects.filter(p => p.tier === 'flagship');
+    const others = portfolioProjects.filter(p => p.tier !== 'flagship');
+    const shuffledOthers = [...others].sort(() => 0.5 - Math.random());
+    const shuffledFlagships = [...flagships].sort(() => 0.5 - Math.random());
+    return [...shuffledFlagships.slice(0, 2), ...shuffledOthers.slice(0, 1)];
+})();
 
-    useEffect(() => {
-        // Prioritize flagship projects for the preview
-        const flagships = portfolioProjects.filter(p => p.tier === 'flagship');
-        const others = portfolioProjects.filter(p => p.tier !== 'flagship');
-        const shuffledOthers = [...others].sort(() => 0.5 - Math.random());
-        const shuffledFlagships = [...flagships].sort(() => 0.5 - Math.random());
-        // Pick 2 flagships + 1 other for variety
-        setRandomProjects([...shuffledFlagships.slice(0, 2), ...shuffledOthers.slice(0, 1)]);
-    }, []);
+export default function PortfolioProof() {
+    const randomProjects = initialRandomProjects;
 
     return (
         <section id="portfolio-proof" className="py-24 md:py-32 border-t border-neutral-900 overflow-hidden relative z-10">
@@ -85,7 +83,7 @@ export default function PortfolioProof() {
 
                         <a
                             href="#portfolio"
-                            className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#00bfff] to-[#0080ff] shadow-[0_0_20px_rgba(0,191,255,0.3)] text-white font-bold rounded hover:shadow-[0_0_30px_rgba(0,191,255,0.5)] transition-all shrink-0"
+                            className="group inline-flex items-center gap-2 px-8 py-4 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] transition-all shrink-0"
                         >
                             Explore the Portfolio
                             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

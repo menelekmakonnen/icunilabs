@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -11,28 +11,12 @@ interface SubheadlineSegment {
 type Subheadline = SubheadlineSegment[];
 
 const allSubheadlines: Subheadline[] = [
-    // Original 8
-    [{ text: "We build the " }, { text: "operations systems", color: "#00bfff" }, { text: " your team actually needs." }],
-    [{ text: "Less chaos. Fewer handoffs. " }, { text: "Better execution.", color: "#ff6600" }],
-    [{ text: "Your workflows are broken. " }, { text: "We fix that.", color: "#00bfff" }],
-    [{ text: "Stop duct-taping processes. Start " }, { text: "building systems.", color: "#ff6600" }],
-    [{ text: "Dashboards, automations, internal tools — " }, { text: "built to run.", color: "#00bfff" }],
-    [{ text: "AI that actually helps. " }, { text: "Not AI that sits in a deck.", color: "#ff6600" }],
-    [{ text: "We replace " }, { text: "spreadsheet chaos", color: "#ff6600" }, { text: " with real infrastructure." }],
-    [{ text: "Your ops shouldn't depend on " }, { text: "one person's memory.", color: "#00bfff" }],
-    // 12 new
-    [{ text: "Hustle got you here. " }, { text: "Systems", color: "#00bfff" }, { text: " get you further." }],
-    [{ text: "We don't sell software. We build " }, { text: "how your team works.", color: "#ff6600" }],
-    [{ text: "Manual processes don't scale. " }, { text: "We do.", color: "#00bfff" }],
-    [{ text: "Your business isn't broken. Your " }, { text: "operations", color: "#ff6600" }, { text: " are." }],
-    [{ text: "We build the layer between " }, { text: "ambition and execution.", color: "#00bfff" }],
-    [{ text: "Good teams, bad systems. " }, { text: "We fix the second part.", color: "#ff6600" }],
-    [{ text: "If your approval flow lives in WhatsApp, " }, { text: "we need to talk.", color: "#00bfff" }],
-    [{ text: "Workflows that " }, { text: "actually workflow.", color: "#ff6600" }],
-    [{ text: "We make ops " }, { text: "invisible.", color: "#00bfff" }, { text: " That's the point." }],
-    [{ text: "No 200-slide decks. " }, { text: "Just working systems.", color: "#ff6600" }],
-    [{ text: "You need fewer meetings. You need " }, { text: "better systems.", color: "#00bfff" }],
-    [{ text: "Built for companies that " }, { text: "move fast", color: "#ff6600" }, { text: " and break ops." }],
+    [{ text: "Custom Business Operations Systems for " }, { text: "scaling companies.", color: "#00bfff" }],
+    [{ text: "Accelerating team execution with " }, { text: "tailored internal tools.", color: "#ff6600" }],
+    [{ text: "Dashboards, automations, and portals—" }, { text: "built to perform.", color: "#00bfff" }],
+    [{ text: "Replacing manual processes with " }, { text: "automated workflows.", color: "#ff6600" }],
+    [{ text: "Custom software that runs your " }, { text: "daily operations natively.", color: "#00bfff" }],
+    [{ text: "We build the systems that teams use to " }, { text: "execute faster.", color: "#ff6600" }],
 ];
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -68,16 +52,14 @@ function renderTypedText(line: Subheadline, charCount: number) {
     return elements;
 }
 
-type Phase = 'typing' | 'blinking' | 'deleting';
+type Phase = 'typing' | 'holding' | 'deleting';
 
 export default function Hero() {
     const [shuffled] = useState(() => shuffleArray(allSubheadlines));
     const [lineIndex, setLineIndex] = useState(0);
     const [charIndex, setCharIndex] = useState(0);
     const [phase, setPhase] = useState<Phase>('typing');
-    const [blinkCount, setBlinkCount] = useState(0);
     const [cursorVisible, setCursorVisible] = useState(true);
-    const blinkTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const currentLine = shuffled[lineIndex];
     const fullLength = flattenLine(currentLine).length;
@@ -88,8 +70,7 @@ export default function Hero() {
             if (charIndex < fullLength) {
                 setCharIndex(prev => prev + 1);
             } else {
-                setPhase('blinking');
-                setBlinkCount(0);
+                setPhase('holding');
                 setCursorVisible(true);
             }
         } else if (phase === 'deleting') {
@@ -107,29 +88,24 @@ export default function Hero() {
             const speed = phase === 'deleting' ? 5 : 8;
             const timer = setTimeout(tick, speed);
             return () => clearTimeout(timer);
+        } else if (phase === 'holding') {
+            // Blink cursor periodically during the 30s hold
+            const blinkTimer = setInterval(() => {
+                setCursorVisible(prev => !prev);
+            }, 400);
+
+            // Wait 30 seconds
+            const holdTimer = setTimeout(() => {
+                setPhase('deleting');
+                setCursorVisible(true);
+            }, 30000);
+
+            return () => {
+                clearInterval(blinkTimer);
+                clearTimeout(holdTimer);
+            };
         }
     }, [tick, phase]);
-
-    // Blinking phase: 3 full blinks (on/off cycles), then start deleting
-    useEffect(() => {
-        if (phase !== 'blinking') return;
-
-        if (blinkCount >= 10) {
-            // 10 toggles = 5 full blinks (~4.5s hold)
-            setCursorVisible(true);
-            setPhase('deleting');
-            return;
-        }
-
-        blinkTimerRef.current = setTimeout(() => {
-            setCursorVisible(prev => !prev);
-            setBlinkCount(prev => prev + 1);
-        }, 400);
-
-        return () => {
-            if (blinkTimerRef.current) clearTimeout(blinkTimerRef.current);
-        };
-    }, [phase, blinkCount]);
 
     return (
         <section id="hero" className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20">
@@ -143,6 +119,15 @@ export default function Hero() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-[#00bfff]/10 to-[#ff6600]/5 blur-[120px] rounded-full pointer-events-none z-0" />
 
             <div className="max-w-4xl mx-auto px-6 relative z-10 text-center flex flex-col items-center">
+
+                {/* SEO Text Block Hidden Visually */}
+                <div className="sr-only">
+                    <h1>From Chaos To System</h1>
+                    <h2>Accepting New Projects</h2>
+                    {allSubheadlines.map((headline, idx) => (
+                        <p key={idx}>{flattenLine(headline)}</p>
+                    ))}
+                </div>
 
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -199,7 +184,7 @@ export default function Hero() {
                 >
                     <a
                         href="#contact"
-                        className="group flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-[#00bfff] to-[#0080ff] shadow-[0_0_20px_rgba(0,191,255,0.3)] text-white font-bold rounded hover:shadow-[0_0_30px_rgba(0,191,255,0.5)] transition-all"
+                        className="group flex items-center justify-center gap-2 px-8 py-4 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] transition-all"
                     >
                         Let's Fix the Chaos!
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

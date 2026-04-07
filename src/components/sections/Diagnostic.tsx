@@ -141,7 +141,7 @@ export default function Diagnostic() {
                                 </p>
                                 <button
                                     onClick={() => setStep(1)}
-                                    className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#00bfff] to-[#0080ff] text-white font-bold rounded hover:shadow-[0_6px_20px_rgba(0,191,255,0.4)] hover:-translate-y-[1px] transition-all"
+                                    className="inline-flex items-center gap-2 px-8 py-4 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] hover:-translate-y-[1px] transition-all"
                                 >
                                     Start Diagnostic
                                     <ArrowRight className="w-4 h-4" />

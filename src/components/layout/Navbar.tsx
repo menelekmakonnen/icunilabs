@@ -4,7 +4,7 @@ import { personas } from '../../data/personaData';
 
 const systemLinks = [
     { title: "From Chaos to System", href: "#hero" },
-    { title: "Operations Systems", href: "#operations-explainer" },
+    { title: "Business Operations Systems", href: "#operations-explainer" },
     { title: "Where we come in", href: "#services" },
     { title: "Best Fit", href: "#who-we-help" },
     { title: "See the Work", href: "#portfolio-proof" },

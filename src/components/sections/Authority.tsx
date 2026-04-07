@@ -1,6 +1,6 @@
 
 import { motion } from 'framer-motion';
-import { Eye, Wrench, Zap, Monitor, Globe2, Code2 } from 'lucide-react';
+import { Eye, Wrench, Zap } from 'lucide-react';
 import { TOTAL_PROJECT_COUNT } from '../../data/portfolioData';
 
 const pillars = [
@@ -18,11 +18,6 @@ const pillars = [
     },
 ];
 
-const techStack = [
-    { icon: Monitor, label: 'Electron Desktop Apps' },
-    { icon: Code2, label: 'VS Code & Chrome Extensions' },
-    { icon: Globe2, label: 'React, Next.js, Vite' },
-];
 
 export default function Authority() {
     return (
