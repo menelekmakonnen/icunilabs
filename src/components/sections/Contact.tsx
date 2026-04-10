@@ -26,23 +26,16 @@ export default function Contact() {
                 const scriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL;
 
                 if (scriptUrl) {
-                    // Real submission to Apps Script
-                    const response = await fetch(scriptUrl, {
+                    // Submit to Apps Script using no-cors mode.
+                    // GAS web apps redirect through googleusercontent.com which
+                    // makes the response opaque — we can't read it, but the
+                    // request still reaches the server and is processed.
+                    await fetch(scriptUrl, {
                         method: 'POST',
                         body: JSON.stringify(formData),
-                        headers: {
-                            'Content-Type': 'text/plain;charset=utf-8', // Bypass CORS preflight for simple requests
-                        }
+                        mode: 'no-cors',
+                        redirect: 'follow',
                     });
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-
-                    const result = await response.json().catch(() => null);
-                    if (result && result.status !== 200) {
-                        throw new Error(result.message || 'Server error from Apps Script');
-                    }
                 } else {
                     // Simulated submission for the demo if URL isn't set yet
                     await new Promise(resolve => setTimeout(resolve, 1500));
