@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
     Monitor, Database, Film, Users, Terminal, LineChart, Aperture, Key, Book,
     LayoutTemplate, GraduationCap, Zap, Scissors,
-    Music, Gamepad2, Workflow, Video, Tv, Eye, Layers, Landmark, Radio,
+    Music, Gamepad2, Video, Eye, Layers, Radio,
     BrainCircuit, Box
 } from 'lucide-react';
 
@@ -28,12 +28,12 @@ export interface ProjectData {
 
 // ─────────────────────────────────────────────────
 // Total portfolio: 56 projects across 4 workspaces
-// Curated selection below: 23 showcase projects
+// Curated selection below: 20 showcase projects
 // ─────────────────────────────────────────────────
 
 export const TOTAL_PROJECT_COUNT = 56;
 export const TOTAL_WORKSPACE_COUNT = 4;
-export const PRODUCTION_PROJECT_COUNT = 10;
+export const PRODUCTION_PROJECT_COUNT = 8;
 export const ACTIVE_REVENUE_COUNT = 8;
 
 export const portfolioProjects: ProjectData[] = [
@@ -151,23 +151,7 @@ export const portfolioProjects: ProjectData[] = [
     // TIER 2 — PRODUCTION / STRONG PROJECTS
     // ═══════════════════════════════════════════
 
-    {
-        id: 'french-embassy',
-        title: 'French Embassy POCC',
-        subtitle: 'Programme Operations Control Center',
-        description: 'An 8-module operations control center designed for a €1M French Embassy programme in Ghana — covering mission dashboards, participant CRM, grant disbursement, budget oversight, and knowledge management.',
-        tags: ['Google Apps Script', 'Enterprise', 'Government'],
-        icon: Landmark,
-        color: 'from-blue-600/20 to-indigo-600/20',
-        border: 'group-hover:border-blue-600/50',
-        imageUrl: '/images/covers/french-embassy.png',
-        status: 'Spec Phase',
-        tier: 'spec',
-        clientProblem: 'The French Embassy in Ghana operates a major programme requiring coordination across participant selection, grant disbursement, budget tracking, communications, and risk management. Without a unified digital operations center, programme administrators struggle with fragmented spreadsheets, disjointed email chains, and zero real-time visibility into programme health.',
-        solution: 'Specified a comprehensive 8-module Programme Operations Control Center: Mission Control Dashboard, Selection & Scoring Engine, Participant CRM, Communications Hub, Grants & Disbursement Tracker, Budget Oversight Module, Reporting Pack Generator, and Knowledge Base/Risk Register. Built on Google Apps Script + Vite React for zero-infrastructure deployment within the Embassy\'s existing Google Workspace.',
-        businessImpact: 'Provides the Embassy with complete programme visibility from a single dashboard. Automates the grant disbursement pipeline, centralizes participant tracking, generates formatted reporting packs on demand, and maintains a living risk register — eliminating the administrative chaos that typically plagues large-scale international development programmes.',
-        expertDeepDive: 'The architecture mirrors enterprise programme management software but runs entirely on Google Workspace. The React + Vite frontend connects to a comprehensive Apps Script backend with modular service architecture. The Selection & Scoring module implements structured rubric-based evaluation. The Grants & Disbursement module tracks committed vs. disbursed funds with approval chains. The Reporting Pack Generator compiles cross-module data into formatted documents for Embassy reporting requirements.',
-    },
+
     {
         id: 'printflow',
         title: 'PrintShop',
@@ -273,23 +257,7 @@ export const portfolioProjects: ProjectData[] = [
         businessImpact: 'Directly solves a universal pain point for every Antigravity user. Live countdowns eliminate guesswork. Multi-account tracking enables strategic rotation. Desktop notifications mean developers can work on other tasks and get alerted the instant their AI quota refreshes.',
         expertDeepDive: 'The client uses React with live-updating countdown timers synced to server-side SQLite timestamps. The Express backend provides a REST API for account CRUD operations with bulk import capabilities. Dynamic port management scans for available ports to prevent localhost collisions — critical for developers already running multiple dev servers. Desktop notifications use the Notification API with permission management.',
     },
-    {
-        id: 'screener',
-        title: 'Screener',
-        subtitle: 'Multi-Monitor Video Wall',
-        description: 'An Electron application that manages synchronized VLC instances across multiple monitors — providing a programmable video wall controller for live events, exhibitions, and immersive installations.',
-        tags: ['Electron', 'Creative Tools', 'Media & Entertainment'],
-        icon: Tv,
-        color: 'from-cyan-500/20 to-blue-500/20',
-        border: 'group-hover:border-cyan-500/50',
-        imageUrl: '/images/covers/screener.png',
-        status: 'v1.0.0',
-        tier: 'production',
-        clientProblem: 'Live events, galleries, and exhibitions require synchronized video playback across multiple monitors to create immersive visual installations. Existing solutions require expensive proprietary hardware or complex media server setups that are inaccessible to independent event producers and artists.',
-        solution: 'Built Screener as a desktop application that manages VLC instances across any number of connected monitors using node-window-manager for precise window positioning and sizing. File watching via chokidar enables live content updates, and electron-store provides persistent configuration across sessions.',
-        businessImpact: 'Democratizes multi-monitor video wall installations. Event producers and artists can create synchronized video experiences using consumer hardware and a simple desktop app — no expensive media servers or proprietary equipment required.',
-        expertDeepDive: 'The architecture uses Electron to spawn and position VLC instances via node-window-manager, which provides native window manipulation capabilities (position, size, z-order, fullscreen per monitor). chokidar watches content directories for real-time file updates — new videos are automatically picked up and added to the rotation. electron-store persists monitor configurations, playlist orders, and playback settings.',
-    },
+
     {
         id: 'gramer',
         title: 'Gramer',
@@ -449,23 +417,7 @@ export const portfolioProjects: ProjectData[] = [
         businessImpact: 'Gives creative professionals unlimited AI video generation with zero per-generation costs, zero content restrictions, and complete privacy. Running a 14B parameter model locally demonstrates the viability of local-first AI creative tools for professionals with appropriate hardware.',
         expertDeepDive: 'The Python backend manages the Wan2.1 14B model pipeline — one of the largest consumer-runnable video generation models. The inference pipeline handles text-to-video and image-to-video conditioning. Post-processing includes Real-ESRGAN 4K upscaling, RIFE 60fps frame interpolation, and GFPGAN/CodeFormer face restoration. The React frontend provides prompt management, generation queuing, and result preview. Optimized for RTX 4090 VRAM management with automatic precision scaling.',
     },
-    {
-        id: 'aladies',
-        title: 'Aladies',
-        subtitle: 'N8N Workflow Automation Library',
-        description: 'A curated collection of 14 production-ready N8N automation workflows covering AI agents, webhooks, social media automation, Telegram bots, Google Workspace automation, and prompt injection defense.',
-        tags: ['N8N', 'Automation', 'AI Architecture'],
-        icon: Workflow,
-        color: 'from-orange-500/20 to-red-500/20',
-        border: 'group-hover:border-orange-500/50',
-        imageUrl: '/images/covers/aladies.png',
-        status: 'Production (14 workflows)',
-        tier: 'production',
-        clientProblem: 'Building robust automation workflows from scratch is time-consuming and error-prone. Teams need proven, production-tested workflow templates that cover common automation patterns — from AI agent orchestration to social media scheduling to webhook processing — without reinventing the wheel.',
-        solution: 'Curated Aladies as a library of 14 battle-tested N8N workflow JSON files, each covering a distinct automation pattern. The collection includes AI agent workflows, webhook processing pipelines, social media automation sequences, Telegram bot configurations, Google Workspace automation chains, and a dedicated prompt injection defense workflow.',
-        businessImpact: 'Provides instant, production-ready automation templates that can be imported into any N8N instance. The prompt injection defense workflow addresses a critical security concern for AI-powered automation. Each workflow represents hours of development and debugging already completed.',
-        expertDeepDive: 'The 14 workflows are exported as standard N8N JSON, enabling one-click import into any N8N instance. Workflows use N8N\'s node system with proper error handling, retry logic, and conditional branching. The AI agent workflows implement structured tool-use patterns. The prompt injection defense workflow includes input sanitization and output validation stages.',
-    },
+
     {
         id: 'flowlink',
         title: 'FlowLink',
