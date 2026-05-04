@@ -28,12 +28,12 @@ export interface ProjectData {
 
 // ─────────────────────────────────────────────────
 // Total portfolio: 56 projects across 4 workspaces
-// Curated selection below: 26 showcase projects
+// Curated selection below: 23 showcase projects
 // ─────────────────────────────────────────────────
 
 export const TOTAL_PROJECT_COUNT = 56;
 export const TOTAL_WORKSPACE_COUNT = 4;
-export const PRODUCTION_PROJECT_COUNT = 12;
+export const PRODUCTION_PROJECT_COUNT = 10;
 export const ACTIVE_REVENUE_COUNT = 8;
 
 export const portfolioProjects: ProjectData[] = [
@@ -186,23 +186,7 @@ export const portfolioProjects: ProjectData[] = [
         businessImpact: 'Unified the entire administrative overhead of the studio, eliminating scattered spreadsheets. Management now has immediate, real-time oversight over inventory supply lines and unit economics. Job fulfillment speed increased dramatically with automated queue management and integrated expense tracking.',
         expertDeepDive: 'The architecture employs Next.js 16 App Router with a comprehensive API layer connecting to Google Apps Script backends. Complex relational data links active print jobs directly to inventory consumption and automated accounting ledgers. The frontend uses React 19 paradigms for a highly responsive dashboard, handling massive operational datasets with dynamic queuing. Authentication uses bcryptjs + JWT with cookie-based session management. The system underwent a full rebranding from PrintFlow to PrintShop, demonstrating mature lifecycle management.',
     },
-    {
-        id: 'leti-arts',
-        title: 'Leti Arts Website',
-        subtitle: 'Full Website Rebuild — Google Sheets CMS',
-        description: 'A complete website rebuild for Africa\'s pioneering game development studio (makers of Karmzah, featured in Fortnite) — powered entirely by a Google Sheets CMS with 11 data tabs and zero plugin dependencies.',
-        tags: ['HTML/CSS/JS', 'Web Design', 'Google Apps Script'],
-        icon: Globe,
-        color: 'from-emerald-500/20 to-green-600/20',
-        border: 'group-hover:border-emerald-500/50',
-        imageUrl: '/images/covers/leti-arts.png',
-        status: 'Spec Phase',
-        tier: 'spec',
-        clientProblem: 'Leti Arts, Africa\'s first and most prominent game development studio, needed a website that their non-technical team could update without developer intervention. Their existing site suffered from WordPress plugin rot, slow load times for African mobile users, and required constant developer maintenance for content changes.',
-        solution: 'Specified a complete website rebuild from a 58KB specification document covering 8 site sections with pixel-level detail. The entire CMS operates through 11 Google Sheets tabs (SiteConfig, Navigation, Games, BlogPosts, Careers, TeamMembers, Testimonials, ConsultingClients, InternshipAreas, Stats, HeroSlides). A single Apps Script Web App serves 12 GET actions + 3 POST actions with CacheService integration for TTL-configurable caching.',
-        businessImpact: 'Delivers a sub-2-second load time on 3G networks — critical for African mobile users. The Google Sheets CMS means the marketing team updates content exactly like editing a spreadsheet. Zero WordPress, zero plugin rot, zero security updates, zero monthly hosting costs. The blog engine uses Google Docs as content source, fetched via Apps Script.',
-        expertDeepDive: 'The architecture is pure HTML/CSS/JS with zero framework overhead in the deployed site. The API layer uses a single Apps Script Web App with routing logic that dispatches to 15 action handlers. CacheService TTL is configurable per action type — game listings cache longer than blog posts. The blog engine fetches Google Docs content via Apps Script DocumentApp, converting rich text to HTML. Static assets are served from Google Drive with CDN-style caching headers.',
-    },
+
     {
         id: 'osa',
         title: 'OSA',
@@ -249,28 +233,12 @@ export const portfolioProjects: ProjectData[] = [
         imageUrl: '/images/covers/reconcile-pro.png',
         status: 'Shipped & Distributed',
         tier: 'production',
-        clientProblem: 'Human resources and financial auditing teams at iAdjoa (an NGO) routinely faced the daunting task of manually comparing disparate legacy payroll lists. Misspelled entries, inconsistent formatting, and disjointed database exports turned weekly reconciliation into exhausting, error-prone marathon spreadsheet sessions.',
+        clientProblem: 'Human resources and financial auditing teams at an NGO routinely faced the daunting task of manually comparing disparate legacy payroll lists. Misspelled entries, inconsistent formatting, and disjointed database exports turned weekly reconciliation into exhausting, error-prone marathon spreadsheet sessions.',
         solution: 'Delivered the Payroll Data Reconciliation System as a proper shipped desktop application with better-sqlite3 for local data persistence, custom iconography (285KB .ico), NSIS installer for distribution, and bundled sample datasets for testing. The application intelligently maps overlapping or mismatched data points and generates truth-merged payroll outputs in minutes.',
         businessImpact: 'Dramatically accelerated weekly auditing sprints, eliminating severe human-error liabilities from the reconciliation equation. Financial personnel were freed to focus on higher-level analytical tasks instead of cross-referencing spreadsheet rows. This is a properly shipped, distributed desktop application — not a prototype.',
         expertDeepDive: 'The engineering prioritized strict data fidelity and rapid cross-referencing. The Electron shell provides native OS integration for file handling, while better-sqlite3 ensures high-performance local data persistence. The matching engine uses fuzzy string comparison to catch misspelled entries and format-normalized comparison for different date/number formats. The bundled sample data enables immediate testing without requiring sensitive real payroll data during deployment.',
     },
-    {
-        id: 'wi-flix',
-        title: 'Wi-Flix ReadyPro',
-        subtitle: 'Content Operations System',
-        description: 'A comprehensive content operations system designed for Wi-Flix, an African streaming platform — specified in a 60KB product document covering the entire content lifecycle from ingestion to distribution.',
-        tags: ['Enterprise', 'Media & Entertainment', 'Corporate Solutions'],
-        icon: Tv,
-        color: 'from-red-500/20 to-rose-600/20',
-        border: 'group-hover:border-red-500/50',
-        imageUrl: '/images/covers/wi-flix.png',
-        status: 'Spec Phase (60KB spec)',
-        tier: 'spec',
-        clientProblem: 'Wi-Flix, a growing African streaming platform, needs to manage the entire lifecycle of content — from acquisition and rights management through metadata tagging, quality control, and distribution scheduling. Without a unified operations system, content teams coordinate through scattered tools, creating bottlenecks that delay releases and risk rights compliance violations.',
-        solution: 'Produced a comprehensive 60KB product specification for ReadyPro, designed as the operational backbone of the streaming platform. The system covers content ingestion workflows, rights management with expiry tracking, metadata standardization, quality control checkpoints, scheduling engines, and distribution pipeline management.',
-        businessImpact: 'Designed to eliminate content pipeline fragmentation for an entire streaming platform. Structured rights management prevents costly compliance violations. Automated quality control checkpoints catch issues before content goes live. The scheduling engine enables strategic release timing across the platform\'s content catalogue.',
-        expertDeepDive: 'The 60KB specification represents one of the most detailed product documents in the portfolio, covering database schemas, API endpoint designs, UI interaction flows, and edge case handling for the full content operations lifecycle. The architecture is designed for the unique challenges of African streaming — intermittent connectivity, mobile-first consumption, and multi-language metadata requirements.',
-    },
+
     {
         id: 'leroom',
         title: 'LeRoom',
@@ -532,21 +500,5 @@ export const portfolioProjects: ProjectData[] = [
         businessImpact: 'Brought real-time inventory visibility to the warehouse operation, eliminating stockouts and reducing overstocking. Automated reorder alerts ensure supplies are replenished before they run out. Management can pull instant inventory reports without manual counting.',
         expertDeepDive: 'The Google Apps Script architecture uses a three-part design: client-side HTML/JS for the user interface, server-side .gs files for business logic, and webapp deployment for external access. Google Sheets serves as the database with structured inventory tables. Trigger-based automation monitors stock levels and fires email alerts when thresholds are breached.',
     },
-    {
-        id: 'iadjoa',
-        title: 'iAdjoa Initiative',
-        subtitle: 'NGO Web Platform',
-        description: 'A modern web platform for the iAdjoa Initiative — an NGO focused on community development — featuring React 19, Framer Motion animations, and a professional presentation of the organization\'s mission and impact.',
-        tags: ['React', 'Web Design', 'Community'],
-        icon: Globe,
-        color: 'from-teal-500/20 to-emerald-500/20',
-        border: 'group-hover:border-teal-500/50',
-        imageUrl: '/images/covers/iadjoa.png',
-        status: 'Deployed',
-        tier: 'production',
-        clientProblem: 'The iAdjoa Initiative needed a professional digital presence to communicate their mission, attract donors, and report on community development impact. Their existing web presence was inadequate for building the credibility required to secure partnerships and funding.',
-        solution: 'Deployed a modern web platform built with Vite + React 19 + Framer Motion, featuring smooth scroll animations, compelling impact storytelling, and a professional design system that conveys the organization\'s credibility and mission effectively.',
-        businessImpact: 'Established iAdjoa\'s professional online presence, enabling stronger donor engagement and partnership development. The polished presentation directly supports the organization\'s credibility when approaching potential funders and collaborators.',
-        expertDeepDive: 'Built with Vite + React 19 leveraging the latest React features. Framer Motion provides smooth scroll-triggered animations and page transitions. The design system prioritizes accessibility and fast load times — critical for an NGO\'s diverse audience across varying connection speeds.',
-    },
+
 ];
