@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import {
     Monitor, Database, Film, Users, Terminal, LineChart, Aperture, Key, Book,
-    LayoutTemplate, GraduationCap, Zap, Globe, Scissors,
+    LayoutTemplate, GraduationCap, Zap, Scissors,
     Music, Gamepad2, Workflow, Video, Tv, Eye, Layers, Landmark, Radio,
     BrainCircuit, Box
 } from 'lucide-react';
