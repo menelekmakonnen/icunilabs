@@ -12,6 +12,7 @@ import Method from './components/sections/Method';
 import Authority from './components/sections/Authority';
 import Contact from './components/sections/Contact';
 import ClientPortal from './components/portal/ClientPortal';
+import ReferralPortal from './components/portal/ReferralPortal';
 import Portfolio from './components/sections/Portfolio';
 import ProjectDetail from './components/sections/ProjectDetail';
 import PersonaPage from './components/sections/PersonaPage';
@@ -34,6 +35,10 @@ function App() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  if (currentHash === '#referral') {
+    return <ReferralPortal />;
+  }
 
   if (currentHash === '#portal') {
     return <ClientPortal />;

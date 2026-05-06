@@ -153,6 +153,7 @@ export default function Navbar() {
                     </div>
 
                     <a href="#portfolio" className="hover:text-neutral-50 transition-colors">Portfolio</a>
+                    <a href="#referral" className="hover:text-neutral-50 transition-colors bg-gradient-to-r from-[#ff6600] to-[#ff8833] bg-clip-text text-transparent font-semibold">Refer & Earn</a>
                 </nav>
 
                 {/* CTA + Mobile Toggle */}
@@ -203,6 +204,7 @@ export default function Navbar() {
                     </div>
 
                     <a href="#portfolio" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Portfolio</a>
+                    <a href="#referral" className="py-3 hover:text-white transition-colors border-b border-neutral-900 bg-gradient-to-r from-[#ff6600] to-[#ff8833] bg-clip-text text-transparent font-semibold" onClick={() => setMobileOpen(false)}>Refer & Earn</a>
 
                     {/* Who We Help sub-section */}
                     <div className="py-3 border-b border-neutral-900">
