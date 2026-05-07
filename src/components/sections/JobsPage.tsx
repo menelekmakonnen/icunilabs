@@ -1,12 +1,34 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Clock, DollarSign, Send, ChevronRight, Briefcase, Mic, Square, Upload, FileText, Eye, EyeOff, Video } from 'lucide-react';
-import { AboutSVG, RequirementsSVG, BenefitsSVG, BulletCheck, BulletStar, TabToggle } from './JobsSVG';
+import { AboutSVG, RequirementsSVG, BenefitsSVG, TabToggle } from './JobsSVG';
 import QualificationFlow from './QualificationFlow';
 
 const API = import.meta.env.VITE_APPS_SCRIPT_URL;
 const inp = "w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00bfff] focus:ring-1 focus:ring-[#00bfff] transition-all placeholder:text-neutral-600";
 const card = "bg-neutral-950/60 backdrop-blur-xl border border-neutral-800 rounded-xl relative overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)]";
+const ic = "w-5 h-5 flex-shrink-0 mt-0.5";
+
+/* Unique requirement icons */
+const reqIcons = [
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><path d="M14 3a2 2 0 012 2v2l-3 3-2-2-4 4-3-3" stroke="#00bfff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="10" cy="15" r="2" stroke="#00bfff" strokeWidth="1.2"/></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><path d="M3 14l4-4 3 3 7-7" stroke="#00bfff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><rect x="2" y="3" width="16" height="14" rx="2" stroke="#00bfff" strokeWidth="1.2"/></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><path d="M5 4h2l1 3-1.5 1.5a8 8 0 004 4L12 11l3 1v2a2 2 0 01-2 2A12 12 0 013 6a2 2 0 012-2z" stroke="#00bfff" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1" stroke="#00bfff" strokeWidth="1.2"/><rect x="11" y="3" width="6" height="6" rx="1" stroke="#00bfff" strokeWidth="1.2"/><rect x="3" y="11" width="6" height="6" rx="1" stroke="#00bfff" strokeWidth="1.2"/><rect x="11" y="11" width="6" height="6" rx="1" stroke="#00bfff" strokeWidth="1.2"/></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#00bfff" strokeWidth="1.2"/><path d="M7 10.5l2 2 4-4" stroke="#00bfff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><path d="M10 2L10 18M10 2l3 3M10 2L7 5" stroke="#00bfff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="10" cy="14" r="4" stroke="#00bfff" strokeWidth="1.2"/></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><path d="M4 17l3-8 6 3-9 5z" fill="#00bfff" fillOpacity="0.15" stroke="#00bfff" strokeWidth="1.2" strokeLinejoin="round"/><circle cx="13" cy="7" r="4" stroke="#00bfff" strokeWidth="1.2"/><path d="M11.5 5.5l1.5 1.5 2-2" stroke="#00bfff" strokeWidth="1" strokeLinecap="round"/></svg>,
+];
+
+/* Unique benefit icons */
+const benIcons = [
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#ff7a00" strokeWidth="1.2"/><text x="10" y="13" textAnchor="middle" fill="#ff7a00" fontSize="8" fontWeight="bold">$</text></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><path d="M3 16l4-5 3 3 4-6 3 4" stroke="#ff7a00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><text x="10" y="14" textAnchor="middle" fill="#ff7a00" fontSize="10" fontWeight="bold">%</text><circle cx="10" cy="10" r="7" stroke="#ff7a00" strokeWidth="1.2"/></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3" stroke="#ff7a00" strokeWidth="1.2"/><path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="#ff7a00" strokeWidth="1.2" strokeLinecap="round"/><path d="M14 5l1.5-2M15.5 3l1 1" stroke="#ff7a00" strokeWidth="1" strokeLinecap="round"/></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="12" rx="2" stroke="#ff7a00" strokeWidth="1.2"/><path d="M6 9h3M6 12h5" stroke="#ff7a00" strokeWidth="1" strokeLinecap="round"/><circle cx="14" cy="9" r="1.5" fill="#ff7a00" fillOpacity="0.4"/></svg>,
+  <svg className={ic} viewBox="0 0 20 20" fill="none"><path d="M10 3v6l3 3" stroke="#ff7a00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 13l-2 4h12l-2-4" stroke="#ff7a00" strokeWidth="1.2" strokeLinecap="round"/><path d="M10 3l1.5-1M10 3L8.5 2" stroke="#ff7a00" strokeWidth="1" strokeLinecap="round"/></svg>,
+];
 
 const jobs = [{
   id:'ops-assistant-001', title:'Operations Assistant', type:'Full-Time', location:'Accra, Ghana',
@@ -137,7 +159,7 @@ function Detail({job}:{job:typeof jobs[0]}){
         <div className="grid md:grid-cols-[1fr_280px] gap-10">
           {/* Main content */}
           <div className="space-y-16 min-w-0">
-            {/* About - visual cards instead of wall of text */}
+            {/* About - Chat/message interface */}
             <section className="relative">
               <AboutSVG/>
               <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
@@ -145,29 +167,48 @@ function Detail({job}:{job:typeof jobs[0]}){
                   <span className="w-8 h-8 rounded-lg bg-[#00bfff]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#00bfff]"/></span>
                   About This Role
                 </h2>
-                <div className="space-y-4">
-                  {/* Lead paragraph - featured callout */}
-                  <div className="rounded-xl bg-gradient-to-br from-[#00bfff]/5 to-transparent border border-[#00bfff]/10 p-6">
-                    <p className="text-neutral-200 leading-[1.9] text-[15px]">{job.fullDescription[0]}</p>
+                {/* Chat interface */}
+                <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 overflow-hidden">
+                  {/* Chat header */}
+                  <div className="flex items-center gap-3 px-5 py-3 bg-neutral-900/80 border-b border-neutral-800">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#00bfff] to-[#0066cc] flex items-center justify-center text-white text-xs font-black">IL</div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">ICUNI Labs</p>
+                      <p className="text-[10px] text-[#10b981]">Online now</p>
+                    </div>
                   </div>
-                  {/* Remaining paragraphs as alternating styled blocks */}
-                  {job.fullDescription.slice(1).map((p,i)=>{
-                    const sentences = p.split('. ');
-                    const lead = sentences[0] + '.';
-                    const rest = sentences.slice(1).join('. ');
-                    return(
-                      <div key={i} className={`rounded-xl p-5 ${i%2===0?'bg-neutral-900/40 border border-neutral-800/50':'bg-neutral-950/40 border border-neutral-900/50'}`}>
-                        <p className="text-neutral-200 leading-[1.9] text-[15px]">
-                          <span className="text-white font-medium">{lead}</span>{rest?' '+rest:''}
-                        </p>
-                      </div>
-                    );
-                  })}
+                  {/* Messages */}
+                  <div className="p-4 space-y-3 min-h-[200px]">
+                    {job.fullDescription.map((msg,i)=>(
+                      <motion.div key={i}
+                        initial={{opacity:0,y:20,scale:0.95}}
+                        whileInView={{opacity:1,y:0,scale:1}}
+                        viewport={{once:true,margin:'-20px'}}
+                        transition={{duration:0.4,delay:i*0.15,ease:'easeOut'}}
+                        className="max-w-[88%]"
+                      >
+                        <div className={`relative px-4 py-3 rounded-2xl rounded-bl-md text-[14px] leading-[1.7] ${
+                          i===0?'bg-gradient-to-br from-[#00bfff]/15 to-[#0066cc]/10 border border-[#00bfff]/15 text-neutral-100'
+                          :'bg-neutral-800/60 border border-neutral-700/30 text-neutral-300'
+                        }`}>
+                          {msg}
+                        </div>
+                        <p className="text-[10px] text-neutral-600 mt-1 ml-2">{i===0?'Just now':i===1?'1m ago':`${i}m ago`}</p>
+                      </motion.div>
+                    ))}
+                    {/* Typing indicator */}
+                    <motion.div initial={{opacity:0}} whileInView={{opacity:1}} viewport={{once:true}} transition={{delay:job.fullDescription.length*0.15}}
+                      className="flex gap-1 px-4 py-3 w-16 rounded-2xl rounded-bl-md bg-neutral-800/40 border border-neutral-700/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 animate-bounce" style={{animationDelay:'0ms'}}/>
+                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 animate-bounce" style={{animationDelay:'150ms'}}/>
+                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 animate-bounce" style={{animationDelay:'300ms'}}/>
+                    </motion.div>
+                  </div>
                 </div>
               </motion.div>
             </section>
 
-            {/* Requirements */}
+            {/* Requirements - Paper unfolding */}
             <section className="relative">
               <RequirementsSVG/>
               <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
@@ -175,22 +216,24 @@ function Detail({job}:{job:typeof jobs[0]}){
                   <span className="w-8 h-8 rounded-lg bg-[#00bfff]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#00bfff]"/></span>
                   What We Need From You
                 </h2>
-                <ul className="space-y-3 pl-11">
-                  {job.requirements.map((r,i)=><li key={i} className="flex items-start gap-3 text-neutral-300 text-[15px] leading-relaxed"><BulletCheck/>{r}</li>)}
-                </ul>
+                <div className="space-y-2">
+                  {job.requirements.map((r,i)=>(
+                    <motion.div key={i}
+                      initial={{opacity:0,scaleY:0,originY:0}}
+                      whileInView={{opacity:1,scaleY:1}}
+                      viewport={{once:true,margin:'-10px'}}
+                      transition={{duration:0.4,delay:i*0.08,ease:[0.25,0.46,0.45,0.94]}}
+                      className="flex items-start gap-3 px-5 py-3.5 rounded-xl bg-neutral-900/40 border border-neutral-800/40 text-neutral-300 text-[15px] leading-relaxed origin-top"
+                    >
+                      {reqIcons[i] || reqIcons[0]}
+                      <span>{r}</span>
+                    </motion.div>
+                  ))}
+                </div>
               </motion.div>
             </section>
 
-            {/* CTA #2 - mid-page banner */}
-            <motion.div initial={{opacity:0,scale:0.97}} whileInView={{opacity:1,scale:1}} viewport={{once:true}}
-              className="relative rounded-2xl overflow-hidden p-8 md:p-12 text-center bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 border border-neutral-800">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,191,255,0.05),transparent_70%)]"/>
-              <h3 className="text-2xl font-bold mb-2 relative z-10">Sound like you?</h3>
-              <p className="text-neutral-400 mb-6 relative z-10">We move fast. Apply now and hear back within days.</p>
-              <div className="relative z-10"><ApplyBtn jobId={job.id}/></div>
-            </motion.div>
-
-            {/* Benefits */}
+            {/* Benefits - Paper unfolding */}
             <section className="relative">
               <BenefitsSVG/>
               <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
@@ -198,11 +241,31 @@ function Detail({job}:{job:typeof jobs[0]}){
                   <span className="w-8 h-8 rounded-lg bg-[#ff7a00]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#ff7a00]"/></span>
                   What You Get
                 </h2>
-                <ul className="space-y-3 pl-11">
-                  {job.benefits.map((b,i)=><li key={i} className="flex items-start gap-3 text-neutral-300 text-[15px] leading-relaxed"><BulletStar/>{b}</li>)}
-                </ul>
+                <div className="space-y-2">
+                  {job.benefits.map((b,i)=>(
+                    <motion.div key={i}
+                      initial={{opacity:0,scaleY:0,originY:0}}
+                      whileInView={{opacity:1,scaleY:1}}
+                      viewport={{once:true,margin:'-10px'}}
+                      transition={{duration:0.4,delay:i*0.08,ease:[0.25,0.46,0.45,0.94]}}
+                      className="flex items-start gap-3 px-5 py-3.5 rounded-xl bg-neutral-900/40 border border-neutral-800/40 text-neutral-300 text-[15px] leading-relaxed origin-top"
+                    >
+                      {benIcons[i] || benIcons[0]}
+                      <span>{b}</span>
+                    </motion.div>
+                  ))}
+                </div>
               </motion.div>
             </section>
+
+            {/* CTA - after benefits */}
+            <motion.div initial={{opacity:0,scale:0.97}} whileInView={{opacity:1,scale:1}} viewport={{once:true}}
+              className="relative rounded-2xl overflow-hidden p-8 md:p-12 text-center bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 border border-neutral-800">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,191,255,0.05),transparent_70%)]"/>
+              <h3 className="text-2xl font-bold mb-2 relative z-10">Sound like you?</h3>
+              <p className="text-neutral-400 mb-6 relative z-10">We move fast. Apply now and hear back within days.</p>
+              <div className="relative z-10"><ApplyBtn jobId={job.id}/></div>
+            </motion.div>
           </div>
 
           {/* Sidebar - desktop only */}
