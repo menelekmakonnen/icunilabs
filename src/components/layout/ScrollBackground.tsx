@@ -6,8 +6,8 @@ import { useRef, useMemo } from 'react';
  * ScrollBackground Component - "Chaos to System" (Holographic HUD Edition)
  * 
  * Narrative:
- * 1. Top: Visible white papers (Chaos).
- * 2. Transition: They digitize/morph.
+ * 1. Top: Floating papers, WhatsApp chats, chaos elements drift around.
+ * 2. Transition: They digitize/morph as user scrolls.
  * 3. Bottom: Full Holographic System Interface (HUD style).
  */
 export default function ScrollBackground() {
@@ -22,37 +22,47 @@ export default function ScrollBackground() {
 
     // Generate Layout Data (The "System" Dashboard)
     const systemLayouts = [
-        { l: 15, t: 20, w: 70, h: 10, type: 'header' },  // Top Bar (Span full width of grid)
-        { l: 15, t: 35, w: 15, h: 35, type: 'sidebar' }, // Left Sidebar
-        { l: 35, t: 35, w: 30, h: 35, type: 'module' },  // Center Main
-        { l: 70, t: 35, w: 15, h: 35, type: 'module' },  // Right Sidebar
-        { l: 15, t: 75, w: 70, h: 10, type: 'footer' },  // Bottom Bar
+        { l: 15, t: 20, w: 70, h: 10, type: 'header' },
+        { l: 15, t: 35, w: 15, h: 35, type: 'sidebar' },
+        { l: 35, t: 35, w: 30, h: 35, type: 'module' },
+        { l: 70, t: 35, w: 15, h: 35, type: 'module' },
+        { l: 15, t: 75, w: 70, h: 10, type: 'footer' },
     ];
 
     const papers = useMemo(() => {
         return systemLayouts.map((layout, i) => ({
             id: i,
             isSystem: true,
-            // CHAOS: Scattered white papers, centered more, pseudo-random to avoid hydration mismatch
-            initialLeft: (Math.sin(i * 123.45) * 0.5 + 0.5) * 50 + 25, // Centered between 25% and 75%
+            initialLeft: (Math.sin(i * 123.45) * 0.5 + 0.5) * 50 + 25,
             initialTop: (Math.cos(i * 321.12) * 0.5 + 0.5) * 70 + 5,
             initialRotate: Math.sin(i * 456.78) * 45,
-
-            // SYSTEM: Targeted layout
             finalLeft: layout.l,
             finalTop: layout.t,
             finalWidth: layout.w,
             finalHeight: layout.h,
-            type: layout.type
+            type: layout.type,
+            // Unique float params for idle animation
+            floatDuration: 6 + (i % 3) * 2,
+            floatX: 8 + (i % 4) * 4,
+            floatY: 6 + (i % 3) * 3,
+            floatDelay: i * 0.8,
         }));
     }, []);
 
-    // Connect the transformation to the majority of the page scroll.
-    // Map the first 85% of the page scroll to the full 100% of the animation.
-    const systemProgress = useTransform(smoothProgress, [0, 0.85], [0, 1]);
+    // Chaos elements (WhatsApp chats, notifications, sticky notes)
+    const chaosItems = useMemo(() => [
+        { id: 'wa1', type: 'whatsapp', x: 12, y: 15, dur: 7, dx: 10, dy: 8, rot: -12 },
+        { id: 'wa2', type: 'whatsapp', x: 72, y: 25, dur: 8, dx: -8, dy: 12, rot: 8 },
+        { id: 'wa3', type: 'whatsapp', x: 45, y: 65, dur: 9, dx: 12, dy: -6, rot: -5 },
+        { id: 'n1', type: 'sticky', x: 82, y: 55, dur: 7.5, dx: -6, dy: 10, rot: 15 },
+        { id: 'n2', type: 'sticky', x: 8, y: 70, dur: 6.5, dx: 8, dy: -8, rot: -20 },
+        { id: 'e1', type: 'email', x: 60, y: 10, dur: 8.5, dx: -10, dy: 6, rot: 6 },
+        { id: 'e2', type: 'email', x: 25, y: 80, dur: 7, dx: 6, dy: -10, rot: -8 },
+    ], []);
 
-    // Global Opacity Control
+    const systemProgress = useTransform(smoothProgress, [0, 0.85], [0, 1]);
     const gridOpacity = useTransform(systemProgress, [0.5, 1], [0, 1]);
+    const chaosOpacity = useTransform(systemProgress, [0, 0.3], [1, 0]);
 
     return (
         <div
@@ -72,10 +82,30 @@ export default function ScrollBackground() {
                 </svg>
             </div>
 
+            {/* FLOATING CHAOS ELEMENTS (WhatsApp chats, emails, sticky notes) */}
+            {chaosItems.map((c) => (
+                <motion.div key={c.id}
+                    className="absolute"
+                    style={{
+                        left: `${c.x}%`, top: `${c.y}%`,
+                        opacity: chaosOpacity,
+                    }}
+                    animate={{
+                        x: [0, c.dx, -c.dx * 0.5, c.dx * 0.3, 0],
+                        y: [0, c.dy, -c.dy * 0.5, c.dy * 0.7, 0],
+                        rotate: [c.rot, c.rot + 3, c.rot - 2, c.rot],
+                    }}
+                    transition={{ duration: c.dur, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                    {c.type === 'whatsapp' && <WhatsAppBubble />}
+                    {c.type === 'sticky' && <StickyNote />}
+                    {c.type === 'email' && <EmailIcon />}
+                </motion.div>
+            ))}
+
             {/* CONNECTING LINES (The "Network") */}
             <svg className="absolute inset-0 w-full h-full">
                 <motion.g style={{ opacity: useTransform(systemProgress, [0.6, 1], [0, 1]) }}>
-                    {/* Circuit lines connecting the modules */}
                     <line x1="30%" y1="52%" x2="35%" y2="52%" stroke="rgba(0, 191, 255, 0.6)" strokeWidth="1" strokeDasharray="2 2" />
                     <line x1="65%" y1="52%" x2="70%" y2="52%" stroke="rgba(0, 191, 255, 0.6)" strokeWidth="1" strokeDasharray="2 2" />
                     <line x1="50%" y1="30%" x2="50%" y2="35%" stroke="rgba(0, 191, 255, 0.6)" strokeWidth="1" strokeDasharray="2 2" />
@@ -87,10 +117,52 @@ export default function ScrollBackground() {
                 </motion.g>
             </svg>
 
-            {/* THE PARTICLES (Papers -> HUD Modules) */}
+            {/* THE PARTICLES (Floating Papers -> HUD Modules) */}
             {papers.map((p) => (
                 <SystemNode key={p.id} data={p} progress={systemProgress} />
             ))}
+        </div>
+    );
+}
+
+/* WhatsApp chat bubble - floating chaos element */
+function WhatsAppBubble() {
+    return (
+        <div className="w-[100px] sm:w-[140px] backdrop-blur-sm">
+            <div className="bg-[#075E54]/30 rounded-t-lg px-2 py-1 flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-[#25D366]/60" />
+                <span className="text-[8px] text-[#25D366]/80 font-medium">WhatsApp</span>
+            </div>
+            <div className="bg-[#DCF8C6]/10 rounded-b-lg px-2 py-1.5 border border-[#25D366]/15">
+                <div className="w-full h-1 bg-white/15 rounded mb-1" />
+                <div className="w-3/4 h-1 bg-white/10 rounded mb-1" />
+                <div className="w-1/2 h-1 bg-white/10 rounded" />
+            </div>
+        </div>
+    );
+}
+
+/* Sticky note - floating chaos element */
+function StickyNote() {
+    return (
+        <div className="w-[60px] sm:w-[80px] h-[60px] sm:h-[80px] bg-[#ffd54f]/12 border border-[#ffd54f]/20 rounded-sm p-2 backdrop-blur-sm">
+            <div className="w-full h-1 bg-[#ffd54f]/20 rounded mb-1.5" />
+            <div className="w-3/4 h-1 bg-[#ffd54f]/15 rounded mb-1.5" />
+            <div className="w-5/6 h-1 bg-[#ffd54f]/15 rounded" />
+        </div>
+    );
+}
+
+/* Email notification - floating chaos element */
+function EmailIcon() {
+    return (
+        <div className="w-[90px] sm:w-[120px] bg-white/5 border border-white/10 rounded-lg p-2 backdrop-blur-sm">
+            <div className="flex items-center gap-1 mb-1.5">
+                <div className="w-2 h-2 rounded-full bg-red-500/40" />
+                <div className="w-12 h-1 bg-white/20 rounded" />
+            </div>
+            <div className="w-full h-1 bg-white/10 rounded mb-1" />
+            <div className="w-2/3 h-1 bg-white/10 rounded" />
         </div>
     );
 }
@@ -103,16 +175,12 @@ function SystemNode({ data, progress }: { data: any, progress: any }) {
     const rotate = useTransform(progress, [0, 1], [data.initialRotate, 0]);
 
     // VISUAL TRANSFORMATION
-    // 1. Color: Paper White -> Flash -> Cyber Cyan
     const bg = useTransform(progress, [0, 0.4, 0.6, 1], ["rgba(255, 255, 255, 0.15)", "rgba(255, 255, 255, 0)", "rgba(0, 191, 255, 0.3)", "rgba(0, 191, 255, 0.05)"]);
     const border = useTransform(progress, [0, 0.4, 0.6, 1], ["rgba(255, 255, 255, 0.3)", "rgba(255, 255, 255, 0)", "rgba(0, 191, 255, 1)", "rgba(0, 191, 255, 0.5)"]);
     const borderRadius = useTransform(progress, [0, 1], ["2px", "4px"]);
-    const scale = useTransform(progress, [0, 0.5, 0.8, 1], [1, 0.8, 1.05, 1]); // shrink, then bounce slightly
+    const scale = useTransform(progress, [0, 0.5, 0.8, 1], [1, 0.8, 1.05, 1]);
 
-    // The "Paper" look
     const paperShadow = useTransform(progress, [0, 0.4], ["0 4px 10px rgba(0,0,0,0.3)", "0 0 0 rgba(0,0,0,0)"]);
-
-    // The "System" look (Glow)
     const systemShadow = useTransform(progress, [0.4, 0.6, 1], ["0 0 0 rgba(0,191,255,0)", "0 0 30px rgba(0,191,255,0.8)", "0 0 15px rgba(0, 191, 255, 0.2)"]);
 
     return (
@@ -125,6 +193,17 @@ function SystemNode({ data, progress }: { data: any, progress: any }) {
                 borderColor: border,
                 borderRadius,
                 boxShadow: useTransform(progress, (p: number) => p < 0.3 ? paperShadow.get() : systemShadow.get())
+            }}
+            // Floating idle animation when at chaos state
+            animate={{
+                x: [0, data.floatX, -data.floatX * 0.6, data.floatX * 0.3, 0],
+                y: [0, -data.floatY, data.floatY * 0.5, -data.floatY * 0.3, 0],
+            }}
+            transition={{
+                duration: data.floatDuration,
+                repeat: Infinity,
+                ease: 'easeInOut',
+                delay: data.floatDelay,
             }}
         >
             {/* PAPER DECORATION (Lines of text) - Fades out */}
@@ -143,13 +222,11 @@ function SystemNode({ data, progress }: { data: any, progress: any }) {
                 className="absolute inset-0 p-1"
                 style={{ opacity: useTransform(progress, [0.7, 1], [0, 1]) }}
             >
-                {/* HUD Brackets */}
                 <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-[#00bfff]" />
                 <div className="absolute top-0 right-0 w-3 h-3 border-t-2 border-r-2 border-[#00bfff]" />
                 <div className="absolute bottom-0 left-0 w-3 h-3 border-b-2 border-l-2 border-[#00bfff]" />
                 <div className="absolute bottom-0 right-0 w-3 h-3 border-b-2 border-r-2 border-[#00bfff]" />
 
-                {/* Data Scanning Effect */}
                 <motion.div
                     className="w-full h-full bg-[#00bfff]/10"
                     animate={{ opacity: [0.3, 0.6, 0.3] }}
