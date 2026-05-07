@@ -13,6 +13,8 @@ import Authority from './components/sections/Authority';
 import Contact from './components/sections/Contact';
 import ClientPortal from './components/portal/ClientPortal';
 import ReferralPortal from './components/portal/ReferralPortal';
+import AnimationShowcase from './components/sections/AnimationShowcase';
+import JobsPage from './components/sections/JobsPage';
 import Portfolio from './components/sections/Portfolio';
 import ProjectDetail from './components/sections/ProjectDetail';
 import PersonaPage from './components/sections/PersonaPage';
@@ -38,6 +40,14 @@ function App() {
 
   if (currentHash === '#referral') {
     return <ReferralPortal />;
+  }
+
+  if (currentHash === '#showcase') {
+    return <AnimationShowcase />;
+  }
+
+  if (currentHash === '#jobs') {
+    return <JobsPage />;
   }
 
   if (currentHash === '#portal') {

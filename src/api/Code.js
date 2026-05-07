@@ -15,6 +15,7 @@ const CONFIG = {
     SHEET_NAME_REFERRERS: 'Referrers',
     SHEET_NAME_REFERRALS: 'Referrals',
     SHEET_NAME_OTP: 'OTP_Sessions',
+    SHEET_NAME_JOBS: 'Job_Applications',
     ADMIN_EMAIL: 'labs@icuni.org',
     SCORE_THRESHOLDS: {
         HIGH: 80,
@@ -58,6 +59,8 @@ function doPost(e) {
                     return handleGetDashboard(payload);
                 case 'update_referral_status':
                     return handleUpdateReferralStatus(payload);
+                case 'job_application':
+                    return handleJobApplication(payload);
                 default:
                     return createResponse(400, "Unknown action: " + payload.action);
             }
@@ -634,6 +637,49 @@ function verifyOtp(email, otp) {
 // ============================================================
 // LEAD SCORING (original)
 // ============================================================
+
+/**
+ * Handle job application submission.
+ */
+function handleJobApplication(payload) {
+    if (!payload.name || !payload.email) {
+        return createResponse(400, "Name and email are required.");
+    }
+
+    var record = [
+        new Date().toISOString(),
+        payload.jobId || '',
+        payload.jobTitle || '',
+        payload.name,
+        payload.email,
+        payload.phone || '',
+        payload.note || '',
+        'New'
+    ];
+
+    writeToSheet(CONFIG.SHEET_NAME_JOBS, record, [
+        'DateApplied', 'JobID', 'JobTitle', 'Name', 'Email', 'Phone', 'Note', 'Status'
+    ]);
+
+    // Notify admin
+    try {
+        MailApp.sendEmail({
+            to: CONFIG.ADMIN_EMAIL,
+            subject: 'New Job Application: ' + (payload.jobTitle || 'Unknown Position'),
+            body: 'New application received:\n\n' +
+                  'Position: ' + (payload.jobTitle || 'N/A') + '\n' +
+                  'Name: ' + payload.name + '\n' +
+                  'Email: ' + payload.email + '\n' +
+                  'Phone: ' + (payload.phone || 'N/A') + '\n\n' +
+                  'Note: ' + (payload.note || 'None') + '\n\n' +
+                  'Check the Job_Applications sheet for details.'
+        });
+    } catch (err) {
+        console.error('Job application email failed:', err);
+    }
+
+    return createResponse(200, "Application submitted successfully.");
+}
 
 /**
  * Calculate lead score based on submitted data
