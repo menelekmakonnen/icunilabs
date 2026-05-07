@@ -119,7 +119,7 @@ export default function Diagnostic() {
                     {/* Progress bar */}
                     <div className="absolute top-0 left-0 w-full h-1 bg-neutral-900">
                         <motion.div
-                            className="h-full bg-gradient-to-r from-[#ff6600] to-[#00bfff] shadow-[0_0_10px_rgba(0,191,255,0.5)]"
+                            className="h-full bg-gradient-to-r from-[#ff7a00] to-[#00bfff] shadow-[0_0_10px_rgba(0,191,255,0.5)]"
                             animate={{ width: `${(step / 3) * 100}%` }}
                             transition={{ duration: 0.5, ease: "easeOut" }}
                         />

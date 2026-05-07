@@ -49,7 +49,7 @@ export default function Offers() {
                         <motion.div
                             key={index}
                             className={`p-8 rounded-xl border flex flex-col backdrop-blur-xl transition-all duration-500 relative overflow-hidden group ${offer.featured
-                                ? 'bg-neutral-900/60 border-[#ff6600]/30 shadow-[0_8px_32px_rgba(255,102,0,0.1)] mt-0 md:-mt-4 md:mb-4'
+                                ? 'bg-neutral-900/60 border-[#ff7a00]/30 shadow-[0_8px_32px_rgba(255,102,0,0.1)] mt-0 md:-mt-4 md:mb-4'
                                 : 'bg-neutral-950/60 border-neutral-800 hover:border-[#00bfff]/30 hover:shadow-[0_8px_32px_rgba(0,191,255,0.05)] hover:-translate-y-1'
                                 }`}
                             style={{
@@ -70,13 +70,13 @@ export default function Offers() {
                                     </div>
                                 )}
 
-                                <offer.icon className={`w-10 h-10 mb-6 ${offer.featured ? 'text-[#ff6600] drop-shadow-[0_0_8px_rgba(255,102,0,0.5)]' : 'text-[#00bfff] drop-shadow-[0_0_8px_rgba(0,191,255,0.3)]'}`} />
+                                <offer.icon className={`w-10 h-10 mb-6 ${offer.featured ? 'text-[#ff7a00] drop-shadow-[0_0_8px_rgba(255,102,0,0.5)]' : 'text-[#00bfff] drop-shadow-[0_0_8px_rgba(0,191,255,0.3)]'}`} />
                                 <h3 className="text-xl font-bold text-white mb-4">{offer.title}</h3>
                                 <p className="text-neutral-400 mb-8 flex-grow">{offer.desc}</p>
 
                                 <a
                                     href="#contact"
-                                    className={`inline-flex items-center gap-2 font-medium transition-colors ${offer.featured ? 'text-[#ff6600] hover:text-[#ff8533]' : 'text-[#00bfff] hover:text-[#33ccff]'
+                                    className={`inline-flex items-center gap-2 font-medium transition-colors ${offer.featured ? 'text-[#ff7a00] hover:text-[#ff8533]' : 'text-[#00bfff] hover:text-[#33ccff]'
                                         }`}
                                 >
                                     Get Started <ArrowRight className="w-4 h-4" />

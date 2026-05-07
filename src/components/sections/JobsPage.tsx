@@ -92,7 +92,7 @@ function Listing(){
 }
 
 const ApplyBtn = ({onClick}:{onClick:()=>void})=>(
-  <button onClick={onClick} className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ff6600] to-[#ff8833] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer">
+  <button onClick={onClick} className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer">
     <Send className="w-4 h-4"/> Apply Now
   </button>
 );
@@ -116,7 +116,7 @@ function Detail({job}:{job:typeof jobs[0]}){
             <div className="flex flex-wrap items-center gap-4 mb-6">
               <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">{job.type}</span>
               <span className="flex items-center gap-1 text-sm text-neutral-300"><MapPin className="w-3.5 h-3.5"/>{job.location}</span>
-              <button onClick={()=>setShowSalary(!showSalary)} className="flex items-center gap-1.5 text-[#ff6600] hover:text-[#ff8833] transition-colors cursor-pointer text-sm font-medium">
+              <button onClick={()=>setShowSalary(!showSalary)} className="flex items-center gap-1.5 text-[#ff7a00] hover:text-[#ff9533] transition-colors cursor-pointer text-sm font-medium">
                 <DollarSign className="w-3.5 h-3.5"/>{showSalary?job.salary:'Reveal salary'}{showSalary?<EyeOff className="w-3 h-3"/>:<Eye className="w-3 h-3"/>}
               </button>
             </div>
@@ -188,7 +188,7 @@ function Detail({job}:{job:typeof jobs[0]}){
               <BenefitsSVG/>
               <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-lg bg-[#ff6600]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#ff6600]"/></span>
+                  <span className="w-8 h-8 rounded-lg bg-[#ff7a00]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#ff7a00]"/></span>
                   What You Get
                 </h2>
                 <ul className="space-y-3 pl-11">
@@ -217,27 +217,27 @@ function Detail({job}:{job:typeof jobs[0]}){
                   <div className="flex items-center gap-2 text-neutral-300"><Clock className="w-4 h-4 text-[#00bfff]"/>{job.type}</div>
                   <div className="flex items-center gap-2 text-neutral-300"><MapPin className="w-4 h-4 text-[#00bfff]"/>{job.location}</div>
                   <div className="flex items-center gap-2 text-neutral-300">
-                    <DollarSign className="w-4 h-4 text-[#ff6600]"/>
-                    <button onClick={()=>setShowSalary(!showSalary)} className="text-[#ff6600] hover:text-[#ff8833] transition-colors cursor-pointer font-medium">
+                    <DollarSign className="w-4 h-4 text-[#ff7a00]"/>
+                    <button onClick={()=>setShowSalary(!showSalary)} className="text-[#ff7a00] hover:text-[#ff9533] transition-colors cursor-pointer font-medium">
                       {showSalary?job.salary:'Reveal salary'}
                     </button>
                   </div>
                 </div>
                 <div className="border-t border-neutral-800 mt-4 pt-4">
                   <p className="text-xs text-neutral-500 mb-4">{job.shortDesc}</p>
-                  <button onClick={scrollToForm} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff6600] to-[#ff8833] text-white font-bold py-3 rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer text-sm">
+                  <button onClick={scrollToForm} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer text-sm">
                     <Send className="w-4 h-4"/> Apply Now
                   </button>
                 </div>
               </div>
 
               {/* Refer & Earn card */}
-              <a href="#referral" className={`${card} p-5 block group hover:border-[#ff6600]/30 transition-all`}>
+              <a href="#referral" className={`${card} p-5 block group hover:border-[#ff7a00]/30 transition-all`}>
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-[#ff6600]/10 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-[#ff6600]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                  <div className="w-8 h-8 rounded-lg bg-[#ff7a00]/10 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-[#ff7a00]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
                   </div>
-                  <span className="text-sm font-bold text-white group-hover:text-[#ff6600] transition-colors">Refer &amp; Earn</span>
+                  <span className="text-sm font-bold text-white group-hover:text-[#ff7a00] transition-colors">Refer &amp; Earn</span>
                 </div>
                 <p className="text-xs text-neutral-500 leading-relaxed">Know someone who needs our services? Connect us and earn commission on every deal.</p>
               </a>
@@ -398,7 +398,7 @@ function AppForm({job}:{job:typeof jobs[0]}){
         <textarea value={note} onChange={e=>setNote(e.target.value)} className={`${inp} resize-none`} rows={3} placeholder="Anything else? (optional)"/>
 
         <button type="submit" disabled={!ok}
-          className={`w-full bg-gradient-to-r from-[#ff6600] to-[#ff8833] text-white font-bold py-3.5 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] transition-all cursor-pointer ${!ok?'opacity-40 cursor-not-allowed':''}`}>
+          className={`w-full bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3.5 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] transition-all cursor-pointer ${!ok?'opacity-40 cursor-not-allowed':''}`}>
           {busy?'Submitting...':'Submit Application'}
         </button>
       </form>

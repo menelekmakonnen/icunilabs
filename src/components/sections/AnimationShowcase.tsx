@@ -12,7 +12,7 @@ interface Scene {
   circles: C[];
 }
 
-const _ = '#0a0a0a', D = '#141414', W = '#ffffff', B = '#00bfff', O = '#ff6600', S = '#333', M = '#555', L = '#222';
+const _ = '#0a0a0a', D = '#141414', W = '#ffffff', B = '#00bfff', O = '#ff7a00', S = '#333', M = '#555', L = '#222';
 
 // 16 rects, 4 circles per scene — they morph between positions
 const scenes: Scene[] = [

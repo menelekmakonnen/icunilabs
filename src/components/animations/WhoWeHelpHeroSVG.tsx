@@ -8,7 +8,7 @@ export default function WhoWeHelpHeroSVG() {
                 
                 <defs>
                     <linearGradient id="chaosGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#ff6600" stopOpacity="0.8" />
+                        <stop offset="0%" stopColor="#ff7a00" stopOpacity="0.8" />
                         <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.8" />
                     </linearGradient>
                     <linearGradient id="orderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -44,7 +44,7 @@ export default function WhoWeHelpHeroSVG() {
                             key={`line-${i}`}
                             d={`M ${((i * 11) % 200) - 100} ${((i * 19) % 150) - 75} Q ${((i * 23) % 300) - 150} ${((i * 29) % 200) - 100} ${((i * 31) % 200) - 100} ${((i * 37) % 150) - 75}`}
                             fill="none"
-                            stroke="#ff6600"
+                            stroke="#ff7a00"
                             strokeWidth="2"
                             strokeOpacity="0.4"
                             animate={{

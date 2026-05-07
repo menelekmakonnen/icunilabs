@@ -12,11 +12,11 @@ type Subheadline = SubheadlineSegment[];
 
 const allSubheadlines: Subheadline[] = [
     [{ text: "Custom Business Operations Systems for " }, { text: "scaling companies.", color: "#00bfff" }],
-    [{ text: "Accelerating team execution with " }, { text: "tailored internal tools.", color: "#ff6600" }],
+    [{ text: "Accelerating team execution with " }, { text: "tailored internal tools.", color: "#ff7a00" }],
     [{ text: "Dashboards, automations, and portals—" }, { text: "built to perform.", color: "#00bfff" }],
-    [{ text: "Replacing manual processes with " }, { text: "automated workflows.", color: "#ff6600" }],
+    [{ text: "Replacing manual processes with " }, { text: "automated workflows.", color: "#ff7a00" }],
     [{ text: "Custom software that runs your " }, { text: "daily operations natively.", color: "#00bfff" }],
-    [{ text: "We build the systems that teams use to " }, { text: "execute faster.", color: "#ff6600" }],
+    [{ text: "We build the systems that teams use to " }, { text: "execute faster.", color: "#ff7a00" }],
 ];
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -116,7 +116,7 @@ export default function Hero() {
             />
 
             {/* Ambient glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-[#00bfff]/10 to-[#ff6600]/5 blur-[120px] rounded-full pointer-events-none z-0" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-[#00bfff]/10 to-[#ff7a00]/5 blur-[120px] rounded-full pointer-events-none z-0" />
 
             <div className="max-w-4xl mx-auto px-6 relative z-10 text-center flex flex-col items-center">
 
@@ -148,7 +148,7 @@ export default function Hero() {
                 >
                     FROM <br className="md:hidden" />
                     <motion.span 
-                        className="inline-block cursor-pointer bg-clip-text text-transparent bg-gradient-to-br from-[#ff9944] to-[#ff6600] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]"
+                        className="inline-block cursor-pointer bg-clip-text text-transparent bg-gradient-to-br from-[#ff9944] to-[#ff7a00] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]"
                         whileHover={{ x: [-3, 3, -1, 1, -2, 2, 0], y: [1, -1, 2, -2, 1, -1, 0] }}
                         transition={{ duration: 0.3, repeat: Infinity, repeatType: "mirror" }}
                     >
@@ -191,7 +191,7 @@ export default function Hero() {
                     </a>
                     <a
                         href="#portfolio"
-                        className="flex items-center justify-center px-8 py-4 bg-transparent border border-[#ff6600]/50 text-[#ff6600] font-bold rounded hover:bg-[#ff6600]/10 hover:border-[#ff6600] transition-all shadow-[inset_0_0_10px_rgba(255,102,0,0.05)]"
+                        className="flex items-center justify-center px-8 py-4 bg-transparent border border-[#ff7a00]/50 text-[#ff7a00] font-bold rounded hover:bg-[#ff7a00]/10 hover:border-[#ff7a00] transition-all shadow-[inset_0_0_10px_rgba(255,102,0,0.05)]"
                     >
                         View Portfolio
                     </a>

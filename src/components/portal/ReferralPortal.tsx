@@ -228,22 +228,22 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen">
       {/* ── HERO ── */}
       <section className="relative pt-28 pb-20 px-6 overflow-hidden">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#ff6600]/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#ff7a00]/5 blur-[120px] rounded-full pointer-events-none" />
         <div className="max-w-5xl mx-auto relative z-10">
           <a href="#" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors mb-8">
             <ArrowLeft className="w-4 h-4" /> Back to site
           </a>
           <motion.div initial={{ y: 20 }} animate={{ y: 0 }} transition={{ duration: 0.6 }}>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#ff6600]/30 bg-[#ff6600]/5 text-xs font-bold text-[#ff6600] mb-6 tracking-wider uppercase">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#ff7a00]/30 bg-[#ff7a00]/5 text-xs font-bold text-[#ff7a00] mb-6 tracking-wider uppercase">
               <DollarSign className="w-3 h-3" /> Referral Program
             </div>
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-[1.05]">
-              Refer. Close.<br /><span className="bg-gradient-to-r from-[#ff6600] to-[#ff9944] bg-clip-text text-transparent">Get Paid.</span>
+              Refer. Close.<br /><span className="bg-gradient-to-r from-[#ff7a00] to-[#ff9944] bg-clip-text text-transparent">Get Paid.</span>
             </h1>
             <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mb-8">
-              Know someone whose business runs on chaos? Introduce them to ICUNI Labs. We close, you earn <span className="text-[#ff6600] font-semibold">GH₵1,000+</span> per deal.
+              Know someone whose business runs on chaos? Introduce them to ICUNI Labs. We close, you earn <span className="text-[#ff7a00] font-semibold">GH₵1,000+</span> per deal.
             </p>
-            <a href="#join" className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#ff6600] to-[#ff8833] text-white font-bold rounded-lg hover:shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all">
+            <a href="#join" className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold rounded-lg hover:shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all">
               Start Earning <ChevronRight className="w-4 h-4" />
             </a>
           </motion.div>
@@ -254,7 +254,7 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
       <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-4">
           {[
-            { icon: DollarSign, color: '#ff6600', title: 'GH₵1,000+ Per Deal', desc: 'Earn GH₵1,000 flat or 10% of deal value — whichever is higher. No cap.' },
+            { icon: DollarSign, color: '#ff7a00', title: 'GH₵1,000+ Per Deal', desc: 'Earn GH₵1,000 flat or 10% of deal value — whichever is higher. No cap.' },
             { icon: Users, color: '#00bfff', title: 'Just Warm Intros', desc: "You don't sell. Introduce, set the meeting, we handle the rest. Follow up if needed." },
             { icon: TrendingUp, color: '#10b981', title: 'Track Everything', desc: 'Real-time dashboard shows your referrals, statuses, and total earnings live.' },
           ].map((b, i) => (
@@ -314,7 +314,7 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
               <div className="text-center">
                 <h3 className="text-2xl font-bold mb-3">See Your Earnings Live</h3>
                 <p className="text-neutral-400 mb-6 text-sm max-w-sm mx-auto">Track referrals, monitor deal progress, and watch your payouts grow — all in real time.</p>
-                <a href="#join" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#ff6600] to-[#ff8833] text-white font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] transition-all">
+                <a href="#join" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] transition-all">
                   Join Now <ChevronRight className="w-4 h-4" />
                 </a>
               </div>
@@ -328,7 +328,7 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
         <div className="max-w-md mx-auto">
           <motion.div initial={{ y: 20 }} whileInView={{ y: 0 }} viewport={{ once: true }} className={`${cardCls} p-8`}>
             <div className="text-center mb-8">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[#ff6600] to-[#00bfff] p-[1px]">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[#ff7a00] to-[#00bfff] p-[1px]">
                 <div className="w-full h-full rounded-xl bg-neutral-950 flex items-center justify-center">
                   <Users className="w-6 h-6 text-[#00bfff]" />
                 </div>
@@ -444,7 +444,7 @@ function DashboardView({ session, dashboard, loading, onLogout, onRefresh, showS
             <p className="text-neutral-400">Your referral dashboard</p>
           </div>
           <div className="flex items-center gap-4 self-start md:self-auto">
-            <button onClick={() => setShowSubmitModal(true)} className="flex items-center gap-2 text-sm font-bold px-5 py-2.5 bg-gradient-to-r from-[#ff6600] to-[#ff8833] text-white rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer">
+            <button onClick={() => setShowSubmitModal(true)} className="flex items-center gap-2 text-sm font-bold px-5 py-2.5 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer">
               <Plus className="w-4 h-4" /> New Referral
             </button>
             <button onClick={onLogout} className="flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors cursor-pointer">
@@ -465,7 +465,7 @@ function DashboardView({ session, dashboard, loading, onLogout, onRefresh, showS
                 { label: 'Total Referrals', value: stats?.totalReferrals ?? 0, icon: Users, color: '#00bfff' },
                 { label: 'Closed Won', value: stats?.closedWon ?? 0, icon: TrendingUp, color: '#10b981' },
                 { label: 'Pending', value: stats?.pending ?? 0, icon: Clock, color: '#f59e0b' },
-                { label: 'Total Earned', value: formatCurrency(stats?.totalEarned ?? 0), icon: DollarSign, color: '#ff6600' },
+                { label: 'Total Earned', value: formatCurrency(stats?.totalEarned ?? 0), icon: DollarSign, color: '#ff7a00' },
               ].map((s, i) => (
                 <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
                   className={`${cardCls} p-5`}
@@ -531,7 +531,7 @@ function DashboardView({ session, dashboard, loading, onLogout, onRefresh, showS
                       </div>
                       <div className="text-right flex-shrink-0 ml-4">
                         {ref.status === 'Closed Won' ? (
-                          <p className="text-sm font-bold text-[#ff6600]">{formatCurrency(ref.payoutAmount)}</p>
+                          <p className="text-sm font-bold text-[#ff7a00]">{formatCurrency(ref.payoutAmount)}</p>
                         ) : ref.status === 'Closed Lost' ? (
                           <p className="text-xs text-neutral-600">No payout</p>
                         ) : (

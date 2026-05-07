@@ -163,7 +163,7 @@ export default function Navbar() {
                     </a>
                     <a
                         href="#referral"
-                        className="hidden md:block text-sm font-semibold px-4 py-2 bg-gradient-to-r from-[#ff6600] to-[#ff8833] text-white rounded hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all"
+                        className="hidden md:block text-sm font-semibold px-4 py-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white rounded hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all"
                     >
                         Refer & Earn
                     </a>
@@ -205,7 +205,7 @@ export default function Navbar() {
 
                     <a href="#portfolio" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Portfolio</a>
                     <a href="#jobs" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Jobs</a>
-                    <a href="#referral" className="py-3 hover:text-white transition-colors border-b border-neutral-900 bg-gradient-to-r from-[#ff6600] to-[#ff8833] bg-clip-text text-transparent font-semibold" onClick={() => setMobileOpen(false)}>Refer & Earn</a>
+                    <a href="#referral" className="py-3 hover:text-white transition-colors border-b border-neutral-900 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] bg-clip-text text-transparent font-semibold" onClick={() => setMobileOpen(false)}>Refer & Earn</a>
 
                     {/* Who We Help sub-section */}
                     <div className="py-3 border-b border-neutral-900">

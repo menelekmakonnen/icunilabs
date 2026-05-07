@@ -34,7 +34,7 @@ export default function OperationsExplainer() {
                     transition={{ duration: 0.5 }}
                 >
                     What are{' '}
-                    <span className="text-[#ff6600] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]">Business Operations Systems.</span>
+                    <span className="text-[#ff7a00] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]">Business Operations Systems.</span>
                 </motion.h2>
 
                 <motion.p

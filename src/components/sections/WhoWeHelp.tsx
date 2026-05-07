@@ -7,7 +7,7 @@ const audiences = [
         icon: Rocket,
         title: "Founders and Operators",
         desc: "You've built momentum, but too much still depends on manual coordination and your own oversight.",
-        color: "#ff6600",
+        color: "#ff7a00",
         link: "#founders",
     },
     {
@@ -47,7 +47,7 @@ export default function WhoWeHelp() {
                         transition={{ duration: 0.5 }}
                     >
                         Best Fit for Teams Growing{' '}
-                        <span className="text-[#ff6600] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]">Faster Than Their Operations</span>
+                        <span className="text-[#ff7a00] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]">Faster Than Their Operations</span>
                     </motion.h2>
                     <motion.p
                         className="text-neutral-400 text-lg max-w-3xl"

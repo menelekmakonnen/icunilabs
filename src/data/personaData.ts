@@ -27,7 +27,7 @@ export const personas: PersonaData[] = [
         id: 'founders',
         slug: 'founders',
         icon: Rocket,
-        accentColor: '#ff6600',
+        accentColor: '#ff7a00',
         title: 'The Scaling Founder',
         subtitle: 'Founder · CEO · Managing Director · Business Owner',
         tileLine: 'For Founders Scaling Past Chaos',

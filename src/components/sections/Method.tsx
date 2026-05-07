@@ -41,7 +41,7 @@ export default function Method() {
                     >
                         {/* Glowing background hint */}
                         <div className="absolute -top-32 -right-32 w-80 h-80 bg-[#00bfff]/10 blur-[100px] rounded-full pointer-events-none" />
-                        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-[#ff6600]/10 blur-[100px] rounded-full pointer-events-none" />
+                        <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-[#ff7a00]/10 blur-[100px] rounded-full pointer-events-none" />
 
                         <div className="relative z-10">
                             {/* Header of the mock tracking portal */}

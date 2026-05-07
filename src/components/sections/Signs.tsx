@@ -31,7 +31,7 @@ export default function Signs() {
                     transition={{ duration: 0.5 }}
                 >
                     If This Feels Familiar,{' '}
-                    <span className="text-[#ff6600] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]">Your Business Has Outgrown Hustle</span>
+                    <span className="text-[#ff7a00] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]">Your Business Has Outgrown Hustle</span>
                 </motion.h2>
 
                 <motion.p
@@ -55,7 +55,7 @@ export default function Signs() {
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.35, delay: index * 0.05 }}
                             >
-                                <sign.icon className="w-5 h-5 text-neutral-600 group-hover:text-[#ff6600] transition-colors shrink-0" />
+                                <sign.icon className="w-5 h-5 text-neutral-600 group-hover:text-[#ff7a00] transition-colors shrink-0" />
                                 <span className="text-neutral-300 text-sm md:text-base">{sign.text}</span>
                             </motion.div>
                         ))}

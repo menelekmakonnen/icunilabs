@@ -19,7 +19,7 @@ export default function WhoWeHelpPage() {
                                 transition={{ duration: 0.6 }}
                             >
                                 Built for Teams Growing{' '}
-                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#ff6600] to-[#00bfff]">Faster Than Their Systems</span>
+                                <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#ff7a00] to-[#00bfff]">Faster Than Their Systems</span>
                             </motion.h1>
                             <motion.p
                                 className="text-lg text-neutral-400 max-w-2xl leading-relaxed"
