@@ -143,7 +143,19 @@ export default function ReferralPortal() {
   );
 }
 
-// ─── AUTH VIEW ───
+// ─── Demo data for the preview dashboard ───
+const DEMO_DASHBOARD: DashboardData = {
+  referrer: { name: 'Kwame Mensah', email: 'kwame@example.com', joinDate: '2025-09-15' },
+  stats: { totalReferrals: 7, closedWon: 3, closedLost: 1, pending: 3, totalEarned: 4500, conversionRate: 43 },
+  referrals: [
+    { referralId: 'R-001', leadName: 'Ama Owusu', leadCompany: 'FreshFoods GH', status: 'Closed Won', dealValue: 15000, payoutAmount: 1500, dateSubmitted: '2025-10-02', dateClosed: '2025-11-10' },
+    { referralId: 'R-002', leadName: 'Yaw Boateng', leadCompany: 'Kofi Motors', status: 'Meeting Set', dealValue: 0, payoutAmount: 0, dateSubmitted: '2025-11-20', dateClosed: '' },
+    { referralId: 'R-003', leadName: 'Akua Serwaa', leadCompany: 'Bright Academy', status: 'Closed Won', dealValue: 12000, payoutAmount: 1200, dateSubmitted: '2025-10-15', dateClosed: '2025-12-01' },
+    { referralId: 'R-004', leadName: 'Kofi Adu', leadCompany: 'LogiTrack Ltd', status: 'In Progress', dealValue: 0, payoutAmount: 0, dateSubmitted: '2025-12-05', dateClosed: '' },
+  ],
+};
+
+// ─── LANDING PAGE (unauthenticated) ───
 function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
   const [tab, setTab] = useState<AuthTab>('login');
   const [busy, setBusy] = useState(false);
@@ -213,122 +225,196 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col items-center justify-center min-h-screen p-6 pt-20"
-    >
-      {/* Back link */}
-      <a href="#" className="absolute top-6 left-6 flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors">
-        <ArrowLeft className="w-4 h-4" /> Back to site
-      </a>
-
-      <motion.div initial={{ y: 20 }} animate={{ y: 0 }} className={`${cardCls} w-full max-w-md p-8`}>
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[#ff6600] to-[#00bfff] p-[1px]">
-            <div className="w-full h-full rounded-xl bg-neutral-950 flex items-center justify-center">
-              <Users className="w-6 h-6 text-[#00bfff]" />
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen">
+      {/* ── HERO ── */}
+      <section className="relative pt-28 pb-20 px-6 overflow-hidden">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#ff6600]/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="max-w-5xl mx-auto relative z-10">
+          <a href="#" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors mb-8">
+            <ArrowLeft className="w-4 h-4" /> Back to site
+          </a>
+          <motion.div initial={{ y: 20 }} animate={{ y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#ff6600]/30 bg-[#ff6600]/5 text-xs font-bold text-[#ff6600] mb-6 tracking-wider uppercase">
+              <DollarSign className="w-3 h-3" /> Referral Program
             </div>
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1">Refer & Earn</h2>
-          <p className="text-neutral-400 text-sm">Earn <span className="text-[#ff6600] font-semibold">GH&#x20B5;1,000+</span> per closed referral</p>
+            <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-[1.05]">
+              Refer. Close.<br /><span className="bg-gradient-to-r from-[#ff6600] to-[#ff9944] bg-clip-text text-transparent">Get Paid.</span>
+            </h1>
+            <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mb-8">
+              Know someone whose business runs on chaos? Introduce them to ICUNI Labs. We close, you earn <span className="text-[#ff6600] font-semibold">GH₵1,000+</span> per deal.
+            </p>
+            <a href="#join" className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#ff6600] to-[#ff8833] text-white font-bold rounded-lg hover:shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all">
+              Start Earning <ChevronRight className="w-4 h-4" />
+            </a>
+          </motion.div>
         </div>
+      </section>
 
-        {/* Tab toggle */}
-        <div className="flex mb-6 bg-neutral-900 rounded-lg p-1">
-          {(['login', 'signup'] as AuthTab[]).map(t => (
-            <button key={t} onClick={() => { setTab(t); setError(''); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${tab === t ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
-            >{t === 'login' ? 'Log In' : 'Sign Up'}</button>
+      {/* ── BENEFIT CARDS ── */}
+      <section className="px-6 pb-20">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-4">
+          {[
+            { icon: DollarSign, color: '#ff6600', title: 'GH₵1,000+ Per Deal', desc: 'Earn GH₵1,000 flat or 10% of deal value — whichever is higher. No cap.' },
+            { icon: Users, color: '#00bfff', title: 'Just Warm Intros', desc: "You don't sell. Introduce, set the meeting, we handle the rest. Follow up if needed." },
+            { icon: TrendingUp, color: '#10b981', title: 'Track Everything', desc: 'Real-time dashboard shows your referrals, statuses, and total earnings live.' },
+          ].map((b, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+              className={`${cardCls} p-6 group hover:border-neutral-700 transition-all`}>
+              <div className="absolute top-0 right-0 w-24 h-24 rounded-full blur-[40px] pointer-events-none" style={{ backgroundColor: b.color, opacity: 0.06 }} />
+              <b.icon className="w-6 h-6 mb-4" style={{ color: b.color }} />
+              <h3 className="text-lg font-bold mb-2">{b.title}</h3>
+              <p className="text-sm text-neutral-400 leading-relaxed">{b.desc}</p>
+            </motion.div>
           ))}
         </div>
+      </section>
 
-        {error && <div className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">{error}</div>}
-
-        <AnimatePresence mode="wait">
-          {otpStep ? (
-            <motion.form key="otp" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} onSubmit={handleOtpVerify} className="space-y-4">
-              <div className="text-center mb-2">
-                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#00bfff]/10 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-[#00bfff]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                </div>
-                <p className="text-sm text-neutral-400">We sent a 6-digit code to <span className="text-white font-medium">{pendingEmail}</span></p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Enter OTP</label>
-                <input type="text" required maxLength={6} value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))} className={`${inputCls} text-center text-2xl tracking-[0.5em] font-mono`} placeholder="------" autoFocus />
-              </div>
-              <button type="submit" disabled={busy || otpCode.length < 6} className={`${btnPrimary} mt-2 ${(busy || otpCode.length < 6) ? 'opacity-60' : ''}`}>
-                {busy ? 'Verifying...' : 'Verify & Log In'}
-              </button>
-              <button type="button" onClick={() => { setOtpStep(false); setOtpCode(''); }} className="w-full text-sm text-neutral-500 hover:text-white transition-colors cursor-pointer mt-2">Back</button>
-            </motion.form>
-          ) : tab === 'login' ? (
-            <motion.form key="login" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} onSubmit={handleLoginSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Email</label>
-                <input type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className={inputCls} placeholder="you@email.com" />
-              </div>
-              <button type="submit" disabled={busy} className={`${btnPrimary} mt-2 ${busy ? 'opacity-60' : ''}`}>
-                {busy ? 'Sending OTP...' : 'Log In'}
-              </button>
-            </motion.form>
-          ) : (
-            <motion.form key="signup" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleSignupSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Full Name</label>
-                <input type="text" required value={name} onChange={e => setName(e.target.value)} className={inputCls} placeholder="Kwame Mensah" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Email</label>
-                <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputCls} placeholder="kwame@email.com" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Phone (MoMo)</label>
-                <input type="tel" required value={phone} onChange={e => setPhone(e.target.value)} className={inputCls} placeholder="024 XXX XXXX" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Payout Preference</label>
-                <div className="flex gap-3">
-                  {([['momo', 'MoMo Transfer'], ['cash', 'Cash']] as const).map(([val, label]) => (
-                    <button key={val} type="button" onClick={() => setPayoutPreference(val)}
-                      className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition-all cursor-pointer ${
-                        payoutPreference === val
-                          ? 'border-[#00bfff]/50 bg-[#00bfff]/10 text-[#00bfff]'
-                          : 'border-neutral-800 bg-neutral-900/50 text-neutral-500 hover:border-neutral-700'
-                      }`}>{label}</button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-400 mb-2">Background <span className="text-neutral-600">(optional)</span></label>
-                <textarea value={background} onChange={e => setBackground(e.target.value)} className={`${inputCls} resize-none`} rows={2} placeholder="What do you do? How do you know potential clients?" />
-              </div>
-              <button type="submit" disabled={busy} className={`${btnPrimary} mt-2 ${busy ? 'opacity-60' : ''}`}>
-                {busy ? 'Creating Account...' : 'Join the Program'}
-              </button>
-            </motion.form>
-          )}
-        </AnimatePresence>
-
-        {/* Value prop */}
-        <div className="mt-8 pt-6 border-t border-neutral-800">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-neutral-500 mb-3">How it works</h4>
-          <div className="space-y-2">
+      {/* ── HOW IT WORKS ── */}
+      <section className="px-6 pb-20">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-3xl font-black tracking-tight mb-10 text-center">How It Works</h2>
+          <div className="grid md:grid-cols-3 gap-8">
             {[
-              ['1', 'Introduce someone who needs better systems'],
-              ['2', 'Set a meeting with ICUNI Labs'],
-              ['3', 'We close the deal, you earn'],
-            ].map(([n, text]) => (
-              <div key={n} className="flex items-start gap-3">
-                <span className="w-5 h-5 rounded-full bg-neutral-800 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5 text-neutral-400">{n}</span>
-                <span className="text-sm text-neutral-400">{text}</span>
-              </div>
+              { step: '01', title: 'Introduce', desc: 'Know a business owner struggling with spreadsheets, WhatsApp chaos, or manual ops? Introduce them to ICUNI Labs.' },
+              { step: '02', title: 'We Close', desc: 'Set a meeting. We take it from there — audit, propose, build, and deliver the system they need.' },
+              { step: '03', title: 'You Earn', desc: 'Deal closes? You get paid. GH₵1,000 or 10% of deal value, whichever is higher. Via MoMo or cash.' },
+            ].map((s, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }} className="text-center">
+                <span className="text-4xl font-black text-neutral-800 mb-3 block">{s.step}</span>
+                <h3 className="text-lg font-bold mb-2">{s.title}</h3>
+                <p className="text-sm text-neutral-400 leading-relaxed">{s.desc}</p>
+              </motion.div>
             ))}
           </div>
-          <p className="text-xs text-neutral-600 mt-4">Earn GH&#x20B5;1,000 or 10% of deal value — whichever is higher.</p>
         </div>
-      </motion.div>
+      </section>
+
+      {/* ── DEMO DASHBOARD PREVIEW ── */}
+      <section className="px-6 pb-20">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-black tracking-tight mb-2">Your Dashboard Awaits</h2>
+            <p className="text-neutral-400">Sign up to access your personal referral tracking dashboard</p>
+          </div>
+          <div className="relative rounded-2xl border border-neutral-800 overflow-hidden">
+            {/* Render actual DashboardView with demo data — blurred */}
+            <div className="pointer-events-none select-none" style={{ filter: 'blur(3px)', opacity: 0.7 }}>
+              <DashboardView
+                session={{ referrerId: 'DEMO', name: 'Kwame Mensah', email: 'kwame@example.com' }}
+                dashboard={DEMO_DASHBOARD}
+                loading={false}
+                onLogout={() => {}}
+                onRefresh={() => {}}
+                showSubmitModal={false}
+                setShowSubmitModal={() => {}}
+              />
+            </div>
+            {/* CTA overlay */}
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold mb-3">See Your Earnings Live</h3>
+                <p className="text-neutral-400 mb-6 text-sm max-w-sm mx-auto">Track referrals, monitor deal progress, and watch your payouts grow — all in real time.</p>
+                <a href="#join" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#ff6600] to-[#ff8833] text-white font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] transition-all">
+                  Join Now <ChevronRight className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── AUTH FORM ── */}
+      <section id="join" className="px-6 pb-24 scroll-mt-20">
+        <div className="max-w-md mx-auto">
+          <motion.div initial={{ y: 20 }} whileInView={{ y: 0 }} viewport={{ once: true }} className={`${cardCls} p-8`}>
+            <div className="text-center mb-8">
+              <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[#ff6600] to-[#00bfff] p-[1px]">
+                <div className="w-full h-full rounded-xl bg-neutral-950 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-[#00bfff]" />
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight mb-1">Join the Program</h2>
+              <p className="text-neutral-400 text-sm">Start earning from your network today</p>
+            </div>
+
+            <div className="flex mb-6 bg-neutral-900 rounded-lg p-1">
+              {(['login', 'signup'] as AuthTab[]).map(t => (
+                <button key={t} onClick={() => { setTab(t); setError(''); }}
+                  className={`flex-1 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${tab === t ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+                >{t === 'login' ? 'Log In' : 'Sign Up'}</button>
+              ))}
+            </div>
+
+            {error && <div className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">{error}</div>}
+
+            <AnimatePresence mode="wait">
+              {otpStep ? (
+                <motion.form key="otp" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} onSubmit={handleOtpVerify} className="space-y-4">
+                  <div className="text-center mb-2">
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#00bfff]/10 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-[#00bfff]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    </div>
+                    <p className="text-sm text-neutral-400">We sent a 6-digit code to <span className="text-white font-medium">{pendingEmail}</span></p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">Enter OTP</label>
+                    <input type="text" required maxLength={6} value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))} className={`${inputCls} text-center text-2xl tracking-[0.5em] font-mono`} placeholder="------" autoFocus />
+                  </div>
+                  <button type="submit" disabled={busy || otpCode.length < 6} className={`${btnPrimary} mt-2 ${(busy || otpCode.length < 6) ? 'opacity-60' : ''}`}>
+                    {busy ? 'Verifying...' : 'Verify & Log In'}
+                  </button>
+                  <button type="button" onClick={() => { setOtpStep(false); setOtpCode(''); }} className="w-full text-sm text-neutral-500 hover:text-white transition-colors cursor-pointer mt-2">Back</button>
+                </motion.form>
+              ) : tab === 'login' ? (
+                <motion.form key="login" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} onSubmit={handleLoginSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">Email</label>
+                    <input type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className={inputCls} placeholder="you@email.com" />
+                  </div>
+                  <button type="submit" disabled={busy} className={`${btnPrimary} mt-2 ${busy ? 'opacity-60' : ''}`}>
+                    {busy ? 'Sending OTP...' : 'Log In'}
+                  </button>
+                </motion.form>
+              ) : (
+                <motion.form key="signup" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleSignupSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">Full Name</label>
+                    <input type="text" required value={name} onChange={e => setName(e.target.value)} className={inputCls} placeholder="Kwame Mensah" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">Email</label>
+                    <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputCls} placeholder="kwame@email.com" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">Phone (MoMo)</label>
+                    <input type="tel" required value={phone} onChange={e => setPhone(e.target.value)} className={inputCls} placeholder="024 XXX XXXX" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">Payout Preference</label>
+                    <div className="flex gap-3">
+                      {([['momo', 'MoMo Transfer'], ['cash', 'Cash']] as const).map(([val, label]) => (
+                        <button key={val} type="button" onClick={() => setPayoutPreference(val)}
+                          className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition-all cursor-pointer ${
+                            payoutPreference === val ? 'border-[#00bfff]/50 bg-[#00bfff]/10 text-[#00bfff]' : 'border-neutral-800 bg-neutral-900/50 text-neutral-500 hover:border-neutral-700'
+                          }`}>{label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-400 mb-2">Background <span className="text-neutral-600">(optional)</span></label>
+                    <textarea value={background} onChange={e => setBackground(e.target.value)} className={`${inputCls} resize-none`} rows={2} placeholder="What do you do? How do you know potential clients?" />
+                  </div>
+                  <button type="submit" disabled={busy} className={`${btnPrimary} mt-2 ${busy ? 'opacity-60' : ''}`}>
+                    {busy ? 'Creating Account...' : 'Join the Program'}
+                  </button>
+                </motion.form>
+              )}
+            </AnimatePresence>
+
+            <p className="text-xs text-neutral-600 mt-6 text-center">Earn GH₵1,000 or 10% of deal value — whichever is higher.</p>
+          </motion.div>
+        </div>
+      </section>
     </motion.div>
   );
 }
