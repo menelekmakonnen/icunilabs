@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Clock, DollarSign, Send, ChevronRight, Briefcase, Mic, Square, Upload, FileText, Eye, EyeOff, Video } from 'lucide-react';
 import { AboutSVG, RequirementsSVG, BenefitsSVG, BulletCheck, BulletStar, TabToggle } from './JobsSVG';
+import QualificationFlow from './QualificationFlow';
 
 const API = import.meta.env.VITE_APPS_SCRIPT_URL;
 const inp = "w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00bfff] focus:ring-1 focus:ring-[#00bfff] transition-all placeholder:text-neutral-600";
@@ -324,13 +325,7 @@ function AppForm({job}:{job:typeof jobs[0]}){
   }
 
   if(done)return(
-    <div className={`${card} p-10 text-center max-w-lg mx-auto`}>
-      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#10b981]/10 flex items-center justify-center">
-        <svg className="w-8 h-8 text-[#10b981]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
-      </div>
-      <h3 className="text-xl font-bold mb-1">Application Sent!</h3>
-      <p className="text-sm text-neutral-400">{"We'll get back to you at "}{email}.</p>
-    </div>
+    <QualificationFlow name={name} email={email} jobId={job.id} jobTitle={job.title} />
   );
 
   return(

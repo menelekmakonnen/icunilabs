@@ -61,6 +61,8 @@ function doPost(e) {
                     return handleUpdateReferralStatus(payload);
                 case 'job_application':
                     return handleJobApplication(payload);
+                case 'job_qualification':
+                    return handleJobQualification(payload);
                 default:
                     return createResponse(400, "Unknown action: " + payload.action);
             }
@@ -737,6 +739,71 @@ function handleJobApplication(payload) {
     }
 
     return createResponse(200, "Application submitted successfully.");
+}
+
+/**
+ * Handle job qualification follow-up.
+ * Finds the applicant's row by email and appends qualification answers.
+ */
+function handleJobQualification(payload) {
+    var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+    var sheet = ss.getSheetByName('Job_Applications');
+    if (!sheet) {
+        return createResponse(404, "Job_Applications sheet not found.");
+    }
+
+    var email = (payload.email || '').trim().toLowerCase();
+    if (!email) {
+        return createResponse(400, "Email is required.");
+    }
+
+    // Find the row by email (column 3 = Email)
+    var data = sheet.getDataRange().getValues();
+    var targetRow = -1;
+    for (var i = data.length - 1; i >= 1; i--) {
+        if (String(data[i][2]).trim().toLowerCase() === email) {
+            targetRow = i + 1; // 1-indexed
+            break;
+        }
+    }
+
+    if (targetRow === -1) {
+        return createResponse(404, "Applicant not found.");
+    }
+
+    // Qualification columns start after the main application columns
+    // Main cols: Timestamp, Name, Email, Phone, JobId, JobTitle, Note, CV_URL, Audio_URL, Video_URL = 10 cols
+    // Qualification data starts at column 11 (K)
+    var qualFields = [
+        'salaryOk', 'fullTimeOk', 'asapOk',
+        'selfView', 'deadlines', 'feedback',
+        'googleSuite', 'coldCalling',
+        'computerSpecs', 'phoneSpecs', 'secureWorkspace',
+        'paymentMethod', 'currentJob'
+    ];
+
+    var qualValues = qualFields.map(function(f) { return payload[f] || ''; });
+
+    // Write qualification data starting at column 11
+    var startCol = 11;
+    var range = sheet.getRange(targetRow, startCol, 1, qualValues.length);
+    range.setValues([qualValues]);
+
+    // Ensure headers exist for qualification columns
+    var headerRow = sheet.getRange(1, startCol, 1, qualFields.length).getValues()[0];
+    var qualHeaders = [
+        'Salary OK', 'Full-Time OK', 'ASAP OK',
+        'Self View', 'Deadline Handling', 'Feedback Handling',
+        'Google Suite (1-5)', 'Cold Calling (1-5)',
+        'Computer Specs', 'Phone Specs', 'Secure Workspace',
+        'Payment Method', 'Current Job Status'
+    ];
+
+    if (!headerRow[0] || headerRow[0] === '') {
+        sheet.getRange(1, startCol, 1, qualHeaders.length).setValues([qualHeaders]);
+    }
+
+    return createResponse(200, "Qualification recorded successfully.");
 }
 
 /**
