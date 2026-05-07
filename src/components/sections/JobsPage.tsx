@@ -198,10 +198,10 @@ function Detail({job}:{job:typeof jobs[0]}){
                             transition={{duration:0.25,delay:0.5}}
                             className="flex justify-end mb-1"
                           >
-                            <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#00bfff]/10 border border-[#00bfff]/10">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#00bfff]/60 animate-bounce" style={{animationDelay:'0ms'}}/>
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#00bfff]/60 animate-bounce" style={{animationDelay:'150ms'}}/>
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#00bfff]/60 animate-bounce" style={{animationDelay:'300ms'}}/>
+                            <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#ff7a00]/10 border border-[#ff7a00]/10">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'0ms'}}/>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'150ms'}}/>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'300ms'}}/>
                             </div>
                           </motion.div>
                           {/* Message bubble */}
@@ -213,14 +213,14 @@ function Detail({job}:{job:typeof jobs[0]}){
                             className="flex justify-end mb-3"
                           >
                             <div className="max-w-[85%] group">
-                              <div className={`relative px-4 py-3 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-200 group-hover:shadow-[0_4px_20px_rgba(0,191,255,0.12)] group-hover:-translate-y-[1px] ${
-                                i===0?'bg-gradient-to-br from-[#00bfff]/20 to-[#0066cc]/12 border border-[#00bfff]/20 text-neutral-100'
-                                :'bg-neutral-800/70 border border-neutral-700/40 text-neutral-300 group-hover:border-[#00bfff]/20'
+                              <div className={`relative px-4 py-3 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-200 group-hover:shadow-[0_4px_20px_rgba(255,122,0,0.15)] group-hover:-translate-y-[1px] ${
+                                i===0?'bg-gradient-to-br from-[#ff7a00]/15 to-[#cc5500]/10 border border-[#ff7a00]/20 text-neutral-100'
+                                :'bg-neutral-800/70 border border-neutral-700/40 text-neutral-300 group-hover:border-[#ff7a00]/25'
                               }`}>
                                 {msg}
                                 {/* Speech tail */}
                                 <svg className="absolute -bottom-[6px] right-3 w-3 h-2" viewBox="0 0 12 8" fill="none">
-                                  <path d={i===0?"M0 0L6 8L12 0Z":"M0 0L6 8L12 0Z"} fill={i===0?'rgba(0,100,180,0.12)':'rgba(64,64,64,0.7)'}/>
+                                  <path d="M0 0L6 8L12 0Z" fill={i===0?'rgba(180,80,0,0.12)':'rgba(64,64,64,0.7)'}/>
                                 </svg>
                               </div>
                               <p className="text-[10px] text-neutral-600 mt-1.5 text-right mr-1">{timeLabel}</p>
