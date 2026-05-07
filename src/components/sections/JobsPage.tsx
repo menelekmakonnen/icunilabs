@@ -11,6 +11,7 @@ const jobs = [{
   id:'ops-assistant-001', title:'Operations Assistant', type:'Full-Time', location:'Accra, Ghana',
   salary:'GH\u20B53,000/month + commission', heroImage:'/ops-assistant-hero.png',
   shortDesc:'Keep our client pipeline moving, coordinate referral partners, and grow with a tech company building real systems for real businesses.',
+  flyerImage:'/ops-assistant-flyer.jpg',
   perks:['Commission on every project','Real tech industry experience','Growth trajectory'],
   fullDescription:[
     "ICUNI Labs builds custom business operations systems for companies across Ghana and beyond. Our clients replace spreadsheets, WhatsApp chains, and manual processes with software built specifically for how they work. We're expanding our client base and need someone sharp, organized, and persistent to keep things moving behind the scenes.",
@@ -98,6 +99,7 @@ const ApplyBtn = ({onClick}:{onClick:()=>void})=>(
 
 function Detail({job}:{job:typeof jobs[0]}){
   const [showSalary,setShowSalary]=useState(false);
+  const [lightbox,setLightbox]=useState(false);
   const formRef=useRef<HTMLDivElement>(null);
   const scrollToForm=()=>formRef.current?.scrollIntoView({behavior:'smooth'});
 
@@ -199,6 +201,15 @@ function Detail({job}:{job:typeof jobs[0]}){
           {/* Sidebar - desktop only */}
           <aside className="hidden md:block">
             <div className="sticky top-24 space-y-4">
+              {/* Job flyer image - click to expand */}
+              {job.flyerImage && (
+                <button onClick={()=>setLightbox(true)} className={`${card} overflow-hidden cursor-pointer group w-full`}>
+                  <img src={job.flyerImage} alt={`${job.title} flyer`} className="w-full h-auto group-hover:scale-[1.02] transition-transform duration-300"/>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium bg-black/60 backdrop-blur px-3 py-1.5 rounded-full text-white">Click to expand</span>
+                  </div>
+                </button>
+              )}
               {/* Job summary card */}
               <div className={`${card} p-6`}>
                 <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500 mb-4">Quick Summary</h3>
@@ -237,6 +248,17 @@ function Detail({job}:{job:typeof jobs[0]}){
         {/* CTA #3 + Form */}
         <div ref={formRef} className="mt-16"><AppForm job={job}/></div>
       </div>
+
+      {/* Lightbox modal */}
+      {lightbox && job.flyerImage && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 cursor-pointer"
+          onClick={()=>setLightbox(false)} onKeyDown={e=>{if(e.key==='Escape')setLightbox(false);}} tabIndex={0}>
+          <img src={job.flyerImage} alt={`${job.title} flyer`} className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"/>
+          <button onClick={()=>setLightbox(false)} className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center text-white hover:bg-white/20 transition-colors cursor-pointer">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
