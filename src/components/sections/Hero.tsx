@@ -148,7 +148,7 @@ export default function Hero() {
                 >
                     FROM <br className="md:hidden" />
                     <motion.span 
-                        className="inline-block cursor-pointer bg-clip-text text-transparent bg-gradient-to-br from-[#ff8533] to-[#ff5500] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]"
+                        className="inline-block cursor-pointer bg-clip-text text-transparent bg-gradient-to-br from-[#ff9944] to-[#ff6600] drop-shadow-[0_0_15px_rgba(255,102,0,0.4)]"
                         whileHover={{ x: [-3, 3, -1, 1, -2, 2, 0], y: [1, -1, 2, -2, 1, -1, 0] }}
                         transition={{ duration: 0.3, repeat: Infinity, repeatType: "mirror" }}
                     >
