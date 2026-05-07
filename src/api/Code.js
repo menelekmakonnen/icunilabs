@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ICUNI Lean Systems Framework (ILSF) - Core Engine
  * 
  * Handles incoming POST requests from the ICUNI Labs website intake form.
@@ -112,7 +112,7 @@ function handleLeadIntake(payload) {
 }
 
 // ============================================================
-// REFERRAL ENGINE â€” HANDLERS
+// REFERRAL ENGINE Ã¢â‚¬â€ HANDLERS
 // ============================================================
 
 /**
@@ -430,7 +430,7 @@ function handleUpdateReferralStatus(payload) {
 }
 
 // ============================================================
-// REFERRAL ENGINE â€” DATA ACCESS
+// REFERRAL ENGINE Ã¢â‚¬â€ DATA ACCESS
 // ============================================================
 
 /**
@@ -648,6 +648,38 @@ function handleJobApplication(payload) {
 
     var hasCV = !!payload.cvBase64;
     var hasAudio = !!payload.audioBase64;
+    var hasVideo = !!payload.videoBase64;
+
+    // --- Google Drive storage ---
+    var driveLinks = { cv: '', audio: '', video: '' };
+    try {
+        var appFolder = getOrCreateFolder(DriveApp.getRootFolder(), 'ICUNI Labs');
+        var jobsFolder = getOrCreateFolder(appFolder, 'Jobs');
+        var appsFolder = getOrCreateFolder(jobsFolder, 'Applications');
+        var dateSuffix = Utilities.formatDate(new Date(), 'GMT', 'yyyy-MM-dd_HHmm');
+        var applicantFolder = appsFolder.createFolder(payload.name + ' - ' + dateSuffix);
+
+        if (hasCV) {
+            var cvMime = guessMime(payload.cvName || 'cv.pdf');
+            var cvBlob = Utilities.newBlob(Utilities.base64Decode(payload.cvBase64), cvMime, payload.cvName || 'cv.pdf');
+            var cvFile = applicantFolder.createFile(cvBlob);
+            driveLinks.cv = cvFile.getUrl();
+        }
+        if (hasAudio) {
+            var audioMime = (payload.audioName || '').indexOf('.webm') > -1 ? 'audio/webm' : 'audio/mpeg';
+            var audioBlob = Utilities.newBlob(Utilities.base64Decode(payload.audioBase64), audioMime, payload.audioName || 'voice-intro.webm');
+            var audioFile = applicantFolder.createFile(audioBlob);
+            driveLinks.audio = audioFile.getUrl();
+        }
+        if (hasVideo) {
+            var videoMime = guessMime(payload.videoName || 'video.mp4');
+            var videoBlob = Utilities.newBlob(Utilities.base64Decode(payload.videoBase64), videoMime, payload.videoName || 'video.mp4');
+            var videoFile = applicantFolder.createFile(videoBlob);
+            driveLinks.video = videoFile.getUrl();
+        }
+    } catch (driveErr) {
+        console.error('Drive storage failed:', driveErr);
+    }
 
     var record = [
         new Date().toISOString(),
@@ -659,44 +691,43 @@ function handleJobApplication(payload) {
         payload.note || '',
         hasCV ? 'Yes' : 'No',
         hasAudio ? 'Yes' : 'No',
+        hasVideo ? 'Yes' : 'No',
+        driveLinks.cv,
+        driveLinks.audio,
+        driveLinks.video,
         'New'
     ];
 
     writeToSheet(CONFIG.SHEET_NAME_JOBS, record, [
-        'DateApplied', 'JobID', 'JobTitle', 'Name', 'Email', 'Phone', 'Note', 'HasCV', 'HasAudio', 'Status'
+        'DateApplied', 'JobID', 'JobTitle', 'Name', 'Email', 'Phone', 'Note',
+        'HasCV', 'HasAudio', 'HasVideo', 'CV_Link', 'Audio_Link', 'Video_Link', 'Status'
     ]);
 
+    // Email notification with small attachments (CV + audio only, video is Drive-only)
     try {
         var attachments = [];
         if (hasCV) {
-            attachments.push(Utilities.newBlob(
-                Utilities.base64Decode(payload.cvBase64),
-                'application/pdf',
-                payload.cvName || 'cv.pdf'
-            ));
+            attachments.push(Utilities.newBlob(Utilities.base64Decode(payload.cvBase64), guessMime(payload.cvName || 'cv.pdf'), payload.cvName || 'cv.pdf'));
         }
         if (hasAudio) {
-            var audioMime = (payload.audioName || '').indexOf('.webm') > -1 ? 'audio/webm' : 'audio/mpeg';
-            attachments.push(Utilities.newBlob(
-                Utilities.base64Decode(payload.audioBase64),
-                audioMime,
-                payload.audioName || 'voice-intro.webm'
-            ));
+            var aMime = (payload.audioName || '').indexOf('.webm') > -1 ? 'audio/webm' : 'audio/mpeg';
+            attachments.push(Utilities.newBlob(Utilities.base64Decode(payload.audioBase64), aMime, payload.audioName || 'voice-intro.webm'));
         }
 
-        var emailBody = 'New application received:\n\n' +
+        var body = 'New application received:\n\n' +
             'Position: ' + (payload.jobTitle || 'N/A') + '\n' +
             'Name: ' + payload.name + '\n' +
             'Email: ' + payload.email + '\n' +
             'Phone: ' + (payload.phone || 'N/A') + '\n\n' +
             'Note: ' + (payload.note || 'None') + '\n\n' +
-            'CV Attached: ' + (hasCV ? 'Yes' : 'No') + '\n' +
-            'Audio Intro: ' + (hasAudio ? 'Yes' : 'No');
+            'CV: ' + (driveLinks.cv || 'Not provided') + '\n' +
+            'Audio Intro: ' + (driveLinks.audio || 'Not provided') + '\n' +
+            'Video CV: ' + (driveLinks.video || 'Not provided');
 
         var emailOpts = {
             to: 'jobs@icuni.org',
             subject: 'Job Application: ' + payload.name + ' - ' + (payload.jobTitle || 'Unknown'),
-            body: emailBody,
+            body: body,
             replyTo: payload.email,
         };
         if (attachments.length > 0) emailOpts.attachments = attachments;
@@ -706,6 +737,34 @@ function handleJobApplication(payload) {
     }
 
     return createResponse(200, "Application submitted successfully.");
+}
+
+/**
+ * Get or create a subfolder by name.
+ */
+function getOrCreateFolder(parent, name) {
+    var folders = parent.getFoldersByName(name);
+    return folders.hasNext() ? folders.next() : parent.createFolder(name);
+}
+
+/**
+ * Guess MIME type from filename extension.
+ */
+function guessMime(filename) {
+    var ext = (filename || '').split('.').pop().toLowerCase();
+    var map = {
+        'pdf': 'application/pdf',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'txt': 'text/plain',
+        'rtf': 'application/rtf',
+        'odt': 'application/vnd.oasis.opendocument.text',
+        'mp4': 'video/mp4',
+        'mov': 'video/quicktime',
+        'webm': 'video/webm',
+        'avi': 'video/x-msvideo',
+    };
+    return map[ext] || 'application/octet-stream';
 }
 
 /**
@@ -934,4 +993,43 @@ function moveLeadToClientFolder(folderUrl, leadName) {
     } catch (error) {
         console.error(`Failed to move folder for ${leadName}:`, error);
     }
+}
+
+/**
+ * Run once to set up the full ICUNI Labs Google Drive folder structure.
+ * Execute from Script Editor > Run > setupDriveFolders
+ */
+function setupDriveFolders() {
+    var root = DriveApp.getRootFolder();
+    var icuni = getOrCreateFolder(root, 'ICUNI Labs');
+
+    // Work folders
+    var work = getOrCreateFolder(icuni, 'Work');
+    getOrCreateFolder(work, 'Active Projects');
+    getOrCreateFolder(work, 'Completed Projects');
+    getOrCreateFolder(work, 'Templates');
+
+    // Portfolio
+    var portfolio = getOrCreateFolder(icuni, 'Portfolio');
+    getOrCreateFolder(portfolio, 'Case Studies');
+    getOrCreateFolder(portfolio, 'Screenshots');
+
+    // Referrers
+    var referrers = getOrCreateFolder(icuni, 'Referrers');
+    getOrCreateFolder(referrers, 'Agreements');
+    getOrCreateFolder(referrers, 'Payouts');
+
+    // Jobs
+    var jobs = getOrCreateFolder(icuni, 'Jobs');
+    getOrCreateFolder(jobs, 'Applications');
+    getOrCreateFolder(jobs, 'Job Descriptions');
+
+    // Blog
+    var blog = getOrCreateFolder(icuni, 'Blog');
+    getOrCreateFolder(blog, 'Drafts');
+    getOrCreateFolder(blog, 'Published');
+    getOrCreateFolder(blog, 'Media');
+
+    console.log('ICUNI Labs Drive folders created successfully.');
+    console.log('Root folder: ' + icuni.getUrl());
 }
