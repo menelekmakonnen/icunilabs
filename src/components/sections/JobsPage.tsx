@@ -35,13 +35,17 @@ const jobs = [{
   salary:'GH\u20B53,000/month + commission', heroImage:'/ops-assistant-hero.png',
   shortDesc:'Keep our client pipeline moving, coordinate referral partners, and grow with a tech company building real systems for real businesses.',
   flyerImage:'/ops-assistant-flyer.jpg',
+  deadline: '2026-05-18T00:00:00', // Sunday 17 May end-of-day
   perks:['Commission on every project','Real tech industry experience','Growth trajectory'],
   fullDescription:[
-    "ICUNI Labs builds custom business operations systems for companies across Ghana and beyond. Our clients replace spreadsheets, WhatsApp chains, and manual processes with software built specifically for how they work. We're expanding our client base and need someone sharp, organized, and persistent to keep things moving behind the scenes.",
-    "As Operations Assistant, you'll manage the space between building and closing. That means scheduling meetings with prospects, following up with existing clients, tracking our entire sales pipeline, chasing payments when they're due, coordinating with our growing network of referral partners, and ensuring absolutely nothing falls through the cracks.",
-    "This is not a desk-and-wait role. You will be on calls daily with business owners, managers, and decision-makers. You'll be sending emails, updating our CRM, keeping our pipeline alive, and making sure every lead gets the attention it deserves.",
-    "You'll work directly with the founder and have visibility into every part of the business, from how we acquire clients to how we deliver projects. You'll see the full picture, contribute to real decisions, and grow your career inside a company building the future of business operations in Africa.",
-    "We're looking for someone who follows up without being reminded. Strong written and verbal communication skills. Comfortable picking up the phone and calling a business owner they've never met. Organized, tracking things properly in systems, not from memory. Google Workspace familiarity expected. Based in Accra.",
+    "Hey! \ud83d\udc4b We build custom operations systems for businesses across Ghana and beyond.",
+    "We help companies replace spreadsheets, WhatsApp chaos, and manual processes with software built for how they actually work.",
+    "We're growing fast and need someone sharp, organized, and persistent to keep things moving behind the scenes.",
+    "As Ops Assistant, you'll manage the space between building and closing \u2014 scheduling, follow-ups, pipeline tracking, payment chasing, referral coordination \u2014 you name it.",
+    "This is NOT a desk-and-wait role \ud83d\ude45\u200d\u2642\ufe0f You'll be on calls daily with business owners and decision-makers.",
+    "You'll send emails, update our CRM, and make sure every lead gets the attention it deserves.",
+    "You'll work directly with the founder and see how we acquire clients, deliver projects, and scale. Full visibility. Real impact.",
+    "Basically \u2014 if you're the type who follows up without being reminded, loves being on top of things, and wants to grow inside a tech company building the future of business ops in Africa\u2026 we want to hear from you \ud83d\ude80",
   ],
   requirements:[
     'Follows up without being reminded, persistent and proactive',
@@ -61,7 +65,7 @@ const jobs = [{
     'Clear growth path as the company scales',
   ],
   applyEmail:'jobs@icuni.org',
-}];
+}].filter(j => !j.deadline || new Date(j.deadline) > new Date());
 
 export default function JobsPage(){
   const h = window.location.hash;
@@ -144,9 +148,11 @@ function Detail({job}:{job:typeof jobs[0]}){
             <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">{job.title}</h1>
             <div className="flex flex-wrap items-center gap-4 mb-6">
               <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">{job.type}</span>
+              <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">Hybrid</span>
               <span className="flex items-center gap-1 text-sm text-neutral-300"><MapPin className="w-3.5 h-3.5"/>{job.location}</span>
               <button onClick={()=>setShowSalary(!showSalary)} className="flex items-center gap-1.5 text-[#ff7a00] hover:text-[#ff9533] transition-colors cursor-pointer text-sm font-medium">
-                <DollarSign className="w-3.5 h-3.5"/>{showSalary?job.salary:'Reveal salary'}{showSalary?<EyeOff className="w-3 h-3"/>:<Eye className="w-3 h-3"/>}
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none"><text x="8" y="12" textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="bold">\u20B5</text></svg>
+                {showSalary?job.salary:'Reveal salary'}{showSalary?<EyeOff className="w-3 h-3"/>:<Eye className="w-3 h-3"/>}
               </button>
             </div>
             {/* CTA #1 */}
@@ -171,38 +177,58 @@ function Detail({job}:{job:typeof jobs[0]}){
                 <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 overflow-hidden">
                   {/* Chat header */}
                   <div className="flex items-center gap-3 px-5 py-3 bg-neutral-900/80 border-b border-neutral-800">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#00bfff] to-[#0066cc] flex items-center justify-center text-white text-xs font-black">IL</div>
+                    <img src="/icuni_logo.png" alt="ICUNI Labs" className="w-9 h-9 rounded-full bg-neutral-800 p-1 object-contain"/>
                     <div>
                       <p className="text-sm font-semibold text-white">ICUNI Labs</p>
-                      <p className="text-[10px] text-[#10b981]">Online now</p>
+                      <p className="text-[10px] text-[#10b981] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#10b981] inline-block"/>Online now</p>
                     </div>
                   </div>
                   {/* Messages */}
-                  <div className="p-4 space-y-3 min-h-[200px]">
-                    {job.fullDescription.map((msg,i)=>(
-                      <motion.div key={i}
-                        initial={{opacity:0,y:20,scale:0.95}}
-                        whileInView={{opacity:1,y:0,scale:1}}
-                        viewport={{once:true,margin:'-20px'}}
-                        transition={{duration:0.4,delay:i*0.15,ease:'easeOut'}}
-                        className="max-w-[88%]"
-                      >
-                        <div className={`relative px-4 py-3 rounded-2xl rounded-bl-md text-[14px] leading-[1.7] ${
-                          i===0?'bg-gradient-to-br from-[#00bfff]/15 to-[#0066cc]/10 border border-[#00bfff]/15 text-neutral-100'
-                          :'bg-neutral-800/60 border border-neutral-700/30 text-neutral-300'
-                        }`}>
-                          {msg}
+                  <div className="p-4 space-y-1 min-h-[200px]">
+                    {job.fullDescription.map((msg,i)=>{
+                      const total=job.fullDescription.length;
+                      const minsAgo=total-1-i;
+                      const timeLabel=minsAgo===0?'Now':minsAgo===1?'1m ago':`${minsAgo}m ago`;
+                      return(
+                        <div key={i}>
+                          {/* Typing indicator appears first */}
+                          <motion.div
+                            initial={{opacity:1}} whileInView={{opacity:0}}
+                            viewport={{once:true,margin:'-10px'}}
+                            transition={{duration:0.25,delay:0.5}}
+                            className="flex justify-end mb-1"
+                          >
+                            <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#00bfff]/10 border border-[#00bfff]/10">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#00bfff]/60 animate-bounce" style={{animationDelay:'0ms'}}/>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#00bfff]/60 animate-bounce" style={{animationDelay:'150ms'}}/>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#00bfff]/60 animate-bounce" style={{animationDelay:'300ms'}}/>
+                            </div>
+                          </motion.div>
+                          {/* Message bubble */}
+                          <motion.div
+                            initial={{opacity:0,y:16,scale:0.92}}
+                            whileInView={{opacity:1,y:0,scale:1}}
+                            viewport={{once:true,margin:'-10px'}}
+                            transition={{duration:0.35,delay:0.55,ease:'easeOut'}}
+                            className="flex justify-end mb-3"
+                          >
+                            <div className="max-w-[85%] group">
+                              <div className={`relative px-4 py-3 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-200 group-hover:shadow-[0_4px_20px_rgba(0,191,255,0.12)] group-hover:-translate-y-[1px] ${
+                                i===0?'bg-gradient-to-br from-[#00bfff]/20 to-[#0066cc]/12 border border-[#00bfff]/20 text-neutral-100'
+                                :'bg-neutral-800/70 border border-neutral-700/40 text-neutral-300 group-hover:border-[#00bfff]/20'
+                              }`}>
+                                {msg}
+                                {/* Speech tail */}
+                                <svg className="absolute -bottom-[6px] right-3 w-3 h-2" viewBox="0 0 12 8" fill="none">
+                                  <path d={i===0?"M0 0L6 8L12 0Z":"M0 0L6 8L12 0Z"} fill={i===0?'rgba(0,100,180,0.12)':'rgba(64,64,64,0.7)'}/>
+                                </svg>
+                              </div>
+                              <p className="text-[10px] text-neutral-600 mt-1.5 text-right mr-1">{timeLabel}</p>
+                            </div>
+                          </motion.div>
                         </div>
-                        <p className="text-[10px] text-neutral-600 mt-1 ml-2">{i===0?'Just now':i===1?'1m ago':`${i}m ago`}</p>
-                      </motion.div>
-                    ))}
-                    {/* Typing indicator */}
-                    <motion.div initial={{opacity:0}} whileInView={{opacity:1}} viewport={{once:true}} transition={{delay:job.fullDescription.length*0.15}}
-                      className="flex gap-1 px-4 py-3 w-16 rounded-2xl rounded-bl-md bg-neutral-800/40 border border-neutral-700/20">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 animate-bounce" style={{animationDelay:'0ms'}}/>
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 animate-bounce" style={{animationDelay:'150ms'}}/>
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-500 animate-bounce" style={{animationDelay:'300ms'}}/>
-                    </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
               </motion.div>

@@ -47,7 +47,7 @@ function App() {
     return <AnimationShowcase />;
   }
 
-  if (currentHash === '#jobs' || currentHash.startsWith('#job/')) {
+  if (currentHash === '#jobs' || currentHash.startsWith('#job/') || currentHash.startsWith('#apply/')) {
     return (
       <>
         <Navbar />
