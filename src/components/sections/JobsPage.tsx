@@ -26,7 +26,7 @@ const jobs = [{
     'Highly organized, tracks tasks in systems not from memory',
     'Familiar with Google Workspace (Sheets, Docs, Gmail, Calendar)',
     'Based in Accra, Ghana',
-    'Available to start within 2 weeks',
+    'Available to start ASAP',
   ],
   benefits:[
     'GH\u20B53,000 monthly base salary',
@@ -124,60 +124,118 @@ function Detail({job}:{job:typeof jobs[0]}){
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 pt-12 pb-20 space-y-16">
-        {/* About */}
-        <section className="relative">
-          <AboutSVG/>
-          <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-[#00bfff]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#00bfff]"/></span>
-              About This Role
-            </h2>
-            <div className="space-y-5 pl-11">
-              {job.fullDescription.map((p,i)=><p key={i} className="text-neutral-300 leading-[1.8] text-[15px]">{p}</p>)}
+      <div className="max-w-5xl mx-auto px-6 pt-12 pb-20">
+        <div className="grid md:grid-cols-[1fr_280px] gap-10">
+          {/* Main content */}
+          <div className="space-y-16 min-w-0">
+            {/* About - visual cards instead of wall of text */}
+            <section className="relative">
+              <AboutSVG/>
+              <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
+                <h2 className="text-2xl font-bold mb-8 flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-lg bg-[#00bfff]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#00bfff]"/></span>
+                  About This Role
+                </h2>
+                <div className="space-y-4">
+                  {/* Lead paragraph - featured callout */}
+                  <div className="rounded-xl bg-gradient-to-br from-[#00bfff]/5 to-transparent border border-[#00bfff]/10 p-6">
+                    <p className="text-neutral-200 leading-[1.9] text-[15px]">{job.fullDescription[0]}</p>
+                  </div>
+                  {/* Remaining paragraphs as alternating styled blocks */}
+                  {job.fullDescription.slice(1).map((p,i)=>{
+                    const sentences = p.split('. ');
+                    const lead = sentences[0] + '.';
+                    const rest = sentences.slice(1).join('. ');
+                    return(
+                      <div key={i} className={`rounded-xl p-5 ${i%2===0?'bg-neutral-900/40 border border-neutral-800/50':'bg-neutral-950/40 border border-neutral-900/50'}`}>
+                        <p className="text-neutral-200 leading-[1.9] text-[15px]">
+                          <span className="text-white font-medium">{lead}</span>{rest?' '+rest:''}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </section>
+
+            {/* Requirements */}
+            <section className="relative">
+              <RequirementsSVG/>
+              <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-lg bg-[#00bfff]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#00bfff]"/></span>
+                  What We Need From You
+                </h2>
+                <ul className="space-y-3 pl-11">
+                  {job.requirements.map((r,i)=><li key={i} className="flex items-start gap-3 text-neutral-300 text-[15px] leading-relaxed"><BulletCheck/>{r}</li>)}
+                </ul>
+              </motion.div>
+            </section>
+
+            {/* CTA #2 - mid-page banner */}
+            <motion.div initial={{opacity:0,scale:0.97}} whileInView={{opacity:1,scale:1}} viewport={{once:true}}
+              className="relative rounded-2xl overflow-hidden p-8 md:p-12 text-center bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 border border-neutral-800">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,191,255,0.05),transparent_70%)]"/>
+              <h3 className="text-2xl font-bold mb-2 relative z-10">Sound like you?</h3>
+              <p className="text-neutral-400 mb-6 relative z-10">We move fast. Apply now and hear back within days.</p>
+              <div className="relative z-10"><ApplyBtn onClick={scrollToForm}/></div>
+            </motion.div>
+
+            {/* Benefits */}
+            <section className="relative">
+              <BenefitsSVG/>
+              <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
+                <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-lg bg-[#ff6600]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#ff6600]"/></span>
+                  What You Get
+                </h2>
+                <ul className="space-y-3 pl-11">
+                  {job.benefits.map((b,i)=><li key={i} className="flex items-start gap-3 text-neutral-300 text-[15px] leading-relaxed"><BulletStar/>{b}</li>)}
+                </ul>
+              </motion.div>
+            </section>
+          </div>
+
+          {/* Sidebar - desktop only */}
+          <aside className="hidden md:block">
+            <div className="sticky top-24 space-y-4">
+              {/* Job summary card */}
+              <div className={`${card} p-6`}>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-neutral-500 mb-4">Quick Summary</h3>
+                <div className="space-y-3 text-sm">
+                  <div className="flex items-center gap-2 text-neutral-300"><Clock className="w-4 h-4 text-[#00bfff]"/>{job.type}</div>
+                  <div className="flex items-center gap-2 text-neutral-300"><MapPin className="w-4 h-4 text-[#00bfff]"/>{job.location}</div>
+                  <div className="flex items-center gap-2 text-neutral-300">
+                    <DollarSign className="w-4 h-4 text-[#ff6600]"/>
+                    <button onClick={()=>setShowSalary(!showSalary)} className="text-[#ff6600] hover:text-[#ff8833] transition-colors cursor-pointer font-medium">
+                      {showSalary?job.salary:'Reveal salary'}
+                    </button>
+                  </div>
+                </div>
+                <div className="border-t border-neutral-800 mt-4 pt-4">
+                  <p className="text-xs text-neutral-500 mb-4">{job.shortDesc}</p>
+                  <button onClick={scrollToForm} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff6600] to-[#ff8833] text-white font-bold py-3 rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer text-sm">
+                    <Send className="w-4 h-4"/> Apply Now
+                  </button>
+                </div>
+              </div>
+
+              {/* Refer & Earn card */}
+              <a href="#referral" className={`${card} p-5 block group hover:border-[#ff6600]/30 transition-all`}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#ff6600]/10 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-[#ff6600]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                  </div>
+                  <span className="text-sm font-bold text-white group-hover:text-[#ff6600] transition-colors">Refer &amp; Earn</span>
+                </div>
+                <p className="text-xs text-neutral-500 leading-relaxed">Know someone who needs our services? Connect us and earn commission on every deal.</p>
+              </a>
             </div>
-          </motion.div>
-        </section>
-
-        {/* Requirements */}
-        <section className="relative">
-          <RequirementsSVG/>
-          <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-[#00bfff]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#00bfff]"/></span>
-              What We Need From You
-            </h2>
-            <ul className="space-y-3 pl-11">
-              {job.requirements.map((r,i)=><li key={i} className="flex items-start gap-3 text-neutral-300 text-[15px] leading-relaxed"><BulletCheck/>{r}</li>)}
-            </ul>
-          </motion.div>
-        </section>
-
-        {/* CTA #2 - mid-page banner */}
-        <motion.div initial={{opacity:0,scale:0.97}} whileInView={{opacity:1,scale:1}} viewport={{once:true}}
-          className="relative rounded-2xl overflow-hidden p-8 md:p-12 text-center bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 border border-neutral-800">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,191,255,0.05),transparent_70%)]"/>
-          <h3 className="text-2xl font-bold mb-2 relative z-10">Sound like you?</h3>
-          <p className="text-neutral-400 mb-6 relative z-10">We move fast. Apply now and hear back within days.</p>
-          <div className="relative z-10"><ApplyBtn onClick={scrollToForm}/></div>
-        </motion.div>
-
-        {/* Benefits */}
-        <section className="relative">
-          <BenefitsSVG/>
-          <motion.div initial={{opacity:0,y:30}} whileInView={{opacity:1,y:0}} viewport={{once:true}}>
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3">
-              <span className="w-8 h-8 rounded-lg bg-[#ff6600]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#ff6600]"/></span>
-              What You Get
-            </h2>
-            <ul className="space-y-3 pl-11">
-              {job.benefits.map((b,i)=><li key={i} className="flex items-start gap-3 text-neutral-300 text-[15px] leading-relaxed"><BulletStar/>{b}</li>)}
-            </ul>
-          </motion.div>
-        </section>
+          </aside>
+        </div>
 
         {/* CTA #3 + Form */}
-        <div ref={formRef}><AppForm job={job}/></div>
+        <div ref={formRef} className="mt-16"><AppForm job={job}/></div>
       </div>
     </div>
   );
