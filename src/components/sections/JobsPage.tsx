@@ -59,22 +59,25 @@ function Listing(){
         </motion.div>
         <div className="space-y-4">
           {jobs.map((j,i)=>(
-            <motion.a key={j.id} href={`#job/${j.id}`} className={`${card} block p-6 hover:border-neutral-700 transition-all group cursor-pointer`}
+            <motion.a key={j.id} href={`#job/${j.id}`}
+              className="block rounded-xl relative overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all group cursor-pointer shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
               initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1+i*0.1}}>
-              <div className="flex items-start justify-between gap-4">
+              <img src={j.heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity duration-500"/>
+              <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/95 via-neutral-950/80 to-neutral-950/60"/>
+              <div className="relative p-6 md:p-8 flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#00bfff] transition-colors">{j.title}</h3>
-                  <p className="text-sm text-neutral-400 mb-4 leading-relaxed">{j.shortDesc}</p>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-500 mb-4">
+                  <p className="text-sm text-neutral-300 mb-4 leading-relaxed">{j.shortDesc}</p>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-400 mb-4">
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3"/>{j.type}</span>
-                    <span className="text-neutral-800">&#183;</span>
+                    <span className="text-neutral-700">&#183;</span>
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/>{j.location}</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {j.perks.map(p=><span key={p} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400">{p}</span>)}
+                    {j.perks.map(p=><span key={p} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-neutral-300">{p}</span>)}
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-neutral-700 group-hover:text-[#00bfff] group-hover:translate-x-1 transition-all flex-shrink-0 mt-1"/>
+                <ChevronRight className="w-5 h-5 text-neutral-600 group-hover:text-[#00bfff] group-hover:translate-x-1 transition-all flex-shrink-0 mt-1"/>
               </div>
             </motion.a>
           ))}
