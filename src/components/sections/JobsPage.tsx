@@ -196,9 +196,9 @@ function Detail({job}:{job:typeof jobs[0]}){
                             initial={{opacity:1}} whileInView={{opacity:0}}
                             viewport={{once:true,margin:'-10px'}}
                             transition={{duration:0.25,delay:0.5}}
-                            className="flex justify-end mb-1"
+                            className="mb-1"
                           >
-                            <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#ff7a00]/10 border border-[#ff7a00]/10">
+                            <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#ff7a00]/10 border border-[#ff7a00]/10 w-fit ml-auto">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'0ms'}}/>
                               <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'150ms'}}/>
                               <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'300ms'}}/>
@@ -210,17 +210,17 @@ function Detail({job}:{job:typeof jobs[0]}){
                             whileInView={{opacity:1,y:0,scale:1}}
                             viewport={{once:true,margin:'-10px'}}
                             transition={{duration:0.35,delay:0.55,ease:'easeOut'}}
-                            className="flex justify-end mb-3"
+                            className="mb-3"
                           >
-                            <div className="max-w-[85%] group">
-                              <div className={`relative px-4 py-3 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-200 group-hover:shadow-[0_4px_20px_rgba(255,122,0,0.15)] group-hover:-translate-y-[1px] ${
-                                i===0?'bg-gradient-to-br from-[#ff7a00]/15 to-[#cc5500]/10 border border-[#ff7a00]/20 text-neutral-100'
-                                :'bg-neutral-800/70 border border-neutral-700/40 text-neutral-300 group-hover:border-[#ff7a00]/25'
+                            <div className="max-w-[80%] ml-auto group">
+                              <div className={`relative px-4 py-3 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-200 group-hover:shadow-[0_4px_20px_rgba(255,122,0,0.2)] group-hover:-translate-y-[1px] ${
+                                i===0?'bg-gradient-to-br from-[#ff7a00]/25 to-[#cc5500]/15 border border-[#ff7a00]/30 text-white'
+                                :'bg-gradient-to-br from-[#ff7a00]/8 to-neutral-800/80 border border-[#ff7a00]/10 text-neutral-200 group-hover:border-[#ff7a00]/25'
                               }`}>
                                 {msg}
                                 {/* Speech tail */}
                                 <svg className="absolute -bottom-[6px] right-3 w-3 h-2" viewBox="0 0 12 8" fill="none">
-                                  <path d="M0 0L6 8L12 0Z" fill={i===0?'rgba(180,80,0,0.12)':'rgba(64,64,64,0.7)'}/>
+                                  <path d="M0 0L6 8L12 0Z" fill={i===0?'rgba(180,80,0,0.2)':'rgba(100,60,20,0.15)'}/>
                                 </svg>
                               </div>
                               <p className="text-[10px] text-neutral-600 mt-1.5 text-right mr-1">{timeLabel}</p>
