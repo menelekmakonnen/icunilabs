@@ -776,9 +776,9 @@ function handleJobQualification(payload) {
     // Qualification data starts at column 11 (K)
     var qualFields = [
         'salaryOk', 'fullTimeOk', 'asapOk',
-        'selfView', 'deadlines', 'feedback',
+        'selfView', 'deadlines',
         'googleSuite', 'coldCalling',
-        'computerSpecs', 'phoneSpecs', 'secureWorkspace',
+        'hasLaptop', 'phoneSpecs', 'secureWorkspace',
         'paymentMethod', 'currentJob'
     ];
 
@@ -793,9 +793,9 @@ function handleJobQualification(payload) {
     var headerRow = sheet.getRange(1, startCol, 1, qualFields.length).getValues()[0];
     var qualHeaders = [
         'Salary OK', 'Full-Time OK', 'ASAP OK',
-        'Self View', 'Deadline Handling', 'Feedback Handling',
+        'Self View', 'Deadline Handling',
         'Google Suite (1-5)', 'Cold Calling (1-5)',
-        'Computer Specs', 'Phone Specs', 'Secure Workspace',
+        'Has Laptop', 'Phone Specs', 'Secure Workspace',
         'Payment Method', 'Current Job Status'
     ];
 
