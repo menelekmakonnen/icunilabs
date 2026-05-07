@@ -43,9 +43,17 @@ const jobs = [{
 
 export default function JobsPage(){
   const h = window.location.hash;
-  const m = h.match(/^#job\/(.+)$/);
-  const j = m ? jobs.find(x=>x.id===m[1]) : null;
-  return j ? <Detail job={j}/> : <Listing/>;
+  const applyMatch = h.match(/^#apply\/(.+)$/);
+  const jobMatch = h.match(/^#job\/(.+)$/);
+  if (applyMatch) {
+    const j = jobs.find(x=>x.id===applyMatch[1]);
+    if (j) return <ApplyModal job={j}/>;
+  }
+  if (jobMatch) {
+    const j = jobs.find(x=>x.id===jobMatch[1]);
+    if (j) return <Detail job={j}/>;
+  }
+  return <Listing/>;
 }
 
 function Listing(){
@@ -92,17 +100,15 @@ function Listing(){
   );
 }
 
-const ApplyBtn = ({onClick}:{onClick:()=>void})=>(
-  <button onClick={onClick} className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer">
+const ApplyBtn = ({jobId}:{jobId:string})=>(
+  <a href={`#apply/${jobId}`} className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer">
     <Send className="w-4 h-4"/> Apply Now
-  </button>
+  </a>
 );
 
 function Detail({job}:{job:typeof jobs[0]}){
   const [showSalary,setShowSalary]=useState(false);
   const [lightbox,setLightbox]=useState(false);
-  const formRef=useRef<HTMLDivElement>(null);
-  const scrollToForm=()=>formRef.current?.scrollIntoView({behavior:'smooth'});
 
   return(
     <div className="min-h-screen bg-neutral-950 text-neutral-50">
@@ -122,7 +128,7 @@ function Detail({job}:{job:typeof jobs[0]}){
               </button>
             </div>
             {/* CTA #1 */}
-            <ApplyBtn onClick={scrollToForm}/>
+            <ApplyBtn jobId={job.id}/>
           </div>
         </div>
       </div>
@@ -181,7 +187,7 @@ function Detail({job}:{job:typeof jobs[0]}){
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,191,255,0.05),transparent_70%)]"/>
               <h3 className="text-2xl font-bold mb-2 relative z-10">Sound like you?</h3>
               <p className="text-neutral-400 mb-6 relative z-10">We move fast. Apply now and hear back within days.</p>
-              <div className="relative z-10"><ApplyBtn onClick={scrollToForm}/></div>
+              <div className="relative z-10"><ApplyBtn jobId={job.id}/></div>
             </motion.div>
 
             {/* Benefits */}
@@ -226,9 +232,9 @@ function Detail({job}:{job:typeof jobs[0]}){
                 </div>
                 <div className="border-t border-neutral-800 mt-4 pt-4">
                   <p className="text-xs text-neutral-500 mb-4">{job.shortDesc}</p>
-                  <button onClick={scrollToForm} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer text-sm">
+                  <a href={`#apply/${job.id}`} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 rounded-lg hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer text-sm">
                     <Send className="w-4 h-4"/> Apply Now
-                  </button>
+                  </a>
                 </div>
               </div>
 
@@ -245,9 +251,6 @@ function Detail({job}:{job:typeof jobs[0]}){
             </div>
           </aside>
         </div>
-
-        {/* CTA #3 + Form */}
-        <div ref={formRef} className="mt-16"><AppForm job={job}/></div>
       </div>
 
       {/* Lightbox modal */}
@@ -260,6 +263,20 @@ function Detail({job}:{job:typeof jobs[0]}){
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ---- Full-screen Apply page ---- */
+function ApplyModal({job}:{job:typeof jobs[0]}){
+  return(
+    <div className="min-h-screen bg-neutral-950 text-neutral-50 pt-24 pb-20">
+      <div className="max-w-lg mx-auto px-6">
+        <a href={`#job/${job.id}`} className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors mb-8">
+          <ArrowLeft className="w-4 h-4"/> Back to {job.title}
+        </a>
+        <AppForm job={job}/>
+      </div>
     </div>
   );
 }
