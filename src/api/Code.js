@@ -734,6 +734,34 @@ function handleJobApplication(payload) {
         };
         if (attachments.length > 0) emailOpts.attachments = attachments;
         MailApp.sendEmail(emailOpts);
+
+        // Applicant confirmation email
+        var applicantBody = 'Dear ' + payload.name + ',\n\n' +
+            'Thank you for applying for the ' + (payload.jobTitle || 'role') + ' position at ICUNI Labs.\n\n' +
+            'We have received your application and our team will review it carefully. ' +
+            'You can expect to hear from us within 48 hours.\n\n' +
+            '--- YOUR APPLICATION SUMMARY ---\n' +
+            'Position: ' + (payload.jobTitle || 'N/A') + '\n' +
+            'Name: ' + payload.name + '\n' +
+            'Email: ' + payload.email + '\n' +
+            'Phone: ' + (payload.phone || 'N/A') + '\n' +
+            'CV: ' + (driveLinks.cv ? 'Submitted' : 'Not provided') + '\n' +
+            'Voice Intro: ' + (driveLinks.audio ? 'Submitted' : 'Not provided') + '\n' +
+            'Video CV: ' + (driveLinks.video ? 'Submitted' : 'Not provided') + '\n' +
+            'Additional Notes: ' + (payload.note || 'None') + '\n' +
+            '--------------------------------\n\n' +
+            'If you have any questions in the meantime, feel free to reach out to us at jobs@icuni.org.\n\n' +
+            'Best regards,\n' +
+            'The ICUNI Labs Team\n' +
+            'https://labs.icuni.org';
+
+        MailApp.sendEmail({
+            to: payload.email,
+            subject: 'Application Received - ' + (payload.jobTitle || 'ICUNI Labs'),
+            body: applicantBody,
+            name: 'ICUNI Labs Careers',
+            replyTo: 'jobs@icuni.org',
+        });
     } catch (err) {
         console.error('Job application email failed:', err);
     }

@@ -38,11 +38,11 @@ const jobs = [{
   deadline: '2026-05-18T00:00:00', // Sunday 17 May end-of-day
   perks:['Commission on every project','Real tech industry experience','Growth trajectory'],
   fullDescription:[
-    "Hey! \ud83d\udc4b We build custom operations systems for businesses across Ghana and beyond.",
+    "Hey! \ud83d\udc4b\ud83c\udffe We build custom operations systems for businesses across Ghana and beyond.",
     "We help companies replace spreadsheets, WhatsApp chaos, and manual processes with software built for how they actually work.",
     "We're growing fast and need someone sharp, organized, and persistent to keep things moving behind the scenes.",
     "As Ops Assistant, you'll manage the space between building and closing \u2014 scheduling, follow-ups, pipeline tracking, payment chasing, referral coordination \u2014 you name it.",
-    "This is NOT a desk-and-wait role \ud83d\ude45\u200d\u2642\ufe0f You'll be on calls daily with business owners and decision-makers.",
+    "This is NOT a desk-and-wait role \ud83d\ude45\ud83c\udffe\u200d\u2642\ufe0f You'll be on calls daily with business owners and decision-makers.",
     "You'll send emails, update our CRM, and make sure every lead gets the attention it deserves.",
     "You'll work directly with the founder and see how we acquire clients, deliver projects, and scale. Full visibility. Real impact.",
     "Basically \u2014 if you're the type who follows up without being reminded, loves being on top of things, and wants to grow inside a tech company building the future of business ops in Africa\u2026 we want to hear from you \ud83d\ude80",
@@ -80,6 +80,72 @@ export default function JobsPage(){
     if (j) return <Detail job={j}/>;
   }
   return <Listing/>;
+}
+
+/* ---- Sequential Chat Messages ---- */
+function ChatMessages({messages}:{messages:string[]}){
+  const [revealed,setRevealed]=useState(0);
+  const [typing,setTyping]=useState(false);
+  const containerRef=useRef<HTMLDivElement>(null);
+  const started=useRef(false);
+
+  useEffect(()=>{
+    if(!containerRef.current)return;
+    const obs=new IntersectionObserver(([e])=>{
+      if(e.isIntersecting&&!started.current){started.current=true;setTyping(true);}
+    },{threshold:0.15});
+    obs.observe(containerRef.current);
+    return()=>obs.disconnect();
+  },[]);
+
+  useEffect(()=>{
+    if(!typing)return;
+    const t=setTimeout(()=>{
+      setTyping(false);
+      setRevealed(r=>{
+        const next=r+1;
+        if(next<messages.length)setTimeout(()=>setTyping(true),200);
+        return next;
+      });
+    },600);
+    return()=>clearTimeout(t);
+  },[typing,messages.length]);
+
+  const total=messages.length;
+  return(
+    <div ref={containerRef} className="p-3 min-h-[120px]">
+      {messages.slice(0,revealed).map((msg,i)=>{
+        const minsAgo=total-1-i;
+        const isLast=i===revealed-1&&revealed===total;
+        const timeLabel=minsAgo===0?'Now':minsAgo===1?'1m ago':`${minsAgo}m ago`;
+        return(
+          <motion.div key={i} initial={{opacity:0,y:14,scale:0.93}} animate={{opacity:1,y:0,scale:1}} transition={{duration:0.3,ease:'easeOut'}} className="mb-1.5">
+            <div className="max-w-[80%] ml-auto group">
+              <div className={`relative px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-200 group-hover:shadow-[0_4px_20px_rgba(255,122,0,0.2)] group-hover:-translate-y-[1px] ${
+                isLast?'bg-gradient-to-br from-[#ff7a00]/25 to-[#cc5500]/15 border border-[#ff7a00]/30 text-white'
+                :'bg-gradient-to-br from-[#ff7a00]/8 to-neutral-800/80 border border-[#ff7a00]/10 text-neutral-200 group-hover:border-[#ff7a00]/25'
+              }`}>
+                {msg}
+                <svg className="absolute -bottom-[6px] right-3 w-3 h-2" viewBox="0 0 12 8" fill="none">
+                  <path d="M0 0L6 8L12 0Z" fill={isLast?'rgba(180,80,0,0.2)':'rgba(100,60,20,0.15)'}/>
+                </svg>
+              </div>
+              <p className="text-[10px] text-neutral-600 mt-1 text-right mr-1">{timeLabel}</p>
+            </div>
+          </motion.div>
+        );
+      })}
+      {typing&&(
+        <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:0.15}} className="mb-1">
+          <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#ff7a00]/10 border border-[#ff7a00]/10 w-fit ml-auto">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'0ms'}}/>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'150ms'}}/>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'300ms'}}/>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
 }
 
 function Listing(){
@@ -151,7 +217,7 @@ function Detail({job}:{job:typeof jobs[0]}){
               <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">Hybrid</span>
               <span className="flex items-center gap-1 text-sm text-neutral-300"><MapPin className="w-3.5 h-3.5"/>{job.location}</span>
               <button onClick={()=>setShowSalary(!showSalary)} className="flex items-center gap-1.5 text-[#ff7a00] hover:text-[#ff9533] transition-colors cursor-pointer text-sm font-medium">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none"><text x="8" y="12" textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="bold">\u20B5</text></svg>
+                <span className="text-base font-bold leading-none">₵</span>
                 {showSalary?job.salary:'Reveal salary'}{showSalary?<EyeOff className="w-3 h-3"/>:<Eye className="w-3 h-3"/>}
               </button>
             </div>
@@ -183,53 +249,7 @@ function Detail({job}:{job:typeof jobs[0]}){
                       <p className="text-[10px] text-[#10b981] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#10b981] inline-block"/>Online now</p>
                     </div>
                   </div>
-                  {/* Messages */}
-                  <div className="p-4 space-y-1 min-h-[200px]">
-                    {job.fullDescription.map((msg,i)=>{
-                      const total=job.fullDescription.length;
-                      const minsAgo=total-1-i;
-                      const timeLabel=minsAgo===0?'Now':minsAgo===1?'1m ago':`${minsAgo}m ago`;
-                      return(
-                        <div key={i}>
-                          {/* Typing indicator appears first */}
-                          <motion.div
-                            initial={{opacity:1}} whileInView={{opacity:0}}
-                            viewport={{once:true,margin:'-10px'}}
-                            transition={{duration:0.25,delay:0.5}}
-                            className="mb-1"
-                          >
-                            <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#ff7a00]/10 border border-[#ff7a00]/10 w-fit ml-auto">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'0ms'}}/>
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'150ms'}}/>
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'300ms'}}/>
-                            </div>
-                          </motion.div>
-                          {/* Message bubble */}
-                          <motion.div
-                            initial={{opacity:0,y:16,scale:0.92}}
-                            whileInView={{opacity:1,y:0,scale:1}}
-                            viewport={{once:true,margin:'-10px'}}
-                            transition={{duration:0.35,delay:0.55,ease:'easeOut'}}
-                            className="mb-3"
-                          >
-                            <div className="max-w-[80%] ml-auto group">
-                              <div className={`relative px-4 py-3 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-200 group-hover:shadow-[0_4px_20px_rgba(255,122,0,0.2)] group-hover:-translate-y-[1px] ${
-                                i===0?'bg-gradient-to-br from-[#ff7a00]/25 to-[#cc5500]/15 border border-[#ff7a00]/30 text-white'
-                                :'bg-gradient-to-br from-[#ff7a00]/8 to-neutral-800/80 border border-[#ff7a00]/10 text-neutral-200 group-hover:border-[#ff7a00]/25'
-                              }`}>
-                                {msg}
-                                {/* Speech tail */}
-                                <svg className="absolute -bottom-[6px] right-3 w-3 h-2" viewBox="0 0 12 8" fill="none">
-                                  <path d="M0 0L6 8L12 0Z" fill={i===0?'rgba(180,80,0,0.2)':'rgba(100,60,20,0.15)'}/>
-                                </svg>
-                              </div>
-                              <p className="text-[10px] text-neutral-600 mt-1.5 text-right mr-1">{timeLabel}</p>
-                            </div>
-                          </motion.div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <ChatMessages messages={job.fullDescription}/>
                 </div>
               </motion.div>
             </section>
@@ -481,7 +501,16 @@ function AppForm({job}:{job:typeof jobs[0]}){
                   <Square className="w-4 h-4"/> Stop Recording ({fmt(recTime)})
                 </button>
               )}
-              {audioBlob&&!audioFile&&<div className="flex items-center gap-2 text-xs text-[#10b981] bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-3 py-2"><Mic className="w-3 h-3"/>Recording ({fmt(recTime)})</div>}
+              {audioBlob&&!audioFile&&(
+                <div className="flex items-center gap-2 bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-3 py-2">
+                  <Mic className="w-3 h-3 text-[#10b981]"/>
+                  <audio src={URL.createObjectURL(audioBlob)} controls className="h-8 flex-1 [&::-webkit-media-controls-panel]{background:transparent}"/>
+                  <span className="text-xs text-[#10b981]">{fmt(recTime)}</span>
+                  <button type="button" onClick={()=>{setAudioBlob(null);setRecTime(0);}} className="p-1 rounded hover:bg-red-500/20 transition-colors cursor-pointer" title="Discard recording">
+                    <svg className="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                  </button>
+                </div>
+              )}
             </div>
           ):(
             <label {...audioDrop.p} className={`flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed cursor-pointer transition-all ${dropCls(audioDrop.d,!!audioFile)}`}>
