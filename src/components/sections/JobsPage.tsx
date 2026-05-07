@@ -82,72 +82,6 @@ export default function JobsPage(){
   return <Listing/>;
 }
 
-/* ---- Sequential Chat Messages ---- */
-function ChatMessages({messages}:{messages:string[]}){
-  const [revealed,setRevealed]=useState(0);
-  const [typing,setTyping]=useState(false);
-  const containerRef=useRef<HTMLDivElement>(null);
-  const started=useRef(false);
-
-  useEffect(()=>{
-    if(!containerRef.current)return;
-    const obs=new IntersectionObserver(([e])=>{
-      if(e.isIntersecting&&!started.current){started.current=true;setTyping(true);}
-    },{threshold:0.15});
-    obs.observe(containerRef.current);
-    return()=>obs.disconnect();
-  },[]);
-
-  useEffect(()=>{
-    if(!typing)return;
-    const t=setTimeout(()=>{
-      setTyping(false);
-      setRevealed(r=>{
-        const next=r+1;
-        if(next<messages.length)setTimeout(()=>setTyping(true),200);
-        return next;
-      });
-    },600);
-    return()=>clearTimeout(t);
-  },[typing,messages.length]);
-
-  const total=messages.length;
-  return(
-    <div ref={containerRef} className="p-3 min-h-[120px]">
-      {messages.slice(0,revealed).map((msg,i)=>{
-        const minsAgo=total-1-i;
-        const isLast=i===revealed-1&&revealed===total;
-        const timeLabel=minsAgo===0?'Now':minsAgo===1?'1m ago':`${minsAgo}m ago`;
-        return(
-          <motion.div key={i} initial={{opacity:0,y:14,scale:0.93}} animate={{opacity:1,y:0,scale:1}} transition={{duration:0.3,ease:'easeOut'}} className="mb-1.5">
-            <div className="max-w-[80%] ml-auto group">
-              <div className={`relative px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-200 group-hover:shadow-[0_4px_20px_rgba(255,122,0,0.2)] group-hover:-translate-y-[1px] ${
-                isLast?'bg-gradient-to-br from-[#ff7a00]/25 to-[#cc5500]/15 border border-[#ff7a00]/30 text-white'
-                :'bg-gradient-to-br from-[#ff7a00]/8 to-neutral-800/80 border border-[#ff7a00]/10 text-neutral-200 group-hover:border-[#ff7a00]/25'
-              }`}>
-                {msg}
-                <svg className="absolute -bottom-[6px] right-3 w-3 h-2" viewBox="0 0 12 8" fill="none">
-                  <path d="M0 0L6 8L12 0Z" fill={isLast?'rgba(180,80,0,0.2)':'rgba(100,60,20,0.15)'}/>
-                </svg>
-              </div>
-              <p className="text-[10px] text-neutral-600 mt-1 text-right mr-1">{timeLabel}</p>
-            </div>
-          </motion.div>
-        );
-      })}
-      {typing&&(
-        <motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} transition={{duration:0.15}} className="mb-1">
-          <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#ff7a00]/10 border border-[#ff7a00]/10 w-fit ml-auto">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'0ms'}}/>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'150ms'}}/>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'300ms'}}/>
-          </div>
-        </motion.div>
-      )}
-    </div>
-  );
-}
-
 function Listing(){
   return(
     <div className="min-h-screen bg-neutral-950 text-neutral-50 pt-24 pb-20">
@@ -201,6 +135,7 @@ const ApplyBtn = ({jobId}:{jobId:string})=>(
 function Detail({job}:{job:typeof jobs[0]}){
   const [showSalary,setShowSalary]=useState(false);
   const [lightbox,setLightbox]=useState(false);
+  const [latestMsg,setLatestMsg]=useState(0);
 
   return(
     <div className="min-h-screen bg-neutral-950 text-neutral-50">
@@ -217,7 +152,7 @@ function Detail({job}:{job:typeof jobs[0]}){
               <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">Hybrid</span>
               <span className="flex items-center gap-1 text-sm text-neutral-300"><MapPin className="w-3.5 h-3.5"/>{job.location}</span>
               <button onClick={()=>setShowSalary(!showSalary)} className="flex items-center gap-1.5 text-[#ff7a00] hover:text-[#ff9533] transition-colors cursor-pointer text-sm font-medium">
-                <span className="text-base font-bold leading-none">₵</span>
+                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none"><text x="8" y="12" textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="bold">\u20B5</text></svg>
                 {showSalary?job.salary:'Reveal salary'}{showSalary?<EyeOff className="w-3 h-3"/>:<Eye className="w-3 h-3"/>}
               </button>
             </div>
@@ -249,7 +184,54 @@ function Detail({job}:{job:typeof jobs[0]}){
                       <p className="text-[10px] text-[#10b981] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#10b981] inline-block"/>Online now</p>
                     </div>
                   </div>
-                  <ChatMessages messages={job.fullDescription}/>
+                  {/* Messages */}
+                  <div className="p-3 space-y-0 min-h-[200px]">
+                    {job.fullDescription.map((msg,i)=>{
+                      const total=job.fullDescription.length;
+                      const minsAgo=total-1-i;
+                      const timeLabel=minsAgo===0?'Now':minsAgo===1?'1m ago':`${minsAgo}m ago`;
+                      return(
+                        <div key={i}>
+                          {/* Typing indicator appears first */}
+                          <motion.div
+                            initial={{opacity:1}} whileInView={{opacity:0}}
+                            viewport={{once:true,margin:'-10px'}}
+                            transition={{duration:0.25,delay:0.5}}
+                            className="mb-0.5"
+                          >
+                            <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#ff7a00]/10 border border-[#ff7a00]/10 w-fit ml-auto">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'0ms'}}/>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'150ms'}}/>
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'300ms'}}/>
+                            </div>
+                          </motion.div>
+                          {/* Message bubble */}
+                          <motion.div
+                            initial={{opacity:0,y:16,scale:0.92}}
+                            whileInView={{opacity:1,y:0,scale:1}}
+                            onViewportEnter={()=>setLatestMsg(m=>Math.max(m,i))}
+                            viewport={{once:true,margin:'-10px'}}
+                            transition={{duration:0.35,delay:0.55,ease:'easeOut'}}
+                            className="mb-1.5"
+                          >
+                            <div className="max-w-[80%] ml-auto group">
+                              <div className={`relative px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-500 group-hover:shadow-[0_4px_20px_rgba(255,122,0,0.2)] group-hover:-translate-y-[1px] ${
+                                latestMsg===i?'bg-gradient-to-br from-[#ff7a00]/25 to-[#cc5500]/15 border border-[#ff7a00]/30 text-white shadow-[0_2px_12px_rgba(255,122,0,0.1)]'
+                                :'bg-gradient-to-br from-[#ff7a00]/8 to-neutral-800/80 border border-[#ff7a00]/10 text-neutral-200 group-hover:border-[#ff7a00]/25'
+                              }`}>
+                                {msg}
+                                {/* Speech tail */}
+                                <svg className="absolute -bottom-[6px] right-3 w-3 h-2" viewBox="0 0 12 8" fill="none">
+                                  <path d="M0 0L6 8L12 0Z" fill={latestMsg===i?'rgba(180,80,0,0.2)':'rgba(100,60,20,0.15)'}/>
+                                </svg>
+                              </div>
+                              <p className="text-[10px] text-neutral-600 mt-1 text-right mr-1">{timeLabel}</p>
+                            </div>
+                          </motion.div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </motion.div>
             </section>
