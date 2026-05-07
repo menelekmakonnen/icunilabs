@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ICUNI Lean Systems Framework (ILSF) - Core Engine
  * 
  * Handles incoming POST requests from the ICUNI Labs website intake form.
@@ -112,7 +112,7 @@ function handleLeadIntake(payload) {
 }
 
 // ============================================================
-// REFERRAL ENGINE — HANDLERS
+// REFERRAL ENGINE â€” HANDLERS
 // ============================================================
 
 /**
@@ -430,7 +430,7 @@ function handleUpdateReferralStatus(payload) {
 }
 
 // ============================================================
-// REFERRAL ENGINE — DATA ACCESS
+// REFERRAL ENGINE â€” DATA ACCESS
 // ============================================================
 
 /**
@@ -646,6 +646,9 @@ function handleJobApplication(payload) {
         return createResponse(400, "Name and email are required.");
     }
 
+    var hasCV = !!payload.cvBase64;
+    var hasAudio = !!payload.audioBase64;
+
     var record = [
         new Date().toISOString(),
         payload.jobId || '',
@@ -654,26 +657,50 @@ function handleJobApplication(payload) {
         payload.email,
         payload.phone || '',
         payload.note || '',
+        hasCV ? 'Yes' : 'No',
+        hasAudio ? 'Yes' : 'No',
         'New'
     ];
 
     writeToSheet(CONFIG.SHEET_NAME_JOBS, record, [
-        'DateApplied', 'JobID', 'JobTitle', 'Name', 'Email', 'Phone', 'Note', 'Status'
+        'DateApplied', 'JobID', 'JobTitle', 'Name', 'Email', 'Phone', 'Note', 'HasCV', 'HasAudio', 'Status'
     ]);
 
-    // Notify admin
     try {
-        MailApp.sendEmail({
-            to: CONFIG.ADMIN_EMAIL,
-            subject: 'New Job Application: ' + (payload.jobTitle || 'Unknown Position'),
-            body: 'New application received:\n\n' +
-                  'Position: ' + (payload.jobTitle || 'N/A') + '\n' +
-                  'Name: ' + payload.name + '\n' +
-                  'Email: ' + payload.email + '\n' +
-                  'Phone: ' + (payload.phone || 'N/A') + '\n\n' +
-                  'Note: ' + (payload.note || 'None') + '\n\n' +
-                  'Check the Job_Applications sheet for details.'
-        });
+        var attachments = [];
+        if (hasCV) {
+            attachments.push(Utilities.newBlob(
+                Utilities.base64Decode(payload.cvBase64),
+                'application/pdf',
+                payload.cvName || 'cv.pdf'
+            ));
+        }
+        if (hasAudio) {
+            var audioMime = (payload.audioName || '').indexOf('.webm') > -1 ? 'audio/webm' : 'audio/mpeg';
+            attachments.push(Utilities.newBlob(
+                Utilities.base64Decode(payload.audioBase64),
+                audioMime,
+                payload.audioName || 'voice-intro.webm'
+            ));
+        }
+
+        var emailBody = 'New application received:\n\n' +
+            'Position: ' + (payload.jobTitle || 'N/A') + '\n' +
+            'Name: ' + payload.name + '\n' +
+            'Email: ' + payload.email + '\n' +
+            'Phone: ' + (payload.phone || 'N/A') + '\n\n' +
+            'Note: ' + (payload.note || 'None') + '\n\n' +
+            'CV Attached: ' + (hasCV ? 'Yes' : 'No') + '\n' +
+            'Audio Intro: ' + (hasAudio ? 'Yes' : 'No');
+
+        var emailOpts = {
+            to: 'jobs@icuni.org',
+            subject: 'Job Application: ' + payload.name + ' - ' + (payload.jobTitle || 'Unknown'),
+            body: emailBody,
+            replyTo: payload.email,
+        };
+        if (attachments.length > 0) emailOpts.attachments = attachments;
+        MailApp.sendEmail(emailOpts);
     } catch (err) {
         console.error('Job application email failed:', err);
     }

@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import MainLayout from './components/layout/MainLayout';
+import Navbar from './components/layout/Navbar';
 import Hero from './components/sections/Hero';
 import Problem from './components/sections/Problem';
 import OperationsExplainer from './components/sections/OperationsExplainer';
@@ -46,8 +47,13 @@ function App() {
     return <AnimationShowcase />;
   }
 
-  if (currentHash === '#jobs') {
-    return <JobsPage />;
+  if (currentHash === '#jobs' || currentHash.startsWith('#job/')) {
+    return (
+      <>
+        <Navbar />
+        <JobsPage />
+      </>
+    );
   }
 
   if (currentHash === '#portal') {
