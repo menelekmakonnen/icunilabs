@@ -152,7 +152,7 @@ function Detail({job}:{job:typeof jobs[0]}){
               <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">Hybrid</span>
               <span className="flex items-center gap-1 text-sm text-neutral-300"><MapPin className="w-3.5 h-3.5"/>{job.location}</span>
               <button onClick={()=>setShowSalary(!showSalary)} className="flex items-center gap-1.5 text-[#ff7a00] hover:text-[#ff9533] transition-colors cursor-pointer text-sm font-medium">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none"><text x="8" y="12" textAnchor="middle" fill="currentColor" fontSize="12" fontWeight="bold">\u20B5</text></svg>
+                <span className="text-base font-bold leading-none">₵</span>
                 {showSalary?job.salary:'Reveal salary'}{showSalary?<EyeOff className="w-3 h-3"/>:<Eye className="w-3 h-3"/>}
               </button>
             </div>
