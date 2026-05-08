@@ -354,20 +354,59 @@ function notifyReferrerProjectApproved_(referrerId, clientName, projectTitle) {
 
 // ─── EMAIL TEMPLATES ─────────────────────────────────────
 
-function buildProjectStepEmail_(name, title, bodyHtml) {
-    return '<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a0e1a;font-family:-apple-system,sans-serif;">' +
+/** Logo URL served from the live site */
+var LOGO_URL = 'https://labs.icuni.org/icuni_logo.png';
+
+/**
+ * Master branded email template — all ICUNI Labs emails use this.
+ * Includes the ICUNI Labs logo at the top of every email.
+ */
+function buildBrandedEmail_(name, title, bodyHtml, opts) {
+    opts = opts || {};
+    var ctaText = opts.ctaText || 'Visit ICUNI Labs';
+    var ctaLink = opts.ctaLink || 'https://labs.icuni.org';
+    var showCta = opts.hideCta !== true;
+    
+    return '<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a0e1a;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;">' +
         '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0e1a;padding:40px 20px;"><tr><td align="center">' +
-        '<table width="520" cellpadding="0" cellspacing="0" style="background:#0f1424;border:1px solid rgba(255,255,255,0.06);border-radius:16px;">' +
-        '<tr><td style="padding:32px 32px 0;text-align:center;">' +
-        '<div style="font-size:22px;font-weight:800;color:#ff7a00;">ICUNI Labs</div></td></tr>' +
+        '<table width="540" cellpadding="0" cellspacing="0" style="background:#0f1424;border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;">' +
+        
+        // ── Logo Header ──
+        '<tr><td style="padding:28px 32px 20px;text-align:center;background:linear-gradient(180deg,#111827 0%,#0f1424 100%);">' +
+        '<img src="' + LOGO_URL + '" alt="ICUNI Labs" width="48" height="48" style="display:block;margin:0 auto 12px;border-radius:10px;" />' +
+        '<div style="font-size:20px;font-weight:800;color:#ff7a00;letter-spacing:-0.02em;">ICUNI Labs</div>' +
+        '<div style="font-size:10px;color:#4a5568;letter-spacing:4px;margin-top:2px;">CUSTOM BUSINESS SYSTEMS</div>' +
+        '</td></tr>' +
+        
+        // ── Title ──
         '<tr><td style="padding:24px 32px 8px;text-align:center;">' +
-        '<div style="font-size:18px;font-weight:700;color:#e8ecf4;">' + title + '</div></td></tr>' +
+        '<div style="font-size:18px;font-weight:700;color:#e8ecf4;line-height:1.4;">' + title + '</div>' +
+        '</td></tr>' +
+        
+        // ── Body ──
         '<tr><td style="padding:8px 32px 24px;color:#8b95a8;font-size:15px;line-height:1.7;">' +
-        'Hi <strong style="color:#e8ecf4;">' + (name || 'there') + '</strong>,<br><br>' + bodyHtml + '</td></tr>' +
-        '<tr><td style="padding:0 32px 24px;text-align:center;">' +
-        '<a href="https://labs.icuni.org" style="display:inline-block;padding:12px 28px;background:#ff7a00;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;">View Dashboard</a></td></tr>' +
-        '<tr><td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;color:#4a5568;font-size:11px;">ICUNI Labs — Custom Business Operations Systems</td></tr>' +
+        'Hi <strong style="color:#e8ecf4;">' + (name || 'there') + '</strong>,<br><br>' + bodyHtml +
+        '</td></tr>' +
+        
+        // ── CTA Button ──
+        (showCta ? '<tr><td style="padding:0 32px 28px;text-align:center;">' +
+        '<a href="' + ctaLink + '" style="display:inline-block;padding:12px 28px;background:linear-gradient(135deg,#ff7a00,#ff9a40);color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:14px;box-shadow:0 4px 12px rgba(255,122,0,0.3);">' + ctaText + '</a>' +
+        '</td></tr>' : '') +
+        
+        // ── Footer ──
+        '<tr><td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">' +
+        '<div style="color:#4a5568;font-size:11px;line-height:1.6;">ICUNI Labs — Custom Business Operations Systems</div>' +
+        '<div style="color:#3a4050;font-size:10px;margin-top:4px;">labs@icuni.org | labs.icuni.org</div>' +
+        '</td></tr>' +
+        
         '</table></td></tr></table></body></html>';
+}
+
+/**
+ * Backward-compatible alias — all existing callers continue to work.
+ */
+function buildProjectStepEmail_(name, title, bodyHtml) {
+    return buildBrandedEmail_(name, title, bodyHtml, { ctaText: 'View Dashboard', ctaLink: 'https://labs.icuni.org' });
 }
 
 function sendProjectCreatedEmail_(client, projectId, title, invoiceId, amount) {
@@ -378,16 +417,17 @@ function sendProjectCreatedEmail_(client, projectId, title, invoiceId, amount) {
     MailApp.sendEmail({
         to: client.email,
         subject: '[ICUNI Labs] Project Created — ' + title,
-        htmlBody: buildProjectStepEmail_(client.name, 'New Project Created', body)
+        htmlBody: buildBrandedEmail_(client.name, 'New Project Created', body)
     });
     logEmail_(client.email, 'Project Created — ' + title, 'project_created', 'sent');
 }
 
 function buildNewRequestEmail_(client, title, description) {
-    return buildProjectStepEmail_('Team',
+    return buildBrandedEmail_('Team',
         'New Build Request',
         '<strong>' + client.name + '</strong> (' + client.email + ') has requested a new build:<br><br>' +
         '<strong>Project:</strong> ' + title + '<br>' +
         '<strong>Description:</strong> ' + description + '<br><br>' +
         'Please review and follow up with the client.');
 }
+

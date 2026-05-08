@@ -406,33 +406,31 @@ function buildOTPEmail_(otp, name) {
         return '<td style="width:44px;height:52px;text-align:center;font-family:monospace;font-size:28px;font-weight:700;color:#ff7a00;background:#1a1a2e;border:2px solid #2a2a4a;border-radius:10px;">' + d + '</td>';
     }).join('<td style="width:6px;"></td>');
 
-    return '<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a0e1a;font-family:-apple-system,sans-serif;">' +
+    return '<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a0e1a;font-family:-apple-system,BlinkMacSystemFont,sans-serif;">' +
         '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0e1a;padding:40px 20px;"><tr><td align="center">' +
-        '<table width="460" cellpadding="0" cellspacing="0" style="background:#0f1424;border:1px solid rgba(255,255,255,0.06);border-radius:16px;">' +
-        '<tr><td style="padding:32px 32px 0;text-align:center;">' +
-        '<div style="font-size:24px;font-weight:800;color:#ff7a00;">ICUNI Labs</div>' +
-        '<div style="font-size:12px;color:#4a5568;margin-top:4px;letter-spacing:4px;">SECURE LOGIN</div></td></tr>' +
-        '<tr><td style="padding:28px 32px 0;color:#e8ecf4;font-size:16px;">Hi <strong>' + (name || 'there') + '</strong>,</td></tr>' +
+        '<table width="460" cellpadding="0" cellspacing="0" style="background:#0f1424;border:1px solid rgba(255,255,255,0.06);border-radius:16px;overflow:hidden;">' +
+        '<tr><td style="padding:28px 32px 16px;text-align:center;background:linear-gradient(180deg,#111827 0%,#0f1424 100%);">' +
+        '<img src="' + LOGO_URL + '" alt="ICUNI Labs" width="44" height="44" style="display:block;margin:0 auto 10px;border-radius:10px;" />' +
+        '<div style="font-size:22px;font-weight:800;color:#ff7a00;">ICUNI Labs</div>' +
+        '<div style="font-size:11px;color:#4a5568;margin-top:4px;letter-spacing:4px;">SECURE LOGIN</div></td></tr>' +
+        '<tr><td style="padding:24px 32px 0;color:#e8ecf4;font-size:16px;">Hi <strong>' + (name || 'there') + '</strong>,</td></tr>' +
         '<tr><td style="padding:12px 32px;color:#8b95a8;font-size:14px;">Enter this code to log in. It expires in <strong style="color:#e8ecf4;">5 minutes</strong>.</td></tr>' +
         '<tr><td style="padding:20px 32px;" align="center"><table cellpadding="0" cellspacing="0"><tr>' + boxes + '</tr></table></td></tr>' +
         '<tr><td style="padding:16px 32px;text-align:center;"><div style="padding:8px 16px;background:rgba(239,68,68,0.1);border-radius:8px;border:1px solid rgba(239,68,68,0.15);font-size:12px;color:#ef4444;display:inline-block;">Never share this code with anyone.</div></td></tr>' +
-        '<tr><td style="padding:24px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;color:#4a5568;font-size:11px;">ICUNI Labs — Custom Business Operations Systems</td></tr>' +
+        '<tr><td style="padding:20px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;">' +
+        '<div style="color:#4a5568;font-size:11px;">ICUNI Labs — Custom Business Operations Systems</div>' +
+        '<div style="color:#3a4050;font-size:10px;margin-top:4px;">labs@icuni.org | labs.icuni.org</div></td></tr>' +
         '</table></td></tr></table></body></html>';
 }
 
 function buildWelcomeEmail_(name, email, tempPw, role) {
-    return '<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a0e1a;font-family:-apple-system,sans-serif;">' +
-        '<table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0e1a;padding:40px 20px;"><tr><td align="center">' +
-        '<table width="500" cellpadding="0" cellspacing="0" style="background:#0f1424;border:1px solid rgba(255,255,255,0.06);border-radius:16px;">' +
-        '<tr><td style="padding:32px;text-align:center;">' +
-        '<div style="font-size:24px;font-weight:800;color:#ff7a00;">Welcome to ICUNI Labs</div></td></tr>' +
-        '<tr><td style="padding:0 32px 24px;color:#e8ecf4;font-size:15px;line-height:1.7;">' +
-        'Hi <strong>' + name + '</strong>,<br><br>' +
+    return buildBrandedEmail_(name,
+        'Welcome to ICUNI Labs',
         'Your account has been created with the role: <strong style="color:#ff7a00;">' + role + '</strong>.<br><br>' +
         'Your temporary password is:<br>' +
         '<div style="background:#1a1a2e;border:2px solid #ff7a00;border-radius:8px;padding:12px;text-align:center;margin:12px 0;font-family:monospace;font-size:18px;color:#ff7a00;font-weight:700;">' + tempPw + '</div>' +
-        'Please log in and change your password immediately.<br><br>' +
-        'Login at: <a href="https://labs.icuni.org" style="color:#ff7a00;">labs.icuni.org</a></td></tr>' +
-        '<tr><td style="padding:24px 32px;border-top:1px solid rgba(255,255,255,0.06);text-align:center;color:#4a5568;font-size:11px;">ICUNI Labs — Custom Business Operations Systems</td></tr>' +
-        '</table></td></tr></table></body></html>';
+        'Please log in and change your password immediately.',
+        { ctaText: 'Log In Now', ctaLink: 'https://labs.icuni.org' }
+    );
 }
+

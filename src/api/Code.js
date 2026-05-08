@@ -249,22 +249,70 @@ function handleJobQualificationLegacy(payload) {
             );
         }
         
-        // Send confirmation email with application summary
+        // Human-readable label mapping
+        var LABELS = {
+            salaryOk:        'Salary Range Acceptance (GH\u20B52,500 \u2013 GH\u20B52,950)',
+            fullTimeOk:      'Full-Time Availability (Mon\u2013Fri)',
+            asapOk:          'Available to Start ASAP',
+            selfView:        'How Others See You',
+            deadlines:       'How You Handle Tight Deadlines',
+            googleSuite:     'Google Workspace Experience (1\u20135)',
+            coldCalling:     'Cold Calling Confidence (1\u20135)',
+            hasLaptop:       'Has a Working Laptop',
+            phoneSpecs:      'Smartphone Model',
+            secureWorkspace: 'Has a Secure, Distraction-Free Workspace',
+            paymentMethod:   'Preferred Payment Method',
+            currentJob:      'Current Employment Status'
+        };
+        
+        // Build formatted summary rows
+        var summaryRows = Object.keys(answers).map(function(k) {
+            var label = LABELS[k] || k.replace(/([A-Z])/g, ' $1').replace(/^./, function(c) { return c.toUpperCase(); });
+            var val = answers[k];
+            // Scale values get a visual bar
+            if ((k === 'googleSuite' || k === 'coldCalling') && !isNaN(Number(val))) {
+                var n = Number(val);
+                var filled = '';
+                var empty = '';
+                for (var i = 0; i < 5; i++) { if (i < n) filled += '\u2B24 '; else empty += '\u25CB '; }
+                val = filled + empty + '(' + n + '/5)';
+            }
+            return '<tr><td style="padding:8px 12px;color:#8b95a8;font-size:13px;border-bottom:1px solid #1a2040;width:45%;">' + label + '</td>' +
+                   '<td style="padding:8px 12px;color:#e8ecf4;font-size:13px;font-weight:600;border-bottom:1px solid #1a2040;">' + val + '</td></tr>';
+        }).join('');
+        
+        var summaryTable = '<table style="width:100%;border-collapse:collapse;margin:16px 0;background:#0f1424;border:1px solid #1a2040;border-radius:8px;overflow:hidden;">' +
+            '<tr style="background:#1a1a2e;"><th style="padding:10px 12px;text-align:left;color:#64748b;font-size:11px;letter-spacing:1px;">QUESTION</th>' +
+            '<th style="padding:10px 12px;text-align:left;color:#64748b;font-size:11px;letter-spacing:1px;">YOUR ANSWER</th></tr>' +
+            summaryRows + '</table>';
+        
+        // Send confirmation email to applicant
         try {
             MailApp.sendEmail({
                 to: email,
                 subject: 'Application Complete — ICUNI Labs',
-                htmlBody: buildProjectStepEmail_(payload.name || email.split('@')[0],
+                htmlBody: buildBrandedEmail_(payload.name || email.split('@')[0],
                     'Application Complete',
                     'You\'ve successfully completed your application for <strong>' + jobTitle + '</strong> at ICUNI Labs.<br><br>' +
                     'Our team will review everything and get back to you within <strong>48 hours</strong>.<br><br>' +
-                    'For your records, here\'s a summary of your questionnaire responses:<br>' +
-                    Object.keys(answers).map(function(k) {
-                        return '<br><strong>' + k.replace(/_/g, ' ') + ':</strong> ' + answers[k];
-                    }).join(''))
+                    '<div style="font-size:12px;color:#64748b;letter-spacing:2px;margin-bottom:4px;">YOUR QUESTIONNAIRE RESPONSES</div>' +
+                    summaryTable)
             });
             logEmail_(email, 'Application Complete', 'qualification', 'sent');
         } catch(e) { logEmail_(email, 'Application Complete', 'qualification', 'failed'); }
+        
+        // Notify jobs@icuni.org
+        try {
+            MailApp.sendEmail({
+                to: JOBS_EMAIL,
+                subject: 'Qualification Complete — ' + (app ? app.name || email : email) + ' for ' + jobTitle,
+                htmlBody: buildBrandedEmail_('Team',
+                    'Applicant Qualification Complete',
+                    '<strong>' + (app ? app.name || email : email) + '</strong> has completed the qualification questionnaire for <strong>' + jobTitle + '</strong>.<br><br>' +
+                    summaryTable +
+                    '<br>Review the full application in the <a href="https://docs.google.com/spreadsheets/d/' + getProp_(PROP_KEYS.SS_CONTENT) + '" style="color:#ff7a00;">Content & Jobs spreadsheet</a>.')
+            });
+        } catch(e) { Logger.log('Jobs notification failed: ' + e.message); }
         
         logAction_('PUBLIC', email, 'JOB_QUALIFICATION', 'Completed qualification for ' + jobTitle);
         return successResponse_({ qualId: qualId }, 'Qualification submitted.');
@@ -274,6 +322,7 @@ function handleJobQualificationLegacy(payload) {
         return errorResponse_('Failed to submit qualification.');
     }
 }
+
 
 function saveBase64File_(folder, base64Data, fileName) {
     try {
@@ -292,12 +341,13 @@ function saveBase64File_(folder, base64Data, fileName) {
 }
 
 function buildApplicationConfirmEmail_(name, jobTitle) {
-    return buildProjectStepEmail_(name,
+    return buildBrandedEmail_(name,
         'Application Received',
         'Thank you for applying for the <strong>' + jobTitle + '</strong> position at ICUNI Labs!<br><br>' +
         'We\'ve received your application and our team will review it carefully. ' +
         'You can expect to hear from us within <strong>48 hours</strong>.<br><br>' +
-        'In the meantime, feel free to explore our work at <a href="https://labs.icuni.org" style="color:#ff7a00;">labs.icuni.org</a>.');
+        'In the meantime, feel free to explore our work at <a href="https://labs.icuni.org" style="color:#ff7a00;">labs.icuni.org</a>.',
+        { ctaText: 'Explore Our Work', ctaLink: 'https://labs.icuni.org' });
 }
 
 // ═══════════════════════════════════════════════════════════
