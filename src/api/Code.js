@@ -11,6 +11,7 @@
 
 // Configuration
 const CONFIG = {
+    SPREADSHEET_ID: '16sFsqxwUMlt2agSk6HfjhOGBPUG29h9DNevXh2XtRAw',
     SHEET_NAME_LEADS: 'Leads',
     SHEET_NAME_REFERRERS: 'Referrers',
     SHEET_NAME_REFERRALS: 'Referrals',
@@ -31,6 +32,12 @@ const CONFIG = {
         MAX_ATTEMPTS: 3
     }
 };
+
+/** Get the main spreadsheet (works for both bound and standalone scripts) */
+function getSpreadsheet() {
+    try { return SpreadsheetApp.getActiveSpreadsheet(); } catch(e) {}
+    return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+}
 
 // ============================================================
 // HTTP HANDLERS
@@ -363,7 +370,7 @@ function handleUpdateReferralStatus(payload) {
         return createResponse(400, "referralId and status are required.");
     }
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REFERRALS);
     if (!sheet) return createResponse(404, "Referrals sheet not found.");
 
@@ -448,7 +455,7 @@ function calculatePayout(dealValue) {
  * Find a referrer by email in the Referrers sheet.
  */
 function findReferrerByEmail(email) {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REFERRERS);
     if (!sheet || sheet.getLastRow() <= 1) return null;
 
@@ -475,7 +482,7 @@ function findReferrerByEmail(email) {
  * Find a referrer by ID in the Referrers sheet.
  */
 function findReferrerById(referrerId) {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REFERRERS);
     if (!sheet || sheet.getLastRow() <= 1) return null;
 
@@ -502,7 +509,7 @@ function findReferrerById(referrerId) {
  * Get all referrals for a given referrer ID.
  */
 function getReferralsByReferrerId(referrerId) {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REFERRALS);
     if (!sheet || sheet.getLastRow() <= 1) return [];
 
@@ -539,7 +546,7 @@ function updateReferrerTotalEarned(referrerId) {
         .filter(r => r.status === 'Closed Won')
         .reduce((sum, r) => sum + (parseFloat(r.payoutAmount) || 0), 0);
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheet();
     const sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REFERRERS);
     if (!sheet) return;
 
@@ -571,7 +578,7 @@ function generateOtp() {
  * Store an OTP in the OTP_Sessions sheet.
  */
 function storeOtp(email, otp) {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getSpreadsheet();
     var sheet = ss.getSheetByName(CONFIG.SHEET_NAME_OTP);
 
     if (!sheet) {
@@ -596,7 +603,7 @@ function storeOtp(email, otp) {
  * Verify an OTP. Returns { valid: boolean, message?: string }.
  */
 function verifyOtp(email, otp) {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = getSpreadsheet();
     var sheet = ss.getSheetByName(CONFIG.SHEET_NAME_OTP);
     if (!sheet) return { valid: false, message: 'No OTP found. Please request a new code.' };
 
@@ -991,7 +998,7 @@ function createTentativeCalendarEvent(leadName, leadEmail) {
  */
 function writeToSheet(sheetName, recordData, headers) {
     try {
-        const ss = SpreadsheetApp.getActiveSpreadsheet();
+        const ss = getSpreadsheet();
         let sheet = ss.getSheetByName(sheetName);
 
         if (!sheet) {
