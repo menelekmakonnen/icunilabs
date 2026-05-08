@@ -11,6 +11,17 @@
   "jsonExtensions": [
     ".json"
   ],
-  "filePushOrder": [],
+  "filePushOrder": [
+    "Config.js",
+    "Utils.js",
+    "Logger.js",
+    "Auth.js",
+    "Projects.js",
+    "Invoices.js",
+    "CMS.js",
+    "SLA.js",
+    "Setup.js",
+    "Code.js"
+  ],
   "skipSubdirectories": false
 }

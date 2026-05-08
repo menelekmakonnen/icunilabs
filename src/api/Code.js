@@ -1,1137 +1,335 @@
 /**
- * ICUNI Lean Systems Framework (ILSF) - Core Engine
- * 
- * Handles incoming POST requests from the ICUNI Labs website intake form.
- * Validates data, calculates lead score, routing, and writes to Google Sheets.
- * 
- * --- REFERRAL ENGINE ---
- * Also handles referral partner signup, referral submission, dashboard data,
- * and admin status updates for the referral program.
+ * ICUNI Labs — Main Entry Point & HTTP Router
+ * All API calls route through doPost/doGet.
+ * Each action is dispatched to the appropriate module handler.
+ *
+ * Modules: Config, Utils, Auth, Logger, Projects, Invoices, CMS, SLA, Setup
  */
 
-// Configuration
-const CONFIG = {
-    SPREADSHEET_ID: '16sFsqxwUMlt2agSk6HfjhOGBPUG29h9DNevXh2XtRAw',
-    SHEET_NAME_LEADS: 'Leads',
-    SHEET_NAME_REFERRERS: 'Referrers',
-    SHEET_NAME_REFERRALS: 'Referrals',
-    SHEET_NAME_OTP: 'OTP_Sessions',
-    SHEET_NAME_JOBS: 'Job_Applications',
-    ADMIN_EMAIL: 'labs@icuni.org',
-    SCORE_THRESHOLDS: {
-        HIGH: 80,
-        MED: 50
-    },
-    PAYOUT: {
-        FLAT_RATE: 1000,
-        PERCENTAGE: 0.10
-    },
-    OTP: {
-        LENGTH: 6,
-        EXPIRY_MINUTES: 10,
-        MAX_ATTEMPTS: 3
-    }
-};
-
-/** Get the main spreadsheet (works for both bound and standalone scripts) */
-function getSpreadsheet() {
-    try { return SpreadsheetApp.getActiveSpreadsheet(); } catch(e) {}
-    return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-}
-
-// ============================================================
+// ═══════════════════════════════════════════════════════════
 // HTTP HANDLERS
-// ============================================================
+// ═══════════════════════════════════════════════════════════
 
-/**
- * Handle HTTP POST requests.
- * Routes by 'action' field, falls back to legacy lead intake.
- */
 function doPost(e) {
     try {
-        const payload = JSON.parse(e.postData.contents);
+        var payload = JSON.parse(e.postData.contents);
+        var action = payload.action;
 
-        // Route by action if present
-        if (payload.action) {
-            switch (payload.action) {
-                case 'referrer_signup':
-                    return handleReferrerSignup(payload);
-                case 'referrer_login':
-                    return handleReferrerLogin(payload);
-                case 'referrer_verify_otp':
-                    return handleVerifyOtp(payload);
-                case 'submit_referral':
-                    return handleSubmitReferral(payload);
-                case 'get_dashboard':
-                    return handleGetDashboard(payload);
-                case 'update_referral_status':
-                    return handleUpdateReferralStatus(payload);
-                case 'job_application':
-                    return handleJobApplication(payload);
-                case 'job_qualification':
-                    return handleJobQualification(payload);
-                default:
-                    return createResponse(400, "Unknown action: " + payload.action);
-            }
+        // ── Auth ──
+        if (action === 'sendOTP')           return handleSendOTP(payload);
+        if (action === 'verifyOTP')         return handleVerifyOTP(payload);
+        if (action === 'passwordLogin')     return handlePasswordLogin(payload);
+        if (action === 'pinLogin')          return handlePinLogin(payload);
+        if (action === 'validateSession')   return handleValidateSession(payload);
+        if (action === 'validateDevice')    return handleValidateDevice(payload);
+        if (action === 'logout')            return handleLogout(payload);
+        if (action === 'setPassword')       return handleSetPassword(payload);
+        if (action === 'setPin')            return handleSetPin(payload);
+
+        // ── User Management ──
+        if (action === 'getUsers')          return handleGetUsers(payload);
+        if (action === 'addUser')           return handleAddUser(payload);
+        if (action === 'deactivateUser')    return handleDeactivateUser(payload);
+
+        // ── Dashboard ──
+        if (action === 'getDashboard')      return handleGetDashboard(payload);
+
+        // ── Clients ──
+        if (action === 'getClients')        return handleGetClients(payload);
+        if (action === 'addClient')         return handleAddClient(payload);
+        if (action === 'updateClient')      return handleUpdateClient(payload);
+
+        // ── Projects ──
+        if (action === 'createProject')     return handleCreateProject(payload);
+        if (action === 'getProjects')       return handleGetProjects(payload);
+        if (action === 'getProject')        return handleGetProject(payload);
+        if (action === 'advanceStep')       return handleAdvanceProjectStep(payload);
+        if (action === 'requestBuild')      return handleClientRequestBuild(payload);
+
+        // ── Invoices ──
+        if (action === 'getInvoices')       return handleGetInvoices(payload);
+        if (action === 'getInvoiceHTML')    return handleGetInvoiceHTML(payload);
+        if (action === 'recordPayment')     return handleRecordPayment(payload);
+
+        // ── CMS: Pages ──
+        if (action === 'getPages')          return handleGetPages(payload);
+        if (action === 'createPage')        return handleCreatePage(payload);
+        if (action === 'updatePage')        return handleUpdatePage(payload);
+
+        // ── CMS: Menus ──
+        if (action === 'getMenus')          return handleGetMenus(payload);
+        if (action === 'updateMenu')        return handleUpdateMenu(payload);
+
+        // ── CMS: Settings ──
+        if (action === 'getSettings')       return handleGetSettings(payload);
+        if (action === 'updateSettings')    return handleUpdateSettings(payload);
+
+        // ── Blog ──
+        if (action === 'getBlogPosts')      return handleGetBlogPosts(payload);
+        if (action === 'createBlogPost')    return handleCreateBlogPost(payload);
+        if (action === 'updateBlogPost')    return handleUpdateBlogPost(payload);
+        if (action === 'deleteBlogPost')    return handleDeleteBlogPost(payload);
+        if (action === 'getBlogCategories') return handleGetBlogCategories(payload);
+
+        // ── Job Listings ──
+        if (action === 'getJobListings')    return handleGetJobListings(payload);
+        if (action === 'createJobListing')  return handleCreateJobListing(payload);
+        if (action === 'updateJobListing')  return handleUpdateJobListing(payload);
+
+        // ── Portfolio ──
+        if (action === 'getPortfolio')      return handleGetPortfolio(payload);
+        if (action === 'createPortfolio')   return handleCreatePortfolioProject(payload);
+        if (action === 'updatePortfolio')   return handleUpdatePortfolioProject(payload);
+
+        // ── Testimonials ──
+        if (action === 'getTestimonials')   return handleGetTestimonials(payload);
+        if (action === 'createTestimonial') return handleCreateTestimonial(payload);
+
+        // ── SLA ──
+        if (action === 'getSlaStatus')      return handleGetSlaStatus(payload);
+        if (action === 'snoozeSla')         return handleSnoozeSla(payload);
+        if (action === 'getSlaCosts')       return handleGetSlaCosts(payload);
+
+        // ── Logs ──
+        if (action === 'getLogs')           return handleGetLogs(payload);
+        if (action === 'getArchives')       return handleGetArchives(payload);
+
+        // ── Referrals (legacy support) ──
+        if (action === 'submitReferral')    return handleSubmitReferral(payload);
+        if (action === 'registerReferrer')  return handleRegisterReferrer(payload);
+        if (action === 'loginReferrer')     return handleLoginReferrer(payload);
+        if (action === 'verifyReferrerOtp') return handleVerifyReferrerOtp(payload);
+        if (action === 'getDashboardData')  return handleGetReferrerDashboard(payload);
+        if (action === 'updateReferralStatus') return handleUpdateReferralStatus(payload);
+
+        // ── Job Applications (legacy support) ──
+        if (action === 'submitJobApplication') return handleJobApplicationLegacy(payload);
+
+        return errorResponse_('Unknown action: ' + action, 400);
+
+    } catch (err) {
+        Logger.log('doPost ERROR: ' + err.message + '\n' + (err.stack || ''));
+        try { logError_('doPost', err.message); } catch(e) {}
+        if (isExpectedError_(err.message)) {
+            return errorResponse_(err.message);
         }
-
-        // Legacy lead intake (no action field)
-        return handleLeadIntake(payload);
-
-    } catch (error) {
-        console.error("Error in doPost:", error);
-        return createResponse(500, "Internal Server Error", { error: error.message });
+        return errorResponse_('Something went wrong. Please try again.');
     }
 }
 
-/**
- * Handle HTTP GET requests (e.g., for testing or Client Portal API)
- */
 function doGet(e) {
-    return createResponse(200, "ICUNI Labs API is running.");
+    var params = e.parameter || {};
+    var action = params.action;
+
+    // Public read endpoints (no auth required)
+    if (action === 'getPortfolio')      return handleGetPortfolio({});
+    if (action === 'getBlogPosts')      return handleGetBlogPosts({});
+    if (action === 'getJobListings')    return handleGetJobListings({});
+    if (action === 'getTestimonials')   return handleGetTestimonials({});
+    if (action === 'getSettings')       return handleGetSettings({});
+
+    return jsonResponse_(200, 'ICUNI Labs API v2 — Active', {
+        version: '2.0.0',
+        endpoints: 'POST with { action: "..." } payload',
+        timestamp: now_()
+    });
 }
 
-// ============================================================
-// LEGACY LEAD INTAKE
-// ============================================================
-
-function handleLeadIntake(payload) {
-    if (!payload.name || !payload.email) {
-        return createResponse(400, "Bad Request: Missing name or email.");
-    }
-
-    const leadId = Utilities.getUuid();
-    const score = calculateLeadScore(payload);
-
-    const record = [
-        leadId,
-        payload.name,
-        payload.email,
-        payload.businessSize || '',
-        payload.bottleneck || '',
-        score,
-        'New',
-        new Date().toISOString()
-    ];
-
-    writeToSheet(CONFIG.SHEET_NAME_LEADS, record);
-    handleRouting(payload, score);
-
-    return createResponse(200, "Success", { leadId: leadId, score: score });
-}
-
-// ============================================================
-// REFERRAL ENGINE Ã¢â‚¬â€ HANDLERS
-// ============================================================
+// ═══════════════════════════════════════════════════════════
+// LEGACY HANDLERS — Keep existing functionality working
+// ═══════════════════════════════════════════════════════════
 
 /**
- * Register a new referrer.
- * Checks for duplicate email, creates record in Referrers sheet.
+ * Legacy job application handler — bridges old frontend to new system.
+ * Saves to new Content & Jobs spreadsheet.
  */
-function handleReferrerSignup(payload) {
-    if (!payload.name || !payload.email || !payload.phone) {
-        return createResponse(400, "Missing required fields: name, email, phone.");
-    }
-
-    // Check for duplicate
-    const existing = findReferrerByEmail(payload.email);
-    if (existing) {
-        return createResponse(409, "A referrer with this email already exists.", {
-            referrerId: existing.referrerId
-        });
-    }
-
-    const referrerId = 'REF-' + Utilities.getUuid().substring(0, 8).toUpperCase();
-
-    const record = [
-        referrerId,
-        payload.name,
-        payload.email,
-        payload.phone,
-        payload.background || '',
-        payload.payoutPreference || 'momo',
-        new Date().toISOString(),
-        'Active',
-        0  // TotalEarned starts at 0
-    ];
-
-    writeToSheet(CONFIG.SHEET_NAME_REFERRERS, record, [
-        'ReferrerID', 'Name', 'Email', 'Phone', 'Background', 'PayoutPreference', 'JoinDate', 'Status', 'TotalEarned'
-    ]);
-
-    // Notify admin
+function handleJobApplicationLegacy(payload) {
     try {
-        MailApp.sendEmail({
-            to: CONFIG.ADMIN_EMAIL,
-            subject: 'New Referral Partner: ' + payload.name,
-            body: 'A new referral partner has signed up.\n\n' +
-                  'Name: ' + payload.name + '\n' +
-                  'Email: ' + payload.email + '\n' +
-                  'Phone: ' + payload.phone + '\n' +
-                  'Background: ' + (payload.background || 'N/A') + '\n' +
-                  'ID: ' + referrerId
-        });
-    } catch (err) {
-        console.error('Admin notification failed:', err);
-    }
+        var appId = generateId_('APP');
+        var jobTitle = payload.jobTitle || payload.job_title || 'Operations Assistant';
+        var name = payload.fullName || payload.name || '';
+        var email = payload.email || '';
+        var phone = payload.phone || '';
+        var note = payload.note || payload.coverNote || '';
 
-    return createResponse(200, "Referrer registered successfully.", {
-        referrerId: referrerId,
-        name: payload.name,
-        email: payload.email
-    });
-}
+        // Save files to Drive
+        var cvLink = '', audioLink = '', videoLink = '';
+        var applicantFolder = null;
 
-/**
- * Initiate login: verify referrer exists and send OTP via email.
- */
-function handleReferrerLogin(payload) {
-    if (!payload.email) {
-        return createResponse(400, "Email is required.");
-    }
-
-    var referrer = findReferrerByEmail(payload.email);
-    if (!referrer) {
-        return createResponse(404, "No referrer found with this email.");
-    }
-
-    if (referrer.status !== 'Active') {
-        return createResponse(403, "This referrer account is not active.");
-    }
-
-    // Generate and send OTP
-    var otp = generateOtp();
-    storeOtp(payload.email, otp);
-
-    try {
-        MailApp.sendEmail({
-            to: payload.email,
-            subject: 'ICUNI Labs - Your Login Code',
-            body: 'Hi ' + referrer.name.split(' ')[0] + ',\n\n' +
-                  'Your one-time login code is: ' + otp + '\n\n' +
-                  'This code expires in ' + CONFIG.OTP.EXPIRY_MINUTES + ' minutes.\n\n' +
-                  'If you did not request this, please ignore this email.\n\n' +
-                  'ICUNI Labs'
-        });
-    } catch (err) {
-        console.error('OTP email send failed:', err);
-        return createResponse(500, "Failed to send OTP email.");
-    }
-
-    return createResponse(200, "OTP sent to your email.", { email: payload.email });
-}
-
-/**
- * Verify OTP code and return referrer session data.
- */
-function handleVerifyOtp(payload) {
-    if (!payload.email || !payload.otp) {
-        return createResponse(400, "Email and OTP are required.");
-    }
-
-    var result = verifyOtp(payload.email, payload.otp);
-    if (!result.valid) {
-        return createResponse(401, result.message || "Invalid or expired code.");
-    }
-
-    var referrer = findReferrerByEmail(payload.email);
-    if (!referrer) {
-        return createResponse(404, "Referrer not found.");
-    }
-
-    return createResponse(200, "Login successful.", {
-        referrerId: referrer.referrerId,
-        name: referrer.name,
-        email: referrer.email,
-        phone: referrer.phone,
-        totalEarned: referrer.totalEarned
-    });
-}
-
-/**
- * Submit a new referral from a referrer.
- */
-function handleSubmitReferral(payload) {
-    if (!payload.referrerId || !payload.leadName || !payload.leadEmail || !payload.leadPhone) {
-        return createResponse(400, "Missing required fields.");
-    }
-
-    // Verify the referrer exists
-    const referrer = findReferrerById(payload.referrerId);
-    if (!referrer) {
-        return createResponse(404, "Referrer not found.");
-    }
-
-    const referralId = 'RFL-' + Utilities.getUuid().substring(0, 8).toUpperCase();
-
-    const record = [
-        referralId,
-        payload.referrerId,
-        payload.leadName,
-        payload.leadEmail,
-        payload.leadPhone,
-        payload.leadCompany || '',
-        payload.introNotes || '',
-        'Submitted',  // Initial status
-        0,            // DealValue (set later by admin)
-        0,            // PayoutAmount (calculated on close)
-        new Date().toISOString(),
-        ''            // DateClosed
-    ];
-
-    writeToSheet(CONFIG.SHEET_NAME_REFERRALS, record, [
-        'ReferralID', 'ReferrerID', 'LeadName', 'LeadEmail', 'LeadPhone',
-        'LeadCompany', 'IntroNotes', 'Status', 'DealValue', 'PayoutAmount',
-        'DateSubmitted', 'DateClosed'
-    ]);
-
-    // Notify admin
-    try {
-        MailApp.sendEmail({
-            to: CONFIG.ADMIN_EMAIL,
-            subject: 'New Referral from ' + referrer.name + ': ' + payload.leadName,
-            body: 'A referral has been submitted.\n\n' +
-                  'Referrer: ' + referrer.name + ' (' + referrer.email + ')\n' +
-                  'Lead: ' + payload.leadName + '\n' +
-                  'Email: ' + payload.leadEmail + '\n' +
-                  'Phone: ' + payload.leadPhone + '\n' +
-                  'Company: ' + (payload.leadCompany || 'N/A') + '\n' +
-                  'Intro Notes: ' + (payload.introNotes || 'N/A') + '\n\n' +
-                  'Referral ID: ' + referralId
-        });
-    } catch (err) {
-        console.error('Admin notification failed:', err);
-    }
-
-    return createResponse(200, "Referral submitted successfully.", {
-        referralId: referralId
-    });
-}
-
-/**
- * Fetch dashboard data for a referrer.
- * Returns stats + list of all their referrals.
- */
-function handleGetDashboard(payload) {
-    if (!payload.referrerId) {
-        return createResponse(400, "referrerId is required.");
-    }
-
-    const referrer = findReferrerById(payload.referrerId);
-    if (!referrer) {
-        return createResponse(404, "Referrer not found.");
-    }
-
-    // Get all referrals for this referrer
-    const referrals = getReferralsByReferrerId(payload.referrerId);
-
-    // Calculate stats
-    const totalReferrals = referrals.length;
-    const closedWon = referrals.filter(r => r.status === 'Closed Won');
-    const closedLost = referrals.filter(r => r.status === 'Closed Lost');
-    const pending = referrals.filter(r => !r.status.startsWith('Closed'));
-    const totalEarned = closedWon.reduce((sum, r) => sum + (parseFloat(r.payoutAmount) || 0), 0);
-
-    return createResponse(200, "Dashboard data retrieved.", {
-        referrer: {
-            name: referrer.name,
-            email: referrer.email,
-            joinDate: referrer.joinDate
-        },
-        stats: {
-            totalReferrals: totalReferrals,
-            closedWon: closedWon.length,
-            closedLost: closedLost.length,
-            pending: pending.length,
-            totalEarned: totalEarned,
-            conversionRate: totalReferrals > 0
-                ? Math.round((closedWon.length / totalReferrals) * 100)
-                : 0
-        },
-        referrals: referrals.map(r => ({
-            referralId: r.referralId,
-            leadName: r.leadName,
-            leadCompany: r.leadCompany,
-            status: r.status,
-            dealValue: parseFloat(r.dealValue) || 0,
-            payoutAmount: parseFloat(r.payoutAmount) || 0,
-            dateSubmitted: r.dateSubmitted,
-            dateClosed: r.dateClosed
-        }))
-    });
-}
-
-/**
- * Admin: Update referral status and deal value.
- * Triggers payout calculation on 'Closed Won'.
- */
-function handleUpdateReferralStatus(payload) {
-    if (!payload.referralId || !payload.status) {
-        return createResponse(400, "referralId and status are required.");
-    }
-
-    const ss = getSpreadsheet();
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REFERRALS);
-    if (!sheet) return createResponse(404, "Referrals sheet not found.");
-
-    const data = sheet.getDataRange().getValues();
-    let rowIndex = -1;
-
-    for (let i = 1; i < data.length; i++) {
-        if (data[i][0] === payload.referralId) {
-            rowIndex = i + 1; // 1-indexed for Sheets
-            break;
+        if (payload.cvBase64 || payload.audioBase64 || payload.videoBase64) {
+            var jobsFolder = getDriveSubfolder_(DRIVE_FOLDERS.JOBS);
+            var appsFolder = getOrCreateFolder_(jobsFolder, DRIVE_FOLDERS.APPLICATIONS);
+            var folderName = name + ' — ' + Utilities.formatDate(new Date(), 'Africa/Accra', 'yyyy-MM-dd');
+            applicantFolder = getOrCreateFolder_(appsFolder, folderName);
         }
-    }
 
-    if (rowIndex === -1) {
-        return createResponse(404, "Referral not found.");
-    }
-
-    // Update status (column 8)
-    sheet.getRange(rowIndex, 8).setValue(payload.status);
-
-    // Update deal value if provided (column 9)
-    if (payload.dealValue !== undefined) {
-        sheet.getRange(rowIndex, 9).setValue(parseFloat(payload.dealValue));
-    }
-
-    // If Closed Won, calculate payout
-    if (payload.status === 'Closed Won') {
-        const dealValue = payload.dealValue !== undefined
-            ? parseFloat(payload.dealValue)
-            : parseFloat(data[rowIndex - 1][8]) || 0;
-
-        const payout = calculatePayout(dealValue);
-        sheet.getRange(rowIndex, 10).setValue(payout);
-        sheet.getRange(rowIndex, 12).setValue(new Date().toISOString());
-
-        // Update referrer's total earned
-        const referrerId = data[rowIndex - 1][1];
-        updateReferrerTotalEarned(referrerId);
-
-        // Notify referrer
-        const referrer = findReferrerById(referrerId);
-        if (referrer) {
-            try {
-                MailApp.sendEmail({
-                    to: referrer.email,
-                    subject: 'Your Referral Closed! - ICUNI Labs',
-                    body: 'Hi ' + referrer.name.split(' ')[0] + ',\n\n' +
-                          'Great news! Your referral for ' + data[rowIndex - 1][2] + ' has been closed successfully.\n\n' +
-                          'Deal Value: GH\u20b5' + dealValue.toLocaleString() + '\n' +
-                          'Your Payout: GH\u20b5' + payout.toLocaleString() + '\n\n' +
-                          'We will process your payout shortly. Thank you for being part of the ICUNI referral network!\n\n' +
-                          'Best,\nICUNI Labs'
-                });
-            } catch (err) {
-                console.error('Referrer notification failed:', err);
-            }
+        if (payload.cvBase64 && applicantFolder) {
+            cvLink = saveBase64File_(applicantFolder, payload.cvBase64, payload.cvFileName || 'CV.pdf');
         }
-    }
-
-    // If Closed Lost, set date
-    if (payload.status === 'Closed Lost') {
-        sheet.getRange(rowIndex, 12).setValue(new Date().toISOString());
-    }
-
-    return createResponse(200, "Referral updated.", { referralId: payload.referralId, status: payload.status });
-}
-
-// ============================================================
-// REFERRAL ENGINE Ã¢â‚¬â€ DATA ACCESS
-// ============================================================
-
-/**
- * Calculate payout: max of flat rate or percentage of deal value.
- */
-function calculatePayout(dealValue) {
-    const flat = CONFIG.PAYOUT.FLAT_RATE;
-    const percentage = dealValue * CONFIG.PAYOUT.PERCENTAGE;
-    return Math.max(flat, percentage);
-}
-
-/**
- * Find a referrer by email in the Referrers sheet.
- */
-function findReferrerByEmail(email) {
-    const ss = getSpreadsheet();
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REFERRERS);
-    if (!sheet || sheet.getLastRow() <= 1) return null;
-
-    const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-        if (data[i][2] && data[i][2].toString().toLowerCase() === email.toLowerCase()) {
-            return {
-                referrerId: data[i][0],
-                name: data[i][1],
-                email: data[i][2],
-                phone: data[i][3],
-                background: data[i][4],
-                payoutPreference: data[i][5],
-                joinDate: data[i][6],
-                status: data[i][7],
-                totalEarned: data[i][8]
-            };
+        if (payload.audioBase64 && applicantFolder) {
+            audioLink = saveBase64File_(applicantFolder, payload.audioBase64, payload.audioFileName || 'voice-intro.webm');
         }
-    }
-    return null;
-}
-
-/**
- * Find a referrer by ID in the Referrers sheet.
- */
-function findReferrerById(referrerId) {
-    const ss = getSpreadsheet();
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REFERRERS);
-    if (!sheet || sheet.getLastRow() <= 1) return null;
-
-    const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-        if (data[i][0] === referrerId) {
-            return {
-                referrerId: data[i][0],
-                name: data[i][1],
-                email: data[i][2],
-                phone: data[i][3],
-                background: data[i][4],
-                payoutPreference: data[i][5],
-                joinDate: data[i][6],
-                status: data[i][7],
-                totalEarned: data[i][8]
-            };
+        if (payload.videoBase64 && applicantFolder) {
+            videoLink = saveBase64File_(applicantFolder, payload.videoBase64, payload.videoFileName || 'video-intro.webm');
         }
-    }
-    return null;
-}
 
-/**
- * Get all referrals for a given referrer ID.
- */
-function getReferralsByReferrerId(referrerId) {
-    const ss = getSpreadsheet();
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REFERRALS);
-    if (!sheet || sheet.getLastRow() <= 1) return [];
+        appendRow_(SHEETS.JOB_APPLICATIONS, [
+            appId, payload.jobId || 'ops-assistant-001', jobTitle,
+            name, email, phone, note,
+            cvLink ? 'Yes' : 'No', audioLink ? 'Yes' : 'No', videoLink ? 'Yes' : 'No',
+            cvLink, audioLink, videoLink,
+            'received', now_()
+        ]);
 
-    const data = sheet.getDataRange().getValues();
-    const results = [];
-
-    for (let i = 1; i < data.length; i++) {
-        if (data[i][1] === referrerId) {
-            results.push({
-                referralId: data[i][0],
-                referrerId: data[i][1],
-                leadName: data[i][2],
-                leadEmail: data[i][3],
-                leadPhone: data[i][4],
-                leadCompany: data[i][5],
-                introNotes: data[i][6],
-                status: data[i][7],
-                dealValue: data[i][8],
-                payoutAmount: data[i][9],
-                dateSubmitted: data[i][10],
-                dateClosed: data[i][11]
+        // Send confirmation email to applicant
+        try {
+            MailApp.sendEmail({
+                to: email,
+                subject: 'Application Received — ICUNI Labs',
+                htmlBody: buildApplicationConfirmEmail_(name, jobTitle)
             });
-        }
+            logEmail_(email, 'Application Confirmation', 'application', 'sent');
+        } catch(e) { logEmail_(email, 'Application Confirmation', 'application', 'failed'); }
+
+        // Notify jobs inbox
+        try {
+            MailApp.sendEmail({
+                to: JOBS_EMAIL,
+                subject: 'New Application — ' + name + ' for ' + jobTitle,
+                htmlBody: buildProjectStepEmail_('Team',
+                    'New Job Application',
+                    '<strong>' + name + '</strong> (' + email + ') applied for <strong>' + jobTitle + '</strong>.<br><br>' +
+                    'Phone: ' + phone + '<br>' +
+                    'CV: ' + (cvLink ? '<a href="' + cvLink + '">Download</a>' : 'None') + '<br>' +
+                    'Voice Intro: ' + (audioLink ? '<a href="' + audioLink + '">Listen</a>' : 'None'))
+            });
+        } catch(e) {}
+
+        logAction_('PUBLIC', name, 'JOB_APPLICATION', 'Applied for ' + jobTitle);
+
+        return successResponse_({ applicationId: appId }, 'Application submitted! Check your email for confirmation.');
+
+    } catch (err) {
+        Logger.log('Job application error: ' + err.message);
+        return errorResponse_('Failed to submit application: ' + err.message);
     }
-    return results;
 }
 
-/**
- * Recalculate and update a referrer's total earned amount.
- */
-function updateReferrerTotalEarned(referrerId) {
-    const referrals = getReferralsByReferrerId(referrerId);
-    const totalEarned = referrals
-        .filter(r => r.status === 'Closed Won')
-        .reduce((sum, r) => sum + (parseFloat(r.payoutAmount) || 0), 0);
-
-    const ss = getSpreadsheet();
-    const sheet = ss.getSheetByName(CONFIG.SHEET_NAME_REFERRERS);
-    if (!sheet) return;
-
-    const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-        if (data[i][0] === referrerId) {
-            sheet.getRange(i + 1, 9).setValue(totalEarned);
-            break;
-        }
-    }
-}
-
-// ============================================================
-// OTP UTILITIES
-// ============================================================
-
-/**
- * Generate a random N-digit OTP code.
- */
-function generateOtp() {
-    var code = '';
-    for (var i = 0; i < CONFIG.OTP.LENGTH; i++) {
-        code += Math.floor(Math.random() * 10).toString();
-    }
-    return code;
-}
-
-/**
- * Store an OTP in the OTP_Sessions sheet.
- */
-function storeOtp(email, otp) {
-    var ss = getSpreadsheet();
-    var sheet = ss.getSheetByName(CONFIG.SHEET_NAME_OTP);
-
-    if (!sheet) {
-        sheet = ss.insertSheet(CONFIG.SHEET_NAME_OTP);
-        sheet.appendRow(['Email', 'OTP', 'CreatedAt', 'Attempts', 'Used']);
-        sheet.getRange(1, 1, 1, 5).setFontWeight('bold');
-    }
-
-    // Invalidate any existing OTPs for this email
-    var data = sheet.getDataRange().getValues();
-    for (var i = 1; i < data.length; i++) {
-        if (data[i][0] && data[i][0].toString().toLowerCase() === email.toLowerCase() && data[i][4] !== 'yes') {
-            sheet.getRange(i + 1, 5).setValue('yes');
-        }
-    }
-
-    // Write new OTP
-    sheet.appendRow([email, otp, new Date().toISOString(), 0, 'no']);
-}
-
-/**
- * Verify an OTP. Returns { valid: boolean, message?: string }.
- */
-function verifyOtp(email, otp) {
-    var ss = getSpreadsheet();
-    var sheet = ss.getSheetByName(CONFIG.SHEET_NAME_OTP);
-    if (!sheet) return { valid: false, message: 'No OTP found. Please request a new code.' };
-
-    var data = sheet.getDataRange().getValues();
-
-    // Find latest unused OTP for this email
-    for (var i = data.length - 1; i >= 1; i--) {
-        if (data[i][0] && data[i][0].toString().toLowerCase() === email.toLowerCase() && data[i][4] !== 'yes') {
-            // Check expiry
-            var created = new Date(data[i][2]);
-            var now = new Date();
-            var diffMinutes = (now - created) / (1000 * 60);
-
-            if (diffMinutes > CONFIG.OTP.EXPIRY_MINUTES) {
-                sheet.getRange(i + 1, 5).setValue('yes');
-                return { valid: false, message: 'Code expired. Please request a new one.' };
-            }
-
-            // Check attempts
-            var attempts = parseInt(data[i][3]) || 0;
-            if (attempts >= CONFIG.OTP.MAX_ATTEMPTS) {
-                sheet.getRange(i + 1, 5).setValue('yes');
-                return { valid: false, message: 'Too many attempts. Please request a new code.' };
-            }
-
-            // Check match
-            if (data[i][1].toString() === otp.toString()) {
-                sheet.getRange(i + 1, 5).setValue('yes');
-                return { valid: true };
-            } else {
-                sheet.getRange(i + 1, 4).setValue(attempts + 1);
-                return { valid: false, message: 'Incorrect code. ' + (CONFIG.OTP.MAX_ATTEMPTS - attempts - 1) + ' attempts remaining.' };
-            }
-        }
-    }
-
-    return { valid: false, message: 'No OTP found. Please request a new code.' };
-}
-
-// ============================================================
-// LEAD SCORING (original)
-// ============================================================
-
-/**
- * Handle job application submission.
- */
-function handleJobApplication(payload) {
-    if (!payload.name || !payload.email) {
-        return createResponse(400, "Name and email are required.");
-    }
-
-    var hasCV = !!payload.cvBase64;
-    var hasAudio = !!payload.audioBase64;
-    var hasVideo = !!payload.videoBase64;
-
-    // --- Google Drive storage ---
-    var driveLinks = { cv: '', audio: '', video: '' };
+function saveBase64File_(folder, base64Data, fileName) {
     try {
-        var appFolder = getOrCreateFolder(DriveApp.getRootFolder(), 'ICUNI Labs');
-        var jobsFolder = getOrCreateFolder(appFolder, 'Jobs');
-        var appsFolder = getOrCreateFolder(jobsFolder, 'Applications');
-        var dateSuffix = Utilities.formatDate(new Date(), 'GMT', 'yyyy-MM-dd_HHmm');
-        var applicantFolder = appsFolder.createFolder(payload.name + ' - ' + dateSuffix);
-
-        if (hasCV) {
-            var cvMime = guessMime(payload.cvName || 'cv.pdf');
-            var cvBlob = Utilities.newBlob(Utilities.base64Decode(payload.cvBase64), cvMime, payload.cvName || 'cv.pdf');
-            var cvFile = applicantFolder.createFile(cvBlob);
-            driveLinks.cv = cvFile.getUrl();
-        }
-        if (hasAudio) {
-            var audioMime = (payload.audioName || '').indexOf('.webm') > -1 ? 'audio/webm' : 'audio/mpeg';
-            var audioBlob = Utilities.newBlob(Utilities.base64Decode(payload.audioBase64), audioMime, payload.audioName || 'voice-intro.webm');
-            var audioFile = applicantFolder.createFile(audioBlob);
-            driveLinks.audio = audioFile.getUrl();
-        }
-        if (hasVideo) {
-            var videoMime = guessMime(payload.videoName || 'video.mp4');
-            var videoBlob = Utilities.newBlob(Utilities.base64Decode(payload.videoBase64), videoMime, payload.videoName || 'video.mp4');
-            var videoFile = applicantFolder.createFile(videoBlob);
-            driveLinks.video = videoFile.getUrl();
-        }
-    } catch (driveErr) {
-        console.error('Drive storage failed:', driveErr);
+        var parts = base64Data.split(',');
+        var raw = parts.length > 1 ? parts[1] : parts[0];
+        var mimeMatch = base64Data.match(/^data:([^;]+);/);
+        var mime = mimeMatch ? mimeMatch[1] : guessMime_(fileName);
+        var blob = Utilities.newBlob(Utilities.base64Decode(raw), mime, fileName);
+        var file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        return file.getUrl();
+    } catch(e) {
+        Logger.log('File save failed: ' + e.message);
+        return '';
     }
+}
 
-    var record = [
-        new Date().toISOString(),
-        payload.jobId || '',
-        payload.jobTitle || '',
-        payload.name,
-        payload.email,
-        payload.phone || '',
-        payload.note || '',
-        hasCV ? 'Yes' : 'No',
-        hasAudio ? 'Yes' : 'No',
-        hasVideo ? 'Yes' : 'No',
-        driveLinks.cv,
-        driveLinks.audio,
-        driveLinks.video,
-        'New'
-    ];
+function buildApplicationConfirmEmail_(name, jobTitle) {
+    return buildProjectStepEmail_(name,
+        'Application Received',
+        'Thank you for applying for the <strong>' + jobTitle + '</strong> position at ICUNI Labs!<br><br>' +
+        'We\'ve received your application and our team will review it carefully. ' +
+        'You can expect to hear from us within <strong>48 hours</strong>.<br><br>' +
+        'In the meantime, feel free to explore our work at <a href="https://labs.icuni.org" style="color:#ff7a00;">labs.icuni.org</a>.');
+}
 
-    writeToSheet(CONFIG.SHEET_NAME_JOBS, record, [
-        'DateApplied', 'JobID', 'JobTitle', 'Name', 'Email', 'Phone', 'Note',
-        'HasCV', 'HasAudio', 'HasVideo', 'CV_Link', 'Audio_Link', 'Video_Link', 'Status'
+// ═══════════════════════════════════════════════════════════
+// LEGACY REFERRAL HANDLERS — Keep existing functionality
+// ═══════════════════════════════════════════════════════════
+
+function handleSubmitReferral(payload) {
+    var referrer = findRow_(SHEETS.REFERRERS, 'referrer_id', payload.referrerId);
+    if (!referrer) return errorResponse_('Referrer not found.');
+    
+    var referralId = generateId_('REF');
+    appendRow_(SHEETS.REFERRALS, [
+        referralId, payload.referrerId, payload.clientName, payload.clientEmail,
+        payload.clientPhone || '', payload.businessType || '', payload.notes || '',
+        'New', '', 0, 'pending', now_(), now_()
     ]);
-
-    // Email notification with small attachments (CV + audio only, video is Drive-only)
-    try {
-        var attachments = [];
-        if (hasCV) {
-            attachments.push(Utilities.newBlob(Utilities.base64Decode(payload.cvBase64), guessMime(payload.cvName || 'cv.pdf'), payload.cvName || 'cv.pdf'));
-        }
-        if (hasAudio) {
-            var aMime = (payload.audioName || '').indexOf('.webm') > -1 ? 'audio/webm' : 'audio/mpeg';
-            attachments.push(Utilities.newBlob(Utilities.base64Decode(payload.audioBase64), aMime, payload.audioName || 'voice-intro.webm'));
-        }
-
-        var body = 'New application received:\n\n' +
-            'Position: ' + (payload.jobTitle || 'N/A') + '\n' +
-            'Name: ' + payload.name + '\n' +
-            'Email: ' + payload.email + '\n' +
-            'Phone: ' + (payload.phone || 'N/A') + '\n\n' +
-            'Note: ' + (payload.note || 'None') + '\n\n' +
-            'CV: ' + (driveLinks.cv || 'Not provided') + '\n' +
-            'Audio Intro: ' + (driveLinks.audio || 'Not provided') + '\n' +
-            'Video CV: ' + (driveLinks.video || 'Not provided');
-
-        var emailOpts = {
-            to: 'jobs@icuni.org',
-            subject: 'Job Application: ' + payload.name + ' - ' + (payload.jobTitle || 'Unknown'),
-            body: body,
-            replyTo: payload.email,
-        };
-        if (attachments.length > 0) emailOpts.attachments = attachments;
-        MailApp.sendEmail(emailOpts);
-
-        // Applicant confirmation email
-        var applicantBody = 'Dear ' + payload.name + ',\n\n' +
-            'Thank you for applying for the ' + (payload.jobTitle || 'role') + ' position at ICUNI Labs.\n\n' +
-            'We have received your application and our team will review it carefully. ' +
-            'You can expect to hear from us within 48 hours.\n\n' +
-            '--- YOUR APPLICATION SUMMARY ---\n' +
-            'Position: ' + (payload.jobTitle || 'N/A') + '\n' +
-            'Name: ' + payload.name + '\n' +
-            'Email: ' + payload.email + '\n' +
-            'Phone: ' + (payload.phone || 'N/A') + '\n' +
-            'CV: ' + (driveLinks.cv ? 'Submitted' : 'Not provided') + '\n' +
-            'Voice Intro: ' + (driveLinks.audio ? 'Submitted' : 'Not provided') + '\n' +
-            'Video CV: ' + (driveLinks.video ? 'Submitted' : 'Not provided') + '\n' +
-            'Additional Notes: ' + (payload.note || 'None') + '\n' +
-            '--------------------------------\n\n' +
-            'If you have any questions in the meantime, feel free to reach out to us at jobs@icuni.org.\n\n' +
-            'Best regards,\n' +
-            'The ICUNI Labs Team\n' +
-            'https://labs.icuni.org';
-
-        MailApp.sendEmail({
-            to: payload.email,
-            subject: 'Application Received - ' + (payload.jobTitle || 'ICUNI Labs'),
-            body: applicantBody,
-            name: 'ICUNI Labs Careers',
-            replyTo: 'jobs@icuni.org',
-        });
-    } catch (err) {
-        console.error('Job application email failed:', err);
-    }
-
-    return createResponse(200, "Application submitted successfully.");
+    
+    logAction_(payload.referrerId, referrer.name, 'REFERRAL_SUBMITTED', payload.clientName);
+    return successResponse_({ referralId: referralId }, 'Referral submitted.');
 }
 
-/**
- * Handle job qualification follow-up.
- * Finds the applicant's row by email and appends qualification answers.
- */
-function handleJobQualification(payload) {
-    var ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
-    var sheet = ss.getSheetByName('Job_Applications');
-    if (!sheet) {
-        return createResponse(404, "Job_Applications sheet not found.");
-    }
-
-    var email = (payload.email || '').trim().toLowerCase();
-    if (!email) {
-        return createResponse(400, "Email is required.");
-    }
-
-    // Find the row by email (column 3 = Email)
-    var data = sheet.getDataRange().getValues();
-    var targetRow = -1;
-    for (var i = data.length - 1; i >= 1; i--) {
-        if (String(data[i][2]).trim().toLowerCase() === email) {
-            targetRow = i + 1; // 1-indexed
-            break;
-        }
-    }
-
-    if (targetRow === -1) {
-        return createResponse(404, "Applicant not found.");
-    }
-
-    // Qualification columns start after the main application columns
-    // Main cols: Timestamp, Name, Email, Phone, JobId, JobTitle, Note, CV_URL, Audio_URL, Video_URL = 10 cols
-    // Qualification data starts at column 11 (K)
-    var qualFields = [
-        'salaryOk', 'fullTimeOk', 'asapOk',
-        'selfView', 'deadlines',
-        'googleSuite', 'coldCalling',
-        'hasLaptop', 'phoneSpecs', 'secureWorkspace',
-        'paymentMethod', 'currentJob'
-    ];
-
-    var qualValues = qualFields.map(function(f) { return payload[f] || ''; });
-
-    // Write qualification data starting at column 11
-    var startCol = 11;
-    var range = sheet.getRange(targetRow, startCol, 1, qualValues.length);
-    range.setValues([qualValues]);
-
-    // Ensure headers exist for qualification columns
-    var headerRow = sheet.getRange(1, startCol, 1, qualFields.length).getValues()[0];
-    var qualHeaders = [
-        'Salary OK', 'Full-Time OK', 'ASAP OK',
-        'Self View', 'Deadline Handling',
-        'Google Suite (1-5)', 'Cold Calling (1-5)',
-        'Has Laptop', 'Phone Specs', 'Secure Workspace',
-        'Payment Method', 'Current Job Status'
-    ];
-
-    if (!headerRow[0] || headerRow[0] === '') {
-        sheet.getRange(1, startCol, 1, qualHeaders.length).setValues([qualHeaders]);
-    }
-
-    return createResponse(200, "Qualification recorded successfully.");
-}
-
-/**
- * Get or create a subfolder by name.
- */
-function getOrCreateFolder(parent, name) {
-    var folders = parent.getFoldersByName(name);
-    return folders.hasNext() ? folders.next() : parent.createFolder(name);
-}
-
-/**
- * Guess MIME type from filename extension.
- */
-function guessMime(filename) {
-    var ext = (filename || '').split('.').pop().toLowerCase();
-    var map = {
-        'pdf': 'application/pdf',
-        'doc': 'application/msword',
-        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'txt': 'text/plain',
-        'rtf': 'application/rtf',
-        'odt': 'application/vnd.oasis.opendocument.text',
-        'mp4': 'video/mp4',
-        'mov': 'video/quicktime',
-        'webm': 'video/webm',
-        'avi': 'video/x-msvideo',
-    };
-    return map[ext] || 'application/octet-stream';
-}
-
-/**
- * Calculate lead score based on submitted data
- */
-function calculateLeadScore(data) {
-    let score = 0;
-
-    if (data.businessSize) {
-        if (data.businessSize === '200+') score += 50;
-        else if (data.businessSize === '51-200') score += 40;
-        else if (data.businessSize === '11-50') score += 20;
-        else score += 10;
-    }
-
-    if (data.bottleneck && data.bottleneck.length > 50) {
-        score += 20;
-    }
-
-    if (data.bottleneck && data.bottleneck.toLowerCase().includes('scale')) score += 15;
-    if (data.bottleneck && data.bottleneck.toLowerCase().includes('automation')) score += 15;
-
-    return score;
-}
-
-// ============================================================
-// LEAD ROUTING (original)
-// ============================================================
-
-/**
- * Execute routing logic (Email notifications, Calendar links, etc.) based on score
- */
-function handleRouting(leadData, score) {
-    const adminSubject = `New Lead: ${leadData.name} (Score: ${score})`;
-    const adminBody = `Review lead details in the Operations Sheet.\n\nName: ${leadData.name}\nEmail: ${leadData.email}\nSize: ${leadData.businessSize}\nBottleneck: ${leadData.bottleneck}\nScore: ${score}`;
-
-    // Always notify admin
-    MailApp.sendEmail({
-        to: CONFIG.ADMIN_EMAIL,
-        subject: adminSubject,
-        body: adminBody
+function handleRegisterReferrer(payload) {
+    validateInput_(payload, {
+        name: { required: true, label: 'Name' },
+        email: { required: true, type: 'email', label: 'Email' }
     });
-
-    if (score >= CONFIG.SCORE_THRESHOLDS.HIGH) {
-        console.log(`High score lead routing for ${leadData.email}`);
-
-        const eventUrl = createTentativeCalendarEvent(leadData.name, leadData.email);
-
-        sendTemplatedEmail(
-            leadData.email,
-            leadData.name,
-            "ICUNI Labs: Systems Audit Next Steps",
-            `Hi ${leadData.name.split(' ')[0]},\n\nBased on your submission, your team size (${leadData.businessSize}) and bottleneck align perfectly with the systems we build at ICUNI Labs. \n\nI've generated a tentative hold for a 30-minute Systems Audit on my calendar here: ${eventUrl}\n\nIf that time doesn't work, let me know and we will adjust.\n\nBest,\nICUNI Labs Operations`
-        );
-
-    } else if (score >= CONFIG.SCORE_THRESHOLDS.MED) {
-        console.log(`Medium score lead routing for ${leadData.email}`);
-        sendTemplatedEmail(
-            leadData.email,
-            leadData.name,
-            "ICUNI Labs: Your Intake Review",
-            `Hi ${leadData.name.split(' ')[0]},\n\nThanks for submitting your operations details to ICUNI Labs. We are reviewing your bottleneck regarding "${leadData.bottleneck.substring(0, 30)}..." to determine the best approach.\n\nWe'll follow up shortly with some initial thoughts on whether an Audit or a Build Sprint makes sense for your current stage.\n\nBest,\nICUNI Labs Operations`
-        );
-    } else {
-        console.log(`Low score lead routing for ${leadData.email}`);
-        sendTemplatedEmail(
-            leadData.email,
-            leadData.name,
-            "ICUNI Labs: Operations Resources",
-            `Hi ${leadData.name.split(' ')[0]},\n\nThanks for reaching out to ICUNI Labs. Based on your current team size and needs, you might be slightly early for a full Custom Systems Build.\n\nHowever, we highly recommend starting by structuring your standard operating procedures. Attached is a link to our free Lean Operations Framework guide.\n\nBest,\nICUNI Labs Operations`
-        );
-    }
-}
-
-// ============================================================
-// UTILITY FUNCTIONS
-// ============================================================
-
-/**
- * Sends a dynamically populated email
- */
-function sendTemplatedEmail(toEmail, name, subject, bodyText) {
+    
+    var existing = findRow_(SHEETS.REFERRERS, 'email', payload.email);
+    if (existing) return errorResponse_('Email already registered.');
+    
+    var referrerId = generateId_('RFR');
+    appendRow_(SHEETS.REFERRERS, [
+        referrerId, payload.name, payload.email, payload.phone || '',
+        payload.background || '', payload.payoutPreference || 'MoMo',
+        'Active', 0, now_(), now_()
+    ]);
+    
+    // Create user account
     try {
-        MailApp.sendEmail({
-            to: toEmail,
-            subject: subject,
-            body: bodyText,
+        handleAddUser({
+            token: payload.adminToken || '',
+            name: payload.name, email: payload.email,
+            phone: payload.phone || '', role: ROLES.REFERRER
         });
-    } catch (error) {
-        console.error("Failed to send template email to: " + toEmail, error);
-    }
+    } catch(e) { /* May fail if no admin token — that's ok for self-registration */ }
+    
+    logAction_('PUBLIC', payload.name, 'REFERRER_REGISTERED', payload.email);
+    return successResponse_({ referrerId: referrerId }, 'Registration successful.');
 }
 
-/**
- * Creates a tentative calendar event 3 days from now
- */
-function createTentativeCalendarEvent(leadName, leadEmail) {
-    try {
-        const calendar = CalendarApp.getDefaultCalendar();
-
-        const startTime = new Date();
-        startTime.setDate(startTime.getDate() + 3);
-        startTime.setHours(14, 0, 0, 0);
-
-        const endTime = new Date(startTime.getTime() + (30 * 60 * 1000));
-
-        const event = calendar.createEvent(
-            `Systems Audit: ICUNI Labs x ${leadName}`,
-            startTime,
-            endTime,
-            {
-                description: `Discovery call generated via ICUNI Labs intake.\nLead Email: ${leadEmail}`,
-                guests: leadEmail,
-                sendInvites: true
-            }
-        );
-
-        return `https://calendar.google.com/calendar/r/week/${startTime.getFullYear()}/${startTime.getMonth() + 1}/${startTime.getDate()}`;
-
-    } catch (error) {
-        console.error("Calendar creation failed: ", error);
-        return "Error creating calendar invite - we will reach out manually.";
-    }
+function handleLoginReferrer(payload) {
+    return handleSendOTP({ email: payload.email, identifier: payload.email });
 }
 
-/**
- * Write a record to a specified Google Sheet.
- * If the sheet does not exist, creates it with optional headers.
- */
-function writeToSheet(sheetName, recordData, headers) {
-    try {
-        const ss = getSpreadsheet();
-        let sheet = ss.getSheetByName(sheetName);
+function handleVerifyReferrerOtp(payload) {
+    return handleVerifyOTP({ email: payload.email, identifier: payload.email, otp: payload.otp });
+}
 
-        if (!sheet) {
-            sheet = ss.insertSheet(sheetName);
-            if (headers && headers.length > 0) {
-                sheet.appendRow(headers);
-                sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
-            } else {
-                // Default headers for Leads
-                sheet.appendRow(['LeadID', 'Name', 'Email', 'BusinessSize', 'Bottleneck', 'LeadScore', 'Status', 'DateCreated']);
-                sheet.getRange(1, 1, 1, sheet.getLastColumn()).setFontWeight("bold");
-            }
+function handleGetReferrerDashboard(payload) {
+    var auth = requireAuth_(payload.token);
+    if (auth.error) return auth.error;
+    
+    var referrer = findRow_(SHEETS.REFERRERS, 'email', auth.user.email);
+    if (!referrer) return errorResponse_('Referrer record not found.');
+    
+    var referrals = sheetToObjects_(SHEETS.REFERRALS).filter(function(r) {
+        return r.referrer_id === referrer.referrer_id;
+    });
+    
+    var totalEarned = referrals.filter(function(r) { return r.payout_status === 'confirmed' || r.payout_status === 'paid'; })
+        .reduce(function(sum, r) { return sum + Number(r.payout_amount || 0); }, 0);
+    
+    return successResponse_({
+        referrer: { name: referrer.name, email: referrer.email, status: referrer.status },
+        referrals: referrals,
+        stats: {
+            total: referrals.length,
+            active: referrals.filter(function(r) { return r.status === 'New' || r.status === 'In Progress'; }).length,
+            closed: referrals.filter(function(r) { return r.status === 'Closed Won'; }).length,
+            totalEarned: totalEarned
         }
-
-        sheet.appendRow(recordData);
-    } catch (err) {
-        console.error(`Failed to write to sheet ${sheetName}:`, err);
-        throw new Error('Database write error');
-    }
+    });
 }
 
-/**
- * Helper to build JSON responses
- */
-function createResponse(code, message, data) {
-    var result = {
-        status: code,
-        message: message,
-        data: data || null
-    };
-
-    return ContentService.createTextOutput(JSON.stringify(result))
-        .setMimeType(ContentService.MimeType.JSON);
-}
-
-/**
- * Google Sheets simple trigger: Fires when a cell is edited in the spreadsheet.
- * Used to detect when a Lead Status changes to 'Client', to move their Drive folder.
- */
-function onEdit(e) {
-    if (!e || !e.range) return;
-    const sheet = e.range.getSheet();
-
-    // Only monitor the Leads tab
-    if (sheet.getName() !== CONFIG.SHEET_NAME_LEADS) return;
-
-    const editedRow = e.range.getRow();
-    const editedCol = e.range.getColumn();
-
-    // Assume Status is column G (7) based on our headers setup:
-    // ['LeadID', 'Name', 'Email', 'BusinessSize', 'Bottleneck', 'LeadScore', 'Status', 'DateCreated', 'DriveFolderURL']
-    if (editedCol === 7 && editedRow > 1) {
-        const newValue = e.value;
-
-        // If the Lead explicitly converted to a Client
-        if (newValue === 'Client') {
-            const dataRange = sheet.getRange(editedRow, 1, 1, sheet.getLastColumn()).getValues()[0];
-            const folderUrl = dataRange[8]; // Index 8 is Column I 'DriveFolderURL'
-            const leadName = dataRange[1];  // Index 1 is Column B 'Name'
-
-            if (folderUrl) {
-                moveLeadToClientFolder(folderUrl, leadName);
-            }
-        }
-    }
-}
-
-/**
- * Extracts folder ID from URL and moves it from the Leads folder to the Clients folder.
- */
-function moveLeadToClientFolder(folderUrl, leadName) {
-    try {
-        const idMatch = folderUrl.match(/[-\w]{25,}/);
-        if (!idMatch) return;
-
-        const folderId = idMatch[0];
-        const folderToMove = DriveApp.getFolderById(folderId);
-
-        // Using the User-Provided Clients Subfolder ID
-        const clientsParent = DriveApp.getFolderById('1gGBjwgbr0JMvYgb81ShezxkHyTWNpoyz');
-
-        // Move to clients folder
-        folderToMove.moveTo(clientsParent);
-
-        // Rename from [LEAD] to [CLIENT]
-        const currentName = folderToMove.getName();
-        if (currentName.startsWith('[LEAD]')) {
-            folderToMove.setName(currentName.replace('[LEAD]', '[CLIENT]'));
-        } else {
-            folderToMove.setName(`[CLIENT] ${leadName}`);
-        }
-
-        console.log(`Successfully moved folder for ${leadName} to Clients.`);
-    } catch (error) {
-        console.error(`Failed to move folder for ${leadName}:`, error);
-    }
-}
-
-/**
- * Run once to set up the full ICUNI Labs Google Drive folder structure.
- * Execute from Script Editor > Run > setupDriveFolders
- */
-function setupDriveFolders() {
-    var root = DriveApp.getRootFolder();
-    var icuni = getOrCreateFolder(root, 'ICUNI Labs');
-
-    // Work folders
-    var work = getOrCreateFolder(icuni, 'Work');
-    getOrCreateFolder(work, 'Active Projects');
-    getOrCreateFolder(work, 'Completed Projects');
-    getOrCreateFolder(work, 'Templates');
-
-    // Portfolio
-    var portfolio = getOrCreateFolder(icuni, 'Portfolio');
-    getOrCreateFolder(portfolio, 'Case Studies');
-    getOrCreateFolder(portfolio, 'Screenshots');
-
-    // Referrers
-    var referrers = getOrCreateFolder(icuni, 'Referrers');
-    getOrCreateFolder(referrers, 'Agreements');
-    getOrCreateFolder(referrers, 'Payouts');
-
-    // Jobs
-    var jobs = getOrCreateFolder(icuni, 'Jobs');
-    getOrCreateFolder(jobs, 'Applications');
-    getOrCreateFolder(jobs, 'Job Descriptions');
-
-    // Blog
-    var blog = getOrCreateFolder(icuni, 'Blog');
-    getOrCreateFolder(blog, 'Drafts');
-    getOrCreateFolder(blog, 'Published');
-    getOrCreateFolder(blog, 'Media');
-
-    console.log('ICUNI Labs Drive folders created successfully.');
-    console.log('Root folder: ' + icuni.getUrl());
+function handleUpdateReferralStatus(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var referral = findRow_(SHEETS.REFERRALS, 'referral_id', payload.referralId);
+    if (!referral) return errorResponse_('Referral not found.');
+    updateRow_(SHEETS.REFERRALS, referral._rowIndex, {
+        status: payload.status, updated_at: now_()
+    });
+    logAction_(auth.user.user_id, auth.user.name, 'REFERRAL_UPDATED', referral.client_name + ' → ' + payload.status);
+    return successResponse_(null, 'Referral status updated.');
 }
