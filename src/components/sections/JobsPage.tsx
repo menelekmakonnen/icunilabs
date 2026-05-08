@@ -32,7 +32,7 @@ const benIcons = [
 
 const jobs = [{
   id:'ops-assistant-001', title:'Operations Assistant', type:'Full-Time', location:'Accra, Ghana',
-  salary:'GH\u20B52,500/month + commission', heroImage:'/ops-assistant-hero.png',
+  salary:'GH\u20B52,500 \u2013 2,950/mo + commission', heroImage:'/ops-assistant-hero.png',
   shortDesc:'Keep our client pipeline moving, coordinate referral partners, and grow with a tech company building real systems for real businesses.',
   flyerImage:'/ops-assistant-flyer.jpg',
   deadline: '2026-05-18T00:00:00', // Sunday 17 May end-of-day
@@ -57,7 +57,7 @@ const jobs = [{
     'Available to start ASAP',
   ],
   benefits:[
-    'GH\u20B52,500 monthly base salary',
+    'GH\u20B52,500 \u2013 GH\u20B52,950 monthly base (Level 1 Compensation)',
     'Commission on every paid project the company delivers',
     'Up to 10% commission on deals you directly bring in',
     'Direct mentorship from the founder',
@@ -150,6 +150,7 @@ function Detail({job}:{job:typeof jobs[0]}){
             <div className="flex flex-wrap items-center gap-4 mb-6">
               <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">{job.type}</span>
               <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">Hybrid</span>
+              <span className="px-3 py-1 rounded-full bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00] text-xs font-bold tracking-wider">LEVEL 1 COMPENSATION</span>
               <span className="flex items-center gap-1 text-sm text-neutral-300"><MapPin className="w-3.5 h-3.5"/>{job.location}</span>
               <button onClick={()=>setShowSalary(!showSalary)} className="flex items-center gap-1.5 text-[#ff7a00] hover:text-[#ff9533] transition-colors cursor-pointer text-sm font-medium">
                 <span className="text-base font-bold leading-none">₵</span>
@@ -507,7 +508,7 @@ function AppForm({job}:{job:typeof jobs[0]}){
           {!audioOk&&<p className="text-xs text-red-400/70 mt-2">Required - record or upload your voice intro</p>}
         </div>
 
-        <textarea value={note} onChange={e=>setNote(e.target.value)} className={`${inp} resize-none`} rows={3} placeholder="Anything else? (optional)"/>
+        <textarea value={note} onChange={e=>setNote(e.target.value)} className={`${inp} resize-none`} rows={3} placeholder="Anything else you'd like to add? (or Cover Letter) — optional"/>
 
         <button type="submit" disabled={!ok}
           className={`w-full bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3.5 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] transition-all cursor-pointer ${!ok?'opacity-40 cursor-not-allowed':''}`}>

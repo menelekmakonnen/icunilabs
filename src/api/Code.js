@@ -261,8 +261,11 @@ function handleJobQualificationLegacy(payload) {
             hasLaptop:       'Has a Working Laptop',
             phoneSpecs:      'Smartphone Model',
             secureWorkspace: 'Has a Secure, Distraction-Free Workspace',
-            paymentMethod:   'Preferred Payment Method',
-            currentJob:      'Current Employment Status'
+            fieldSalesOk:    'Happy to Join Founder for Sales & Events',
+            accraArea:       'General Area in Accra',
+            otherCommitments:'Other Commitments Alongside Role',
+            currentJob:      'Current Employment Status',
+            paymentMethod:   'Preferred Payment Method'
         };
         
         // Build formatted summary rows
