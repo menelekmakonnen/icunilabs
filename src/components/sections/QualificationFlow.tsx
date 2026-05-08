@@ -23,7 +23,7 @@ function getSteps(firstName: string): Step[] {
     {
       intro: `Your profile is interesting, ${firstName}! Please confirm the following:`,
       questions: [
-        { id: 'salaryOk', label: 'Are you happy with GH\u20B53,000/month base + commission?', type: 'yesno' },
+        { id: 'salaryOk', label: 'This is a Level 1 Compensation role with a salary range of GH\u20B52,500 \u2013 GH\u20B52,950/month depending on experience and meeting standards. Are you happy to continue?', type: 'yesno' },
         { id: 'fullTimeOk', label: 'Full-time, Monday to Friday?', type: 'yesno' },
         { id: 'asapOk', label: 'Available to start ASAP?', type: 'yesno' },
       ]

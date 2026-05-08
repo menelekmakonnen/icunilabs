@@ -32,7 +32,7 @@ const benIcons = [
 
 const jobs = [{
   id:'ops-assistant-001', title:'Operations Assistant', type:'Full-Time', location:'Accra, Ghana',
-  salary:'GH\u20B53,000/month + commission', heroImage:'/ops-assistant-hero.png',
+  salary:'GH\u20B52,500/month + commission', heroImage:'/ops-assistant-hero.png',
   shortDesc:'Keep our client pipeline moving, coordinate referral partners, and grow with a tech company building real systems for real businesses.',
   flyerImage:'/ops-assistant-flyer.jpg',
   deadline: '2026-05-18T00:00:00', // Sunday 17 May end-of-day
@@ -57,7 +57,7 @@ const jobs = [{
     'Available to start ASAP',
   ],
   benefits:[
-    'GH\u20B53,000 monthly base salary',
+    'GH\u20B52,500 monthly base salary',
     'Commission on every paid project the company delivers',
     'Up to 10% commission on deals you directly bring in',
     'Direct mentorship from the founder',
