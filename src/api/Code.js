@@ -94,16 +94,17 @@ function doPost(e) {
         if (action === 'getLogs')           return handleGetLogs(payload);
         if (action === 'getArchives')       return handleGetArchives(payload);
 
-        // ── Referrals (legacy support) ──
-        if (action === 'submitReferral')    return handleSubmitReferral(payload);
-        if (action === 'registerReferrer')  return handleRegisterReferrer(payload);
-        if (action === 'loginReferrer')     return handleLoginReferrer(payload);
-        if (action === 'verifyReferrerOtp') return handleVerifyReferrerOtp(payload);
-        if (action === 'getDashboardData')  return handleGetReferrerDashboard(payload);
+        // ── Referrals (legacy — matches frontend action names) ──
+        if (action === 'submit_referral' || action === 'submitReferral')    return handleSubmitReferral(payload);
+        if (action === 'referrer_signup' || action === 'registerReferrer')  return handleRegisterReferrer(payload);
+        if (action === 'referrer_login' || action === 'loginReferrer')     return handleLoginReferrer(payload);
+        if (action === 'referrer_verify_otp' || action === 'verifyReferrerOtp') return handleVerifyReferrerOtp(payload);
+        if (action === 'get_dashboard' || action === 'getDashboardData')   return handleGetReferrerDashboard(payload);
         if (action === 'updateReferralStatus') return handleUpdateReferralStatus(payload);
 
-        // ── Job Applications (legacy support) ──
-        if (action === 'submitJobApplication') return handleJobApplicationLegacy(payload);
+        // ── Job Applications (legacy — matches frontend action names) ──
+        if (action === 'job_application' || action === 'submitJobApplication') return handleJobApplicationLegacy(payload);
+        if (action === 'job_qualification') return handleJobQualificationLegacy(payload);
 
         return errorResponse_('Unknown action: ' + action, 400);
 
@@ -164,13 +165,13 @@ function handleJobApplicationLegacy(payload) {
         }
 
         if (payload.cvBase64 && applicantFolder) {
-            cvLink = saveBase64File_(applicantFolder, payload.cvBase64, payload.cvFileName || 'CV.pdf');
+            cvLink = saveBase64File_(applicantFolder, payload.cvBase64, payload.cvName || payload.cvFileName || 'CV.pdf');
         }
         if (payload.audioBase64 && applicantFolder) {
-            audioLink = saveBase64File_(applicantFolder, payload.audioBase64, payload.audioFileName || 'voice-intro.webm');
+            audioLink = saveBase64File_(applicantFolder, payload.audioBase64, payload.audioName || payload.audioFileName || 'voice-intro.webm');
         }
         if (payload.videoBase64 && applicantFolder) {
-            videoLink = saveBase64File_(applicantFolder, payload.videoBase64, payload.videoFileName || 'video-intro.webm');
+            videoLink = saveBase64File_(applicantFolder, payload.videoBase64, payload.videoName || payload.videoFileName || 'video-intro.webm');
         }
 
         appendRow_(SHEETS.JOB_APPLICATIONS, [
@@ -212,6 +213,65 @@ function handleJobApplicationLegacy(payload) {
     } catch (err) {
         Logger.log('Job application error: ' + err.message);
         return errorResponse_('Failed to submit application: ' + err.message);
+    }
+}
+
+/**
+ * Legacy qualification flow handler — saves questionnaire answers.
+ */
+function handleJobQualificationLegacy(payload) {
+    try {
+        var qualId = generateId_('QAL');
+        var email = payload.email || '';
+        var jobId = payload.jobId || '';
+        var jobTitle = payload.jobTitle || '';
+        
+        // Extract answers (everything except action, email, jobId, jobTitle)
+        var answers = {};
+        var skip = ['action', 'email', 'jobId', 'jobTitle'];
+        for (var key in payload) {
+            if (skip.indexOf(key) === -1 && payload.hasOwnProperty(key)) {
+                answers[key] = payload[key];
+            }
+        }
+        
+        appendRow_(SHEETS.JOB_QUALIFICATIONS, [
+            qualId, '', jobId, email,
+            JSON.stringify(answers), now_()
+        ]);
+        
+        // Link to application if possible
+        var app = findRow_(SHEETS.JOB_APPLICATIONS, 'email', email);
+        if (app) {
+            updateRow_(SHEETS.JOB_QUALIFICATIONS, 
+                findRow_(SHEETS.JOB_QUALIFICATIONS, 'qual_id', qualId)._rowIndex,
+                { application_id: app.application_id }
+            );
+        }
+        
+        // Send confirmation email with application summary
+        try {
+            MailApp.sendEmail({
+                to: email,
+                subject: 'Application Complete — ICUNI Labs',
+                htmlBody: buildProjectStepEmail_(payload.name || email.split('@')[0],
+                    'Application Complete',
+                    'You\'ve successfully completed your application for <strong>' + jobTitle + '</strong> at ICUNI Labs.<br><br>' +
+                    'Our team will review everything and get back to you within <strong>48 hours</strong>.<br><br>' +
+                    'For your records, here\'s a summary of your questionnaire responses:<br>' +
+                    Object.keys(answers).map(function(k) {
+                        return '<br><strong>' + k.replace(/_/g, ' ') + ':</strong> ' + answers[k];
+                    }).join(''))
+            });
+            logEmail_(email, 'Application Complete', 'qualification', 'sent');
+        } catch(e) { logEmail_(email, 'Application Complete', 'qualification', 'failed'); }
+        
+        logAction_('PUBLIC', email, 'JOB_QUALIFICATION', 'Completed qualification for ' + jobTitle);
+        return successResponse_({ qualId: qualId }, 'Qualification submitted.');
+        
+    } catch(err) {
+        Logger.log('Qualification error: ' + err.message);
+        return errorResponse_('Failed to submit qualification.');
     }
 }
 
