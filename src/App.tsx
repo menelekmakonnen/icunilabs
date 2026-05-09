@@ -57,7 +57,12 @@ function App() {
   }
 
   if (currentHash === '#portal') {
-    return <ClientPortal />;
+    return (
+      <>
+        <Navbar />
+        <ClientPortal />
+      </>
+    );
   }
 
   if (currentHash === '#portfolio' || currentHash.startsWith('#portfolio?')) {

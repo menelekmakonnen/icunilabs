@@ -250,9 +250,24 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
         </div>
       </section>
 
-      {/* ── BENEFIT CARDS ── */}
-      <section className="px-6 pb-20">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-4">
+      {/* ── AUTH FORM (right after hero) ── */}
+      <section id="join" className="px-6 pb-16 scroll-mt-20">
+        <div className="max-w-md mx-auto">
+          <AuthFormCard tab={tab} setTab={setTab} error={error} setError={setError} otpStep={otpStep} setOtpStep={setOtpStep} otpCode={otpCode} setOtpCode={setOtpCode} pendingEmail={pendingEmail} setPendingEmail={setPendingEmail} loginEmail={loginEmail} setLoginEmail={setLoginEmail} name={name} setName={setName} email={email} setEmail={setEmail} phone={phone} setPhone={setPhone} background={background} setBackground={setBackground} payoutPreference={payoutPreference} setPayoutPreference={setPayoutPreference} busy={busy} setBusy={setBusy} onLogin={onLogin} handleLoginSubmit={handleLoginSubmit} handleSignupSubmit={handleSignupSubmit} handleOtpVerify={handleOtpVerify} />
+        </div>
+      </section>
+
+      {/* ── BENEFIT CARDS with animated SVGs ── */}
+      <section className="px-6 pb-20 relative overflow-hidden">
+        {/* Animated SVG decorations */}
+        <svg className="absolute -left-20 top-10 w-64 h-64 opacity-[0.04]" viewBox="0 0 200 200" fill="none">
+          <motion.circle cx="100" cy="100" r="80" stroke="#ff7a00" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 4, repeat: Infinity, repeatType: 'reverse' }} />
+          <motion.circle cx="100" cy="100" r="50" stroke="#00bfff" strokeWidth="0.5" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 3, delay: 1, repeat: Infinity, repeatType: 'reverse' }} />
+        </svg>
+        <svg className="absolute -right-16 bottom-0 w-48 h-48 opacity-[0.04]" viewBox="0 0 200 200" fill="none">
+          <motion.rect x="20" y="20" width="160" height="160" rx="20" stroke="#10b981" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 5, repeat: Infinity, repeatType: 'reverse' }} />
+        </svg>
+        <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-4 relative z-10">
           {[
             { icon: DollarSign, color: '#ff7a00', title: 'GH₵1,000+ Per Deal', desc: 'Earn GH₵1,000 flat or 10% of deal value — whichever is higher. No cap.' },
             { icon: Users, color: '#00bfff', title: 'Just Warm Intros', desc: "You don't sell. Introduce, set the meeting, we handle the rest. Follow up if needed." },
@@ -289,132 +304,98 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
         </div>
       </section>
 
-      {/* ── DEMO DASHBOARD PREVIEW ── */}
+      {/* ── INTERACTIVE DEMO DASHBOARD ── */}
       <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-black tracking-tight mb-2">Your Dashboard Awaits</h2>
-            <p className="text-neutral-400">Sign up to access your personal referral tracking dashboard</p>
+            <h2 className="text-3xl font-black tracking-tight mb-2">Try the Dashboard</h2>
+            <p className="text-neutral-400">Explore an interactive preview — this is exactly what you'll get when you join</p>
           </div>
-          <div className="relative rounded-2xl border border-neutral-800 overflow-hidden">
-            {/* Render actual DashboardView with demo data — blurred */}
-            <div className="pointer-events-none select-none" style={{ filter: 'blur(3px)', opacity: 0.7 }}>
-              <DashboardView
-                session={{ referrerId: 'DEMO', name: 'Kwame Mensah', email: 'kwame@example.com' }}
-                dashboard={DEMO_DASHBOARD}
-                loading={false}
-                onLogout={() => {}}
-                onRefresh={() => {}}
-                showSubmitModal={false}
-                setShowSubmitModal={() => {}}
-              />
-            </div>
-            {/* CTA overlay */}
-            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent">
-              <div className="text-center">
-                <h3 className="text-2xl font-bold mb-3">See Your Earnings Live</h3>
-                <p className="text-neutral-400 mb-6 text-sm max-w-sm mx-auto">Track referrals, monitor deal progress, and watch your payouts grow — all in real time.</p>
-                <a href="#join" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] transition-all">
-                  Join Now <ChevronRight className="w-4 h-4" />
-                </a>
-              </div>
-            </div>
+          <div className="relative rounded-2xl border border-neutral-800 overflow-hidden bg-neutral-950">
+            <div className="absolute top-3 right-3 z-20 px-3 py-1 rounded-full bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00] text-[10px] font-bold tracking-wider">LIVE DEMO</div>
+            <DashboardView
+              session={{ referrerId: 'DEMO', name: 'Kwame Mensah', email: 'kwame@example.com' }}
+              dashboard={DEMO_DASHBOARD}
+              loading={false}
+              onLogout={() => {}}
+              onRefresh={() => {}}
+              showSubmitModal={false}
+              setShowSubmitModal={() => {}}
+            />
+          </div>
+          <div className="text-center mt-6">
+            <a href="#join" className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] transition-all">
+              Get Your Own Dashboard <ChevronRight className="w-4 h-4" />
+            </a>
           </div>
         </div>
       </section>
 
-      {/* ── AUTH FORM ── */}
-      <section id="join" className="px-6 pb-24 scroll-mt-20">
-        <div className="max-w-md mx-auto">
-          <motion.div initial={{ y: 20 }} whileInView={{ y: 0 }} viewport={{ once: true }} className={`${cardCls} p-8`}>
-            <div className="text-center mb-8">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[#ff7a00] to-[#00bfff] p-[1px]">
-                <div className="w-full h-full rounded-xl bg-neutral-950 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-[#00bfff]" />
-                </div>
-              </div>
-              <h2 className="text-2xl font-bold tracking-tight mb-1">Join the Program</h2>
-              <p className="text-neutral-400 text-sm">Start earning from your network today</p>
-            </div>
+    </motion.div>
+  );
+}
 
-            <div className="flex mb-6 bg-neutral-900 rounded-lg p-1">
-              {(['login', 'signup'] as AuthTab[]).map(t => (
-                <button key={t} onClick={() => { setTab(t); setError(''); }}
-                  className={`flex-1 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${tab === t ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
-                >{t === 'login' ? 'Log In' : 'Sign Up'}</button>
-              ))}
-            </div>
-
-            {error && <div className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">{error}</div>}
-
-            <AnimatePresence mode="wait">
-              {otpStep ? (
-                <motion.form key="otp" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} onSubmit={handleOtpVerify} className="space-y-4">
-                  <div className="text-center mb-2">
-                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#00bfff]/10 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-[#00bfff]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                    </div>
-                    <p className="text-sm text-neutral-400">We sent a 6-digit code to <span className="text-white font-medium">{pendingEmail}</span></p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-400 mb-2">Enter OTP</label>
-                    <input type="text" required maxLength={6} value={otpCode} onChange={e => setOtpCode(e.target.value.replace(/\D/g, ''))} className={`${inputCls} text-center text-2xl tracking-[0.5em] font-mono`} placeholder="------" autoFocus />
-                  </div>
-                  <button type="submit" disabled={busy || otpCode.length < 6} className={`${btnPrimary} mt-2 ${(busy || otpCode.length < 6) ? 'opacity-60' : ''}`}>
-                    {busy ? 'Verifying...' : 'Verify & Log In'}
-                  </button>
-                  <button type="button" onClick={() => { setOtpStep(false); setOtpCode(''); }} className="w-full text-sm text-neutral-500 hover:text-white transition-colors cursor-pointer mt-2">Back</button>
-                </motion.form>
-              ) : tab === 'login' ? (
-                <motion.form key="login" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} onSubmit={handleLoginSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-400 mb-2">Email</label>
-                    <input type="email" required value={loginEmail} onChange={e => setLoginEmail(e.target.value)} className={inputCls} placeholder="you@email.com" />
-                  </div>
-                  <button type="submit" disabled={busy} className={`${btnPrimary} mt-2 ${busy ? 'opacity-60' : ''}`}>
-                    {busy ? 'Sending OTP...' : 'Log In'}
-                  </button>
-                </motion.form>
-              ) : (
-                <motion.form key="signup" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleSignupSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-400 mb-2">Full Name</label>
-                    <input type="text" required value={name} onChange={e => setName(e.target.value)} className={inputCls} placeholder="Kwame Mensah" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-400 mb-2">Email</label>
-                    <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className={inputCls} placeholder="kwame@email.com" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-400 mb-2">Phone (MoMo)</label>
-                    <input type="tel" required value={phone} onChange={e => setPhone(e.target.value)} className={inputCls} placeholder="024 XXX XXXX" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-400 mb-2">Payout Preference</label>
-                    <div className="flex gap-3">
-                      {([['momo', 'MoMo Transfer'], ['cash', 'Cash']] as const).map(([val, label]) => (
-                        <button key={val} type="button" onClick={() => setPayoutPreference(val)}
-                          className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition-all cursor-pointer ${
-                            payoutPreference === val ? 'border-[#00bfff]/50 bg-[#00bfff]/10 text-[#00bfff]' : 'border-neutral-800 bg-neutral-900/50 text-neutral-500 hover:border-neutral-700'
-                          }`}>{label}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-neutral-400 mb-2">Background <span className="text-neutral-600">(optional)</span></label>
-                    <textarea value={background} onChange={e => setBackground(e.target.value)} className={`${inputCls} resize-none`} rows={2} placeholder="What do you do? How do you know potential clients?" />
-                  </div>
-                  <button type="submit" disabled={busy} className={`${btnPrimary} mt-2 ${busy ? 'opacity-60' : ''}`}>
-                    {busy ? 'Creating Account...' : 'Join the Program'}
-                  </button>
-                </motion.form>
-              )}
-            </AnimatePresence>
-
-            <p className="text-xs text-neutral-600 mt-6 text-center">Earn GH₵1,000 or 10% of deal value — whichever is higher.</p>
-          </motion.div>
+// ─── EXTRACTED AUTH FORM CARD ───
+function AuthFormCard({ tab, setTab, error, setError, otpStep, setOtpStep, otpCode, setOtpCode, pendingEmail, loginEmail, setLoginEmail, name, setName, email, setEmail, phone, setPhone, background, setBackground, payoutPreference, setPayoutPreference, busy, handleLoginSubmit, handleSignupSubmit, handleOtpVerify }: any) {
+  return (
+    <motion.div initial={{ y: 20 }} whileInView={{ y: 0 }} viewport={{ once: true }} className={`${cardCls} p-8`}>
+      <div className="text-center mb-8">
+        <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-[#ff7a00] to-[#00bfff] p-[1px]">
+          <div className="w-full h-full rounded-xl bg-neutral-950 flex items-center justify-center">
+            <Users className="w-6 h-6 text-[#00bfff]" />
+          </div>
         </div>
-      </section>
+        <h2 className="text-2xl font-bold tracking-tight mb-1">Join the Program</h2>
+        <p className="text-neutral-400 text-sm">Start earning from your network today</p>
+      </div>
+      <div className="flex mb-6 bg-neutral-900 rounded-lg p-1">
+        {(['login', 'signup'] as ('login'|'signup')[]).map(t => (
+          <button key={t} onClick={() => { setTab(t); setError(''); }}
+            className={`flex-1 py-2 text-sm font-medium rounded-md transition-all cursor-pointer ${tab === t ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300'}`}
+          >{t === 'login' ? 'Log In' : 'Sign Up'}</button>
+        ))}
+      </div>
+      {error && <div className="mb-4 text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-2">{error}</div>}
+      <AnimatePresence mode="wait">
+        {otpStep ? (
+          <motion.form key="otp" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} onSubmit={handleOtpVerify} className="space-y-4">
+            <div className="text-center mb-2">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-[#00bfff]/10 flex items-center justify-center">
+                <svg className="w-6 h-6 text-[#00bfff]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+              </div>
+              <p className="text-sm text-neutral-400">We sent a 6-digit code to <span className="text-white font-medium">{pendingEmail}</span></p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">Enter OTP</label>
+              <input type="text" required maxLength={6} value={otpCode} onChange={(e: any) => setOtpCode(e.target.value.replace(/\D/g, ''))} className={`${inputCls} text-center text-2xl tracking-[0.5em] font-mono`} placeholder="------" autoFocus />
+            </div>
+            <button type="submit" disabled={busy || otpCode.length < 6} className={`${btnPrimary} mt-2 ${(busy || otpCode.length < 6) ? 'opacity-60' : ''}`}>{busy ? 'Verifying...' : 'Verify & Log In'}</button>
+            <button type="button" onClick={() => { setOtpStep(false); setOtpCode(''); }} className="w-full text-sm text-neutral-500 hover:text-white transition-colors cursor-pointer mt-2">Back</button>
+          </motion.form>
+        ) : tab === 'login' ? (
+          <motion.form key="login" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }} onSubmit={handleLoginSubmit} className="space-y-4">
+            <div><label className="block text-sm font-medium text-neutral-400 mb-2">Email</label><input type="email" required value={loginEmail} onChange={(e: any) => setLoginEmail(e.target.value)} className={inputCls} placeholder="you@email.com" /></div>
+            <button type="submit" disabled={busy} className={`${btnPrimary} mt-2 ${busy ? 'opacity-60' : ''}`}>{busy ? 'Sending OTP...' : 'Log In'}</button>
+          </motion.form>
+        ) : (
+          <motion.form key="signup" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleSignupSubmit} className="space-y-4">
+            <div><label className="block text-sm font-medium text-neutral-400 mb-2">Full Name</label><input type="text" required value={name} onChange={(e: any) => setName(e.target.value)} className={inputCls} placeholder="Kwame Mensah" /></div>
+            <div><label className="block text-sm font-medium text-neutral-400 mb-2">Email</label><input type="email" required value={email} onChange={(e: any) => setEmail(e.target.value)} className={inputCls} placeholder="kwame@email.com" /></div>
+            <div><label className="block text-sm font-medium text-neutral-400 mb-2">Phone (MoMo)</label><input type="tel" required value={phone} onChange={(e: any) => setPhone(e.target.value)} className={inputCls} placeholder="024 XXX XXXX" /></div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">Payout Preference</label>
+              <div className="flex gap-3">
+                {([['momo', 'MoMo Transfer'], ['cash', 'Cash']] as const).map(([val, label]) => (
+                  <button key={val} type="button" onClick={() => setPayoutPreference(val)} className={`flex-1 py-2.5 text-sm font-medium rounded-lg border transition-all cursor-pointer ${payoutPreference === val ? 'border-[#00bfff]/50 bg-[#00bfff]/10 text-[#00bfff]' : 'border-neutral-800 bg-neutral-900/50 text-neutral-500 hover:border-neutral-700'}`}>{label}</button>
+                ))}
+              </div>
+            </div>
+            <div><label className="block text-sm font-medium text-neutral-400 mb-2">Background <span className="text-neutral-600">(optional)</span></label><textarea value={background} onChange={(e: any) => setBackground(e.target.value)} className={`${inputCls} resize-none`} rows={2} placeholder="What do you do? How do you know potential clients?" /></div>
+            <button type="submit" disabled={busy} className={`${btnPrimary} mt-2 ${busy ? 'opacity-60' : ''}`}>{busy ? 'Creating Account...' : 'Join the Program'}</button>
+          </motion.form>
+        )}
+      </AnimatePresence>
+      <p className="text-xs text-neutral-600 mt-6 text-center">Earn GH₵1,000 or 10% of deal value — whichever is higher.</p>
     </motion.div>
   );
 }

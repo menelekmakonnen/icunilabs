@@ -106,6 +106,9 @@ function doPost(e) {
         if (action === 'job_application' || action === 'submitJobApplication') return handleJobApplicationLegacy(payload);
         if (action === 'job_qualification') return handleJobQualificationLegacy(payload);
 
+        // ── Bug Reports ──
+        if (action === 'report_bug' || action === 'reportBug') return handleBugReport(payload);
+
         return errorResponse_('Unknown action: ' + action, 400);
 
     } catch (err) {
@@ -445,4 +448,46 @@ function handleUpdateReferralStatus(payload) {
     });
     logAction_(auth.user.user_id, auth.user.name, 'REFERRAL_UPDATED', referral.client_name + ' → ' + payload.status);
     return successResponse_(null, 'Referral status updated.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// BUG REPORT HANDLER
+// ═══════════════════════════════════════════════════════════
+
+function handleBugReport(payload) {
+    var TECH_EMAIL = 'tech.issue@icuni.org';
+    
+    // Try to identify user from token
+    var userName = 'Unknown';
+    var userEmail = 'Unknown';
+    if (payload.token) {
+        var session = validateSession_(payload.token);
+        if (session) { userName = session.name; userEmail = session.email; }
+    }
+    
+    var projectTitle = payload.projectTitle || payload.projectId || 'General';
+    var category = payload.category || 'Unspecified';
+    var description = payload.description || 'No description provided.';
+    
+    var body = '<strong>Project:</strong> ' + projectTitle + '<br>' +
+        '<strong>Category:</strong> ' + category + '<br>' +
+        '<strong>Reported by:</strong> ' + userName + ' (' + userEmail + ')<br>' +
+        '<strong>Time:</strong> ' + now_() + '<br><br>' +
+        '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin-top:8px;">' +
+        '<div style="font-size:11px;color:#64748b;letter-spacing:2px;margin-bottom:6px;">DESCRIPTION</div>' +
+        '<div style="color:#e8ecf4;font-size:14px;line-height:1.6;white-space:pre-wrap;">' + description + '</div>' +
+        '</div>';
+    
+    try {
+        MailApp.sendEmail({
+            to: TECH_EMAIL,
+            subject: '[Bug Report] ' + category + ' — ' + projectTitle,
+            htmlBody: buildBrandedEmail_('Tech Team', 'New Bug Report', body, { ctaText: 'View Dashboard', ctaLink: 'https://labs.icuni.org' })
+        });
+    } catch(e) {
+        Logger.log('Bug report email failed: ' + e.message);
+    }
+    
+    logAction_(userName, userName, 'BUG_REPORT', category + ' — ' + projectTitle);
+    return successResponse_(null, 'Bug report submitted. Our team has been notified.');
 }
