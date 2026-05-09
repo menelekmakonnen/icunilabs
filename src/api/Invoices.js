@@ -230,7 +230,13 @@ function sendInvoiceEmail_(invoiceId, data, items, total, tax, dueDate, pdfUrl) 
         } catch(e) { Logger.log('PDF attachment failed: ' + e.message); }
     }
     
-    MailApp.sendEmail(emailOptions);
+    sendEmail_({
+        to: emailOptions.to,
+        subject: emailOptions.subject,
+        htmlBody: emailOptions.htmlBody,
+        attachments: emailOptions.attachments || [],
+        from: 'labs@icuni.org'
+    });
     logEmail_(data.client_email, 'Invoice ' + invoiceId, 'invoice', 'sent');
 }
 
@@ -337,7 +343,7 @@ function notifyReferrerCommission_(projectId, invoiceTotal) {
     
     var commission = invoiceTotal * 0.10; // 10% commission
     
-    MailApp.sendEmail({
+    sendEmail_({
         to: referrer.email,
         subject: '[ICUNI Labs] Commission Confirmed — GH₵' + formatCurrency_(commission),
         htmlBody: buildProjectStepEmail_(referrer.name,
@@ -346,7 +352,8 @@ function notifyReferrerCommission_(projectId, invoiceTotal) {
             '<div style="background:#1a1a2e;border:2px solid #ff7a00;border-radius:8px;padding:16px;text-align:center;margin:16px 0;">' +
             '<div style="font-size:12px;color:#8b95a8;">YOUR COMMISSION</div>' +
             '<div style="font-size:28px;font-weight:800;color:#ff7a00;margin-top:4px;">GH\u20B5' + formatCurrency_(commission) + '</div></div>' +
-            'This will be paid to you via your preferred payment method on file.')
+            'This will be paid to you via your preferred payment method on file.'),
+        from: 'labs@icuni.org'
     });
     
     // Update referral payout

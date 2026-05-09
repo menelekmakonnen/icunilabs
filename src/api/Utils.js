@@ -286,3 +286,46 @@ function rateLimit_(userId, action, maxPerMinute) {
     }
     cache.put(key, String(current + 1), 60);
 }
+
+// ─── EMAIL SENDING (alias-aware) ─────────────────────────
+/**
+ * Send an email using GmailApp so that the 'from' alias is respected.
+ * 
+ * IMPORTANT: Each alias (jobs@, labs@, tech.issue@) must first be added as
+ * a "Send mail as" address in Gmail → Settings → Accounts and Import.
+ * 
+ * Usage:
+ *   sendEmail_({ to: 'client@x.com', subject: 'Hi', htmlBody: '...', from: 'jobs@icuni.org' });
+ *   sendEmail_({ to: 'client@x.com', subject: 'Hi', htmlBody: '...' }); // defaults to labs@icuni.org
+ *
+ * Supported 'from' values:
+ *   - 'jobs@icuni.org'        — job applications, qualifications
+ *   - 'labs@icuni.org'        — general, project updates, invoices (default)
+ *   - 'tech.issue@icuni.org'  — bug reports
+ *   - 'hello@icuni.org'       — auth, OTP codes
+ */
+function sendEmail_(options) {
+    var to = options.to;
+    var subject = options.subject;
+    var htmlBody = options.htmlBody || '';
+    var fromAlias = options.from || 'labs@icuni.org';
+    var attachments = options.attachments || [];
+    var name = options.name || 'ICUNI Labs';
+
+    try {
+        // GmailApp supports the 'from' parameter for workspace aliases
+        var gmailOpts = {
+            htmlBody: htmlBody,
+            from: fromAlias,
+            name: name
+        };
+        if (attachments.length > 0) gmailOpts.attachments = attachments;
+        GmailApp.sendEmail(to, subject, '', gmailOpts);
+    } catch (e) {
+        // Fallback: if alias isn't configured or GmailApp fails, use MailApp
+        Logger.log('GmailApp.sendEmail failed (from: ' + fromAlias + '): ' + e.message + '. Falling back to MailApp.');
+        var mailOpts = { to: to, subject: subject, htmlBody: htmlBody };
+        if (attachments.length > 0) mailOpts.attachments = attachments;
+        MailApp.sendEmail(mailOpts);
+    }
+}

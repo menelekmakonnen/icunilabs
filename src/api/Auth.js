@@ -115,10 +115,11 @@ function handleSendOTP(payload) {
     }), OTP_TTL_SECONDS);
 
     try {
-        MailApp.sendEmail({
+        sendEmail_({
             to: email,
             subject: 'ICUNI Labs — Your Login Code',
-            htmlBody: buildOTPEmail_(otp, user.name)
+            htmlBody: buildOTPEmail_(otp, user.name),
+            from: 'hello@icuni.org'
         });
     } catch (e) {
         Logger.log('OTP email failed: ' + e.message);
@@ -362,10 +363,11 @@ function handleAddUser(payload) {
 
     // Send welcome email
     try {
-        MailApp.sendEmail({
+        sendEmail_({
             to: payload.email,
             subject: 'Welcome to ICUNI Labs',
-            htmlBody: buildWelcomeEmail_(payload.name, payload.email, tempPw, payload.role)
+            htmlBody: buildWelcomeEmail_(payload.name, payload.email, tempPw, payload.role),
+            from: 'hello@icuni.org'
         });
     } catch(e) { Logger.log('Welcome email failed: ' + e.message); }
 

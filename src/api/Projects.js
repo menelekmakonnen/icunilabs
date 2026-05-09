@@ -275,10 +275,11 @@ function handleClientRequestBuild(payload) {
     
     // Notify staff
     try {
-        MailApp.sendEmail({
+        sendEmail_({
             to: ADMIN_EMAIL,
             subject: '[ICUNI Labs] New Build Request from ' + client.name,
-            htmlBody: buildNewRequestEmail_(client, payload.title, payload.description)
+            htmlBody: buildNewRequestEmail_(client, payload.title, payload.description),
+            from: 'labs@icuni.org'
         });
         logEmail_(ADMIN_EMAIL, 'New Build Request', 'notification', 'sent');
     } catch(e) { logEmail_(ADMIN_EMAIL, 'New Build Request', 'notification', 'failed'); }
@@ -326,10 +327,11 @@ function sendStepNotification_(project, step, client, staffUser) {
     }
     
     try {
-        MailApp.sendEmail({
+        sendEmail_({
             to: client.email,
             subject: '[ICUNI Labs] ' + subject,
-            htmlBody: buildProjectStepEmail_(client.name, subject, body)
+            htmlBody: buildProjectStepEmail_(client.name, subject, body),
+            from: 'labs@icuni.org'
         });
         logEmail_(client.email, subject, 'project_step', 'sent');
     } catch(e) {
@@ -341,13 +343,14 @@ function notifyReferrerProjectApproved_(referrerId, clientName, projectTitle) {
     var referrer = findRow_(SHEETS.REFERRERS, 'referrer_id', referrerId);
     if (!referrer || !referrer.email) return;
     
-    MailApp.sendEmail({
+    sendEmail_({
         to: referrer.email,
         subject: '[ICUNI Labs] Great news — ' + clientName + '\'s project is approved!',
         htmlBody: buildProjectStepEmail_(referrer.name,
             'Referral Update: Project Approved',
             'The project <strong>' + projectTitle + '</strong> for <strong>' + clientName + 
-            '</strong> has been approved. You\'ll receive your commission confirmation once payment is received.')
+            '</strong> has been approved. You\'ll receive your commission confirmation once payment is received.'),
+        from: 'labs@icuni.org'
     });
     logEmail_(referrer.email, 'Referral project approved', 'referrer_notify', 'sent');
 }
@@ -414,10 +417,11 @@ function sendProjectCreatedEmail_(client, projectId, title, invoiceId, amount) {
         'An invoice of <strong>GH\u20B5' + amount.toLocaleString() + '</strong> (Invoice: ' + invoiceId + ') has been generated.<br><br>' +
         'Please review and make the deposit to get started.';
     
-    MailApp.sendEmail({
+    sendEmail_({
         to: client.email,
         subject: '[ICUNI Labs] Project Created — ' + title,
-        htmlBody: buildBrandedEmail_(client.name, 'New Project Created', body)
+        htmlBody: buildBrandedEmail_(client.name, 'New Project Created', body),
+        from: 'labs@icuni.org'
     });
     logEmail_(client.email, 'Project Created — ' + title, 'project_created', 'sent');
 }

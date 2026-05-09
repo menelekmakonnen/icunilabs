@@ -241,7 +241,7 @@ function sendSlaDigestEmail_(email, alerts) {
         '</div></div>';
     
     try {
-        MailApp.sendEmail(email, subject, '', { htmlBody: body });
+        sendEmail_({ to: email, subject: subject, htmlBody: body, from: 'labs@icuni.org' });
         logEmail_(email, subject, 'sla_digest', 'sent');
     } catch(e) {
         logEmail_(email, subject, 'sla_digest', 'failed');

@@ -187,17 +187,18 @@ function handleJobApplicationLegacy(payload) {
 
         // Send confirmation email to applicant
         try {
-            MailApp.sendEmail({
+            sendEmail_({
                 to: email,
                 subject: 'Application Received — ICUNI Labs',
-                htmlBody: buildApplicationConfirmEmail_(name, jobTitle)
+                htmlBody: buildApplicationConfirmEmail_(name, jobTitle),
+                from: 'jobs@icuni.org'
             });
             logEmail_(email, 'Application Confirmation', 'application', 'sent');
         } catch(e) { logEmail_(email, 'Application Confirmation', 'application', 'failed'); }
 
         // Notify jobs inbox
         try {
-            MailApp.sendEmail({
+            sendEmail_({
                 to: JOBS_EMAIL,
                 subject: 'New Application — ' + name + ' for ' + jobTitle,
                 htmlBody: buildProjectStepEmail_('Team',
@@ -205,7 +206,8 @@ function handleJobApplicationLegacy(payload) {
                     '<strong>' + name + '</strong> (' + email + ') applied for <strong>' + jobTitle + '</strong>.<br><br>' +
                     'Phone: ' + phone + '<br>' +
                     'CV: ' + (cvLink ? '<a href="' + cvLink + '">Download</a>' : 'None') + '<br>' +
-                    'Voice Intro: ' + (audioLink ? '<a href="' + audioLink + '">Listen</a>' : 'None'))
+                    'Voice Intro: ' + (audioLink ? '<a href="' + audioLink + '">Listen</a>' : 'None')),
+                from: 'jobs@icuni.org'
             });
         } catch(e) {}
 
@@ -294,7 +296,7 @@ function handleJobQualificationLegacy(payload) {
         
         // Send confirmation email to applicant
         try {
-            MailApp.sendEmail({
+            sendEmail_({
                 to: email,
                 subject: 'Application Complete — ICUNI Labs',
                 htmlBody: buildBrandedEmail_(payload.name || email.split('@')[0],
@@ -302,21 +304,23 @@ function handleJobQualificationLegacy(payload) {
                     'You\'ve successfully completed your application for <strong>' + jobTitle + '</strong> at ICUNI Labs.<br><br>' +
                     'Our team will review everything and get back to you within <strong>48 hours</strong>.<br><br>' +
                     '<div style="font-size:12px;color:#64748b;letter-spacing:2px;margin-bottom:4px;">YOUR QUESTIONNAIRE RESPONSES</div>' +
-                    summaryTable)
+                    summaryTable),
+                from: 'jobs@icuni.org'
             });
             logEmail_(email, 'Application Complete', 'qualification', 'sent');
         } catch(e) { logEmail_(email, 'Application Complete', 'qualification', 'failed'); }
         
         // Notify jobs@icuni.org
         try {
-            MailApp.sendEmail({
+            sendEmail_({
                 to: JOBS_EMAIL,
                 subject: 'Qualification Complete — ' + (app ? app.name || email : email) + ' for ' + jobTitle,
                 htmlBody: buildBrandedEmail_('Team',
                     'Applicant Qualification Complete',
                     '<strong>' + (app ? app.name || email : email) + '</strong> has completed the qualification questionnaire for <strong>' + jobTitle + '</strong>.<br><br>' +
                     summaryTable +
-                    '<br>Review the full application in the <a href="https://docs.google.com/spreadsheets/d/' + getProp_(PROP_KEYS.SS_CONTENT) + '" style="color:#ff7a00;">Content & Jobs spreadsheet</a>.')
+                    '<br>Review the full application in the <a href="https://docs.google.com/spreadsheets/d/' + getProp_(PROP_KEYS.SS_CONTENT) + '" style="color:#ff7a00;">Content & Jobs spreadsheet</a>.'),
+                from: 'jobs@icuni.org'
             });
         } catch(e) { Logger.log('Jobs notification failed: ' + e.message); }
         
@@ -479,10 +483,11 @@ function handleBugReport(payload) {
         '</div>';
     
     try {
-        MailApp.sendEmail({
+        sendEmail_({
             to: TECH_EMAIL,
             subject: '[Bug Report] ' + category + ' — ' + projectTitle,
-            htmlBody: buildBrandedEmail_('Tech Team', 'New Bug Report', body, { ctaText: 'View Dashboard', ctaLink: 'https://labs.icuni.org' })
+            htmlBody: buildBrandedEmail_('Tech Team', 'New Bug Report', body, { ctaText: 'View Dashboard', ctaLink: 'https://labs.icuni.org' }),
+            from: 'tech.issue@icuni.org'
         });
     } catch(e) {
         Logger.log('Bug report email failed: ' + e.message);
