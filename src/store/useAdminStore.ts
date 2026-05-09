@@ -40,6 +40,7 @@ interface AdminState {
   slaCosts: any[]
   slaConfig: any
   blogPosts: any[]
+  portfolio: any[]
 
   // Detail views
   activeInvoiceHTML: string | null
@@ -80,6 +81,7 @@ let state: AdminState = {
   slaCosts: [],
   slaConfig: null,
   blogPosts: [],
+  portfolio: [],
   activeInvoiceHTML: null,
   activeInvoice: null,
 }
@@ -295,6 +297,26 @@ export const adminActions = {
     } catch (err: any) { setState({ error: err.message }) }
   },
 
+  loadPortfolio: async () => {
+    try {
+      const portfolio = await apiPost('getPortfolio', { token: state.token })
+      setState({ portfolio: portfolio || [] })
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  updatePortfolioStatus: async (projectId: string, status: string) => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('updatePortfolio', { token: state.token, project_id: projectId, status })
+      await adminActions.loadPortfolio()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
   // ── CRUD Actions ──
   addUser: async (data: any) => {
     setState({ loading: true, error: null })
@@ -325,7 +347,7 @@ export const adminActions = {
   createClient: async (data: any) => {
     setState({ loading: true, error: null })
     try {
-      await apiPost('createClient', { token: state.token, ...data })
+      await apiPost('addClient', { token: state.token, ...data })
       await adminActions.loadClients()
       setState({ loading: false })
       return true

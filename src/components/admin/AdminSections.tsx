@@ -78,22 +78,64 @@ export function ClientsSection() {
 
 // ─── PROJECTS ────────────────────────────────────────────
 export function ProjectsSection() {
-  const { projects, loading } = useAdminStore()
-  useEffect(() => { adminActions.loadProjects() }, [])
+  const { projects, portfolio, loading } = useAdminStore()
+  const [tab, setTab] = useState<'pipeline' | 'portfolio'>('portfolio')
+
+  useEffect(() => { adminActions.loadProjects(); adminActions.loadPortfolio() }, [])
+
+  if (tab === 'pipeline') {
+    return (
+      <div>
+        <div className="flex gap-2 mb-4">
+          <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Client Pipeline</button>
+          <button onClick={() => setTab('portfolio')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Portfolio ({portfolio.length})</button>
+        </div>
+        <DataTable title="Client Projects" subtitle="Active project pipeline and step management" loading={loading} data={projects}
+          columns={[
+            { key: 'project_id', label: 'ID', width: '120px' },
+            { key: 'title', label: 'Title', render: (v) => <span className="text-white font-medium">{v}</span> },
+            { key: 'client_name', label: 'Client' },
+            { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
+            { key: 'step', label: 'Step', render: (v) => <span className="text-[#00bfff] font-mono font-bold">{v}</span> },
+            { key: 'estimated_cost', label: 'Cost', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : '—' },
+            { key: 'balance', label: 'Balance', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : '—' },
+          ]}
+          searchKeys={['title', 'client_name', 'project_id']}
+        />
+      </div>
+    )
+  }
 
   return (
-    <DataTable title="Projects" subtitle="Project pipeline and step management" loading={loading} data={projects}
-      columns={[
-        { key: 'project_id', label: 'ID', width: '120px' },
-        { key: 'title', label: 'Title', render: (v) => <span className="text-white font-medium">{v}</span> },
-        { key: 'client_id', label: 'Client' },
-        { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
-        { key: 'step', label: 'Step', render: (v) => <span className="text-[#00bfff] font-mono font-bold">{v}</span> },
-        { key: 'estimated_cost', label: 'Cost', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : '—' },
-        { key: 'balance', label: 'Balance', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : '—' },
-      ]}
-      searchKeys={['title', 'client_id', 'project_id']}
-    />
+    <div>
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => setTab('pipeline')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Client Pipeline ({projects.length})</button>
+        <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Portfolio</button>
+      </div>
+      <DataTable title="Portfolio Projects" subtitle="Manage which projects appear on the public site" loading={loading} data={portfolio}
+        columns={[
+          { key: 'project_id', label: 'ID', width: '100px' },
+          { key: 'title', label: 'Title', render: (v) => <span className="text-white font-medium">{v}</span> },
+          { key: 'client_name', label: 'Client' },
+          { key: 'category', label: 'Category' },
+          { key: 'technologies', label: 'Tech' },
+          { key: 'status', label: 'Visibility', render: (v) => <Badge status={v} /> },
+          { key: 'order', label: 'Order' },
+        ]}
+        searchKeys={['title', 'client_name', 'category']}
+        renderRowActions={(row) => (
+          <div className="flex gap-2">
+            {row.status === 'published' ? (
+              <button onClick={() => adminActions.updatePortfolioStatus(row.project_id, 'draft')}
+                className="text-xs text-amber-400 hover:text-amber-300 cursor-pointer">Hide</button>
+            ) : (
+              <button onClick={() => adminActions.updatePortfolioStatus(row.project_id, 'published')}
+                className="text-xs text-emerald-400 hover:text-emerald-300 cursor-pointer">Publish</button>
+            )}
+          </div>
+        )}
+      />
+    </div>
   )
 }
 

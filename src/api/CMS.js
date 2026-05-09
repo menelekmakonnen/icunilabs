@@ -335,3 +335,40 @@ function handleGetDashboard(payload) {
         recentApplications: applications.slice(-5).reverse()
     });
 }
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN READ — JOB APPLICATIONS & QUALIFICATIONS
+// ═══════════════════════════════════════════════════════════
+
+function handleGetJobApplications(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var apps = sheetToObjects_(SHEETS.JOB_APPLICATIONS);
+    apps.sort(function(a, b) { return new Date(b.applied_at || 0) - new Date(a.applied_at || 0); });
+    return successResponse_(apps);
+}
+
+function handleGetJobQualifications(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var quals = sheetToObjects_(SHEETS.JOB_QUALIFICATIONS);
+    return successResponse_(quals);
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN READ — REFERRERS & REFERRALS
+// ═══════════════════════════════════════════════════════════
+
+function handleGetReferrers(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    return successResponse_(sheetToObjects_(SHEETS.REFERRERS));
+}
+
+function handleGetReferrals(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var referrals = sheetToObjects_(SHEETS.REFERRALS);
+    referrals.sort(function(a, b) { return new Date(b.created_at || 0) - new Date(a.created_at || 0); });
+    return successResponse_(referrals);
+}

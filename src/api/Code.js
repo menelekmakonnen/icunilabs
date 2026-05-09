@@ -106,6 +106,14 @@ function doPost(e) {
         if (action === 'job_application' || action === 'submitJobApplication') return handleJobApplicationLegacy(payload);
         if (action === 'job_qualification') return handleJobQualificationLegacy(payload);
 
+        // ── Job Applications (admin read) ──
+        if (action === 'getJobApplications') return handleGetJobApplications(payload);
+        if (action === 'getJobQualifications') return handleGetJobQualifications(payload);
+
+        // ── Referrals (admin read) ──
+        if (action === 'getReferrers') return handleGetReferrers(payload);
+        if (action === 'getReferrals') return handleGetReferrals(payload);
+
         // ── Bug Reports ──
         if (action === 'report_bug' || action === 'reportBug') return handleBugReport(payload);
 
