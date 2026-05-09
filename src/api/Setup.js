@@ -243,6 +243,41 @@ function seedGodmodeUser_(ss) {
 }
 
 /**
+ * Re-seed or update the Godmode user.
+ * Run from Apps Script editor if the admin account was accidentally deleted.
+ */
+function reseedGodmode() {
+    var props = PropertiesService.getScriptProperties();
+    var ssId = props.getProperty(PROP_KEYS.SS_MAIN);
+    if (!ssId) { Logger.log('ERROR: Main spreadsheet not set up. Run setupSpreadsheets() first.'); return; }
+
+    var ss = SpreadsheetApp.openById(ssId);
+    var sheet = ss.getSheetByName(SHEETS.USERS);
+    if (!sheet) { Logger.log('ERROR: Users sheet not found.'); return; }
+
+    // Check if hello@icuni.org already exists
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+        if (String(data[i][2]).toLowerCase().trim() === 'hello@icuni.org') {
+            // Update to ensure Godmode role and Active status
+            sheet.getRange(i + 1, 5).setValue(ROLES.GODMODE);  // role column
+            sheet.getRange(i + 1, 6).setValue('Active');         // status column
+            Logger.log('Updated existing user hello@icuni.org to Godmode/Active at row ' + (i + 1));
+            return;
+        }
+    }
+
+    // Insert new
+    var tempPassword = 'ICUNI@2026!';
+    sheet.appendRow([
+        generateId_('USR'), 'Godmode Admin', 'hello@icuni.org', '',
+        ROLES.GODMODE, 'Active', hashPassword_(tempPassword), '',
+        true, true, now_(), '', '', true
+    ]);
+    Logger.log('Re-seeded Godmode user: hello@icuni.org / ' + tempPassword);
+}
+
+/**
  * Install time-driven triggers for SLA monitoring and log archiving.
  * Run ONCE from Apps Script editor: Run > setupTriggers
  */

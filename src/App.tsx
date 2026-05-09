@@ -18,6 +18,7 @@ import AnimationShowcase from './components/sections/AnimationShowcase';
 import JobsPage from './components/sections/JobsPage';
 import Portfolio from './components/sections/Portfolio';
 import ProjectDetail from './components/sections/ProjectDetail';
+import AdminPanel from './components/admin/AdminPanel';
 import PersonaPage from './components/sections/PersonaPage';
 import WhoWeHelpPage from './components/sections/WhoWeHelpPage';
 import PersonaDrawer from './components/layout/PersonaDrawer';
@@ -38,6 +39,10 @@ function App() {
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
+
+  if (currentHash === '#_ops' || currentHash.startsWith('#_ops/')) {
+    return <AdminPanel />;
+  }
 
   if (currentHash === '#referral') {
     return <ReferralPortal />;
