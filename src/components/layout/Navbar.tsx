@@ -2,34 +2,18 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { personas } from '../../data/personaData';
 
-const systemLinks = [
-    { title: "From Chaos to System", href: "#hero" },
-    { title: "Business Operations Systems", href: "#operations-explainer" },
-    { title: "Where we come in", href: "#services" },
-    { title: "Best Fit", href: "#who-we-help" },
-    { title: "See the Work", href: "#portfolio-proof" },
-    { title: "The Method", href: "#method" },
-    { title: "Get Started", href: "#contact" },
-];
-
 export default function Navbar() {
     const [whoDropdownOpen, setWhoDropdownOpen] = useState(false);
-    const [sysDropdownOpen, setSysDropdownOpen] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
-    
+
     const whoDropdownRef = useRef<HTMLDivElement>(null);
-    const sysDropdownRef = useRef<HTMLDivElement>(null);
     const whoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const sysTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Close dropdown on outside click
     useEffect(() => {
         const close = (e: MouseEvent) => {
             if (whoDropdownRef.current && !whoDropdownRef.current.contains(e.target as Node)) {
                 setWhoDropdownOpen(false);
-            }
-            if (sysDropdownRef.current && !sysDropdownRef.current.contains(e.target as Node)) {
-                setSysDropdownOpen(false);
             }
         };
         document.addEventListener('mousedown', close);
@@ -45,20 +29,10 @@ export default function Navbar() {
 
     const handleWhoEnter = () => {
         if (whoTimeoutRef.current) clearTimeout(whoTimeoutRef.current);
-        setSysDropdownOpen(false); // Make sure other opens are closed
         setWhoDropdownOpen(true);
     };
     const handleWhoLeave = () => {
         whoTimeoutRef.current = setTimeout(() => setWhoDropdownOpen(false), 200);
-    };
-
-    const handleSysEnter = () => {
-        if (sysTimeoutRef.current) clearTimeout(sysTimeoutRef.current);
-        setWhoDropdownOpen(false);
-        setSysDropdownOpen(true);
-    };
-    const handleSysLeave = () => {
-        sysTimeoutRef.current = setTimeout(() => setSysDropdownOpen(false), 200);
     };
 
     return (
@@ -74,40 +48,8 @@ export default function Navbar() {
                 {/* Desktop Nav */}
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-400">
 
-                    {/* The Systems dropdown */}
-                    <div
-                        ref={sysDropdownRef}
-                        className="relative"
-                        onMouseEnter={handleSysEnter}
-                        onMouseLeave={handleSysLeave}
-                    >
-                        <button
-                            className="flex items-center gap-1 hover:text-neutral-50 transition-colors cursor-pointer text-white font-semibold"
-                            onClick={() => setSysDropdownOpen(!sysDropdownOpen)}
-                        >
-                            The Systems
-                            <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${sysDropdownOpen ? 'rotate-180 text-[#00bfff]' : ''}`} />
-                        </button>
-
-                        <div
-                            className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl overflow-hidden transition-all duration-200 origin-top ${sysDropdownOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
-                            style={{ boxShadow: '0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 0 rgba(0,191,255,0.1)' }}
-                        >
-                            <div className="py-2 flex flex-col">
-                                {systemLinks.map((link, idx) => (
-                                    <a
-                                        key={idx}
-                                        href={link.href}
-                                        className="relative flex items-center gap-3 px-5 py-2.5 text-neutral-400 hover:text-white hover:bg-neutral-900/70 transition-colors group overflow-hidden"
-                                        onClick={() => setSysDropdownOpen(false)}
-                                    >
-                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00bfff] opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        <span className="text-sm font-medium relative z-10 group-hover:translate-x-1 transition-transform">{link.title}</span>
-                                    </a>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                    {/* The Systems — simple link */}
+                    <a href="#hero" className="hover:text-neutral-50 transition-colors text-white font-semibold">The Systems</a>
 
                     {/* Who We Help dropdown */}
                     <div
@@ -185,27 +127,7 @@ export default function Navbar() {
                 className={`md:hidden border-t border-neutral-900 bg-neutral-950/95 backdrop-blur-xl overflow-y-auto transition-all duration-300 ${mobileOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'}`}
             >
                 <nav className="flex flex-col px-6 py-4 gap-1 text-sm font-medium text-neutral-400">
-                    
-                    {/* The Systems sub-section */}
-                    <div className="py-3 border-b border-neutral-900">
-                        <span className="text-[#00bfff] text-xs font-bold uppercase tracking-wider mb-2 block">The Systems</span>
-                        <div className="flex flex-col gap-1 ml-2 mt-2">
-                            {systemLinks.map((link, idx) => (
-                                <a
-                                    key={idx}
-                                    href={link.href}
-                                    className="py-2 text-neutral-400 hover:text-white transition-colors"
-                                    onClick={() => setMobileOpen(false)}
-                                >
-                                    {link.title}
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-
-                    <a href="#portfolio" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Portfolio</a>
-                    <a href="#jobs" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Jobs</a>
-                    <a href="#referral" className="py-3 hover:text-white transition-colors border-b border-neutral-900 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] bg-clip-text text-transparent font-semibold" onClick={() => setMobileOpen(false)}>Refer & Earn</a>
+                    <a href="#hero" className="py-3 hover:text-white transition-colors border-b border-neutral-900 text-white font-semibold" onClick={() => setMobileOpen(false)}>The Systems</a>
 
                     {/* Who We Help sub-section */}
                     <div className="py-3 border-b border-neutral-900">
@@ -225,6 +147,9 @@ export default function Navbar() {
                         </div>
                     </div>
 
+                    <a href="#portfolio" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Portfolio</a>
+                    <a href="#jobs" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Jobs</a>
+                    <a href="#referral" className="py-3 hover:text-white transition-colors border-b border-neutral-900 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] bg-clip-text text-transparent font-semibold" onClick={() => setMobileOpen(false)}>Refer & Earn</a>
                     <a href="#portal" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Client Login</a>
 
                     <a
