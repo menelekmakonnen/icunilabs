@@ -397,29 +397,75 @@ function AppForm({job}:{job:typeof jobs[0]}){
   const [rec,setRec]=useState(false);const [recTime,setRecTime]=useState(0);
   const [done,setDone]=useState(false);const [busy,setBusy]=useState(false);
   const [vidErr,setVidErr]=useState('');
+  const [audioErr,setAudioErr]=useState('');
   const [cvTab,setCvTab]=useState(0); // 0=document 1=video
   const [voiceTab,setVoiceTab]=useState(0); // 0=record 1=upload
 
+  const MIN_AUDIO_SEC = 15;
+  const MAX_AUDIO_SEC = 120;
+
   const mr=useRef<MediaRecorder|null>(null);const ch=useRef<Blob[]>([]);const ti=useRef<number|null>(null);
   const cvDrop=useDrop(f=>setCvFile(f),['.pdf','.doc','.docx','.txt','.rtf','.odt']);
-  const audioDrop=useDrop(f=>{setAudioFile(f);setAudioBlob(null);},['audio/']);
+  const audioDrop=useDrop(f=>{validateUploadedAudio(f);},['audio/']);
   const vidDrop=useDrop(f=>{setVidErr('');if(f.size>300*1024*1024){setVidErr('Max 300 MB.');return;}setVideoFile(f);},['video/']);
 
   async function startRec(){
     try{const s=await navigator.mediaDevices.getUserMedia({audio:true});const m=new MediaRecorder(s);mr.current=m;ch.current=[];
+    setAudioErr('');
     m.ondataavailable=e=>{if(e.data.size>0)ch.current.push(e.data);};
-    m.onstop=()=>{setAudioBlob(new Blob(ch.current,{type:'audio/webm'}));setAudioFile(null);s.getTracks().forEach(t=>t.stop());};
-    m.start();setRec(true);setRecTime(0);ti.current=window.setInterval(()=>setRecTime(t=>t+1),1000);}catch{}
+    m.onstop=()=>{
+      const blob=new Blob(ch.current,{type:'audio/webm'});
+      s.getTracks().forEach(t=>t.stop());
+      // Validate minimum duration
+      if(recTime<MIN_AUDIO_SEC){
+        setAudioErr(`Recording too short — please record at least ${MIN_AUDIO_SEC} seconds.`);
+        setAudioBlob(null);
+        return;
+      }
+      setAudioBlob(blob);setAudioFile(null);setAudioErr('');
+    };
+    m.start();setRec(true);setRecTime(0);ti.current=window.setInterval(()=>setRecTime(t=>{
+      const next=t+1;
+      // Auto-stop at max duration
+      if(next>=MAX_AUDIO_SEC){mr.current?.stop();setRec(false);if(ti.current)clearInterval(ti.current);}
+      return next;
+    }),1000);}catch{}
   }
-  function stopRec(){mr.current?.stop();setRec(false);if(ti.current)clearInterval(ti.current);}
+  function stopRec(){
+    const duration=recTime;
+    mr.current?.stop();setRec(false);if(ti.current)clearInterval(ti.current);
+    if(duration<MIN_AUDIO_SEC){
+      setAudioErr(`Recording too short (${duration}s) — minimum is ${MIN_AUDIO_SEC} seconds.`);
+      setAudioBlob(null);
+    }
+  }
   useEffect(()=>()=>{if(ti.current)clearInterval(ti.current);},[]);
+
+  function validateUploadedAudio(f:File){
+    setAudioErr('');setAudioFile(null);setAudioBlob(null);
+    const audio=new Audio();
+    audio.preload='metadata';
+    audio.onloadedmetadata=()=>{
+      URL.revokeObjectURL(audio.src);
+      const dur=Math.round(audio.duration);
+      if(dur<MIN_AUDIO_SEC){setAudioErr(`Audio is too short (${dur}s) — minimum is ${MIN_AUDIO_SEC} seconds.`);return;}
+      if(dur>MAX_AUDIO_SEC){setAudioErr(`Audio is too long (${fmt(dur)}) — maximum is ${MAX_AUDIO_SEC/60} minutes.`);return;}
+      setAudioFile(f);
+    };
+    audio.onerror=()=>{setAudioFile(f);}; // Can't validate, let it through
+    audio.src=URL.createObjectURL(f);
+  }
 
   function b64(f:File|Blob):Promise<string>{return new Promise(r=>{const rd=new FileReader();rd.onloadend=()=>r((rd.result as string).split(',')[1]);rd.readAsDataURL(f);});}
 
   const audioOk=audioBlob||audioFile;
-  const ok=!busy&&audioOk;
+  const ok=!busy&&audioOk&&!audioErr;
   const fmt=(s:number)=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
   const dropCls=(active:boolean,has:boolean)=>active?'border-[#00bfff] bg-[#00bfff]/10':has?'border-[#00bfff]/50 bg-[#00bfff]/5':'border-neutral-800 hover:border-neutral-700';
+
+  // Recording progress bar percentage
+  const recPct = Math.min((recTime / MAX_AUDIO_SEC) * 100, 100);
+  const recInRange = recTime >= MIN_AUDIO_SEC;
 
   async function submit(e:React.FormEvent){
     e.preventDefault();if(!audioOk)return;setBusy(true);
@@ -471,7 +517,7 @@ function AppForm({job}:{job:typeof jobs[0]}){
         {/* Voice Intro: tab toggle record vs upload */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Voice Intro <span className="text-red-500">*</span></label>
-          <p className="text-xs text-neutral-400 mb-2">Why are you right for this role?</p>
+          <p className="text-xs text-neutral-400 mb-2">Tell us why you're right for this role — between <strong className="text-neutral-300">15 seconds</strong> and <strong className="text-neutral-300">2 minutes</strong></p>
           <TabToggle tabs={['Record','Upload File']} active={voiceTab} onChange={setVoiceTab}/>
           {voiceTab===0?(
             <div className="space-y-2">
@@ -480,16 +526,28 @@ function AppForm({job}:{job:typeof jobs[0]}){
                   <Mic className="w-5 h-5 text-red-500"/> Tap to Record
                 </button>
               ):(
-                <button type="button" onClick={stopRec} className="w-full flex items-center justify-center gap-2 py-4 rounded-lg border border-red-500/50 bg-red-500/10 text-red-400 cursor-pointer text-sm animate-pulse">
-                  <Square className="w-4 h-4"/> Stop Recording ({fmt(recTime)})
-                </button>
+                <div className="space-y-2">
+                  <button type="button" onClick={stopRec} className="w-full flex items-center justify-center gap-2 py-4 rounded-lg border border-red-500/50 bg-red-500/10 text-red-400 cursor-pointer text-sm animate-pulse">
+                    <Square className="w-4 h-4"/> Stop Recording ({fmt(recTime)})
+                  </button>
+                  {/* Duration progress bar */}
+                  <div className="relative h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+                    <div className={`absolute left-0 top-0 h-full rounded-full transition-all duration-1000 ${recInRange ? 'bg-[#10b981]' : 'bg-[#ff7a00]'}`} style={{width:`${recPct}%`}}/>
+                    {/* Min marker */}
+                    <div className="absolute top-0 h-full w-px bg-neutral-500" style={{left:`${(MIN_AUDIO_SEC/MAX_AUDIO_SEC)*100}%`}}/>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className={recTime<MIN_AUDIO_SEC?'text-[#ff7a00]':'text-[#10b981]'}>{recTime<MIN_AUDIO_SEC?`${MIN_AUDIO_SEC-recTime}s until minimum`:'✓ Good length'}</span>
+                    <span className="text-neutral-600">{fmt(MAX_AUDIO_SEC-recTime)} remaining</span>
+                  </div>
+                </div>
               )}
               {audioBlob&&!audioFile&&(
                 <div className="flex items-center gap-2 bg-[#10b981]/10 border border-[#10b981]/20 rounded-lg px-3 py-2">
                   <Mic className="w-3 h-3 text-[#10b981]"/>
                   <audio src={URL.createObjectURL(audioBlob)} controls className="h-8 flex-1 [&::-webkit-media-controls-panel]{background:transparent}"/>
                   <span className="text-xs text-[#10b981]">{fmt(recTime)}</span>
-                  <button type="button" onClick={()=>{setAudioBlob(null);setRecTime(0);}} className="p-1 rounded hover:bg-red-500/20 transition-colors cursor-pointer" title="Discard recording">
+                  <button type="button" onClick={()=>{setAudioBlob(null);setRecTime(0);setAudioErr('');}} className="p-1 rounded hover:bg-red-500/20 transition-colors cursor-pointer" title="Discard recording">
                     <svg className="w-4 h-4 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
                   </button>
                 </div>
@@ -500,12 +558,13 @@ function AppForm({job}:{job:typeof jobs[0]}){
               {audioFile?(
                 <><Mic className="w-5 h-5 text-[#10b981]"/><span className="text-sm text-[#10b981]">{audioFile.name}</span></>
               ):(
-                <><Upload className="w-5 h-5 text-neutral-600"/><span className="text-sm text-neutral-500">Drop audio file here or click</span></>
+                <><Upload className="w-5 h-5 text-neutral-600"/><span className="text-sm text-neutral-500">Drop audio file here or click</span><span className="text-[10px] text-neutral-600">Must be between 15 seconds and 2 minutes long</span></>
               )}
-              <input type="file" accept="audio/*" className="hidden" onChange={e=>{setAudioFile(e.target.files?.[0]||null);setAudioBlob(null);}}/>
+              <input type="file" accept="audio/*" className="hidden" onChange={e=>{const f=e.target.files?.[0];if(f)validateUploadedAudio(f);else{setAudioFile(null);setAudioBlob(null);}}}/>
             </label>
           )}
-          {!audioOk&&<p className="text-xs text-red-400/70 mt-2">Required - record or upload your voice intro</p>}
+          {audioErr&&<p className="text-xs text-red-400 mt-2">{audioErr}</p>}
+          {!audioOk&&!audioErr&&<p className="text-xs text-red-400/70 mt-2">Required — record or upload a voice intro (15 sec – 2 min)</p>}
         </div>
 
         <textarea value={note} onChange={e=>setNote(e.target.value)} className={`${inp} resize-none`} rows={3} placeholder="Anything else you'd like to add? (or Cover Letter) — optional"/>
@@ -518,3 +577,4 @@ function AppForm({job}:{job:typeof jobs[0]}){
     </motion.div>
   );
 }
+
