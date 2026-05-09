@@ -49,15 +49,15 @@ export default function ScrollBackground() {
         }));
     }, []);
 
-    // Chaos elements (WhatsApp chats, notifications, sticky notes)
+    // Chaos elements (WhatsApp chats, notifications, sticky notes) — pushed to edges
     const chaosItems = useMemo(() => [
-        { id: 'wa1', type: 'whatsapp', x: 12, y: 15, dur: 7, dx: 10, dy: 8, rot: -12 },
-        { id: 'wa2', type: 'whatsapp', x: 72, y: 25, dur: 8, dx: -8, dy: 12, rot: 8 },
-        { id: 'wa3', type: 'whatsapp', x: 45, y: 65, dur: 9, dx: 12, dy: -6, rot: -5 },
-        { id: 'n1', type: 'sticky', x: 82, y: 55, dur: 7.5, dx: -6, dy: 10, rot: 15 },
-        { id: 'n2', type: 'sticky', x: 8, y: 70, dur: 6.5, dx: 8, dy: -8, rot: -20 },
-        { id: 'e1', type: 'email', x: 60, y: 10, dur: 8.5, dx: -10, dy: 6, rot: 6 },
-        { id: 'e2', type: 'email', x: 25, y: 80, dur: 7, dx: 6, dy: -10, rot: -8 },
+        { id: 'wa1', type: 'whatsapp', x: 3, y: 8, dur: 7, dx: 5, dy: 4, rot: -12 },
+        { id: 'wa2', type: 'whatsapp', x: 80, y: 18, dur: 8, dx: -4, dy: 6, rot: 8 },
+        { id: 'wa3', type: 'whatsapp', x: 5, y: 72, dur: 9, dx: 6, dy: -3, rot: -5 },
+        { id: 'n1', type: 'sticky', x: 88, y: 60, dur: 7.5, dx: -3, dy: 5, rot: 15 },
+        { id: 'n2', type: 'sticky', x: 2, y: 45, dur: 6.5, dx: 4, dy: -4, rot: -20 },
+        { id: 'e1', type: 'email', x: 82, y: 5, dur: 8.5, dx: -5, dy: 3, rot: 6 },
+        { id: 'e2', type: 'email', x: 85, y: 78, dur: 7, dx: 3, dy: -5, rot: -8 },
     ], []);
 
     const systemProgress = useTransform(smoothProgress, [0, 0.85], [0, 1]);
@@ -82,6 +82,11 @@ export default function ScrollBackground() {
                 </svg>
             </div>
 
+            {/* CENTER VIGNETTE — protects hero text from chaos clutter */}
+            <div className="absolute inset-0 z-[1]" style={{
+                background: 'radial-gradient(ellipse 50% 60% at 50% 45%, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.7) 40%, transparent 70%)'
+            }} />
+
             {/* FLOATING CHAOS ELEMENTS (WhatsApp chats, emails, sticky notes) */}
             {chaosItems.map((c) => (
                 <motion.div key={c.id}
@@ -94,6 +99,7 @@ export default function ScrollBackground() {
                         x: [0, c.dx, -c.dx * 0.5, c.dx * 0.3, 0],
                         y: [0, c.dy, -c.dy * 0.5, c.dy * 0.7, 0],
                         rotate: [c.rot, c.rot + 3, c.rot - 2, c.rot],
+                        scale: [0.65, 0.7, 0.65],
                     }}
                     transition={{ duration: c.dur, repeat: Infinity, ease: 'easeInOut' }}
                 >
@@ -175,8 +181,8 @@ function SystemNode({ data, progress }: { data: any, progress: any }) {
     const rotate = useTransform(progress, [0, 1], [data.initialRotate, 0]);
 
     // VISUAL TRANSFORMATION
-    const bg = useTransform(progress, [0, 0.4, 0.6, 1], ["rgba(255, 255, 255, 0.15)", "rgba(255, 255, 255, 0)", "rgba(0, 191, 255, 0.3)", "rgba(0, 191, 255, 0.05)"]);
-    const border = useTransform(progress, [0, 0.4, 0.6, 1], ["rgba(255, 255, 255, 0.3)", "rgba(255, 255, 255, 0)", "rgba(0, 191, 255, 1)", "rgba(0, 191, 255, 0.5)"]);
+    const bg = useTransform(progress, [0, 0.4, 0.6, 1], ["rgba(255, 255, 255, 0.06)", "rgba(255, 255, 255, 0)", "rgba(0, 191, 255, 0.3)", "rgba(0, 191, 255, 0.05)"]);
+    const border = useTransform(progress, [0, 0.4, 0.6, 1], ["rgba(255, 255, 255, 0.12)", "rgba(255, 255, 255, 0)", "rgba(0, 191, 255, 1)", "rgba(0, 191, 255, 0.5)"]);
     const borderRadius = useTransform(progress, [0, 1], ["2px", "4px"]);
     const scale = useTransform(progress, [0, 0.5, 0.8, 1], [1, 0.8, 1.05, 1]);
 
