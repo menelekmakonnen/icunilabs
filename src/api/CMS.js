@@ -355,6 +355,49 @@ function handleGetJobQualifications(payload) {
     return successResponse_(quals);
 }
 
+function handleDeleteApplication(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+
+    var rowIndex = payload.rowIndex;
+    if (!rowIndex) return errorResponse_('Row index is required.');
+
+    var sheet = getSheetByName_(SHEETS.JOB_APPLICATIONS);
+    if (rowIndex < 2 || rowIndex > sheet.getLastRow()) {
+        return errorResponse_('Invalid row index.');
+    }
+    sheet.deleteRow(rowIndex);
+    logAction_(auth.user.user_id, auth.user.name, 'DELETE_APPLICATION', 'Row ' + rowIndex);
+    return successResponse_(null, 'Application deleted.');
+}
+
+function handleCreateApplication(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+
+    validateInput_(payload, {
+        name:  { required: true, label: 'Applicant name' },
+        email: { required: true, type: 'email', label: 'Email' }
+    });
+
+    var appId = 'APP-' + Date.now();
+    var jobId = payload.job_id || 'manual';
+    var jobTitle = payload.job_title || 'Manual Entry';
+
+    appendRow_(SHEETS.JOB_APPLICATIONS, [
+        appId, jobId, jobTitle,
+        payload.name, payload.email, payload.phone || '', payload.note || '',
+        'No', 'No', 'No',
+        '', '', '',
+        'received', now_()
+    ]);
+
+    logAction_(auth.user.user_id, auth.user.name, 'CREATE_APPLICATION',
+        payload.name + ' (' + payload.email + ')');
+
+    return successResponse_({ application_id: appId }, 'Applicant added.');
+}
+
 // ═══════════════════════════════════════════════════════════
 // ADMIN — APPLICANT EMAIL SYSTEM
 // ═══════════════════════════════════════════════════════════

@@ -446,6 +446,32 @@ export const adminActions = {
   },
 
   // ── Career Listing CRUD ──
+  deleteApplication: async (rowIndex: number): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('deleteApplication', { token: state.token, rowIndex })
+      await adminActions.loadApplications()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  createApplication: async (data: Record<string, any>): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('createApplication', { token: state.token, ...data })
+      await adminActions.loadApplications()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
   createJobListing: async (data: Record<string, any>): Promise<boolean> => {
     setState({ loading: true, error: null })
     try {

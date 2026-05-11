@@ -235,6 +235,13 @@ export function CareersSection() {
   const [previewSubject, setPreviewSubject] = useState('')
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<{ sent: number; failed: number } | null>(null)
+  const [showAddApplicant, setShowAddApplicant] = useState(false)
+  const [applicantForm, setApplicantForm] = useState({ name: '', email: '', phone: '', job_title: '', note: '' })
+  const [emailRow, setEmailRow] = useState<any>(null)
+  const [rowTemplate, setRowTemplate] = useState('cv_confirmation')
+  const [rowPreviewHtml, setRowPreviewHtml] = useState('')
+  const [rowSending, setRowSending] = useState(false)
+  const [rowSent, setRowSent] = useState(false)
 
   useEffect(() => { adminActions.loadJobs(); adminActions.loadApplications() }, [])
 
@@ -250,6 +257,30 @@ export function CareersSection() {
       ? await adminActions.updateJobListing({ job_id: editingListing.job_id, ...listingForm })
       : await adminActions.createJobListing(listingForm)
     if (ok) { setShowListingModal(false); setEditingListing(null) }
+  }
+
+  const handleAddApplicant = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const ok = await adminActions.createApplication(applicantForm)
+    if (ok) { setShowAddApplicant(false); setApplicantForm({ name: '', email: '', phone: '', job_title: '', note: '' }) }
+  }
+
+  const openRowEmail = async (row: any) => {
+    setEmailRow(row); setRowTemplate('cv_confirmation'); setRowSent(false)
+    const preview = await adminActions.previewApplicantEmail('cv_confirmation', row.name || 'Applicant')
+    if (preview) setRowPreviewHtml(preview.html)
+  }
+  const changeRowTemplate = async (tpl: string) => {
+    setRowTemplate(tpl)
+    const preview = await adminActions.previewApplicantEmail(tpl, emailRow?.name || 'Applicant')
+    if (preview) setRowPreviewHtml(preview.html)
+  }
+  const handleRowSend = async () => {
+    if (!emailRow?.email) return
+    setRowSending(true)
+    const result = await adminActions.sendApplicantEmail(rowTemplate, [{ email: emailRow.email, name: emailRow.name || '' }])
+    setRowSending(false)
+    if (result) { setRowSent(true); setTimeout(() => { setEmailRow(null); setRowSent(false) }, 1800) }
   }
 
   const addRecipient = () => setRecipients([...recipients, { email: '', name: '' }])
@@ -338,18 +369,99 @@ export function CareersSection() {
   if (tab === 'applications') return (
     <div>
       <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', applications.length)}{tabBtn('emails', 'Manual Emails')}</div>
-      <DataTable title="Applications" subtitle="All incoming applications" loading={loading} data={applications}
+      <DataTable title="Applications" subtitle="Manage applicants and send communications" loading={loading} data={applications}
+        onAdd={() => setShowAddApplicant(true)} addLabel="Add Applicant"
         columns={[
           { key: 'name', label: 'Applicant', render: (v) => <span className="text-white font-medium">{v}</span> },
           { key: 'email', label: 'Email' },
           { key: 'job_title', label: 'Position' },
           { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
-          { key: 'has_cv', label: 'CV', render: (v) => v === true || v === 'TRUE' ? '✓' : '—' },
-          { key: 'has_audio', label: 'Audio', render: (v) => v === true || v === 'TRUE' ? '✓' : '—' },
+          { key: 'has_cv', label: 'CV', render: (v) => v === true || v === 'TRUE' || v === 'Yes' ? '✓' : '—' },
+          { key: 'has_audio', label: 'Audio', render: (v) => v === true || v === 'TRUE' || v === 'Yes' ? '✓' : '—' },
           { key: 'applied_at', label: 'Applied', render: (v) => v ? new Date(v).toLocaleDateString() : '—' },
         ]}
         searchKeys={['name', 'email', 'job_title']}
+        renderRowActions={(row) => (
+          <div className="flex gap-3">
+            <button onClick={() => openRowEmail(row)} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Email</button>
+            <button onClick={() => { if (confirm(`Delete application from ${row.name}?`)) adminActions.deleteApplication(row._rowIndex) }}
+              className="text-xs text-red-400 hover:text-red-300 cursor-pointer transition-colors">Delete</button>
+          </div>
+        )}
       />
+
+      {/* Add Applicant Modal */}
+      {showAddApplicant && (
+        <div className={modalBg} onClick={() => setShowAddApplicant(false)}>
+          <div className={modalCard} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Add Applicant</h3>
+              <button onClick={() => setShowAddApplicant(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleAddApplicant} className="space-y-3">
+              <input value={applicantForm.name} onChange={e => setApplicantForm({...applicantForm, name: e.target.value})} className={inputCls} placeholder="Full name" required />
+              <input type="email" value={applicantForm.email} onChange={e => setApplicantForm({...applicantForm, email: e.target.value})} className={inputCls} placeholder="Email" required />
+              <input value={applicantForm.phone} onChange={e => setApplicantForm({...applicantForm, phone: e.target.value})} className={inputCls} placeholder="Phone (optional)" />
+              <input value={applicantForm.job_title} onChange={e => setApplicantForm({...applicantForm, job_title: e.target.value})} className={inputCls} placeholder="Position applied for (optional)" />
+              <textarea value={applicantForm.note} onChange={e => setApplicantForm({...applicantForm, note: e.target.value})} className={`${inputCls} resize-none`} rows={2} placeholder="Notes (optional)" />
+              <button type="submit" className={btnPrimary}>Add Applicant</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Per-Row Email Modal with Preview */}
+      {emailRow && (
+        <div className={modalBg} onClick={() => !rowSending && setEmailRow(null)}>
+          <div className={`${modalCard} !max-w-3xl`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white">Send Email to {emailRow.name}</h3>
+                <p className="text-xs text-neutral-500 mt-0.5">{emailRow.email}</p>
+              </div>
+              <button onClick={() => !rowSending && setEmailRow(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="grid md:grid-cols-[280px_1fr] gap-4">
+              {/* Template selector */}
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                {EMAIL_TEMPLATES.map(tpl => (
+                  <button key={tpl.key} type="button" onClick={() => changeRowTemplate(tpl.key)}
+                    className={`w-full text-left p-2.5 rounded-lg border transition-all cursor-pointer text-xs ${
+                      rowTemplate === tpl.key ? 'bg-[#00bfff]/10 border-[#00bfff]/40' : 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700'
+                    }`}>
+                    <div className="flex items-center gap-2">
+                      <span>{tpl.icon}</span>
+                      <span className={`font-semibold ${rowTemplate === tpl.key ? 'text-white' : tpl.color}`}>{tpl.label}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {/* Preview */}
+              <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 overflow-hidden" style={{ height: '400px' }}>
+                {rowPreviewHtml ? (
+                  <iframe srcDoc={rowPreviewHtml} className="w-full h-full border-0" sandbox="" title="Email Preview" />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-neutral-600 text-sm">Loading preview...</div>
+                )}
+              </div>
+            </div>
+            {/* Send */}
+            <div className="mt-4">
+              {rowSent ? (
+                <div className="flex items-center justify-center gap-2 py-2.5 text-emerald-400 font-bold text-sm">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                  Email Sent Successfully
+                </div>
+              ) : (
+                <button onClick={handleRowSend} disabled={rowSending}
+                  className={`${btnPrimary} w-full flex items-center justify-center gap-2`}>
+                  {rowSending ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send Email</>}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 

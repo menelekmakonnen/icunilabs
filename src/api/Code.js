@@ -111,6 +111,8 @@ function doPost(e) {
         if (action === 'getJobQualifications') return handleGetJobQualifications(payload);
         if (action === 'sendApplicantEmail') return handleSendApplicantEmail(payload);
         if (action === 'previewApplicantEmail') return handlePreviewApplicantEmail(payload);
+        if (action === 'deleteApplication') return handleDeleteApplication(payload);
+        if (action === 'createApplication') return handleCreateApplication(payload);
 
         // ── Referrals (admin read) ──
         if (action === 'getReferrers') return handleGetReferrers(payload);
