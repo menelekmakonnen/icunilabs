@@ -3,6 +3,7 @@ import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import DataTable from './DataTable'
 import { UserPlus, X, Send } from 'lucide-react'
 import { personas } from '../../data/personaData'
+import { portfolioProjects } from '../../data/portfolioData'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
 const modalBg = 'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4'
@@ -54,75 +55,93 @@ export function ClientsSection() {
   }
 
   return (
-    <>
-      {/* Segment tabs */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+    <div className="flex gap-6">
+      {/* Left sidebar tabs */}
+      <div className="w-48 flex-shrink-0 space-y-1">
         {CLIENT_SEGMENTS.map(seg => (
           <button key={seg.id} onClick={() => setSegment(seg.id)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-all whitespace-nowrap ${
-              segment === seg.id ? 'bg-neutral-800 text-white font-medium' : 'text-neutral-500 hover:text-white'
+            className={`w-full text-left px-3 py-2 rounded-lg text-sm cursor-pointer transition-all ${
+              segment === seg.id ? 'bg-neutral-800 text-white font-medium' : 'text-neutral-500 hover:text-white hover:bg-neutral-800/30'
             }`}
-            style={segment === seg.id ? { borderBottom: `2px solid ${seg.color}` } : {}}>
-            {seg.label}
-            {seg.id !== 'all' && <span className="ml-1.5 text-xs text-neutral-600">({clients.filter((c: any) => c.buyer_profile === seg.id).length})</span>}
+            style={segment === seg.id ? { borderLeft: `3px solid ${seg.color}` } : { borderLeft: '3px solid transparent' }}>
+            <div className="flex items-center justify-between">
+              <span className="truncate">{seg.label}</span>
+              {seg.id !== 'all' && <span className="text-xs text-neutral-600 ml-1">({clients.filter((c: any) => c.buyer_profile === seg.id).length})</span>}
+            </div>
           </button>
         ))}
       </div>
 
-      <DataTable title="Clients" subtitle={segment === 'all' ? 'Manage your client accounts' : `Clients in the "${CLIENT_SEGMENTS.find(s => s.id === segment)?.label}" segment`} loading={loading} data={filtered}
-        onAdd={() => setShowAdd(true)} addLabel="Add Client"
-        columns={[
-          { key: 'client_id', label: 'ID', width: '120px' },
-          { key: 'name', label: 'Name', render: (v) => <span className="text-white font-medium">{v}</span> },
-          { key: 'email', label: 'Email' },
-          { key: 'company', label: 'Company' },
-          { key: 'buyer_profile', label: 'Segment', render: (v) => {
-            const seg = CLIENT_SEGMENTS.find(s => s.id === v)
-            return seg ? <span style={{ color: seg.color }} className="text-xs font-medium">{seg.label}</span> : <span className="text-neutral-600 text-xs">Unassigned</span>
-          }},
-          { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
-          { key: 'created_at', label: 'Created', render: (v) => v ? new Date(v).toLocaleDateString() : '—' },
-        ]}
-        searchKeys={['name', 'email', 'company']}
-      />
-      {showAdd && (
-        <div className={modalBg} onClick={() => setShowAdd(false)}>
-          <div className={modalCard} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Add Client</h3>
-              <button onClick={() => setShowAdd(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+      {/* Right content */}
+      <div className="flex-1 min-w-0">
+        <DataTable title="Clients" subtitle={segment === 'all' ? 'Manage your client accounts' : `Clients in the "${CLIENT_SEGMENTS.find(s => s.id === segment)?.label}" segment`} loading={loading} data={filtered}
+          onAdd={() => setShowAdd(true)} addLabel="Add Client"
+          columns={[
+            { key: 'client_id', label: 'ID', width: '120px' },
+            { key: 'name', label: 'Name', render: (v) => <span className="text-white font-medium">{v}</span> },
+            { key: 'email', label: 'Email' },
+            { key: 'company', label: 'Company' },
+            { key: 'buyer_profile', label: 'Segment', render: (v) => {
+              const seg = CLIENT_SEGMENTS.find(s => s.id === v)
+              return seg ? <span style={{ color: seg.color }} className="text-xs font-medium">{seg.label}</span> : <span className="text-neutral-600 text-xs">Unassigned</span>
+            }},
+            { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
+            { key: 'created_at', label: 'Created', render: (v) => v ? new Date(v).toLocaleDateString() : '—' },
+          ]}
+          searchKeys={['name', 'email', 'company']}
+        />
+        {showAdd && (
+          <div className={modalBg} onClick={() => setShowAdd(false)}>
+            <div className={modalCard} onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">Add Client</h3>
+                <button onClick={() => setShowAdd(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+              </div>
+              <form onSubmit={handleAdd} className="space-y-3">
+                <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={inputCls} placeholder="Full name" required />
+                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className={inputCls} placeholder="Email" required />
+                <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputCls} placeholder="Phone" />
+                <input value={form.company} onChange={e => setForm({...form, company: e.target.value})} className={inputCls} placeholder="Company" />
+                <select value={form.buyer_profile} onChange={e => setForm({...form, buyer_profile: e.target.value})} className={inputCls}>
+                  <option value="">— Select buyer profile —</option>
+                  {personas.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+                <button type="submit" className={btnPrimary}>Create Client</button>
+              </form>
             </div>
-            <form onSubmit={handleAdd} className="space-y-3">
-              <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={inputCls} placeholder="Full name" required />
-              <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className={inputCls} placeholder="Email" required />
-              <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputCls} placeholder="Phone" />
-              <input value={form.company} onChange={e => setForm({...form, company: e.target.value})} className={inputCls} placeholder="Company" />
-              <select value={form.buyer_profile} onChange={e => setForm({...form, buyer_profile: e.target.value})} className={inputCls}>
-                <option value="">— Select buyer profile —</option>
-                {personas.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-              </select>
-              <button type="submit" className={btnPrimary}>Create Client</button>
-            </form>
           </div>
-        </div>
-      )}
-    </>
+        )}
+      </div>
+    </div>
   )
 }
 
 // ─── PROJECTS ────────────────────────────────────────────
+// Static portfolio data mapped to admin table format
+const staticPortfolio = portfolioProjects.map((p, i) => ({
+  project_id: p.id,
+  title: p.title,
+  client_name: p.subtitle,
+  category: p.tags[0] || '',
+  technologies: p.tags.join(', '),
+  status: (p.status || 'active').toLowerCase().includes('production') || (p.status || '').toLowerCase().includes('deployed') || (p.status || '').toLowerCase().includes('shipped') ? 'published' : 'published',
+  order: i + 1,
+  tier: p.tier || 'active',
+  description: p.description,
+}))
+
 export function ProjectsSection() {
-  const { projects, portfolio, loading } = useAdminStore()
+  const { projects, loading } = useAdminStore()
   const [tab, setTab] = useState<'pipeline' | 'portfolio'>('portfolio')
 
-  useEffect(() => { adminActions.loadProjects(); adminActions.loadPortfolio() }, [])
+  useEffect(() => { adminActions.loadProjects() }, [])
 
   if (tab === 'pipeline') {
     return (
       <div>
         <div className="flex gap-2 mb-4">
           <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Client Pipeline</button>
-          <button onClick={() => setTab('portfolio')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Portfolio ({portfolio.length})</button>
+          <button onClick={() => setTab('portfolio')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Portfolio ({staticPortfolio.length})</button>
         </div>
         <DataTable title="Client Projects" subtitle="Active project pipeline and step management" loading={loading} data={projects}
           columns={[
@@ -144,30 +163,22 @@ export function ProjectsSection() {
     <div>
       <div className="flex gap-2 mb-4">
         <button onClick={() => setTab('pipeline')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Client Pipeline ({projects.length})</button>
-        <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Portfolio</button>
+        <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Portfolio ({staticPortfolio.length})</button>
       </div>
-      <DataTable title="Portfolio Projects" subtitle="Manage which projects appear on the public site" loading={loading} data={portfolio}
+      <DataTable title="Portfolio Projects" subtitle={`${staticPortfolio.length} projects from the public portfolio`} loading={false} data={staticPortfolio}
         columns={[
-          { key: 'project_id', label: 'ID', width: '100px' },
+          { key: 'project_id', label: 'ID', width: '140px' },
           { key: 'title', label: 'Title', render: (v) => <span className="text-white font-medium">{v}</span> },
-          { key: 'client_name', label: 'Client' },
+          { key: 'client_name', label: 'Subtitle' },
           { key: 'category', label: 'Category' },
-          { key: 'technologies', label: 'Tech' },
+          { key: 'tier', label: 'Tier', render: (v) => {
+            const colors: Record<string, string> = { flagship: 'text-[#ff7a00]', production: 'text-emerald-400', active: 'text-[#00bfff]', spec: 'text-neutral-500' }
+            return <span className={`text-xs font-bold uppercase ${colors[v] || 'text-neutral-500'}`}>{v}</span>
+          }},
           { key: 'status', label: 'Visibility', render: (v) => <Badge status={v} /> },
-          { key: 'order', label: 'Order' },
+          { key: 'order', label: '#', width: '50px' },
         ]}
-        searchKeys={['title', 'client_name', 'category']}
-        renderRowActions={(row) => (
-          <div className="flex gap-2">
-            {row.status === 'published' ? (
-              <button onClick={() => adminActions.updatePortfolioStatus(row.project_id, 'draft')}
-                className="text-xs text-amber-400 hover:text-amber-300 cursor-pointer">Hide</button>
-            ) : (
-              <button onClick={() => adminActions.updatePortfolioStatus(row.project_id, 'published')}
-                className="text-xs text-emerald-400 hover:text-emerald-300 cursor-pointer">Publish</button>
-            )}
-          </div>
-        )}
+        searchKeys={['title', 'client_name', 'category', 'technologies']}
       />
     </div>
   )
@@ -254,8 +265,23 @@ type CareersTab = 'listings' | 'applications' | 'emails'
 
 const emptyListing = { title: '', type: 'Full-Time', location: '', salary_range: '', short_description: '', status: 'active', deadline: '' }
 
+// Static job listings matching the hardcoded public data in JobsPage.tsx
+const STATIC_JOBS = [{
+  job_id: 'ops-assistant-001',
+  title: 'Operations Assistant',
+  type: 'Full-Time',
+  location: 'Accra, Ghana',
+  salary_range: 'GH₵2,500 – 2,950/mo + commission',
+  short_description: 'Keep our client pipeline moving, coordinate referral partners, and grow with a tech company building real systems for real businesses.',
+  status: 'active',
+  deadline: '2026-05-18',
+  _source: 'static',
+}]
+
 export function CareersSection() {
-  const { jobs, applications, loading } = useAdminStore()
+  const { jobs: apiJobs, applications, loading } = useAdminStore()
+  // Merge: prefer API data, fall back to static if API returns empty
+  const jobs = apiJobs.length > 0 ? apiJobs : STATIC_JOBS
   const [tab, setTab] = useState<CareersTab>('listings')
   // Listing CRUD
   const [showListingModal, setShowListingModal] = useState(false)
