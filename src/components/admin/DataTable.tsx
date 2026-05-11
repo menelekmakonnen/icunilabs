@@ -20,9 +20,16 @@ interface DataTableProps {
   addLabel?: string
   renderRowActions?: (row: any) => React.ReactNode
   emptyMessage?: string
+  // Selection support
+  selectable?: boolean
+  selectedRows?: Set<number>
+  onSelectRow?: (rowIndex: number, selected: boolean) => void
+  onSelectAll?: (selected: boolean) => void
+  /** Extra buttons rendered in the header area (next to Add button) */
+  headerActions?: React.ReactNode
 }
 
-export default function DataTable({ title, subtitle, columns, data, loading, searchKeys, onAdd, addLabel, renderRowActions, emptyMessage }: DataTableProps) {
+export default function DataTable({ title, subtitle, columns, data, loading, searchKeys, onAdd, addLabel, renderRowActions, emptyMessage, selectable, selectedRows, onSelectRow, onSelectAll, headerActions }: DataTableProps) {
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState('')
   const [sortAsc, setSortAsc] = useState(true)
@@ -49,6 +56,11 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
     else { setSortKey(key); setSortAsc(true) }
   }
 
+  const allPageSelected = selectable && selectedRows && paged.length > 0 && paged.every(row => {
+    const idx = row._rowIndex || row.id || row.email
+    return selectedRows.has(idx)
+  })
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -56,11 +68,14 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
           <h2 className="text-2xl font-black text-white">{title}</h2>
           {subtitle && <p className="text-sm text-neutral-500 mt-1">{subtitle}</p>}
         </div>
-        {onAdd && (
-          <button onClick={onAdd} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all cursor-pointer">
-            <Plus className="w-4 h-4" />{addLabel || 'Add New'}
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {headerActions}
+          {onAdd && (
+            <button onClick={onAdd} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all cursor-pointer">
+              <Plus className="w-4 h-4" />{addLabel || 'Add New'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Search */}
@@ -73,7 +88,7 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
       </div>
 
       {/* Count */}
-      <div className="text-xs text-neutral-600">{sorted.length} record{sorted.length !== 1 ? 's' : ''}{search ? ` matching "${search}"` : ''}</div>
+      <div className="text-xs text-neutral-600">{sorted.length} record{sorted.length !== 1 ? 's' : ''}{search ? ` matching "${search}"` : ''}{selectable && selectedRows && selectedRows.size > 0 ? ` · ${selectedRows.size} selected` : ''}</div>
 
       {loading && <div className="text-center py-8 text-neutral-500 text-sm">Loading...</div>}
 
@@ -86,6 +101,13 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-neutral-900/80">
+                {selectable && (
+                  <th className="px-3 py-3 w-[40px]">
+                    <input type="checkbox" checked={!!allPageSelected}
+                      onChange={e => onSelectAll?.(e.target.checked)}
+                      className="w-3.5 h-3.5 accent-[#00bfff] cursor-pointer" />
+                  </th>
+                )}
                 {columns.map(col => (
                   <th key={col.key} onClick={() => toggleSort(col.key)}
                     className="px-4 py-3 text-left text-xs text-neutral-500 font-bold uppercase tracking-wider cursor-pointer hover:text-neutral-300 transition-colors select-none"
@@ -101,18 +123,29 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
             </thead>
             <tbody>
               <AnimatePresence>
-                {paged.map((row, i) => (
-                  <motion.tr key={row._rowIndex || row.id || row.client_id || row.project_id || row.invoice_id || i}
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    className="border-t border-neutral-800/50 hover:bg-neutral-800/30 transition-colors">
-                    {columns.map(col => (
-                      <td key={col.key} className="px-4 py-3 text-neutral-300">
-                        {col.render ? col.render(row[col.key], row) : (String(row[col.key] || '—'))}
-                      </td>
-                    ))}
-                    {renderRowActions && <td className="px-4 py-3 text-right">{renderRowActions(row)}</td>}
-                  </motion.tr>
-                ))}
+                {paged.map((row, i) => {
+                  const rowId = row._rowIndex || row.id || row.email || i
+                  const isSelected = selectable && selectedRows?.has(rowId)
+                  return (
+                    <motion.tr key={rowId}
+                      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                      className={`border-t border-neutral-800/50 transition-colors ${isSelected ? 'bg-[#00bfff]/5' : 'hover:bg-neutral-800/30'}`}>
+                      {selectable && (
+                        <td className="px-3 py-3">
+                          <input type="checkbox" checked={!!isSelected}
+                            onChange={e => onSelectRow?.(rowId, e.target.checked)}
+                            className="w-3.5 h-3.5 accent-[#00bfff] cursor-pointer" />
+                        </td>
+                      )}
+                      {columns.map(col => (
+                        <td key={col.key} className="px-4 py-3 text-neutral-300">
+                          {col.render ? col.render(row[col.key], row) : (String(row[col.key] || '—'))}
+                        </td>
+                      ))}
+                      {renderRowActions && <td className="px-4 py-3 text-right">{renderRowActions(row)}</td>}
+                    </motion.tr>
+                  )
+                })}
               </AnimatePresence>
             </tbody>
           </table>

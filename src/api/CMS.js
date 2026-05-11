@@ -202,7 +202,7 @@ function handleCreateJobListing(payload) {
     var jobId = generateId_('JOB');
     appendRow_(SHEETS.JOB_LISTINGS, [
         jobId, payload.title, payload.type, payload.location || 'Remote',
-        payload.salary_range || '', payload.short_desc || '',
+        payload.salary_range || '', payload.short_description || payload.short_desc || '',
         payload.full_description_json || '[]', payload.requirements_json || '[]',
         payload.benefits_json || '[]',
         payload.status || 'draft', payload.deadline || '',
@@ -223,6 +223,10 @@ function handleUpdateJobListing(payload) {
      'status', 'deadline'].forEach(function(f) {
         if (payload[f] !== undefined) updates[f] = payload[f];
     });
+    // Accept frontend field name 'short_description' as alias for 'short_desc'
+    if (payload.short_description !== undefined) {
+        updates.short_desc = payload.short_description;
+    }
     updateRow_(SHEETS.JOB_LISTINGS, job._rowIndex, updates);
     logAction_(auth.user.user_id, auth.user.name, 'JOB_UPDATED', payload.title || job.title);
     return successResponse_(null, 'Job listing updated.');
@@ -402,7 +406,7 @@ function handleCreateApplication(payload) {
 // ADMIN — APPLICANT EMAIL SYSTEM
 // ═══════════════════════════════════════════════════════════
 
-var APPLICANT_TEMPLATES = ['cv_confirmation', 'interview_selected', 'not_selected', 'interview_thanks', 'interview_confirmed', 'role_offered', 'role_rejected'];
+var APPLICANT_TEMPLATES = ['cv_confirmation', 'interview_selected', 'not_selected', 'interview_thanks', 'interview_confirmed', 'role_offered', 'role_rejected', 'custom'];
 
 /**
  * Send a curated email template to one or more applicants.
@@ -718,6 +722,18 @@ function buildApplicantTemplate_(name, template, extras) {
                     'With sincere respect and gratitude.',
                 opts: { ctaText: 'Stay Connected', ctaLink: 'https://labs.icuni.org/careers' },
                 newStatus: 'rejected'
+            };
+
+        // ── 8. Custom Email — Fully Editable ─────────────────
+        case 'custom':
+            return {
+                subject: extras.subject || 'A Message from ICUNI Labs',
+                title: extras.title || 'Hello from ICUNI Labs',
+                body: extras.body || 'This is a custom message from our team.',
+                opts: extras.ctaLink
+                    ? { ctaText: extras.ctaText || 'Visit ICUNI Labs', ctaLink: extras.ctaLink }
+                    : { hideCta: true },
+                newStatus: extras.newStatus || null
             };
 
         default:

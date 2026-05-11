@@ -2,11 +2,17 @@ import { useEffect, useState } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import DataTable from './DataTable'
 import { UserPlus, X, Send } from 'lucide-react'
+import { personas } from '../../data/personaData'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
 const modalBg = 'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4'
 const modalCard = 'bg-neutral-950 border border-neutral-800 rounded-2xl p-6 w-full max-w-md shadow-2xl'
 const btnPrimary = 'px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all disabled:opacity-40'
+
+const CLIENT_SEGMENTS = [
+  { id: 'all', label: 'All Clients', color: '#ffffff' },
+  ...personas.map(p => ({ id: p.id, label: p.title.replace(/^The /, ''), color: p.accentColor }))
+]
 
 // ─── Status Badge ────────────────────────────────────────
 function Badge({ status }: { status: string }) {
@@ -34,25 +40,46 @@ function Badge({ status }: { status: string }) {
 export function ClientsSection() {
   const { clients, loading } = useAdminStore()
   const [showAdd, setShowAdd] = useState(false)
-  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', buyer_profile: '' })
+  const [segment, setSegment] = useState('all')
 
   useEffect(() => { adminActions.loadClients() }, [])
+
+  const filtered = segment === 'all' ? clients : clients.filter((c: any) => c.buyer_profile === segment)
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
     const ok = await adminActions.createClient(form)
-    if (ok) { setShowAdd(false); setForm({ name: '', email: '', phone: '', company: '' }) }
+    if (ok) { setShowAdd(false); setForm({ name: '', email: '', phone: '', company: '', buyer_profile: '' }) }
   }
 
   return (
     <>
-      <DataTable title="Clients" subtitle="Manage your client accounts" loading={loading} data={clients}
+      {/* Segment tabs */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
+        {CLIENT_SEGMENTS.map(seg => (
+          <button key={seg.id} onClick={() => setSegment(seg.id)}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-all whitespace-nowrap ${
+              segment === seg.id ? 'bg-neutral-800 text-white font-medium' : 'text-neutral-500 hover:text-white'
+            }`}
+            style={segment === seg.id ? { borderBottom: `2px solid ${seg.color}` } : {}}>
+            {seg.label}
+            {seg.id !== 'all' && <span className="ml-1.5 text-xs text-neutral-600">({clients.filter((c: any) => c.buyer_profile === seg.id).length})</span>}
+          </button>
+        ))}
+      </div>
+
+      <DataTable title="Clients" subtitle={segment === 'all' ? 'Manage your client accounts' : `Clients in the "${CLIENT_SEGMENTS.find(s => s.id === segment)?.label}" segment`} loading={loading} data={filtered}
         onAdd={() => setShowAdd(true)} addLabel="Add Client"
         columns={[
           { key: 'client_id', label: 'ID', width: '120px' },
           { key: 'name', label: 'Name', render: (v) => <span className="text-white font-medium">{v}</span> },
           { key: 'email', label: 'Email' },
           { key: 'company', label: 'Company' },
+          { key: 'buyer_profile', label: 'Segment', render: (v) => {
+            const seg = CLIENT_SEGMENTS.find(s => s.id === v)
+            return seg ? <span style={{ color: seg.color }} className="text-xs font-medium">{seg.label}</span> : <span className="text-neutral-600 text-xs">Unassigned</span>
+          }},
           { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
           { key: 'created_at', label: 'Created', render: (v) => v ? new Date(v).toLocaleDateString() : '—' },
         ]}
@@ -70,6 +97,10 @@ export function ClientsSection() {
               <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className={inputCls} placeholder="Email" required />
               <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputCls} placeholder="Phone" />
               <input value={form.company} onChange={e => setForm({...form, company: e.target.value})} className={inputCls} placeholder="Company" />
+              <select value={form.buyer_profile} onChange={e => setForm({...form, buyer_profile: e.target.value})} className={inputCls}>
+                <option value="">— Select buyer profile —</option>
+                {personas.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+              </select>
               <button type="submit" className={btnPrimary}>Create Client</button>
             </form>
           </div>
@@ -216,6 +247,7 @@ const EMAIL_TEMPLATES = [
   { key: 'interview_confirmed', label: 'Interview Confirmed', desc: 'Confirm their slot with date, time, and meeting link.', color: 'text-teal-400', icon: '📅' },
   { key: 'role_offered', label: 'Selected for the Role', desc: 'Congratulations — they got the job!', color: 'text-amber-400', icon: '🏆' },
   { key: 'role_rejected', label: 'Not Selected (Final)', desc: 'Final rejection after interview stage.', color: 'text-rose-400', icon: '🚫' },
+  { key: 'custom', label: 'Custom Email', desc: 'Write your own branded email from scratch.', color: 'text-violet-400', icon: '✏️' },
 ] as const
 
 type CareersTab = 'listings' | 'applications' | 'emails'
@@ -243,6 +275,19 @@ export function CareersSection() {
   const [rowPreviewHtml, setRowPreviewHtml] = useState('')
   const [rowSending, setRowSending] = useState(false)
   const [rowSent, setRowSent] = useState(false)
+  // Batch selection
+  const [selectedApplicants, setSelectedApplicants] = useState<Set<number>>(new Set())
+  const [showBatchEmail, setShowBatchEmail] = useState(false)
+  const [batchTemplate, setBatchTemplate] = useState('cv_confirmation')
+  const [batchPreviewHtml, setBatchPreviewHtml] = useState('')
+  const [batchSending, setBatchSending] = useState(false)
+  const [batchResult, setBatchResult] = useState<{ sent: number; failed: number } | null>(null)
+  // Custom email fields
+  const [customSubject, setCustomSubject] = useState('A Message from ICUNI Labs')
+  const [customTitle, setCustomTitle] = useState('Hello from ICUNI Labs')
+  const [customBody, setCustomBody] = useState('')
+  const [customCtaText, setCustomCtaText] = useState('')
+  const [customCtaLink, setCustomCtaLink] = useState('')
   // Dynamic extras for templates
   const [dateOptions, setDateOptions] = useState<{ date: string; time: string }[]>([{ date: '', time: '' }])
   const [confirmedDate, setConfirmedDate] = useState('')
@@ -257,6 +302,7 @@ export function CareersSection() {
       return { dateOptions: dateOptions.filter(o => o.date || o.time).map(o => [fmtDate(o.date), fmtTime(o.time)].filter(Boolean).join(' at ')) }
     }
     if (tpl === 'interview_confirmed') return { confirmedDate: fmtDate(confirmedDate), confirmedTime: fmtTime(confirmedTime), meetingLink }
+    if (tpl === 'custom') return { subject: customSubject, title: customTitle, body: customBody, ctaText: customCtaText, ctaLink: customCtaLink }
     return {}
   }
 
@@ -393,6 +439,29 @@ export function CareersSection() {
       <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', applications.length)}{tabBtn('emails', 'Manual Emails')}</div>
       <DataTable title="Applications" subtitle="Manage applicants and send communications" loading={loading} data={applications}
         onAdd={() => setShowAddApplicant(true)} addLabel="Add Applicant"
+        selectable
+        selectedRows={selectedApplicants}
+        onSelectRow={(rowId, selected) => {
+          const next = new Set(selectedApplicants)
+          selected ? next.add(rowId) : next.delete(rowId)
+          setSelectedApplicants(next)
+        }}
+        onSelectAll={(selected) => {
+          if (selected) {
+            const next = new Set(selectedApplicants)
+            applications.forEach((a: any) => next.add(a._rowIndex || a.email))
+            setSelectedApplicants(next)
+          } else {
+            setSelectedApplicants(new Set())
+          }
+        }}
+        headerActions={selectedApplicants.size > 0 ? (
+          <button onClick={() => { setBatchTemplate('cv_confirmation'); setBatchResult(null); setShowBatchEmail(true);
+            adminActions.previewApplicantEmail('cv_confirmation', 'Applicant').then(r => { if (r) setBatchPreviewHtml(r.html) }) }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg text-sm font-bold hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] transition-all cursor-pointer">
+            <Send className="w-4 h-4" />Send to {selectedApplicants.size} Selected
+          </button>
+        ) : undefined}
         columns={[
           { key: 'name', label: 'Applicant', render: (v) => <span className="text-white font-medium">{v}</span> },
           { key: 'email', label: 'Email' },
@@ -494,6 +563,18 @@ export function CareersSection() {
                       <button onClick={refreshRowPreview} className="text-[11px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
                     </div>
                   )}
+                  {rowTemplate === 'custom' && (
+                    <div className="space-y-2 mt-2">
+                      <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Email subject" />
+                      <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Email title heading" />
+                      <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} className={`${inputCls} !py-1.5 !text-xs resize-none`} rows={3} placeholder="Email body (HTML or plain text)" />
+                      <div className="flex gap-2">
+                        <input value={customCtaText} onChange={e => setCustomCtaText(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button text (optional)" />
+                        <input value={customCtaLink} onChange={e => setCustomCtaLink(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button URL (optional)" />
+                      </div>
+                      <button onClick={refreshRowPreview} className="text-[11px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Send button */}
@@ -507,6 +588,88 @@ export function CareersSection() {
                     <button onClick={handleRowSend} disabled={rowSending}
                       className={`${btnPrimary} w-full flex items-center justify-center gap-2`}>
                       {rowSending ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send Email</>}
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Email Modal */}
+      {showBatchEmail && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => !batchSending && setShowBatchEmail(false)}>
+          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 flex-shrink-0">
+              <div>
+                <h3 className="text-lg font-bold text-white">Batch Email — {selectedApplicants.size} Recipients</h3>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  {applications.filter((a: any) => selectedApplicants.has(a._rowIndex || a.email)).map((a: any) => a.name).join(', ')}
+                </p>
+              </div>
+              <button onClick={() => !batchSending && setShowBatchEmail(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="flex-1 min-h-0 p-4">
+              <div className="rounded-xl border border-neutral-800 bg-white overflow-hidden h-full">
+                {batchPreviewHtml ? (
+                  <iframe srcDoc={batchPreviewHtml} className="w-full h-full border-0" style={{ minHeight: '400px' }} sandbox="" title="Batch Email Preview" />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-neutral-400 text-sm bg-neutral-950" style={{ minHeight: '400px' }}>Loading preview...</div>
+                )}
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-neutral-800 flex-shrink-0">
+              <div className="flex gap-4 items-start">
+                <div className="flex-1 min-w-0">
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {EMAIL_TEMPLATES.map(tpl => (
+                      <button key={tpl.key} type="button" onClick={async () => {
+                        setBatchTemplate(tpl.key)
+                        const preview = await adminActions.previewApplicantEmail(tpl.key, 'Applicant', buildExtras(tpl.key))
+                        if (preview) setBatchPreviewHtml(preview.html)
+                      }}
+                        className={`flex-shrink-0 px-3 py-2 rounded-lg border transition-all cursor-pointer text-xs whitespace-nowrap ${
+                          batchTemplate === tpl.key ? 'bg-[#00bfff]/10 border-[#00bfff]/40 text-white font-semibold' : 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700 ' + tpl.color
+                        }`}>
+                        <span className="mr-1.5">{tpl.icon}</span>{tpl.label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Custom fields for batch */}
+                  {batchTemplate === 'custom' && (
+                    <div className="space-y-2 mt-2">
+                      <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Email subject" />
+                      <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Email title heading" />
+                      <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} className={`${inputCls} !py-1.5 !text-xs resize-none`} rows={3} placeholder="Email body (HTML or plain text)" />
+                      <div className="flex gap-2">
+                        <input value={customCtaText} onChange={e => setCustomCtaText(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button text (optional)" />
+                        <input value={customCtaLink} onChange={e => setCustomCtaLink(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button URL (optional)" />
+                      </div>
+                      <button onClick={async () => {
+                        const preview = await adminActions.previewApplicantEmail('custom', 'Applicant', buildExtras('custom'))
+                        if (preview) setBatchPreviewHtml(preview.html)
+                      }} className="text-[11px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-shrink-0 w-[160px]">
+                  {batchResult ? (
+                    <div className={`flex items-center justify-center gap-2 py-2.5 font-bold text-sm ${batchResult.failed === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      {batchResult.sent} sent{batchResult.failed > 0 ? `, ${batchResult.failed} failed` : ''}
+                    </div>
+                  ) : (
+                    <button onClick={async () => {
+                      const recipients = applications.filter((a: any) => selectedApplicants.has(a._rowIndex || a.email)).map((a: any) => ({ email: a.email, name: a.name || '' }))
+                      if (!recipients.length) return
+                      setBatchSending(true)
+                      const result = await adminActions.sendApplicantEmail(batchTemplate, recipients, buildExtras(batchTemplate))
+                      setBatchSending(false)
+                      if (result) { setBatchResult(result); setTimeout(() => { setShowBatchEmail(false); setBatchResult(null); setSelectedApplicants(new Set()) }, 2000) }
+                    }} disabled={batchSending}
+                      className={`${btnPrimary} w-full flex items-center justify-center gap-2`}>
+                      {batchSending ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send All</>}
                     </button>
                   )}
                 </div>
@@ -602,6 +765,21 @@ export function CareersSection() {
               <button onClick={loadPreview} className="mt-2 text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
             </div>
           )}
+          {selectedTemplate === 'custom' && (
+            <div>
+              <label className="text-xs text-neutral-500 mb-2 block">Custom Email Content</label>
+              <div className="space-y-2">
+                <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} className={inputCls} placeholder="Email subject line" />
+                <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} className={inputCls} placeholder="Email heading / title" />
+                <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} className={`${inputCls} resize-none`} rows={5} placeholder="Email body content (plain text or HTML)" />
+                <div className="grid grid-cols-2 gap-2">
+                  <input value={customCtaText} onChange={e => setCustomCtaText(e.target.value)} className={inputCls} placeholder="Button text (optional)" />
+                  <input value={customCtaLink} onChange={e => setCustomCtaLink(e.target.value)} className={inputCls} placeholder="Button URL (optional)" />
+                </div>
+              </div>
+              <button onClick={loadPreview} className="mt-2 text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+            </div>
+          )}
 
           {/* Send */}
           {sendResult ? (
@@ -623,11 +801,11 @@ export function CareersSection() {
             <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Email Preview</h3>
             {previewSubject && <span className="text-xs text-neutral-600 truncate max-w-[250px]">Subject: {previewSubject}</span>}
           </div>
-          <div className="flex-1 rounded-xl border border-neutral-800 bg-white overflow-hidden" style={{ minHeight: '700px' }}>
+          <div className="flex-1 rounded-xl border border-neutral-800 bg-white overflow-hidden" style={{ minHeight: '900px' }}>
             {previewHtml ? (
-              <iframe srcDoc={previewHtml} className="w-full h-full border-0" style={{ minHeight: '700px' }} sandbox="" title="Email Preview" />
+              <iframe srcDoc={previewHtml} className="w-full h-full border-0" style={{ minHeight: '900px' }} sandbox="" title="Email Preview" />
             ) : (
-              <div className="flex items-center justify-center h-full text-neutral-600 text-sm bg-neutral-950" style={{ minHeight: '700px' }}>Select a template to preview</div>
+              <div className="flex items-center justify-center h-full text-neutral-600 text-sm bg-neutral-950" style={{ minHeight: '900px' }}>Select a template to preview</div>
             )}
           </div>
         </div>
