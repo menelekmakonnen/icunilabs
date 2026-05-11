@@ -210,9 +210,10 @@ export function InvoicesSection() {
 
 const EMAIL_TEMPLATES = [
   { key: 'cv_confirmation', label: 'Thank You for Application', desc: 'Confirm receipt of their application materials.', color: 'text-blue-400', icon: '📄' },
-  { key: 'interview_selected', label: 'Selected for Interview', desc: 'Invite them to the interview stage.', color: 'text-emerald-400', icon: '✅' },
+  { key: 'interview_selected', label: 'Selected for Interview', desc: 'Invite them with date/time options to choose from.', color: 'text-emerald-400', icon: '✅' },
   { key: 'not_selected', label: 'Not Selected (Next Step)', desc: 'They did not make it past the application stage.', color: 'text-red-400', icon: '❌' },
   { key: 'interview_thanks', label: 'Interview Thank You', desc: 'Thank them for attending the interview today.', color: 'text-sky-400', icon: '🤝' },
+  { key: 'interview_confirmed', label: 'Interview Confirmed', desc: 'Confirm their slot with date, time, and meeting link.', color: 'text-teal-400', icon: '📅' },
   { key: 'role_offered', label: 'Selected for the Role', desc: 'Congratulations — they got the job!', color: 'text-amber-400', icon: '🏆' },
   { key: 'role_rejected', label: 'Not Selected (Final)', desc: 'Final rejection after interview stage.', color: 'text-rose-400', icon: '🚫' },
 ] as const
@@ -242,6 +243,17 @@ export function CareersSection() {
   const [rowPreviewHtml, setRowPreviewHtml] = useState('')
   const [rowSending, setRowSending] = useState(false)
   const [rowSent, setRowSent] = useState(false)
+  // Dynamic extras for templates
+  const [dateOptions, setDateOptions] = useState([''])
+  const [confirmedDate, setConfirmedDate] = useState('')
+  const [confirmedTime, setConfirmedTime] = useState('')
+  const [meetingLink, setMeetingLink] = useState('')
+
+  const buildExtras = (tpl: string) => {
+    if (tpl === 'interview_selected') return { dateOptions: dateOptions.filter(d => d.trim()) }
+    if (tpl === 'interview_confirmed') return { confirmedDate, confirmedTime, meetingLink }
+    return {}
+  }
 
   useEffect(() => { adminActions.loadJobs(); adminActions.loadApplications() }, [])
 
@@ -267,18 +279,23 @@ export function CareersSection() {
 
   const openRowEmail = async (row: any) => {
     setEmailRow(row); setRowTemplate('cv_confirmation'); setRowSent(false)
+    setDateOptions(['']); setConfirmedDate(''); setConfirmedTime(''); setMeetingLink('')
     const preview = await adminActions.previewApplicantEmail('cv_confirmation', row.name || 'Applicant')
     if (preview) setRowPreviewHtml(preview.html)
   }
   const changeRowTemplate = async (tpl: string) => {
     setRowTemplate(tpl)
-    const preview = await adminActions.previewApplicantEmail(tpl, emailRow?.name || 'Applicant')
+    const preview = await adminActions.previewApplicantEmail(tpl, emailRow?.name || 'Applicant', buildExtras(tpl))
+    if (preview) setRowPreviewHtml(preview.html)
+  }
+  const refreshRowPreview = async () => {
+    const preview = await adminActions.previewApplicantEmail(rowTemplate, emailRow?.name || 'Applicant', buildExtras(rowTemplate))
     if (preview) setRowPreviewHtml(preview.html)
   }
   const handleRowSend = async () => {
     if (!emailRow?.email) return
     setRowSending(true)
-    const result = await adminActions.sendApplicantEmail(rowTemplate, [{ email: emailRow.email, name: emailRow.name || '' }])
+    const result = await adminActions.sendApplicantEmail(rowTemplate, [{ email: emailRow.email, name: emailRow.name || '' }], buildExtras(rowTemplate))
     setRowSending(false)
     if (result) { setRowSent(true); setTimeout(() => { setEmailRow(null); setRowSent(false) }, 1800) }
   }
@@ -291,7 +308,7 @@ export function CareersSection() {
 
   const loadPreview = async () => {
     const name = recipients[0]?.name || 'Applicant'
-    const result = await adminActions.previewApplicantEmail(selectedTemplate, name)
+    const result = await adminActions.previewApplicantEmail(selectedTemplate, name, buildExtras(selectedTemplate))
     if (result) { setPreviewHtml(result.html); setPreviewSubject(result.subject) }
   }
   useEffect(() => { if (tab === 'emails') loadPreview() }, [selectedTemplate, tab])
@@ -300,7 +317,7 @@ export function CareersSection() {
     const valid = recipients.filter(r => r.email.trim())
     if (!valid.length) return
     setSending(true); setSendResult(null)
-    const result = await adminActions.sendApplicantEmail(selectedTemplate, valid)
+    const result = await adminActions.sendApplicantEmail(selectedTemplate, valid, buildExtras(selectedTemplate))
     setSending(false)
     if (result) setSendResult(result)
   }
@@ -436,6 +453,29 @@ export function CareersSection() {
                   </button>
                 ))}
               </div>
+              {/* Dynamic fields for interview templates */}
+              {rowTemplate === 'interview_selected' && (
+                <div className="space-y-2 mt-3">
+                  <label className="text-xs text-neutral-500">Date/Time Options</label>
+                  {dateOptions.map((opt, i) => (
+                    <div key={i} className="flex gap-2 items-center">
+                      <input value={opt} onChange={e => { const c = [...dateOptions]; c[i] = e.target.value; setDateOptions(c) }} className={`${inputCls} text-xs`} placeholder={`e.g. Mon 19 May, 10:00 AM`} />
+                      {dateOptions.length > 1 && <button onClick={() => setDateOptions(dateOptions.filter((_, idx) => idx !== i))} className="text-neutral-600 hover:text-red-400 cursor-pointer p-1"><X className="w-3 h-3" /></button>}
+                    </div>
+                  ))}
+                  <button onClick={() => setDateOptions([...dateOptions, ''])} className="text-[10px] text-[#00bfff] hover:text-white cursor-pointer">+ Add option</button>
+                  <button onClick={refreshRowPreview} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer ml-3">Refresh Preview</button>
+                </div>
+              )}
+              {rowTemplate === 'interview_confirmed' && (
+                <div className="space-y-2 mt-3">
+                  <label className="text-xs text-neutral-500">Confirmed Details</label>
+                  <input value={confirmedDate} onChange={e => setConfirmedDate(e.target.value)} className={`${inputCls} text-xs`} placeholder="Date (e.g. Monday, 19 May 2026)" />
+                  <input value={confirmedTime} onChange={e => setConfirmedTime(e.target.value)} className={`${inputCls} text-xs`} placeholder="Time (e.g. 10:00 AM GMT)" />
+                  <input value={meetingLink} onChange={e => setMeetingLink(e.target.value)} className={`${inputCls} text-xs`} placeholder="Meeting link (optional)" />
+                  <button onClick={refreshRowPreview} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+                </div>
+              )}
               {/* Preview */}
               <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 overflow-hidden" style={{ height: '400px' }}>
                 {rowPreviewHtml ? (
@@ -539,6 +579,36 @@ export function CareersSection() {
             <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Email Preview</h3>
             {previewSubject && <span className="text-xs text-neutral-600 truncate max-w-[250px]">Subject: {previewSubject}</span>}
           </div>
+
+          {/* Dynamic fields for interview templates */}
+          {selectedTemplate === 'interview_selected' && (
+            <div>
+              <label className="text-xs text-neutral-500 mb-2 block">Date/Time Options for Applicant</label>
+              <div className="space-y-2">
+                {dateOptions.map((opt, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <input value={opt} onChange={e => { const c = [...dateOptions]; c[i] = e.target.value; setDateOptions(c) }} className={inputCls} placeholder={`e.g. Mon 19 May, 10:00 AM`} />
+                    {dateOptions.length > 1 && <button onClick={() => setDateOptions(dateOptions.filter((_, idx) => idx !== i))} className="text-neutral-600 hover:text-red-400 cursor-pointer p-1"><X className="w-4 h-4" /></button>}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3 mt-2">
+                <button onClick={() => setDateOptions([...dateOptions, ''])} className="text-xs text-[#00bfff] hover:text-white cursor-pointer">+ Add another option</button>
+                <button onClick={loadPreview} className="text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+              </div>
+            </div>
+          )}
+          {selectedTemplate === 'interview_confirmed' && (
+            <div>
+              <label className="text-xs text-neutral-500 mb-2 block">Confirmed Interview Details</label>
+              <div className="space-y-2">
+                <input value={confirmedDate} onChange={e => setConfirmedDate(e.target.value)} className={inputCls} placeholder="Date (e.g. Monday, 19 May 2026)" />
+                <input value={confirmedTime} onChange={e => setConfirmedTime(e.target.value)} className={inputCls} placeholder="Time (e.g. 10:00 AM GMT)" />
+                <input value={meetingLink} onChange={e => setMeetingLink(e.target.value)} className={inputCls} placeholder="Meeting link (optional — leave blank for in-person)" />
+              </div>
+              <button onClick={loadPreview} className="mt-2 text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+            </div>
+          )}
           <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden" style={{ height: '600px' }}>
             {previewHtml ? (
               <iframe srcDoc={previewHtml} className="w-full h-full border-0" sandbox="" title="Email Preview" />

@@ -415,13 +415,14 @@ export const adminActions = {
   },
 
   // ── Applicant Email ──
-  sendApplicantEmail: async (template: string, recipients: { email: string; name: string }[]): Promise<{ sent: number; failed: number; errors: string[] } | null> => {
+  sendApplicantEmail: async (template: string, recipients: { email: string; name: string }[], extras?: Record<string, any>): Promise<{ sent: number; failed: number; errors: string[] } | null> => {
     setState({ loading: true, error: null })
     try {
       const result = await apiPost('sendApplicantEmail', {
         token: state.token,
         template,
         recipients,
+        extras: extras || {},
       })
       await adminActions.loadApplications()
       setState({ loading: false })
@@ -432,12 +433,13 @@ export const adminActions = {
     }
   },
 
-  previewApplicantEmail: async (template: string, applicantName?: string): Promise<{ html: string; subject: string; newStatus: string | null } | null> => {
+  previewApplicantEmail: async (template: string, applicantName?: string, extras?: Record<string, any>): Promise<{ html: string; subject: string; newStatus: string | null } | null> => {
     try {
       return await apiPost('previewApplicantEmail', {
         token: state.token,
         template,
         applicantName: applicantName || 'Applicant',
+        extras: extras || {},
       })
     } catch (err: any) {
       setState({ error: err.message })

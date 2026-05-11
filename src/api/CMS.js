@@ -402,7 +402,7 @@ function handleCreateApplication(payload) {
 // ADMIN — APPLICANT EMAIL SYSTEM
 // ═══════════════════════════════════════════════════════════
 
-var APPLICANT_TEMPLATES = ['cv_confirmation', 'interview_selected', 'not_selected', 'interview_thanks', 'role_offered', 'role_rejected'];
+var APPLICANT_TEMPLATES = ['cv_confirmation', 'interview_selected', 'not_selected', 'interview_thanks', 'interview_confirmed', 'role_offered', 'role_rejected'];
 
 /**
  * Send a curated email template to one or more applicants.
@@ -440,7 +440,7 @@ function handleSendApplicantEmail(payload) {
             continue;
         }
 
-        var tpl = buildApplicantTemplate_(name, template);
+        var tpl = buildApplicantTemplate_(name, template, payload.extras || {});
 
         try {
             sendEmail_({
@@ -487,7 +487,7 @@ function handlePreviewApplicantEmail(payload) {
     }
 
     var name = payload.applicantName || 'Applicant';
-    var tpl = buildApplicantTemplate_(name, template);
+    var tpl = buildApplicantTemplate_(name, template, payload.extras || {});
     var html = buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts);
 
     return successResponse_({
@@ -499,9 +499,11 @@ function handlePreviewApplicantEmail(payload) {
 
 /**
  * Build subject, title, body HTML, opts, and optional newStatus for each template.
- * 6 templates covering the full applicant lifecycle.
+ * 7 templates covering the full applicant lifecycle.
+ * @param {Object} extras — dynamic fields (dateOptions[], confirmedDate, confirmedTime, meetingLink)
  */
-function buildApplicantTemplate_(name, template) {
+function buildApplicantTemplate_(name, template, extras) {
+    extras = extras || {};
     switch (template) {
 
         // ── 1. Thank You for Your Application ────────────────
@@ -527,6 +529,24 @@ function buildApplicantTemplate_(name, template) {
 
         // ── 2. Selected for Interview ────────────────────────
         case 'interview_selected':
+            // Build date options block if provided
+            var dateBlock = '';
+            var dateOpts = extras.dateOptions || [];
+            if (dateOpts.length > 0) {
+                var rows = '';
+                for (var d = 0; d < dateOpts.length; d++) {
+                    rows += '<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#e8ecf4;font-size:14px;">' +
+                        '<strong style="color:#34d399;">Option ' + (d+1) + '</strong></td>' +
+                        '<td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#e8ecf4;font-size:14px;">' +
+                        dateOpts[d] + '</td></tr>';
+                }
+                dateBlock =
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<div style="color:#34d399;font-size:13px;letter-spacing:2px;margin-bottom:10px;">AVAILABLE SLOTS</div>' +
+                    '<table style="width:100%;border-collapse:collapse;">' + rows + '</table>' +
+                    '<div style="color:#94a3b8;font-size:12px;margin-top:10px;">Please reply to this email with your preferred slot and we\'ll confirm your appointment.</div>' +
+                    '</div>';
+            }
             return {
                 subject: 'Interview Invitation — ICUNI Labs',
                 title: 'You\'ve Been Selected for an Interview!',
@@ -538,17 +558,17 @@ function buildApplicantTemplate_(name, template) {
                     'our team has <strong>selected you to move forward to the interview stage</strong>.<br><br>' +
                     'This isn\'t something we take lightly — out of all the applications we received, ' +
                     'yours demonstrated the qualities we\'re looking for, and we\'d love to get to know you better.<br><br>' +
+                    dateBlock +
                     '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
                     '<div style="color:#34d399;font-size:13px;letter-spacing:2px;margin-bottom:8px;">WHAT TO EXPECT</div>' +
                     '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
-                    '• A member of our team will reach out to schedule your interview<br>' +
                     '• The conversation will be relaxed — we want to learn about <strong>you</strong><br>' +
                     '• Come prepared to share your experiences and ask us questions too<br>' +
                     '• Duration: approximately 30–45 minutes' +
                     '</div></div>' +
                     'We genuinely believe that the best teams are built through honest, human conversations — ' +
                     'and we\'re looking forward to ours.<br><br>' +
-                    '<strong>Keep an eye on your inbox for scheduling details.</strong>',
+                    '<strong>' + (dateOpts.length > 0 ? 'Reply with your preferred slot and we\'ll lock it in.' : 'Keep an eye on your inbox for scheduling details.') + '</strong>',
                 opts: { ctaText: 'Prepare for Your Interview', ctaLink: 'https://labs.icuni.org' },
                 newStatus: 'interview'
             };
@@ -601,7 +621,53 @@ function buildApplicantTemplate_(name, template) {
                 newStatus: null
             };
 
-        // ── 5. You Have Been Selected for the Role ───────────
+        // ── 5. Interview Confirmed ───────────────────────────
+        case 'interview_confirmed':
+            var cDate = extras.confirmedDate || 'TBC';
+            var cTime = extras.confirmedTime || 'TBC';
+            var mLink = extras.meetingLink || '';
+            var meetingBlock = mLink
+                ? '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:8px;padding:16px;margin:12px 0;text-align:center;">' +
+                  '<div style="color:#34d399;font-size:13px;letter-spacing:2px;margin-bottom:10px;">YOUR MEETING LINK</div>' +
+                  '<a href="' + mLink + '" style="display:inline-block;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;letter-spacing:0.5px;">Join Meeting</a>' +
+                  '<div style="color:#94a3b8;font-size:12px;margin-top:10px;word-break:break-all;">' + mLink + '</div>' +
+                  '</div>'
+                : '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:12px 16px;margin:12px 0;color:#e8ecf4;font-size:14px;">' +
+                  'The interview will take place <strong>in person</strong>. Further location details will follow shortly.' +
+                  '</div>';
+            return {
+                subject: 'Interview Confirmed — ICUNI Labs',
+                title: 'Your Interview is Confirmed!',
+                body:
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<span style="display:inline-block;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;">CONFIRMED</span>' +
+                    '</div>' +
+                    'Great news — your interview slot has been <strong>confirmed</strong>. We\'re looking forward to speaking with you!<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<div style="color:#34d399;font-size:13px;letter-spacing:2px;margin-bottom:10px;">YOUR INTERVIEW DETAILS</div>' +
+                    '<table style="width:100%;border-collapse:collapse;">' +
+                    '<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#94a3b8;font-size:13px;width:80px;">Date</td>' +
+                    '<td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#e8ecf4;font-size:15px;font-weight:600;">' + cDate + '</td></tr>' +
+                    '<tr><td style="padding:8px 12px;color:#94a3b8;font-size:13px;">Time</td>' +
+                    '<td style="padding:8px 12px;color:#e8ecf4;font-size:15px;font-weight:600;">' + cTime + '</td></tr>' +
+                    '</table></div>' +
+                    meetingBlock +
+                    '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<div style="color:#60a5fa;font-size:13px;letter-spacing:2px;margin-bottom:8px;">HOW TO PREPARE</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
+                    '• Be ready 5 minutes before the scheduled time<br>' +
+                    '• Have a stable internet connection if joining online<br>' +
+                    '• Prepare to tell us about yourself and your experience<br>' +
+                    '• Feel free to ask us questions too — it\'s a two-way conversation' +
+                    '</div></div>' +
+                    'We can\'t wait to meet you. See you soon!',
+                opts: mLink
+                    ? { ctaText: 'Join Meeting', ctaLink: mLink }
+                    : { ctaText: 'Visit ICUNI Labs', ctaLink: 'https://labs.icuni.org' },
+                newStatus: null
+            };
+
+        // ── 6. You Have Been Selected for the Role ───────────
         case 'role_offered':
             return {
                 subject: 'Offer of Employment — ICUNI Labs',
