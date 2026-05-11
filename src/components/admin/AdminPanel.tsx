@@ -3,7 +3,7 @@ import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import AdminLogin from './AdminLogin'
 import DashboardSection from './DashboardSection'
 import SettingsSection from './SettingsSection'
-import { ClientsSection, ProjectsSection, InvoicesSection, JobsSection, ReferralsSection, UsersSection, LogsSection, SLASection } from './AdminSections'
+import { ClientsSection, ProjectsSection, InvoicesSection, CareersSection, ReferralsSection, UsersSection, LogsSection, SLASection } from './AdminSections'
 import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useState } from 'react'
 
@@ -12,7 +12,7 @@ const NAV = [
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'projects', label: 'Projects', icon: FolderOpen },
   { id: 'invoices', label: 'Invoices', icon: FileText },
-  { id: 'jobs', label: 'Jobs', icon: Briefcase },
+  { id: 'careers', label: 'Careers', icon: Briefcase },
   { id: 'referrals', label: 'Referrals', icon: UserCheck },
   { id: 'sla', label: 'SLA', icon: Clock },
   { id: 'users', label: 'Users', icon: Shield },
@@ -35,7 +35,7 @@ export default function AdminPanel() {
       case 'clients': return <ClientsSection />
       case 'projects': return <ProjectsSection />
       case 'invoices': return <InvoicesSection />
-      case 'jobs': return <JobsSection />
+      case 'careers': return <CareersSection />
       case 'referrals': return <ReferralsSection />
       case 'sla': return <SLASection />
       case 'users': return <UsersSection />

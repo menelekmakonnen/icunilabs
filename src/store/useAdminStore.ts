@@ -414,6 +414,64 @@ export const adminActions = {
     }
   },
 
+  // ── Applicant Email ──
+  sendApplicantEmail: async (template: string, recipients: { email: string; name: string }[]): Promise<{ sent: number; failed: number; errors: string[] } | null> => {
+    setState({ loading: true, error: null })
+    try {
+      const result = await apiPost('sendApplicantEmail', {
+        token: state.token,
+        template,
+        recipients,
+      })
+      await adminActions.loadApplications()
+      setState({ loading: false })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return null
+    }
+  },
+
+  previewApplicantEmail: async (template: string, applicantName?: string): Promise<{ html: string; subject: string; newStatus: string | null } | null> => {
+    try {
+      return await apiPost('previewApplicantEmail', {
+        token: state.token,
+        template,
+        applicantName: applicantName || 'Applicant',
+      })
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  // ── Career Listing CRUD ──
+  createJobListing: async (data: Record<string, any>): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('createJobListing', { token: state.token, ...data })
+      await adminActions.loadJobs()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  updateJobListing: async (data: Record<string, any>): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('updateJobListing', { token: state.token, ...data })
+      await adminActions.loadJobs()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
   // ── Dashboard summary load ──
   loadDashboard: async () => {
     setState({ loading: true })

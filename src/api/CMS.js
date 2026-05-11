@@ -356,6 +356,267 @@ function handleGetJobQualifications(payload) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ADMIN — APPLICANT EMAIL SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+var APPLICANT_TEMPLATES = ['cv_confirmation', 'interview_selected', 'not_selected', 'interview_thanks', 'role_offered', 'role_rejected'];
+
+/**
+ * Send a curated email template to one or more applicants.
+ * Supports single email or batch via recipients[] array.
+ */
+function handleSendApplicantEmail(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+
+    var template = payload.template;
+    if (!template || APPLICANT_TEMPLATES.indexOf(template) === -1) {
+        return errorResponse_('Invalid template. Must be one of: ' + APPLICANT_TEMPLATES.join(', '));
+    }
+
+    // Build recipients list — support both single and batch
+    var recipients = [];
+    if (payload.recipients && Array.isArray(payload.recipients) && payload.recipients.length > 0) {
+        recipients = payload.recipients;
+    } else if (payload.email) {
+        recipients = [{ email: payload.email, name: payload.applicantName || '' }];
+    } else {
+        return errorResponse_('At least one recipient email is required.');
+    }
+
+    var sent = 0, failed = 0, errors = [];
+
+    for (var i = 0; i < recipients.length; i++) {
+        var r = recipients[i];
+        var email = r.email;
+        var name = r.name || email.split('@')[0];
+
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            failed++;
+            errors.push(email + ': invalid email');
+            continue;
+        }
+
+        var tpl = buildApplicantTemplate_(name, template);
+
+        try {
+            sendEmail_({
+                to: email,
+                subject: tpl.subject,
+                htmlBody: buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts),
+                from: 'jobs@icuni.org'
+            });
+            logEmail_(email, tpl.subject, 'admin_applicant_' + template, 'sent');
+            sent++;
+        } catch(e) {
+            logEmail_(email, tpl.subject, 'admin_applicant_' + template, 'failed');
+            failed++;
+            errors.push(email + ': ' + e.message);
+        }
+
+        // Auto-update application status
+        if (tpl.newStatus) {
+            var app = findRow_(SHEETS.JOB_APPLICATIONS, 'email', email);
+            if (app) {
+                updateRow_(SHEETS.JOB_APPLICATIONS, app._rowIndex, { status: tpl.newStatus });
+            }
+        }
+    }
+
+    logAction_(auth.user.user_id, auth.user.name, 'APPLICANT_EMAIL',
+        template + ' → ' + sent + ' sent, ' + failed + ' failed');
+
+    var msg = sent + ' email' + (sent !== 1 ? 's' : '') + ' sent';
+    if (failed > 0) msg += ', ' + failed + ' failed';
+    return successResponse_({ sent: sent, failed: failed, errors: errors }, msg + '.');
+}
+
+/**
+ * Preview an email template — returns rendered HTML without sending.
+ */
+function handlePreviewApplicantEmail(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+
+    var template = payload.template;
+    if (!template || APPLICANT_TEMPLATES.indexOf(template) === -1) {
+        return errorResponse_('Invalid template.');
+    }
+
+    var name = payload.applicantName || 'Applicant';
+    var tpl = buildApplicantTemplate_(name, template);
+    var html = buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts);
+
+    return successResponse_({
+        html: html,
+        subject: tpl.subject,
+        newStatus: tpl.newStatus
+    });
+}
+
+/**
+ * Build subject, title, body HTML, opts, and optional newStatus for each template.
+ * 6 templates covering the full applicant lifecycle.
+ */
+function buildApplicantTemplate_(name, template) {
+    switch (template) {
+
+        // ── 1. Thank You for Your Application ────────────────
+        case 'cv_confirmation':
+            return {
+                subject: 'Application Received — ICUNI Labs',
+                title: 'Thank You for Your Application',
+                body:
+                    'Thank you for taking the time to apply to ICUNI Labs. ' +
+                    'We know that every application represents real effort, and we want you to know ' +
+                    'that yours has been <strong>safely received</strong> and is now in the hands of our team.<br><br>' +
+                    'Here\'s what happens next:<br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
+                    '1. Our team reviews every application individually<br>' +
+                    '2. We assess your skills, experience, and potential<br>' +
+                    '3. You\'ll hear back from us within <strong style="color:#ff7a00;">48 hours</strong>' +
+                    '</div></div>' +
+                    'We appreciate your interest in joining our team. Sit tight — we\'ll be in touch soon.',
+                opts: { ctaText: 'Explore Our Work', ctaLink: 'https://labs.icuni.org' },
+                newStatus: null
+            };
+
+        // ── 2. Selected for Interview ────────────────────────
+        case 'interview_selected':
+            return {
+                subject: 'Interview Invitation — ICUNI Labs',
+                title: 'You\'ve Been Selected for an Interview!',
+                body:
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<span style="display:inline-block;background:linear-gradient(135deg,#059669,#10b981);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;">CONGRATULATIONS</span>' +
+                    '</div>' +
+                    'We\'re excited to let you know that after carefully reviewing your application, ' +
+                    'our team has <strong>selected you to move forward to the interview stage</strong>.<br><br>' +
+                    'This isn\'t something we take lightly — out of all the applications we received, ' +
+                    'yours demonstrated the qualities we\'re looking for, and we\'d love to get to know you better.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<div style="color:#34d399;font-size:13px;letter-spacing:2px;margin-bottom:8px;">WHAT TO EXPECT</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
+                    '• A member of our team will reach out to schedule your interview<br>' +
+                    '• The conversation will be relaxed — we want to learn about <strong>you</strong><br>' +
+                    '• Come prepared to share your experiences and ask us questions too<br>' +
+                    '• Duration: approximately 30–45 minutes' +
+                    '</div></div>' +
+                    'We genuinely believe that the best teams are built through honest, human conversations — ' +
+                    'and we\'re looking forward to ours.<br><br>' +
+                    '<strong>Keep an eye on your inbox for scheduling details.</strong>',
+                opts: { ctaText: 'Prepare for Your Interview', ctaLink: 'https://labs.icuni.org' },
+                newStatus: 'interview'
+            };
+
+        // ── 3. Not Selected for Next Step ─────────────────────
+        case 'not_selected':
+            return {
+                subject: 'Application Update — ICUNI Labs',
+                title: 'An Update on Your Application',
+                body:
+                    'Thank you for your interest in ICUNI Labs and for the time you invested in your application. ' +
+                    'We truly appreciate it.<br><br>' +
+                    'After careful consideration, we\'ve decided to <strong>move forward with other candidates</strong> ' +
+                    'whose experience more closely aligns with the specific needs of this role at this time.<br><br>' +
+                    '<div style="background:linear-gradient(135deg,#1a1a2e,#1e1a30);border:1px solid #3a2a5a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#c4b5fd;font-size:13px;letter-spacing:2px;margin-bottom:8px;">THIS DOESN\'T DEFINE YOU</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
+                    'We want to be completely honest with you: not being selected for one role says ' +
+                    '<strong>nothing</strong> about your value or your potential. The hiring process is a snapshot ' +
+                    'of a moment — not a measure of a person. The qualities that led you to apply here — your ambition, ' +
+                    'your willingness to put yourself forward — are qualities that will serve you well wherever you go.' +
+                    '</div></div>' +
+                    'We encourage you to keep an eye on our careers page for future opportunities. ' +
+                    'Circumstances change, teams grow, and the right fit might be just around the corner.<br><br>' +
+                    'We wish you every success in your career. Truly.',
+                opts: { ctaText: 'Explore Other Roles', ctaLink: 'https://labs.icuni.org/careers' },
+                newStatus: 'rejected'
+            };
+
+        // ── 4. Thank You for Today's Interview ───────────────
+        case 'interview_thanks':
+            return {
+                subject: 'Thank You for the Interview — ICUNI Labs',
+                title: 'Thank You for Your Time Today',
+                body:
+                    'We wanted to reach out personally to say <strong>thank you</strong> for taking the time to speak ' +
+                    'with us today. We genuinely enjoyed learning more about you — your experiences, your perspective, ' +
+                    'and what drives you.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<div style="color:#60a5fa;font-size:13px;letter-spacing:2px;margin-bottom:8px;">WHAT HAPPENS NEXT</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
+                    '• Our team will discuss all interviews internally<br>' +
+                    '• We aim to reach a decision within <strong style="color:#ff7a00;">3–5 working days</strong><br>' +
+                    '• You\'ll receive a personal update from us either way — we don\'t leave people hanging' +
+                    '</div></div>' +
+                    'Regardless of the outcome, please know that making it to the interview stage is an achievement in itself. ' +
+                    'We were impressed by the quality of our conversation, and we appreciate you sharing your story with us.<br><br>' +
+                    'We\'ll be in touch soon.',
+                opts: { ctaText: 'Visit ICUNI Labs', ctaLink: 'https://labs.icuni.org' },
+                newStatus: null
+            };
+
+        // ── 5. You Have Been Selected for the Role ───────────
+        case 'role_offered':
+            return {
+                subject: 'Offer of Employment — ICUNI Labs',
+                title: 'Welcome to the Team!',
+                body:
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<span style="display:inline-block;background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:700;letter-spacing:1px;">🏆 CONGRATULATIONS</span>' +
+                    '</div>' +
+                    'We are absolutely <strong>thrilled</strong> to let you know that after a thorough evaluation process, ' +
+                    'our team has unanimously decided that <strong>you are the right person for the role</strong>.<br><br>' +
+                    'From the moment we reviewed your application to the conversation we had during your interview, ' +
+                    'you consistently demonstrated the qualities we value most at ICUNI Labs — initiative, thoughtfulness, ' +
+                    'and a genuine desire to contribute to something meaningful.<br><br>' +
+                    '<div style="background:linear-gradient(135deg,#1a1a2e,#1a2010);border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#4ade80;font-size:13px;letter-spacing:2px;margin-bottom:8px;">NEXT STEPS</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
+                    '• A member of our team will reach out to discuss the details of your role<br>' +
+                    '• We\'ll share onboarding information and your start date<br>' +
+                    '• Get ready to build something great with us!' +
+                    '</div></div>' +
+                    'We chose you because we believe in your potential, and we can\'t wait to see what we\'ll build together.<br><br>' +
+                    '<strong>Welcome to ICUNI Labs.</strong>',
+                opts: { ctaText: 'Welcome Aboard', ctaLink: 'https://labs.icuni.org' },
+                newStatus: 'offered'
+            };
+
+        // ── 6. You Have Not Been Selected for the Role ───────
+        case 'role_rejected':
+            return {
+                subject: 'Final Decision — ICUNI Labs',
+                title: 'Our Decision on the Role',
+                body:
+                    'First of all, thank you — sincerely — for the time and energy you invested throughout ' +
+                    'this process. Meeting you during the interview was a genuine pleasure, and our team speaks ' +
+                    'highly of the conversation we had.<br><br>' +
+                    'After very careful deliberation, we\'ve made the difficult decision to <strong>offer the position ' +
+                    'to another candidate</strong> whose background is a closer match for the very specific needs of this role.<br><br>' +
+                    '<div style="background:linear-gradient(135deg,#1a1a2e,#1e1a30);border:1px solid #3a2a5a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#c4b5fd;font-size:13px;letter-spacing:2px;margin-bottom:8px;">WE MEAN THIS</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
+                    'This was a close decision, and it was not made lightly. The fact that you reached the final stages ' +
+                    'of our process speaks to the calibre of person you are. We would genuinely encourage you to ' +
+                    'apply again in the future — teams evolve, new roles open up, and the right fit may well be ' +
+                    'just around the corner.' +
+                    '</div></div>' +
+                    'We wish you nothing but the very best in your career. You have a lot to offer, ' +
+                    'and the right opportunity will find you.<br><br>' +
+                    'With sincere respect and gratitude.',
+                opts: { ctaText: 'Stay Connected', ctaLink: 'https://labs.icuni.org/careers' },
+                newStatus: 'rejected'
+            };
+
+        default:
+            throw new Error('Unknown template: ' + template);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
 // ADMIN READ — REFERRERS & REFERRALS
 // ═══════════════════════════════════════════════════════════
 

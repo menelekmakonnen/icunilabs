@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import DataTable from './DataTable'
-import { UserPlus, X } from 'lucide-react'
+import { UserPlus, X, Send } from 'lucide-react'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
 const modalBg = 'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4'
@@ -21,6 +21,9 @@ function Badge({ status }: { status: string }) {
     open: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
     inactive: 'bg-red-500/15 text-red-400 border-red-500/20',
     Inactive: 'bg-red-500/15 text-red-400 border-red-500/20',
+    rejected: 'bg-red-500/15 text-red-400 border-red-500/20',
+    interview: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/20',
+    offered: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
     completed: 'bg-purple-500/15 text-purple-400 border-purple-500/20',
   }
   const cls = colors[status] || 'bg-neutral-800 text-neutral-400 border-neutral-700'
@@ -203,43 +206,86 @@ export function InvoicesSection() {
   )
 }
 
-// ─── JOBS ────────────────────────────────────────────────
-export function JobsSection() {
+// ─── CAREERS ─────────────────────────────────────────────
+
+const EMAIL_TEMPLATES = [
+  { key: 'cv_confirmation', label: 'Thank You for Application', desc: 'Confirm receipt of their application materials.', color: 'text-blue-400', icon: '📄' },
+  { key: 'interview_selected', label: 'Selected for Interview', desc: 'Invite them to the interview stage.', color: 'text-emerald-400', icon: '✅' },
+  { key: 'not_selected', label: 'Not Selected (Next Step)', desc: 'They did not make it past the application stage.', color: 'text-red-400', icon: '❌' },
+  { key: 'interview_thanks', label: 'Interview Thank You', desc: 'Thank them for attending the interview today.', color: 'text-sky-400', icon: '🤝' },
+  { key: 'role_offered', label: 'Selected for the Role', desc: 'Congratulations — they got the job!', color: 'text-amber-400', icon: '🏆' },
+  { key: 'role_rejected', label: 'Not Selected (Final)', desc: 'Final rejection after interview stage.', color: 'text-rose-400', icon: '🚫' },
+] as const
+
+type CareersTab = 'listings' | 'applications' | 'emails'
+
+const emptyListing = { title: '', type: 'Full-Time', location: '', salary_range: '', short_description: '', status: 'active', deadline: '' }
+
+export function CareersSection() {
   const { jobs, applications, loading } = useAdminStore()
-  const [tab, setTab] = useState<'listings' | 'applications'>('listings')
+  const [tab, setTab] = useState<CareersTab>('listings')
+  // Listing CRUD
+  const [showListingModal, setShowListingModal] = useState(false)
+  const [editingListing, setEditingListing] = useState<any>(null)
+  const [listingForm, setListingForm] = useState({ ...emptyListing })
+  // Manual Emails
+  const [recipients, setRecipients] = useState([{ email: '', name: '' }])
+  const [selectedTemplate, setSelectedTemplate] = useState('cv_confirmation')
+  const [previewHtml, setPreviewHtml] = useState('')
+  const [previewSubject, setPreviewSubject] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sendResult, setSendResult] = useState<{ sent: number; failed: number } | null>(null)
 
   useEffect(() => { adminActions.loadJobs(); adminActions.loadApplications() }, [])
 
-  if (tab === 'applications') {
-    return (
-      <div>
-        <div className="flex gap-2 mb-4">
-          <button onClick={() => setTab('listings')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Listings</button>
-          <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Applications</button>
-        </div>
-        <DataTable title="Job Applications" subtitle="All incoming applications" loading={loading} data={applications}
-          columns={[
-            { key: 'name', label: 'Applicant', render: (v) => <span className="text-white font-medium">{v}</span> },
-            { key: 'email', label: 'Email' },
-            { key: 'job_title', label: 'Position' },
-            { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
-            { key: 'has_cv', label: 'CV', render: (v) => v === true || v === 'TRUE' ? '✓' : '—' },
-            { key: 'has_audio', label: 'Audio', render: (v) => v === true || v === 'TRUE' ? '✓' : '—' },
-            { key: 'applied_at', label: 'Applied', render: (v) => v ? new Date(v).toLocaleDateString() : '—' },
-          ]}
-          searchKeys={['name', 'email', 'job_title']}
-        />
-      </div>
-    )
+  const openCreate = () => { setEditingListing(null); setListingForm({ ...emptyListing }); setShowListingModal(true) }
+  const openEdit = (row: any) => {
+    setEditingListing(row)
+    setListingForm({ title: row.title || '', type: row.type || 'Full-Time', location: row.location || '', salary_range: row.salary_range || '', short_description: row.short_description || '', status: row.status || 'active', deadline: row.deadline || '' })
+    setShowListingModal(true)
+  }
+  const handleListingSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const ok = editingListing
+      ? await adminActions.updateJobListing({ job_id: editingListing.job_id, ...listingForm })
+      : await adminActions.createJobListing(listingForm)
+    if (ok) { setShowListingModal(false); setEditingListing(null) }
   }
 
-  return (
+  const addRecipient = () => setRecipients([...recipients, { email: '', name: '' }])
+  const removeRecipient = (i: number) => setRecipients(recipients.filter((_, idx) => idx !== i))
+  const updateRecipient = (i: number, field: 'email' | 'name', val: string) => {
+    const copy = [...recipients]; copy[i] = { ...copy[i], [field]: val }; setRecipients(copy)
+  }
+
+  const loadPreview = async () => {
+    const name = recipients[0]?.name || 'Applicant'
+    const result = await adminActions.previewApplicantEmail(selectedTemplate, name)
+    if (result) { setPreviewHtml(result.html); setPreviewSubject(result.subject) }
+  }
+  useEffect(() => { if (tab === 'emails') loadPreview() }, [selectedTemplate, tab])
+
+  const handleSendEmails = async () => {
+    const valid = recipients.filter(r => r.email.trim())
+    if (!valid.length) return
+    setSending(true); setSendResult(null)
+    const result = await adminActions.sendApplicantEmail(selectedTemplate, valid)
+    setSending(false)
+    if (result) setSendResult(result)
+  }
+
+  const tabBtn = (id: CareersTab, label: string, count?: number) => (
+    <button key={id} onClick={() => setTab(id)} className={`px-3 py-1.5 rounded-lg text-sm cursor-pointer transition-colors ${tab === id ? 'bg-neutral-800 text-white font-medium' : 'text-neutral-500 hover:text-white'}`}>
+      {label}{count !== undefined ? ` (${count})` : ''}
+    </button>
+  )
+
+  // ── LISTINGS TAB ──
+  if (tab === 'listings') return (
     <div>
-      <div className="flex gap-2 mb-4">
-        <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Listings</button>
-        <button onClick={() => setTab('applications')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Applications ({applications.length})</button>
-      </div>
-      <DataTable title="Job Listings" subtitle="Manage open positions" loading={loading} data={jobs}
+      <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', applications.length)}{tabBtn('emails', 'Manual Emails')}</div>
+      <DataTable title="Career Listings" subtitle="Manage open positions" loading={loading} data={jobs}
+        onAdd={openCreate} addLabel="Add Listing"
         columns={[
           { key: 'job_id', label: 'ID', width: '100px' },
           { key: 'title', label: 'Title', render: (v) => <span className="text-white font-medium">{v}</span> },
@@ -249,7 +295,147 @@ export function JobsSection() {
           { key: 'deadline', label: 'Deadline' },
         ]}
         searchKeys={['title', 'type', 'location']}
+        renderRowActions={(row) => (
+          <div className="flex gap-3">
+            <button onClick={() => openEdit(row)} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Edit</button>
+            <button onClick={() => adminActions.updateJobListing({ job_id: row.job_id, status: row.status === 'active' ? 'inactive' : 'active' })}
+              className={`text-xs cursor-pointer transition-colors ${row.status === 'active' ? 'text-amber-400 hover:text-amber-300' : 'text-emerald-400 hover:text-emerald-300'}`}>
+              {row.status === 'active' ? 'Deactivate' : 'Activate'}
+            </button>
+          </div>
+        )}
       />
+      {showListingModal && (
+        <div className={modalBg} onClick={() => setShowListingModal(false)}>
+          <div className={modalCard} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">{editingListing ? 'Edit Listing' : 'New Listing'}</h3>
+              <button onClick={() => setShowListingModal(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleListingSave} className="space-y-3">
+              <input value={listingForm.title} onChange={e => setListingForm({...listingForm, title: e.target.value})} className={inputCls} placeholder="Job title" required />
+              <div className="grid grid-cols-2 gap-3">
+                <select value={listingForm.type} onChange={e => setListingForm({...listingForm, type: e.target.value})} className={inputCls}>
+                  <option>Full-Time</option><option>Part-Time</option><option>Contract</option><option>Internship</option>
+                </select>
+                <select value={listingForm.status} onChange={e => setListingForm({...listingForm, status: e.target.value})} className={inputCls}>
+                  <option value="active">Active</option><option value="draft">Draft</option><option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <input value={listingForm.location} onChange={e => setListingForm({...listingForm, location: e.target.value})} className={inputCls} placeholder="Location" />
+              <input value={listingForm.salary_range} onChange={e => setListingForm({...listingForm, salary_range: e.target.value})} className={inputCls} placeholder="Salary range (optional)" />
+              <input type="date" value={listingForm.deadline} onChange={e => setListingForm({...listingForm, deadline: e.target.value})} className={inputCls} />
+              <textarea value={listingForm.short_description} onChange={e => setListingForm({...listingForm, short_description: e.target.value})} className={`${inputCls} resize-none`} rows={3} placeholder="Short description" />
+              <button type="submit" className={btnPrimary}>{editingListing ? 'Save Changes' : 'Create Listing'}</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  // ── APPLICATIONS TAB ──
+  if (tab === 'applications') return (
+    <div>
+      <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', applications.length)}{tabBtn('emails', 'Manual Emails')}</div>
+      <DataTable title="Applications" subtitle="All incoming applications" loading={loading} data={applications}
+        columns={[
+          { key: 'name', label: 'Applicant', render: (v) => <span className="text-white font-medium">{v}</span> },
+          { key: 'email', label: 'Email' },
+          { key: 'job_title', label: 'Position' },
+          { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
+          { key: 'has_cv', label: 'CV', render: (v) => v === true || v === 'TRUE' ? '✓' : '—' },
+          { key: 'has_audio', label: 'Audio', render: (v) => v === true || v === 'TRUE' ? '✓' : '—' },
+          { key: 'applied_at', label: 'Applied', render: (v) => v ? new Date(v).toLocaleDateString() : '—' },
+        ]}
+        searchKeys={['name', 'email', 'job_title']}
+      />
+    </div>
+  )
+
+  // ── MANUAL EMAILS TAB ──
+  return (
+    <div>
+      <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', applications.length)}{tabBtn('emails', 'Manual Emails')}</div>
+
+      <div className="grid lg:grid-cols-[1fr_1fr] gap-6">
+        {/* Left: compose */}
+        <div className="space-y-5">
+          <div>
+            <h2 className="text-2xl font-black text-white mb-1">Manual Emails</h2>
+            <p className="text-sm text-neutral-500">Compose and send templated emails to applicants</p>
+          </div>
+
+          {/* Recipients */}
+          <div>
+            <label className="text-xs text-neutral-500 mb-2 block">Recipients</label>
+            <div className="space-y-2">
+              {recipients.map((r, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <input value={r.name} onChange={e => updateRecipient(i, 'name', e.target.value)} className={inputCls} placeholder="Name" />
+                  <input type="email" value={r.email} onChange={e => updateRecipient(i, 'email', e.target.value)} className={inputCls} placeholder="email@example.com" />
+                  {recipients.length > 1 && (
+                    <button onClick={() => removeRecipient(i)} className="text-neutral-600 hover:text-red-400 cursor-pointer p-1"><X className="w-4 h-4" /></button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button onClick={addRecipient} className="mt-2 text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">+ Add another recipient</button>
+          </div>
+
+          {/* Template selector */}
+          <div>
+            <label className="text-xs text-neutral-500 mb-2 block">Email Template</label>
+            <div className="grid grid-cols-1 gap-2">
+              {EMAIL_TEMPLATES.map(tpl => (
+                <button key={tpl.key} type="button" onClick={() => setSelectedTemplate(tpl.key)}
+                  className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
+                    selectedTemplate === tpl.key
+                      ? 'bg-[#00bfff]/10 border-[#00bfff]/40 shadow-[0_0_12px_rgba(0,191,255,0.15)]'
+                      : 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700'
+                  }`}>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{tpl.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className={`text-sm font-semibold ${selectedTemplate === tpl.key ? 'text-white' : tpl.color}`}>{tpl.label}</div>
+                      <div className="text-xs text-neutral-500 mt-0.5">{tpl.desc}</div>
+                    </div>
+                    {selectedTemplate === tpl.key && <div className="w-4 h-4 rounded-full bg-[#00bfff] flex items-center justify-center flex-shrink-0"><div className="w-1.5 h-1.5 rounded-full bg-white" /></div>}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Send */}
+          {sendResult ? (
+            <div className={`flex items-center justify-center gap-2 py-3 rounded-lg font-bold text-sm ${sendResult.failed === 0 ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-amber-400 bg-amber-500/10 border border-amber-500/20'}`}>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+              {sendResult.sent} sent{sendResult.failed > 0 ? `, ${sendResult.failed} failed` : ''}
+            </div>
+          ) : (
+            <button onClick={handleSendEmails} disabled={sending || !recipients.some(r => r.email.trim())}
+              className={`${btnPrimary} w-full flex items-center justify-center gap-2`}>
+              {sending ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send to {recipients.filter(r => r.email.trim()).length} recipient{recipients.filter(r => r.email.trim()).length !== 1 ? 's' : ''}</>}
+            </button>
+          )}
+        </div>
+
+        {/* Right: preview */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Email Preview</h3>
+            {previewSubject && <span className="text-xs text-neutral-600 truncate max-w-[250px]">Subject: {previewSubject}</span>}
+          </div>
+          <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden" style={{ height: '600px' }}>
+            {previewHtml ? (
+              <iframe srcDoc={previewHtml} className="w-full h-full border-0" sandbox="" title="Email Preview" />
+            ) : (
+              <div className="flex items-center justify-center h-full text-neutral-600 text-sm">Select a template to preview</div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

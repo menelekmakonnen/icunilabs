@@ -106,9 +106,11 @@ function doPost(e) {
         if (action === 'job_application' || action === 'submitJobApplication') return handleJobApplicationLegacy(payload);
         if (action === 'job_qualification') return handleJobQualificationLegacy(payload);
 
-        // ── Job Applications (admin read) ──
+        // ── Job Applications (admin read + email) ──
         if (action === 'getJobApplications') return handleGetJobApplications(payload);
         if (action === 'getJobQualifications') return handleGetJobQualifications(payload);
+        if (action === 'sendApplicantEmail') return handleSendApplicantEmail(payload);
+        if (action === 'previewApplicantEmail') return handlePreviewApplicantEmail(payload);
 
         // ── Referrals (admin read) ──
         if (action === 'getReferrers') return handleGetReferrers(payload);
