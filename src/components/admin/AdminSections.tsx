@@ -244,14 +244,19 @@ export function CareersSection() {
   const [rowSending, setRowSending] = useState(false)
   const [rowSent, setRowSent] = useState(false)
   // Dynamic extras for templates
-  const [dateOptions, setDateOptions] = useState([''])
+  const [dateOptions, setDateOptions] = useState<{ date: string; time: string }[]>([{ date: '', time: '' }])
   const [confirmedDate, setConfirmedDate] = useState('')
   const [confirmedTime, setConfirmedTime] = useState('')
   const [meetingLink, setMeetingLink] = useState('')
 
+  const fmtDate = (d: string) => { if (!d) return ''; try { return new Date(d + 'T00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) } catch { return d } }
+  const fmtTime = (t: string) => { if (!t) return ''; const [h, m] = t.split(':'); const hr = parseInt(h); return `${hr > 12 ? hr - 12 : hr || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}` }
+
   const buildExtras = (tpl: string) => {
-    if (tpl === 'interview_selected') return { dateOptions: dateOptions.filter(d => d.trim()) }
-    if (tpl === 'interview_confirmed') return { confirmedDate, confirmedTime, meetingLink }
+    if (tpl === 'interview_selected') {
+      return { dateOptions: dateOptions.filter(o => o.date || o.time).map(o => [fmtDate(o.date), fmtTime(o.time)].filter(Boolean).join(' at ')) }
+    }
+    if (tpl === 'interview_confirmed') return { confirmedDate: fmtDate(confirmedDate), confirmedTime: fmtTime(confirmedTime), meetingLink }
     return {}
   }
 
@@ -279,7 +284,7 @@ export function CareersSection() {
 
   const openRowEmail = async (row: any) => {
     setEmailRow(row); setRowTemplate('cv_confirmation'); setRowSent(false)
-    setDateOptions(['']); setConfirmedDate(''); setConfirmedTime(''); setMeetingLink('')
+    setDateOptions([{ date: '', time: '' }]); setConfirmedDate(''); setConfirmedTime(''); setMeetingLink('')
     const preview = await adminActions.previewApplicantEmail('cv_confirmation', row.name || 'Applicant')
     if (preview) setRowPreviewHtml(preview.html)
   }
@@ -427,77 +432,85 @@ export function CareersSection() {
         </div>
       )}
 
-      {/* Per-Row Email Modal with Preview */}
+      {/* Per-Row Email Modal — Full Preview Layout */}
       {emailRow && (
-        <div className={modalBg} onClick={() => !rowSending && setEmailRow(null)}>
-          <div className={`${modalCard} !max-w-3xl`} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => !rowSending && setEmailRow(null)}>
+          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 flex-shrink-0">
               <div>
                 <h3 className="text-lg font-bold text-white">Send Email to {emailRow.name}</h3>
                 <p className="text-xs text-neutral-500 mt-0.5">{emailRow.email}</p>
               </div>
               <button onClick={() => !rowSending && setEmailRow(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
-            <div className="grid md:grid-cols-[280px_1fr] gap-4">
-              {/* Template selector */}
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-                {EMAIL_TEMPLATES.map(tpl => (
-                  <button key={tpl.key} type="button" onClick={() => changeRowTemplate(tpl.key)}
-                    className={`w-full text-left p-2.5 rounded-lg border transition-all cursor-pointer text-xs ${
-                      rowTemplate === tpl.key ? 'bg-[#00bfff]/10 border-[#00bfff]/40' : 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700'
-                    }`}>
-                    <div className="flex items-center gap-2">
-                      <span>{tpl.icon}</span>
-                      <span className={`font-semibold ${rowTemplate === tpl.key ? 'text-white' : tpl.color}`}>{tpl.label}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              {/* Dynamic fields for interview templates */}
-              {rowTemplate === 'interview_selected' && (
-                <div className="space-y-2 mt-3">
-                  <label className="text-xs text-neutral-500">Date/Time Options</label>
-                  {dateOptions.map((opt, i) => (
-                    <div key={i} className="flex gap-2 items-center">
-                      <input value={opt} onChange={e => { const c = [...dateOptions]; c[i] = e.target.value; setDateOptions(c) }} className={`${inputCls} text-xs`} placeholder={`e.g. Mon 19 May, 10:00 AM`} />
-                      {dateOptions.length > 1 && <button onClick={() => setDateOptions(dateOptions.filter((_, idx) => idx !== i))} className="text-neutral-600 hover:text-red-400 cursor-pointer p-1"><X className="w-3 h-3" /></button>}
-                    </div>
-                  ))}
-                  <button onClick={() => setDateOptions([...dateOptions, ''])} className="text-[10px] text-[#00bfff] hover:text-white cursor-pointer">+ Add option</button>
-                  <button onClick={refreshRowPreview} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer ml-3">Refresh Preview</button>
-                </div>
-              )}
-              {rowTemplate === 'interview_confirmed' && (
-                <div className="space-y-2 mt-3">
-                  <label className="text-xs text-neutral-500">Confirmed Details</label>
-                  <input value={confirmedDate} onChange={e => setConfirmedDate(e.target.value)} className={`${inputCls} text-xs`} placeholder="Date (e.g. Monday, 19 May 2026)" />
-                  <input value={confirmedTime} onChange={e => setConfirmedTime(e.target.value)} className={`${inputCls} text-xs`} placeholder="Time (e.g. 10:00 AM GMT)" />
-                  <input value={meetingLink} onChange={e => setMeetingLink(e.target.value)} className={`${inputCls} text-xs`} placeholder="Meeting link (optional)" />
-                  <button onClick={refreshRowPreview} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
-                </div>
-              )}
-              {/* Preview */}
-              <div className="rounded-lg border border-neutral-800 bg-neutral-900/50 overflow-hidden" style={{ height: '400px' }}>
+
+            {/* Preview — takes the bulk of the space */}
+            <div className="flex-1 min-h-0 p-4">
+              <div className="rounded-xl border border-neutral-800 bg-white overflow-hidden h-full">
                 {rowPreviewHtml ? (
                   <iframe srcDoc={rowPreviewHtml} className="w-full h-full border-0" sandbox="" title="Email Preview" />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-neutral-600 text-sm">Loading preview...</div>
+                  <div className="flex items-center justify-center h-full text-neutral-400 text-sm bg-neutral-950">Loading preview...</div>
                 )}
               </div>
             </div>
-            {/* Send */}
-            <div className="mt-4">
-              {rowSent ? (
-                <div className="flex items-center justify-center gap-2 py-2.5 text-emerald-400 font-bold text-sm">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                  Email Sent Successfully
+
+            {/* Controls — compact bottom strip */}
+            <div className="px-6 py-4 border-t border-neutral-800 flex-shrink-0">
+              <div className="flex gap-4 items-start">
+                {/* Template cards — horizontal scroll */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {EMAIL_TEMPLATES.map(tpl => (
+                      <button key={tpl.key} type="button" onClick={() => changeRowTemplate(tpl.key)}
+                        className={`flex-shrink-0 px-3 py-2 rounded-lg border transition-all cursor-pointer text-xs whitespace-nowrap ${
+                          rowTemplate === tpl.key ? 'bg-[#00bfff]/10 border-[#00bfff]/40 text-white font-semibold' : 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700 ' + tpl.color
+                        }`}>
+                        <span className="mr-1.5">{tpl.icon}</span>{tpl.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Dynamic fields — inline */}
+                  {rowTemplate === 'interview_selected' && (
+                    <div className="flex flex-wrap gap-2 mt-2 items-end">
+                      {dateOptions.map((opt, i) => (
+                        <div key={i} className="flex gap-1 items-center">
+                          <input type="date" value={opt.date} onChange={e => { const c = [...dateOptions]; c[i] = { ...c[i], date: e.target.value }; setDateOptions(c) }} className={`${inputCls} !py-1.5 !text-xs !w-[140px]`} />
+                          <input type="time" value={opt.time} onChange={e => { const c = [...dateOptions]; c[i] = { ...c[i], time: e.target.value }; setDateOptions(c) }} className={`${inputCls} !py-1.5 !text-xs !w-[110px]`} />
+                          {dateOptions.length > 1 && <button onClick={() => setDateOptions(dateOptions.filter((_, idx) => idx !== i))} className="text-neutral-600 hover:text-red-400 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
+                        </div>
+                      ))}
+                      <button onClick={() => setDateOptions([...dateOptions, { date: '', time: '' }])} className="text-[11px] text-[#00bfff] hover:text-white cursor-pointer">+ Add</button>
+                      <button onClick={refreshRowPreview} className="text-[11px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
+                    </div>
+                  )}
+                  {rowTemplate === 'interview_confirmed' && (
+                    <div className="flex flex-wrap gap-2 mt-2 items-end">
+                      <input type="date" value={confirmedDate} onChange={e => setConfirmedDate(e.target.value)} className={`${inputCls} !py-1.5 !text-xs !w-[140px]`} />
+                      <input type="time" value={confirmedTime} onChange={e => setConfirmedTime(e.target.value)} className={`${inputCls} !py-1.5 !text-xs !w-[110px]`} />
+                      <input value={meetingLink} onChange={e => setMeetingLink(e.target.value)} className={`${inputCls} !py-1.5 !text-xs flex-1 min-w-[180px]`} placeholder="Meeting link (optional)" />
+                      <button onClick={refreshRowPreview} className="text-[11px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <button onClick={handleRowSend} disabled={rowSending}
-                  className={`${btnPrimary} w-full flex items-center justify-center gap-2`}>
-                  {rowSending ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send Email</>}
-                </button>
-              )}
+
+                {/* Send button */}
+                <div className="flex-shrink-0 w-[160px]">
+                  {rowSent ? (
+                    <div className="flex items-center justify-center gap-2 py-2.5 text-emerald-400 font-bold text-sm">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                      Sent ✓
+                    </div>
+                  ) : (
+                    <button onClick={handleRowSend} disabled={rowSending}
+                      className={`${btnPrimary} w-full flex items-center justify-center gap-2`}>
+                      {rowSending ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send Email</>}
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -559,6 +572,37 @@ export function CareersSection() {
             </div>
           </div>
 
+          {/* Dynamic fields for interview templates */}
+          {selectedTemplate === 'interview_selected' && (
+            <div>
+              <label className="text-xs text-neutral-500 mb-2 block">Date/Time Options for Applicant</label>
+              <div className="space-y-2">
+                {dateOptions.map((opt, i) => (
+                  <div key={i} className="flex gap-2 items-center">
+                    <input type="date" value={opt.date} onChange={e => { const c = [...dateOptions]; c[i] = { ...c[i], date: e.target.value }; setDateOptions(c) }} className={inputCls} />
+                    <input type="time" value={opt.time} onChange={e => { const c = [...dateOptions]; c[i] = { ...c[i], time: e.target.value }; setDateOptions(c) }} className={inputCls} />
+                    {dateOptions.length > 1 && <button onClick={() => setDateOptions(dateOptions.filter((_, idx) => idx !== i))} className="text-neutral-600 hover:text-red-400 cursor-pointer p-1"><X className="w-4 h-4" /></button>}
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3 mt-2">
+                <button onClick={() => setDateOptions([...dateOptions, { date: '', time: '' }])} className="text-xs text-[#00bfff] hover:text-white cursor-pointer">+ Add another option</button>
+                <button onClick={loadPreview} className="text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+              </div>
+            </div>
+          )}
+          {selectedTemplate === 'interview_confirmed' && (
+            <div>
+              <label className="text-xs text-neutral-500 mb-2 block">Confirmed Interview Details</label>
+              <div className="space-y-2">
+                <input type="date" value={confirmedDate} onChange={e => setConfirmedDate(e.target.value)} className={inputCls} />
+                <input type="time" value={confirmedTime} onChange={e => setConfirmedTime(e.target.value)} className={inputCls} />
+                <input value={meetingLink} onChange={e => setMeetingLink(e.target.value)} className={inputCls} placeholder="Meeting link (optional — leave blank for in-person)" />
+              </div>
+              <button onClick={loadPreview} className="mt-2 text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+            </div>
+          )}
+
           {/* Send */}
           {sendResult ? (
             <div className={`flex items-center justify-center gap-2 py-3 rounded-lg font-bold text-sm ${sendResult.failed === 0 ? 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20' : 'text-amber-400 bg-amber-500/10 border border-amber-500/20'}`}>
@@ -574,46 +618,16 @@ export function CareersSection() {
         </div>
 
         {/* Right: preview */}
-        <div>
+        <div className="flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Email Preview</h3>
             {previewSubject && <span className="text-xs text-neutral-600 truncate max-w-[250px]">Subject: {previewSubject}</span>}
           </div>
-
-          {/* Dynamic fields for interview templates */}
-          {selectedTemplate === 'interview_selected' && (
-            <div>
-              <label className="text-xs text-neutral-500 mb-2 block">Date/Time Options for Applicant</label>
-              <div className="space-y-2">
-                {dateOptions.map((opt, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <input value={opt} onChange={e => { const c = [...dateOptions]; c[i] = e.target.value; setDateOptions(c) }} className={inputCls} placeholder={`e.g. Mon 19 May, 10:00 AM`} />
-                    {dateOptions.length > 1 && <button onClick={() => setDateOptions(dateOptions.filter((_, idx) => idx !== i))} className="text-neutral-600 hover:text-red-400 cursor-pointer p-1"><X className="w-4 h-4" /></button>}
-                  </div>
-                ))}
-              </div>
-              <div className="flex gap-3 mt-2">
-                <button onClick={() => setDateOptions([...dateOptions, ''])} className="text-xs text-[#00bfff] hover:text-white cursor-pointer">+ Add another option</button>
-                <button onClick={loadPreview} className="text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
-              </div>
-            </div>
-          )}
-          {selectedTemplate === 'interview_confirmed' && (
-            <div>
-              <label className="text-xs text-neutral-500 mb-2 block">Confirmed Interview Details</label>
-              <div className="space-y-2">
-                <input value={confirmedDate} onChange={e => setConfirmedDate(e.target.value)} className={inputCls} placeholder="Date (e.g. Monday, 19 May 2026)" />
-                <input value={confirmedTime} onChange={e => setConfirmedTime(e.target.value)} className={inputCls} placeholder="Time (e.g. 10:00 AM GMT)" />
-                <input value={meetingLink} onChange={e => setMeetingLink(e.target.value)} className={inputCls} placeholder="Meeting link (optional — leave blank for in-person)" />
-              </div>
-              <button onClick={loadPreview} className="mt-2 text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
-            </div>
-          )}
-          <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden" style={{ height: '600px' }}>
+          <div className="flex-1 rounded-xl border border-neutral-800 bg-white overflow-hidden" style={{ minHeight: '700px' }}>
             {previewHtml ? (
-              <iframe srcDoc={previewHtml} className="w-full h-full border-0" sandbox="" title="Email Preview" />
+              <iframe srcDoc={previewHtml} className="w-full h-full border-0" style={{ minHeight: '700px' }} sandbox="" title="Email Preview" />
             ) : (
-              <div className="flex items-center justify-center h-full text-neutral-600 text-sm">Select a template to preview</div>
+              <div className="flex items-center justify-center h-full text-neutral-600 text-sm bg-neutral-950" style={{ minHeight: '700px' }}>Select a template to preview</div>
             )}
           </div>
         </div>
