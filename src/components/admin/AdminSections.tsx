@@ -297,10 +297,16 @@ export function ProjectsSection() {
 
 
 // ─── INVOICES ────────────────────────────────────────────
+import InvoiceBuilder from './InvoiceBuilder'
+
+type InvoiceTab = 'list' | 'builder'
+
 export function InvoicesSection() {
-  const { invoices, loading, activeInvoiceHTML } = useAdminStore()
+  const { invoices, loading, activeInvoiceHTML, user } = useAdminStore()
   const [showPayment, setShowPayment] = useState<any>(null)
   const [payForm, setPayForm] = useState({ amount: '', method: 'MoMo', reference: '' })
+  const isGodmode = user?.role?.toLowerCase() === 'godmode'
+  const [invTab, setInvTab] = useState<InvoiceTab>('list')
 
   useEffect(() => { adminActions.loadInvoices() }, [])
 
@@ -313,48 +319,66 @@ export function InvoicesSection() {
 
   return (
     <>
-      <DataTable title="Invoices" subtitle="Invoice management and payment tracking" loading={loading} data={invoices}
-        columns={[
-          { key: 'invoice_id', label: 'Invoice', width: '140px', render: (v) => <span className="text-[#ff7a00] font-mono font-medium">{v}</span> },
-          { key: 'client_name', label: 'Client', render: (v) => <span className="text-white font-medium">{v}</span> },
-          { key: 'total', label: 'Total', render: (v) => <span className="font-bold text-white">GH₵{Number(v || 0).toLocaleString()}</span> },
-          { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
-          { key: 'due_date', label: 'Due', render: (v) => v || '—' },
-          { key: 'pdf_url', label: 'PDF', render: (v) => v ? <a href={v} target="_blank" rel="noreferrer" className="text-[#00bfff] hover:underline text-xs">View</a> : '—' },
-        ]}
-        searchKeys={['invoice_id', 'client_name']}
-        renderRowActions={(row) => (
-          <div className="flex gap-2">
-            {row.status !== 'paid' && (
-              <button onClick={() => { setShowPayment(row); setPayForm({ amount: String(row.balance || row.total || ''), method: 'MoMo', reference: '' }) }}
-                className="text-xs text-emerald-400 hover:text-emerald-300 cursor-pointer">Record Payment</button>
-            )}
-          </div>
-        )}
-      />
-      {showPayment && (
-        <div className={modalBg} onClick={() => setShowPayment(null)}>
-          <div className={modalCard} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Record Payment — {showPayment.invoice_id}</h3>
-              <button onClick={() => setShowPayment(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
-            </div>
-            <form onSubmit={handlePay} className="space-y-3">
-              <input type="number" value={payForm.amount} onChange={e => setPayForm({...payForm, amount: e.target.value})} className={inputCls} placeholder="Amount (GH₵)" required />
-              <select value={payForm.method} onChange={e => setPayForm({...payForm, method: e.target.value})} className={inputCls}>
-                <option>MoMo</option><option>Bank Transfer</option><option>Cash</option><option>Card</option>
-              </select>
-              <input value={payForm.reference} onChange={e => setPayForm({...payForm, reference: e.target.value})} className={inputCls} placeholder="Reference (optional)" />
-              <button type="submit" className={btnPrimary}>Record Payment</button>
-            </form>
-          </div>
+      {/* Tab switcher — only show if godmode */}
+      {isGodmode && (
+        <div className="flex items-center gap-1 mb-4 bg-neutral-900/50 border border-neutral-800 rounded-lg p-1 w-fit">
+          {([['list', 'Invoices'], ['builder', 'Invoice Builder']] as const).map(([k, label]) => (
+            <button key={k} onClick={() => setInvTab(k)}
+              className={`px-4 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${invTab === k ? 'bg-[#ff7a00]/15 text-[#ff7a00] border border-[#ff7a00]/30' : 'text-neutral-500 hover:text-neutral-300'}`}>
+              {label}
+            </button>
+          ))}
         </div>
       )}
-      {activeInvoiceHTML && (
-        <div className={modalBg} onClick={() => adminActions.setError(null)}>
-          <div className="bg-white rounded-xl p-4 max-w-3xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}
-            dangerouslySetInnerHTML={{ __html: activeInvoiceHTML }} />
-        </div>
+
+      {invTab === 'builder' && isGodmode ? (
+        <InvoiceBuilder />
+      ) : (
+        <>
+          <DataTable title="Invoices" subtitle="Invoice management and payment tracking" loading={loading} data={invoices}
+            columns={[
+              { key: 'invoice_id', label: 'Invoice', width: '140px', render: (v) => <span className="text-[#ff7a00] font-mono font-medium">{v}</span> },
+              { key: 'client_name', label: 'Client', render: (v) => <span className="text-white font-medium">{v}</span> },
+              { key: 'total', label: 'Total', render: (v) => <span className="font-bold text-white">GH₵{Number(v || 0).toLocaleString()}</span> },
+              { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
+              { key: 'due_date', label: 'Due', render: (v) => v || '—' },
+              { key: 'pdf_url', label: 'PDF', render: (v) => v ? <a href={v} target="_blank" rel="noreferrer" className="text-[#00bfff] hover:underline text-xs">View</a> : '—' },
+            ]}
+            searchKeys={['invoice_id', 'client_name']}
+            renderRowActions={(row) => (
+              <div className="flex gap-2">
+                {row.status !== 'paid' && (
+                  <button onClick={() => { setShowPayment(row); setPayForm({ amount: String(row.balance || row.total || ''), method: 'MoMo', reference: '' }) }}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 cursor-pointer">Record Payment</button>
+                )}
+              </div>
+            )}
+          />
+          {showPayment && (
+            <div className={modalBg} onClick={() => setShowPayment(null)}>
+              <div className={modalCard} onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-white">Record Payment — {showPayment.invoice_id}</h3>
+                  <button onClick={() => setShowPayment(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+                </div>
+                <form onSubmit={handlePay} className="space-y-3">
+                  <input type="number" value={payForm.amount} onChange={e => setPayForm({...payForm, amount: e.target.value})} className={inputCls} placeholder="Amount (GH₵)" required />
+                  <select value={payForm.method} onChange={e => setPayForm({...payForm, method: e.target.value})} className={inputCls}>
+                    <option>MoMo</option><option>Bank Transfer</option><option>Cash</option><option>Card</option>
+                  </select>
+                  <input value={payForm.reference} onChange={e => setPayForm({...payForm, reference: e.target.value})} className={inputCls} placeholder="Reference (optional)" />
+                  <button type="submit" className={btnPrimary}>Record Payment</button>
+                </form>
+              </div>
+            </div>
+          )}
+          {activeInvoiceHTML && (
+            <div className={modalBg} onClick={() => adminActions.setError(null)}>
+              <div className="bg-white rounded-xl p-4 max-w-3xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}
+                dangerouslySetInnerHTML={{ __html: activeInvoiceHTML }} />
+            </div>
+          )}
+        </>
       )}
     </>
   )
