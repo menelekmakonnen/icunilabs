@@ -65,6 +65,39 @@ const jobs = [{
     'Clear growth path as the company scales',
   ],
   applyEmail:'jobs@icuni.org',
+},{
+  id:'referral-partner-001', title:'Referral Partner', type:'Commission', location:'Anywhere (Remote)',
+  salary:'GH\u20B51,000+ per deal (or 10%)', heroImage:'/referral-hero.png',
+  shortDesc:'Know a business decision maker? Introduce them to ICUNI Labs. We close the deal, you earn GH\u20B51,000+ commission. No selling required.',
+  deadline: '', // No deadline — always open
+  perks:['GH\u20B51,000+ per referral','Zero selling required','Paid on first cut'],
+  fullDescription:[
+    "We build business operations systems \u2014 dashboards, trackers, automations, the works.",
+    "We\u2019ve built for clients in Warehouse, Construction, Finance, Tax, Content, Media, Journalism, Oil and Gas, Printing, and all manner of businesses across Ghana and beyond.",
+    "Now we\u2019re actively taking on new clients \u2014 and we\u2019re offering GH\u20B51,000 commission (or 10% of the deal value, whichever is higher) to anyone who connects us with a decision maker who needs our help.",
+    "Here\u2019s the deal: you don\u2019t need to be a salesperson. You just need to know the right people.",
+    "You introduce us to a business owner or manager who\u2019s struggling with spreadsheets, WhatsApp chaos, manual tracking, or any operational bottleneck.",
+    "We handle the rest \u2014 the pitch, the audit, the proposal, and the delivery. We\u2019re great at what we do, and our portfolio speaks for itself.",
+    "When the deal closes and we take our first payment \u2014 you get paid. Simple as that.",
+    "And if you\u2019re the decision maker reading this? You just found your way in. Let\u2019s talk.",
+  ],
+  requirements:[
+    'Know at least one business owner or decision maker who needs better systems',
+    'Willing to make an introduction (email, call, WhatsApp, in person)',
+    'Based anywhere \u2014 referrals can come from any industry, any location',
+    'No sales experience needed \u2014 we handle the closing',
+    'Honest and professional in your introductions',
+  ],
+  benefits:[
+    'GH\u20B51,000 flat commission per closed deal',
+    '10% of deal value if higher than GH\u20B51,000 \u2014 no cap',
+    'You introduce, we close \u2014 zero selling on your end',
+    'Paid as soon as the first payment lands',
+    'Real-time dashboard to track your referrals and earnings',
+    'MoMo or cash payout \u2014 your choice',
+  ],
+  applyEmail:'jobs@icuni.org',
+  applyLink:'#referral', // Hybrid: redirects to referral portal instead of standard apply
 }].filter(j => !j.deadline || new Date(j.deadline) > new Date());
 
 export default function JobsPage(){
@@ -105,12 +138,13 @@ function Listing(){
                   <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#00bfff] transition-colors">{j.title}</h3>
                   <p className="text-sm text-neutral-300 mb-4 leading-relaxed">{j.shortDesc}</p>
                   <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-400 mb-4">
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3"/>{j.type}</span>
+                    <span className={`flex items-center gap-1 ${j.type === 'Commission' ? 'text-[#ff7a00] font-bold' : ''}`}><Clock className="w-3 h-3"/>{j.type}</span>
                     <span className="text-neutral-700">&#183;</span>
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/>{j.location}</span>
+                    {j.type === 'Commission' && <span className="px-2 py-0.5 rounded-full bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00] text-[10px] font-bold tracking-wider">EARN GH₵1,000+</span>}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {j.perks.map(p=><span key={p} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 text-neutral-300">{p}</span>)}
+                    {j.perks.map(p=><span key={p} className={`text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-sm border ${j.type === 'Commission' ? 'bg-[#ff7a00]/5 border-[#ff7a00]/15 text-[#ff7a00]/80' : 'bg-white/5 border-white/10 text-neutral-300'}`}>{p}</span>)}
                   </div>
                 </div>
                 <ChevronRight className="w-5 h-5 text-neutral-600 group-hover:text-[#00bfff] group-hover:translate-x-1 transition-all flex-shrink-0 mt-1"/>
@@ -126,9 +160,9 @@ function Listing(){
   );
 }
 
-const ApplyBtn = ({jobId}:{jobId:string})=>(
-  <a href={`#apply/${jobId}`} className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer">
-    <Send className="w-4 h-4"/> Apply Now
+const ApplyBtn = ({jobId, applyLink, label}:{jobId:string; applyLink?:string; label?:string})=>(
+  <a href={applyLink || `#apply/${jobId}`} className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer">
+    <Send className="w-4 h-4"/> {label || 'Apply Now'}
   </a>
 );
 
@@ -148,9 +182,9 @@ function Detail({job}:{job:typeof jobs[0]}){
             <a href="#jobs" className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors mb-4"><ArrowLeft className="w-4 h-4"/> All positions</a>
             <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">{job.title}</h1>
             <div className="flex flex-wrap items-center gap-4 mb-6">
-              <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">{job.type}</span>
-              <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">Hybrid</span>
-              <span className="px-3 py-1 rounded-full bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00] text-xs font-bold tracking-wider">LEVEL 1 COMPENSATION</span>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${job.type === 'Commission' ? 'bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00]' : 'bg-white/10 backdrop-blur'}`}>{job.type}</span>
+              {job.type !== 'Commission' && <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">Hybrid</span>}
+              <span className="px-3 py-1 rounded-full bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00] text-xs font-bold tracking-wider">{job.type === 'Commission' ? 'REFERRAL COMMISSION' : 'LEVEL 1 COMPENSATION'}</span>
               <span className="flex items-center gap-1 text-sm text-neutral-300"><MapPin className="w-3.5 h-3.5"/>{job.location}</span>
               <button onClick={()=>setShowSalary(!showSalary)} className="flex items-center gap-1.5 text-[#ff7a00] hover:text-[#ff9533] transition-colors cursor-pointer text-sm font-medium">
                 <span className="text-base font-bold leading-none">₵</span>
@@ -158,7 +192,7 @@ function Detail({job}:{job:typeof jobs[0]}){
               </button>
             </div>
             {/* CTA #1 */}
-            <ApplyBtn jobId={job.id}/>
+            <ApplyBtn jobId={job.id} applyLink={(job as any).applyLink} label={(job as any).applyLink ? 'Start Earning' : undefined}/>
           </div>
         </div>
       </div>
@@ -291,9 +325,9 @@ function Detail({job}:{job:typeof jobs[0]}){
             <motion.div initial={{opacity:0,scale:0.97}} whileInView={{opacity:1,scale:1}} viewport={{once:true}}
               className="relative rounded-2xl overflow-hidden p-8 md:p-12 text-center bg-gradient-to-br from-neutral-900 via-neutral-950 to-neutral-900 border border-neutral-800">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,191,255,0.05),transparent_70%)]"/>
-              <h3 className="text-2xl font-bold mb-2 relative z-10">Sound like you?</h3>
-              <p className="text-neutral-400 mb-6 relative z-10">We move fast. Apply now and hear back within days.</p>
-              <div className="relative z-10"><ApplyBtn jobId={job.id}/></div>
+              <h3 className="text-2xl font-bold mb-2 relative z-10">{(job as any).applyLink ? 'Ready to earn?' : 'Sound like you?'}</h3>
+              <p className="text-neutral-400 mb-6 relative z-10">{(job as any).applyLink ? 'Join the program and start referring today. We close, you earn.' : 'We move fast. Apply now and hear back within days.'}</p>
+              <div className="relative z-10"><ApplyBtn jobId={job.id} applyLink={(job as any).applyLink} label={(job as any).applyLink ? 'Start Earning' : undefined}/></div>
             </motion.div>
           </div>
 

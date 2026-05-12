@@ -235,17 +235,25 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
           </a>
           <motion.div initial={{ y: 20 }} animate={{ y: 0 }} transition={{ duration: 0.6 }}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#ff7a00]/30 bg-[#ff7a00]/5 text-xs font-bold text-[#ff7a00] mb-6 tracking-wider uppercase">
-              <DollarSign className="w-3 h-3" /> Referral Program
+              <DollarSign className="w-3 h-3" /> Referral Program — Now Open
             </div>
             <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-[1.05]">
-              Refer. Close.<br /><span className="bg-gradient-to-r from-[#ff7a00] to-[#ff9944] bg-clip-text text-transparent">Get Paid.</span>
+              You Introduce.<br /><span className="bg-gradient-to-r from-[#ff7a00] to-[#ff9944] bg-clip-text text-transparent">We Close. You Earn.</span>
             </h1>
-            <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mb-8">
-              Know someone whose business runs on chaos? Introduce them to ICUNI Labs. We close, you earn <span className="text-[#ff7a00] font-semibold">GH₵1,000+</span> per deal.
+            <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mb-4">
+              We build business operations systems — dashboards, trackers, automations — for companies across <span className="text-neutral-200">Warehouse, Construction, Finance, Tax, Media, Oil & Gas, Printing</span>, and more.
             </p>
-            <a href="#join" className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold rounded-lg hover:shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all">
-              Start Earning <ChevronRight className="w-4 h-4" />
-            </a>
+            <p className="text-lg md:text-xl text-neutral-300 max-w-2xl mb-8">
+              If you can get us in a room with a business decision maker who needs our help, we're offering <span className="text-[#ff7a00] font-bold">GH&#x20B5;1,000</span> commission — or <span className="text-[#ff7a00] font-bold">10% of the deal</span>, whichever is higher. No cap.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <a href="#join" className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold rounded-lg hover:shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all">
+                Start Earning <ChevronRight className="w-4 h-4" />
+              </a>
+              <a href="#jobs" className="inline-flex items-center gap-2 px-6 py-4 border border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700 font-medium rounded-lg transition-all">
+                View as Job Listing
+              </a>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -281,6 +289,28 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
               <p className="text-sm text-neutral-400 leading-relaxed">{b.desc}</p>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* ── DECISION MAKER CALLOUT ── */}
+      <section className="px-6 pb-16">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className="relative rounded-2xl overflow-hidden border border-[#00bfff]/20 bg-gradient-to-br from-[#00bfff]/5 via-neutral-950 to-neutral-950 p-8 md:p-10">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-[#00bfff]/5 blur-[80px] rounded-full pointer-events-none" />
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
+              <div className="flex-1">
+                <h3 className="text-2xl font-black tracking-tight mb-2">Are you the decision maker?</h3>
+                <p className="text-neutral-400 leading-relaxed">
+                  If you're a business owner or operations lead and you landed here — you just found your way in.
+                  We build custom systems that replace spreadsheets, manual tracking, and WhatsApp chaos with real software built for how your business actually works.
+                </p>
+              </div>
+              <a href="#contact" className="inline-flex items-center gap-2 px-6 py-3 bg-[#00bfff]/10 border border-[#00bfff]/30 text-[#00bfff] font-bold rounded-lg hover:bg-[#00bfff]/20 hover:shadow-[0_0_20px_rgba(0,191,255,0.15)] transition-all whitespace-nowrap flex-shrink-0">
+                Book a Free Audit <ChevronRight className="w-4 h-4" />
+              </a>
+            </div>
+          </motion.div>
         </div>
       </section>
 
