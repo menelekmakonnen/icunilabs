@@ -782,87 +782,85 @@ export function CareersSection() {
       )}
 
       {/* Per-Row Email Modal — Full Preview Layout */}
-      {emailRow && (
+      {emailRow && (() => {
+        const LEFT_MIN = 220, LEFT_MAX = 420, LEFT_DEFAULT = 280
+        return (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => !rowSending && setEmailRow(null)}>
-          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 flex-shrink-0">
+          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-800 flex-shrink-0">
               <div>
-                <h3 className="text-lg font-bold text-white">Send Email to {emailRow.name}</h3>
-                <p className="text-xs text-neutral-500 mt-0.5">{emailRow.email}</p>
+                <h3 className="text-sm font-bold text-white">Send Email to {emailRow.name}</h3>
+                <p className="text-[10px] text-neutral-500 mt-0.5">{emailRow.email}</p>
               </div>
               <button onClick={() => !rowSending && setEmailRow(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
-
-            {/* Preview — takes the bulk of the space */}
-            <div className="flex-1 min-h-0 p-4">
-              <div className="rounded-xl border border-neutral-800 bg-white overflow-hidden h-full">
-                {rowPreviewHtml ? (
-                  <iframe srcDoc={rowPreviewHtml} className="w-full h-full border-0" sandbox="" title="Email Preview" />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-neutral-400 text-sm bg-neutral-950">Loading preview...</div>
-                )}
-              </div>
-            </div>
-
-            {/* Controls — compact bottom strip */}
-            <div className="px-6 py-4 border-t border-neutral-800 flex-shrink-0">
-              <div className="flex gap-4 items-start">
-                {/* Template cards — horizontal scroll */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {EMAIL_TEMPLATES.map(tpl => (
-                      <button key={tpl.key} type="button" onClick={() => changeRowTemplate(tpl.key)}
-                        className={`flex-shrink-0 px-3 py-2 rounded-lg border transition-all cursor-pointer text-xs whitespace-nowrap ${
-                          rowTemplate === tpl.key ? 'bg-[#00bfff]/10 border-[#00bfff]/40 text-white font-semibold' : 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700 ' + tpl.color
-                        }`}>
-                        <span className="mr-1.5">{tpl.icon}</span>{tpl.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Dynamic fields — inline */}
-                  {rowTemplate === 'interview_selected' && (
-                    <div className="flex flex-wrap gap-2 mt-2 items-end">
-                      {dateOptions.map((opt, i) => (
-                        <div key={i} className="flex gap-1 items-center">
-                          <input type="date" value={opt.date} onChange={e => { const c = [...dateOptions]; c[i] = { ...c[i], date: e.target.value }; setDateOptions(c) }} className={`${inputCls} !py-1.5 !text-xs !w-[140px]`} />
-                          <input type="time" value={opt.time} onChange={e => { const c = [...dateOptions]; c[i] = { ...c[i], time: e.target.value }; setDateOptions(c) }} className={`${inputCls} !py-1.5 !text-xs !w-[110px]`} />
-                          {dateOptions.length > 1 && <button onClick={() => setDateOptions(dateOptions.filter((_, idx) => idx !== i))} className="text-neutral-600 hover:text-red-400 cursor-pointer"><X className="w-3.5 h-3.5" /></button>}
-                        </div>
-                      ))}
-                      <button onClick={() => setDateOptions([...dateOptions, { date: '', time: '' }])} className="text-[11px] text-[#00bfff] hover:text-white cursor-pointer">+ Add</button>
-                      <button onClick={refreshRowPreview} className="text-[11px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
-                    </div>
-                  )}
-                  {rowTemplate === 'interview_confirmed' && (
-                    <div className="flex flex-wrap gap-2 mt-2 items-end">
-                      <input type="date" value={confirmedDate} onChange={e => setConfirmedDate(e.target.value)} className={`${inputCls} !py-1.5 !text-xs !w-[140px]`} />
-                      <input type="time" value={confirmedTime} onChange={e => setConfirmedTime(e.target.value)} className={`${inputCls} !py-1.5 !text-xs !w-[110px]`} />
-                      <input value={meetingLink} onChange={e => setMeetingLink(e.target.value)} className={`${inputCls} !py-1.5 !text-xs flex-1 min-w-[180px]`} placeholder="Meeting link (optional)" />
-                      <button onClick={refreshRowPreview} className="text-[11px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
-                    </div>
-                  )}
-                  {rowTemplate === 'custom' && (
-                    <div className="space-y-2 mt-2">
-                      <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Email subject" />
-                      <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Email title heading" />
-                      <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} className={`${inputCls} !py-1.5 !text-xs resize-none`} rows={3} placeholder="Email body (HTML or plain text)" />
-                      <div className="flex gap-2">
-                        <input value={customCtaText} onChange={e => setCustomCtaText(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button text (optional)" />
-                        <input value={customCtaLink} onChange={e => setCustomCtaLink(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button URL (optional)" />
-                      </div>
-                      <button onClick={refreshRowPreview} className="text-[11px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
-                    </div>
-                  )}
+            <div className="flex flex-1 min-h-0">
+              <div className="flex-shrink-0 overflow-y-auto border-r border-neutral-800 p-4 space-y-3" style={{ width: `${LEFT_DEFAULT}px`, minWidth: `${LEFT_MIN}px`, maxWidth: `${LEFT_MAX}px` }}
+                ref={el => {
+                  if (!el) return
+                  const divider = el.nextElementSibling as HTMLElement | null
+                  if (!divider || divider.dataset.bound) return
+                  divider.dataset.bound = '1'
+                  let startX = 0, startW = 0
+                  const onMove = (ev: MouseEvent) => { el.style.width = `${Math.min(LEFT_MAX, Math.max(LEFT_MIN, startW + ev.clientX - startX))}px` }
+                  const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.body.style.cursor = ''; document.body.style.userSelect = '' }
+                  divider.addEventListener('mousedown', (ev: Event) => { const e = ev as MouseEvent; startX = e.clientX; startW = el.offsetWidth; document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp) })
+                }}>
+                <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold mb-1">Template</p>
+                <div className="space-y-1.5">
+                  {EMAIL_TEMPLATES.map(tpl => (
+                    <button key={tpl.key} type="button" onClick={() => changeRowTemplate(tpl.key)}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all cursor-pointer ${
+                        rowTemplate === tpl.key ? 'bg-[#00bfff]/10 border-[#00bfff]/40' : 'bg-neutral-900/40 border-neutral-800 hover:border-neutral-700'
+                      }`}>
+                      <span className={`text-xs font-semibold ${rowTemplate === tpl.key ? 'text-white' : tpl.color}`}>{tpl.label}</span>
+                      <p className="text-[9px] text-neutral-600 mt-0.5 leading-tight">{tpl.desc}</p>
+                    </button>
+                  ))}
                 </div>
-
-                {/* Send button */}
-                <div className="flex-shrink-0 w-[160px]">
+                {rowTemplate === 'interview_selected' && (
+                  <div className="pt-3 border-t border-neutral-800 space-y-2">
+                    <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Date Options</p>
+                    {dateOptions.map((opt, i) => (
+                      <div key={i} className="flex gap-1 items-center">
+                        <input type="date" value={opt.date} onChange={e => { const c = [...dateOptions]; c[i] = { ...c[i], date: e.target.value }; setDateOptions(c) }} className={`${inputCls} !py-1.5 !text-xs flex-1`} />
+                        <input type="time" value={opt.time} onChange={e => { const c = [...dateOptions]; c[i] = { ...c[i], time: e.target.value }; setDateOptions(c) }} className={`${inputCls} !py-1.5 !text-xs !w-[90px]`} />
+                        {dateOptions.length > 1 && <button onClick={() => setDateOptions(dateOptions.filter((_, idx) => idx !== i))} className="text-neutral-600 hover:text-red-400 cursor-pointer"><X className="w-3 h-3" /></button>}
+                      </div>
+                    ))}
+                    <div className="flex gap-2">
+                      <button onClick={() => setDateOptions([...dateOptions, { date: '', time: '' }])} className="text-[10px] text-[#00bfff] hover:text-white cursor-pointer">+ Add slot</button>
+                      <button onClick={refreshRowPreview} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
+                    </div>
+                  </div>
+                )}
+                {rowTemplate === 'interview_confirmed' && (
+                  <div className="pt-3 border-t border-neutral-800 space-y-2">
+                    <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Confirmed Details</p>
+                    <input type="date" value={confirmedDate} onChange={e => setConfirmedDate(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} />
+                    <input type="time" value={confirmedTime} onChange={e => setConfirmedTime(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} />
+                    <input value={meetingLink} onChange={e => setMeetingLink(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Meeting link (optional)" />
+                    <button onClick={refreshRowPreview} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+                  </div>
+                )}
+                {rowTemplate === 'custom' && (
+                  <div className="pt-3 border-t border-neutral-800 space-y-2">
+                    <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Custom Content</p>
+                    <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Subject line" />
+                    <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Heading" />
+                    <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} className={`${inputCls} !py-1.5 !text-xs resize-y`} rows={4} placeholder="Email body (HTML or plain text)" />
+                    <div className="space-y-1.5">
+                      <input value={customCtaText} onChange={e => setCustomCtaText(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button text (optional)" />
+                      <input value={customCtaLink} onChange={e => setCustomCtaLink(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button URL (optional)" />
+                    </div>
+                    <button onClick={refreshRowPreview} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+                  </div>
+                )}
+                <div className="pt-3 border-t border-neutral-800">
                   {rowSent ? (
                     <div className="flex items-center justify-center gap-2 py-2.5 text-emerald-400 font-bold text-sm">
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
-                      Sent ✓
+                      Sent
                     </div>
                   ) : (
                     <button onClick={handleRowSend} disabled={rowSending}
@@ -872,10 +870,21 @@ export function CareersSection() {
                   )}
                 </div>
               </div>
+              <div className="w-1 flex-shrink-0 bg-neutral-800 hover:bg-[#00bfff]/40 cursor-col-resize transition-colors" />
+              <div className="flex-1 min-w-0 p-4">
+                <div className="rounded-xl border border-neutral-800 bg-white overflow-hidden h-full">
+                  {rowPreviewHtml ? (
+                    <iframe srcDoc={rowPreviewHtml} className="w-full h-full border-0" sandbox="" title="Email Preview" />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-neutral-400 text-sm bg-neutral-950">Loading preview...</div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* Batch Email Modal */}
       {showBatchEmail && (
