@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import DataTable from './DataTable'
 import RichEditor from './RichEditor'
@@ -419,6 +419,8 @@ export function CareersSection() {
   const [emailRow, setEmailRow] = useState<any>(null)
   const [rowTemplate, setRowTemplate] = useState('cv_confirmation')
   const [rowPreviewHtml, setRowPreviewHtml] = useState('')
+  const [emailEdited, setEmailEdited] = useState(false)
+  const emailIframeRef = useRef<HTMLIFrameElement>(null)
   const [rowSending, setRowSending] = useState(false)
   const [rowSent, setRowSent] = useState(false)
   // Batch selection
@@ -483,26 +485,42 @@ export function CareersSection() {
   }
 
   const openRowEmail = async (row: any) => {
-    setEmailRow(row); setRowTemplate('cv_confirmation'); setRowSent(false)
+    setEmailRow(row); setRowTemplate('cv_confirmation'); setRowSent(false); setEmailEdited(false)
     setDateOptions([{ date: '', time: '' }]); setConfirmedDate(''); setConfirmedTime(''); setMeetingLink('')
     const preview = await adminActions.previewApplicantEmail('cv_confirmation', row.name || 'Applicant')
     if (preview) setRowPreviewHtml(preview.html)
   }
   const changeRowTemplate = async (tpl: string) => {
-    setRowTemplate(tpl)
+    setRowTemplate(tpl); setEmailEdited(false)
     const preview = await adminActions.previewApplicantEmail(tpl, emailRow?.name || 'Applicant', buildExtras(tpl))
     if (preview) setRowPreviewHtml(preview.html)
   }
   const refreshRowPreview = async () => {
+    setEmailEdited(false)
     const preview = await adminActions.previewApplicantEmail(rowTemplate, emailRow?.name || 'Applicant', buildExtras(rowTemplate))
     if (preview) setRowPreviewHtml(preview.html)
   }
+  const getIframeHtml = useCallback(() => {
+    try {
+      const doc = emailIframeRef.current?.contentDocument
+      if (doc) return '<!DOCTYPE html>' + doc.documentElement.outerHTML
+    } catch { /* cross-origin */ }
+    return null
+  }, [])
   const handleRowSend = async () => {
     if (!emailRow?.email) return
     setRowSending(true)
-    const result = await adminActions.sendApplicantEmail(rowTemplate, [{ email: emailRow.email, name: emailRow.name || '' }], buildExtras(rowTemplate))
+    // If the user edited the preview, send the modified HTML directly
+    const editedHtml = emailEdited ? getIframeHtml() : null
+    const result = await adminActions.sendApplicantEmail(
+      rowTemplate,
+      [{ email: emailRow.email, name: emailRow.name || '' }],
+      buildExtras(rowTemplate),
+      editedHtml || undefined,
+      undefined
+    )
     setRowSending(false)
-    if (result) { setRowSent(true); setTimeout(() => { setEmailRow(null); setRowSent(false) }, 1800) }
+    if (result) { setRowSent(true); setTimeout(() => { setEmailRow(null); setRowSent(false); setEmailEdited(false) }, 1800) }
   }
 
   const addRecipient = () => setRecipients([...recipients, { email: '', name: '' }])
@@ -871,10 +889,34 @@ export function CareersSection() {
                 </div>
               </div>
               <div className="w-1 flex-shrink-0 bg-neutral-800 hover:bg-[#00bfff]/40 cursor-col-resize transition-colors" />
-              <div className="flex-1 min-w-0 p-4">
-                <div className="rounded-xl border border-neutral-800 bg-white overflow-hidden h-full">
+              <div className="flex-1 min-w-0 p-4 flex flex-col">
+                {/* Editable indicator */}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-neutral-600">Click the preview to edit text directly</span>
+                    {emailEdited && <span className="text-[10px] text-amber-400 font-bold">EDITED</span>}
+                  </div>
+                  {emailEdited && (
+                    <button onClick={refreshRowPreview} className="text-[10px] text-neutral-500 hover:text-white cursor-pointer transition-colors">Reset to original</button>
+                  )}
+                </div>
+                <div className="rounded-xl border border-neutral-800 bg-white overflow-hidden flex-1">
                   {rowPreviewHtml ? (
-                    <iframe srcDoc={rowPreviewHtml} className="w-full h-full border-0" sandbox="" title="Email Preview" />
+                    <iframe
+                      ref={emailIframeRef}
+                      srcDoc={rowPreviewHtml}
+                      className="w-full h-full border-0"
+                      title="Email Preview"
+                      onLoad={() => {
+                        try {
+                          const doc = emailIframeRef.current?.contentDocument
+                          if (doc) {
+                            doc.designMode = 'on'
+                            doc.addEventListener('input', () => setEmailEdited(true))
+                          }
+                        } catch { /* sandbox */ }
+                      }}
+                    />
                   ) : (
                     <div className="flex items-center justify-center h-full text-neutral-400 text-sm bg-neutral-950">Loading preview...</div>
                   )}
@@ -887,62 +929,65 @@ export function CareersSection() {
       })()}
 
       {/* Batch Email Modal */}
-      {showBatchEmail && (
+      {showBatchEmail && (() => {
+        const BLEFT_MIN = 220, BLEFT_MAX = 420, BLEFT_DEFAULT = 280
+        return (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4" onClick={() => !batchSending && setShowBatchEmail(false)}>
-          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 flex-shrink-0">
+          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-800 flex-shrink-0">
               <div>
-                <h3 className="text-lg font-bold text-white">Batch Email — {selectedApplicants.size} Recipients</h3>
-                <p className="text-xs text-neutral-500 mt-0.5">
+                <h3 className="text-sm font-bold text-white">Batch Email — {selectedApplicants.size} Recipients</h3>
+                <p className="text-[10px] text-neutral-500 mt-0.5 truncate max-w-md">
                   {applications.filter((a: any) => selectedApplicants.has(a._rowIndex || a.email)).map((a: any) => a.name).join(', ')}
                 </p>
               </div>
               <button onClick={() => !batchSending && setShowBatchEmail(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
-            <div className="flex-1 min-h-0 p-4">
-              <div className="rounded-xl border border-neutral-800 bg-white overflow-hidden h-full">
-                {batchPreviewHtml ? (
-                  <iframe srcDoc={batchPreviewHtml} className="w-full h-full border-0" style={{ minHeight: '400px' }} sandbox="" title="Batch Email Preview" />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-neutral-400 text-sm bg-neutral-950" style={{ minHeight: '400px' }}>Loading preview...</div>
-                )}
-              </div>
-            </div>
-            <div className="px-6 py-4 border-t border-neutral-800 flex-shrink-0">
-              <div className="flex gap-4 items-start">
-                <div className="flex-1 min-w-0">
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {EMAIL_TEMPLATES.map(tpl => (
-                      <button key={tpl.key} type="button" onClick={async () => {
-                        setBatchTemplate(tpl.key)
-                        const preview = await adminActions.previewApplicantEmail(tpl.key, 'Applicant', buildExtras(tpl.key))
-                        if (preview) setBatchPreviewHtml(preview.html)
-                      }}
-                        className={`flex-shrink-0 px-3 py-2 rounded-lg border transition-all cursor-pointer text-xs whitespace-nowrap ${
-                          batchTemplate === tpl.key ? 'bg-[#00bfff]/10 border-[#00bfff]/40 text-white font-semibold' : 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700 ' + tpl.color
-                        }`}>
-                        <span className="mr-1.5">{tpl.icon}</span>{tpl.label}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Custom fields for batch */}
-                  {batchTemplate === 'custom' && (
-                    <div className="space-y-2 mt-2">
-                      <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Email subject" />
-                      <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Email title heading" />
-                      <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} className={`${inputCls} !py-1.5 !text-xs resize-none`} rows={3} placeholder="Email body (HTML or plain text)" />
-                      <div className="flex gap-2">
-                        <input value={customCtaText} onChange={e => setCustomCtaText(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button text (optional)" />
-                        <input value={customCtaLink} onChange={e => setCustomCtaLink(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button URL (optional)" />
-                      </div>
-                      <button onClick={async () => {
-                        const preview = await adminActions.previewApplicantEmail('custom', 'Applicant', buildExtras('custom'))
-                        if (preview) setBatchPreviewHtml(preview.html)
-                      }} className="text-[11px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
-                    </div>
-                  )}
+            <div className="flex flex-1 min-h-0">
+              <div className="flex-shrink-0 overflow-y-auto border-r border-neutral-800 p-4 space-y-3" style={{ width: `${BLEFT_DEFAULT}px`, minWidth: `${BLEFT_MIN}px`, maxWidth: `${BLEFT_MAX}px` }}
+                ref={el => {
+                  if (!el) return
+                  const divider = el.nextElementSibling as HTMLElement | null
+                  if (!divider || divider.dataset.bound) return
+                  divider.dataset.bound = '1'
+                  let startX = 0, startW = 0
+                  const onMove = (ev: MouseEvent) => { el.style.width = `${Math.min(BLEFT_MAX, Math.max(BLEFT_MIN, startW + ev.clientX - startX))}px` }
+                  const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.body.style.cursor = ''; document.body.style.userSelect = '' }
+                  divider.addEventListener('mousedown', (ev: Event) => { const e = ev as MouseEvent; startX = e.clientX; startW = el.offsetWidth; document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp) })
+                }}>
+                <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold mb-1">Template</p>
+                <div className="space-y-1.5">
+                  {EMAIL_TEMPLATES.map(tpl => (
+                    <button key={tpl.key} type="button" onClick={async () => {
+                      setBatchTemplate(tpl.key)
+                      const preview = await adminActions.previewApplicantEmail(tpl.key, 'Applicant', buildExtras(tpl.key))
+                      if (preview) setBatchPreviewHtml(preview.html)
+                    }}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all cursor-pointer ${
+                        batchTemplate === tpl.key ? 'bg-[#00bfff]/10 border-[#00bfff]/40' : 'bg-neutral-900/40 border-neutral-800 hover:border-neutral-700'
+                      }`}>
+                      <span className={`text-xs font-semibold ${batchTemplate === tpl.key ? 'text-white' : tpl.color}`}>{tpl.label}</span>
+                      <p className="text-[9px] text-neutral-600 mt-0.5 leading-tight">{tpl.desc}</p>
+                    </button>
+                  ))}
                 </div>
-                <div className="flex-shrink-0 w-[160px]">
+                {batchTemplate === 'custom' && (
+                  <div className="pt-3 border-t border-neutral-800 space-y-2">
+                    <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Custom Content</p>
+                    <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Subject line" />
+                    <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Heading" />
+                    <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} className={`${inputCls} !py-1.5 !text-xs resize-y`} rows={4} placeholder="Email body (HTML or plain text)" />
+                    <div className="space-y-1.5">
+                      <input value={customCtaText} onChange={e => setCustomCtaText(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button text (optional)" />
+                      <input value={customCtaLink} onChange={e => setCustomCtaLink(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button URL (optional)" />
+                    </div>
+                    <button onClick={async () => {
+                      const preview = await adminActions.previewApplicantEmail('custom', 'Applicant', buildExtras('custom'))
+                      if (preview) setBatchPreviewHtml(preview.html)
+                    }} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+                  </div>
+                )}
+                <div className="pt-3 border-t border-neutral-800">
                   {batchResult ? (
                     <div className={`flex items-center justify-center gap-2 py-2.5 font-bold text-sm ${batchResult.failed === 0 ? 'text-emerald-400' : 'text-amber-400'}`}>
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
@@ -958,15 +1003,39 @@ export function CareersSection() {
                       if (result) { setBatchResult(result); setTimeout(() => { setShowBatchEmail(false); setBatchResult(null); setSelectedApplicants(new Set()) }, 2000) }
                     }} disabled={batchSending}
                       className={`${btnPrimary} w-full flex items-center justify-center gap-2`}>
-                      {batchSending ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send All</>}
+                      {batchSending ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send All ({selectedApplicants.size})</>}
                     </button>
+                  )}
+                </div>
+              </div>
+              <div className="w-1 flex-shrink-0 bg-neutral-800 hover:bg-[#00bfff]/40 cursor-col-resize transition-colors" />
+              <div className="flex-1 min-w-0 p-4 flex flex-col">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-[10px] text-neutral-600">Click the preview to edit text directly</span>
+                </div>
+                <div className="rounded-xl border border-neutral-800 bg-white overflow-hidden flex-1">
+                  {batchPreviewHtml ? (
+                    <iframe
+                      srcDoc={batchPreviewHtml}
+                      className="w-full h-full border-0"
+                      title="Batch Email Preview"
+                      onLoad={(e) => {
+                        try {
+                          const doc = (e.target as HTMLIFrameElement).contentDocument
+                          if (doc) doc.designMode = 'on'
+                        } catch { /* sandbox */ }
+                      }}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-neutral-400 text-sm bg-neutral-950">Loading preview...</div>
                   )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
     </div>
   )
 

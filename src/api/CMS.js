@@ -446,11 +446,15 @@ function handleSendApplicantEmail(payload) {
 
         var tpl = buildApplicantTemplate_(name, template, payload.extras || {});
 
+        // Allow frontend to override with edited preview HTML
+        var finalHtml = payload.rawHtml || buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts);
+        var finalSubject = payload.rawSubject || tpl.subject;
+
         try {
             sendEmail_({
                 to: email,
-                subject: tpl.subject,
-                htmlBody: buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts),
+                subject: finalSubject,
+                htmlBody: finalHtml,
                 from: 'jobs@icuni.org'
             });
             logEmail_(email, tpl.subject, 'admin_applicant_' + template, 'sent');
@@ -615,7 +619,7 @@ function buildApplicantTemplate_(name, template, extras) {
                     '<div style="color:#60a5fa;font-size:13px;letter-spacing:2px;margin-bottom:8px;">WHAT HAPPENS NEXT</div>' +
                     '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
                     '• Our team will discuss all interviews internally<br>' +
-                    '• We aim to reach a decision within <strong style="color:#ff7a00;">3–5 working days</strong><br>' +
+                    '• We aim to reach a decision within <strong style="color:#ff7a00;">48 hours</strong><br>' +
                     '• You\'ll receive a personal update from us either way — we don\'t leave people hanging' +
                     '</div></div>' +
                     'Regardless of the outcome, please know that making it to the interview stage is an achievement in itself. ' +

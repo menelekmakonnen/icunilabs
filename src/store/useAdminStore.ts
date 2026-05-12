@@ -415,7 +415,7 @@ export const adminActions = {
   },
 
   // ── Applicant Email ──
-  sendApplicantEmail: async (template: string, recipients: { email: string; name: string }[], extras?: Record<string, any>): Promise<{ sent: number; failed: number; errors: string[] } | null> => {
+  sendApplicantEmail: async (template: string, recipients: { email: string; name: string }[], extras?: Record<string, any>, rawHtml?: string, rawSubject?: string): Promise<{ sent: number; failed: number; errors: string[] } | null> => {
     setState({ loading: true, error: null })
     try {
       const result = await apiPost('sendApplicantEmail', {
@@ -423,6 +423,7 @@ export const adminActions = {
         template,
         recipients,
         extras: extras || {},
+        ...(rawHtml ? { rawHtml, rawSubject } : {}),
       })
       await adminActions.loadApplications()
       setState({ loading: false })
