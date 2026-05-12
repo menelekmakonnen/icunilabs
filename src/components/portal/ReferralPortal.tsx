@@ -226,42 +226,41 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen">
-      {/* ── HERO ── */}
+      {/* ── HERO + JOIN FORM (side-by-side on desktop) ── */}
       <section className="relative pt-28 pb-20 px-6 overflow-hidden">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#ff7a00]/5 blur-[120px] rounded-full pointer-events-none" />
-        <div className="max-w-5xl mx-auto relative z-10">
+        <div className="max-w-6xl mx-auto relative z-10">
           <a href="#" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors mb-8">
             <ArrowLeft className="w-4 h-4" /> Back to site
           </a>
-          <motion.div initial={{ y: 20 }} animate={{ y: 0 }} transition={{ duration: 0.6 }}>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#ff7a00]/30 bg-[#ff7a00]/5 text-xs font-bold text-[#ff7a00] mb-6 tracking-wider uppercase">
-              <DollarSign className="w-3 h-3" /> Referral Program — Now Open
-            </div>
-            <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-[1.05]">
-              You Introduce.<br /><span className="bg-gradient-to-r from-[#ff7a00] to-[#ff9944] bg-clip-text text-transparent">We Close. You Earn.</span>
-            </h1>
-            <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mb-4">
-              We build business operations systems — dashboards, trackers, automations — for companies across <span className="text-neutral-200">Warehouse, Construction, Finance, Tax, Media, Oil & Gas, Printing</span>, and more.
-            </p>
-            <p className="text-lg md:text-xl text-neutral-300 max-w-2xl mb-8">
-              If you can get us in a room with a business decision maker who needs our help, we're offering <span className="text-[#ff7a00] font-bold">GH&#x20B5;1,000</span> commission — or <span className="text-[#ff7a00] font-bold">10% of the deal</span>, whichever is higher. No cap.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <a href="#join" className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold rounded-lg hover:shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:gap-12">
+            {/* ── Hero text ── */}
+            <motion.div initial={{ y: 20 }} animate={{ y: 0 }} transition={{ duration: 0.6 }} className="flex-1 min-w-0">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#ff7a00]/30 bg-[#ff7a00]/5 text-xs font-bold text-[#ff7a00] mb-6 tracking-wider uppercase">
+                <DollarSign className="w-3 h-3" /> Referral Program — Now Open
+              </div>
+              <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-[1.05]">
+                You Introduce.<br /><span className="bg-gradient-to-r from-[#ff7a00] to-[#ff9944] bg-clip-text text-transparent">We Close. You Earn.</span>
+              </h1>
+              <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mb-4">
+                We build business operations systems — dashboards, trackers, automations — for companies across <span className="text-neutral-200">Warehouse, Construction, Finance, Tax, Media, Oil & Gas, Printing</span>, and more.
+              </p>
+              <p className="text-lg md:text-xl text-neutral-300 max-w-2xl mb-8">
+                If you can get us in a room with a business decision maker who needs our help, we're offering <span className="text-[#ff7a00] font-bold">GH&#x20B5;1,000</span> commission — or <span className="text-[#ff7a00] font-bold">10% of the deal</span>, whichever is higher. No cap.
+              </p>
+              <button
+                onClick={() => document.getElementById('join-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold rounded-lg hover:shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer lg:hidden"
+              >
                 Start Earning <ChevronRight className="w-4 h-4" />
-              </a>
-              <a href="#jobs" className="inline-flex items-center gap-2 px-6 py-4 border border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700 font-medium rounded-lg transition-all">
-                View as Job Listing
-              </a>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+              </button>
+            </motion.div>
 
-      {/* ── AUTH FORM (right after hero) ── */}
-      <section id="join" className="px-6 pb-16 scroll-mt-20">
-        <div className="max-w-md mx-auto">
-          <AuthFormCard tab={tab} setTab={setTab} error={error} setError={setError} otpStep={otpStep} setOtpStep={setOtpStep} otpCode={otpCode} setOtpCode={setOtpCode} pendingEmail={pendingEmail} setPendingEmail={setPendingEmail} loginEmail={loginEmail} setLoginEmail={setLoginEmail} name={name} setName={setName} email={email} setEmail={setEmail} phone={phone} setPhone={setPhone} background={background} setBackground={setBackground} payoutPreference={payoutPreference} setPayoutPreference={setPayoutPreference} busy={busy} setBusy={setBusy} onLogin={onLogin} handleLoginSubmit={handleLoginSubmit} handleSignupSubmit={handleSignupSubmit} handleOtpVerify={handleOtpVerify} />
+            {/* ── Join form (side-by-side on lg+) ── */}
+            <div id="join-form" className="w-full lg:w-[420px] lg:flex-shrink-0 mt-12 lg:mt-0 scroll-mt-24">
+              <AuthFormCard tab={tab} setTab={setTab} error={error} setError={setError} otpStep={otpStep} setOtpStep={setOtpStep} otpCode={otpCode} setOtpCode={setOtpCode} pendingEmail={pendingEmail} setPendingEmail={setPendingEmail} loginEmail={loginEmail} setLoginEmail={setLoginEmail} name={name} setName={setName} email={email} setEmail={setEmail} phone={phone} setPhone={setPhone} background={background} setBackground={setBackground} payoutPreference={payoutPreference} setPayoutPreference={setPayoutPreference} busy={busy} setBusy={setBusy} onLogin={onLogin} handleLoginSubmit={handleLoginSubmit} handleSignupSubmit={handleSignupSubmit} handleOtpVerify={handleOtpVerify} />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -354,9 +353,9 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
             />
           </div>
           <div className="text-center mt-6">
-            <a href="#join" className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] transition-all">
+            <button onClick={() => document.getElementById('join-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })} className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold rounded-lg hover:shadow-[0_0_20px_rgba(255,102,0,0.3)] transition-all cursor-pointer">
               Get Your Own Dashboard <ChevronRight className="w-4 h-4" />
-            </a>
+            </button>
           </div>
         </div>
       </section>
