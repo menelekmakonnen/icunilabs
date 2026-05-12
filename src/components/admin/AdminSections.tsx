@@ -117,31 +117,58 @@ export function ClientsSection() {
 }
 
 // ─── PROJECTS ────────────────────────────────────────────
-// Static portfolio data mapped to admin table format
-const staticPortfolio = portfolioProjects.map((p, i) => ({
+// Static portfolio data mapped to admin table format — includes all rich fields
+const buildPortfolioRows = () => portfolioProjects.map((p, i) => ({
   project_id: p.id,
   title: p.title,
-  client_name: p.subtitle,
+  subtitle: p.subtitle,
+  description: p.description,
   category: p.tags[0] || '',
-  technologies: p.tags.join(', '),
-  status: (p.status || 'active').toLowerCase().includes('production') || (p.status || '').toLowerCase().includes('deployed') || (p.status || '').toLowerCase().includes('shipped') ? 'published' : 'published',
+  tags: p.tags.join(', '),
+  status: 'published',
   order: i + 1,
   tier: p.tier || 'active',
-  description: p.description,
+  imageUrl: p.imageUrl || '',
+  clientProblem: p.clientProblem || '',
+  solution: p.solution || '',
+  businessImpact: p.businessImpact || '',
+  expertDeepDive: p.expertDeepDive || '',
+  githubUrl: p.githubUrl || '',
+  projectUrl: p.projectUrl || '',
+  projectStatus: p.status || '',
 }))
 
 export function ProjectsSection() {
   const { projects, loading } = useAdminStore()
   const [tab, setTab] = useState<'pipeline' | 'portfolio'>('portfolio')
+  const [portfolioData, setPortfolioData] = useState(buildPortfolioRows)
+  const [editProject, setEditProject] = useState<any>(null)
+  const [editForm, setEditForm] = useState<any>(null)
 
   useEffect(() => { adminActions.loadProjects() }, [])
+
+  const openProjectEdit = (row: any) => {
+    setEditProject(row)
+    setEditForm({ ...row })
+  }
+
+  const handleProjectSave = () => {
+    if (!editForm || !editProject) return
+    setPortfolioData(prev => prev.map(p => p.project_id === editProject.project_id ? { ...p, ...editForm } : p))
+    setEditProject(null)
+    setEditForm(null)
+  }
+
+  const updateField = (field: string, value: string) => {
+    setEditForm((prev: any) => ({ ...prev, [field]: value }))
+  }
 
   if (tab === 'pipeline') {
     return (
       <div>
         <div className="flex gap-2 mb-4">
           <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Client Pipeline</button>
-          <button onClick={() => setTab('portfolio')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Portfolio ({staticPortfolio.length})</button>
+          <button onClick={() => setTab('portfolio')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Portfolio ({portfolioData.length})</button>
         </div>
         <DataTable title="Client Projects" subtitle="Active project pipeline and step management" loading={loading} data={projects}
           columns={[
@@ -163,13 +190,13 @@ export function ProjectsSection() {
     <div>
       <div className="flex gap-2 mb-4">
         <button onClick={() => setTab('pipeline')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Client Pipeline ({projects.length})</button>
-        <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Portfolio ({staticPortfolio.length})</button>
+        <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Portfolio ({portfolioData.length})</button>
       </div>
-      <DataTable title="Portfolio Projects" subtitle={`${staticPortfolio.length} projects from the public portfolio`} loading={false} data={staticPortfolio}
+      <DataTable title="Portfolio Projects" subtitle={`${portfolioData.length} projects from the public portfolio`} loading={false} data={portfolioData}
         columns={[
           { key: 'project_id', label: 'ID', width: '140px' },
           { key: 'title', label: 'Title', render: (v) => <span className="text-white font-medium">{v}</span> },
-          { key: 'client_name', label: 'Subtitle' },
+          { key: 'subtitle', label: 'Subtitle' },
           { key: 'category', label: 'Category' },
           { key: 'tier', label: 'Tier', render: (v) => {
             const colors: Record<string, string> = { flagship: 'text-[#ff7a00]', production: 'text-emerald-400', active: 'text-[#00bfff]', spec: 'text-neutral-500' }
@@ -178,8 +205,113 @@ export function ProjectsSection() {
           { key: 'status', label: 'Visibility', render: (v) => <Badge status={v} /> },
           { key: 'order', label: '#', width: '50px' },
         ]}
-        searchKeys={['title', 'client_name', 'category', 'technologies']}
+        searchKeys={['title', 'subtitle', 'category', 'tags']}
+        renderRowActions={(row) => (
+          <div className="flex gap-3">
+            <button onClick={() => openProjectEdit(row)} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Edit</button>
+            {row.projectUrl && <a href={row.projectUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-neutral-500 hover:text-white transition-colors">View</a>}
+          </div>
+        )}
       />
+
+      {/* Project Edit Modal */}
+      {editProject && editForm && (
+        <div className={modalBg} onClick={() => { setEditProject(null); setEditForm(null) }}>
+          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-lg font-bold text-white">{editForm.title}</h3>
+                <p className="text-xs text-neutral-500 mt-0.5">{editForm.project_id}</p>
+              </div>
+              <button onClick={() => { setEditProject(null); setEditForm(null) }} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Core Info */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Title</label>
+                  <input value={editForm.title} onChange={e => updateField('title', e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Subtitle</label>
+                  <input value={editForm.subtitle} onChange={e => updateField('subtitle', e.target.value)} className={inputCls} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Tier</label>
+                  <select value={editForm.tier} onChange={e => updateField('tier', e.target.value)} className={inputCls}>
+                    <option value="flagship">Flagship</option><option value="production">Production</option><option value="active">Active</option><option value="spec">Spec</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Visibility</label>
+                  <select value={editForm.status} onChange={e => updateField('status', e.target.value)} className={inputCls}>
+                    <option value="published">Published</option><option value="draft">Draft</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Project Status</label>
+                  <input value={editForm.projectStatus} onChange={e => updateField('projectStatus', e.target.value)} className={inputCls} placeholder="e.g. Production v2.1.0" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Tags <span className="text-neutral-600">(comma-separated)</span></label>
+                <input value={editForm.tags} onChange={e => updateField('tags', e.target.value)} className={inputCls} />
+              </div>
+
+              <div className="border-t border-neutral-800 my-2" />
+
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Description</label>
+                <textarea value={editForm.description} onChange={e => updateField('description', e.target.value)} className={`${inputCls} resize-y`} rows={3} />
+              </div>
+
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Client Problem</label>
+                <textarea value={editForm.clientProblem} onChange={e => updateField('clientProblem', e.target.value)} className={`${inputCls} resize-y`} rows={4} />
+              </div>
+
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Solution</label>
+                <textarea value={editForm.solution} onChange={e => updateField('solution', e.target.value)} className={`${inputCls} resize-y`} rows={4} />
+              </div>
+
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Business Impact</label>
+                <textarea value={editForm.businessImpact} onChange={e => updateField('businessImpact', e.target.value)} className={`${inputCls} resize-y`} rows={4} />
+              </div>
+
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Expert Deep Dive</label>
+                <textarea value={editForm.expertDeepDive} onChange={e => updateField('expertDeepDive', e.target.value)} className={`${inputCls} resize-y`} rows={4} />
+              </div>
+
+              <div className="border-t border-neutral-800 my-2" />
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Image URL</label>
+                  <input value={editForm.imageUrl} onChange={e => updateField('imageUrl', e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Live URL</label>
+                  <input value={editForm.projectUrl} onChange={e => updateField('projectUrl', e.target.value)} className={inputCls} />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">GitHub URL</label>
+                  <input value={editForm.githubUrl} onChange={e => updateField('githubUrl', e.target.value)} className={inputCls} />
+                </div>
+              </div>
+
+              <button onClick={handleProjectSave} className={`${btnPrimary} w-full`}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -263,7 +395,7 @@ const EMAIL_TEMPLATES = [
 
 type CareersTab = 'listings' | 'applications' | 'emails'
 
-const emptyListing = { title: '', type: 'Full-Time', location: '', salary_range: '', short_description: '', status: 'active', deadline: '' }
+const emptyListing = { title: '', type: 'Full-Time', location: '', salary_range: '', short_description: '', full_description: '', requirements: '', benefits: '', perks: '', hero_image: '', flyer_image: '', apply_email: 'jobs@icuni.org', status: 'active', deadline: '' }
 
 // Static job listings matching the hardcoded public data in JobsPage.tsx
 const STATIC_JOBS = [{
@@ -271,8 +403,15 @@ const STATIC_JOBS = [{
   title: 'Operations Assistant',
   type: 'Full-Time',
   location: 'Accra, Ghana',
-  salary_range: 'GH₵2,500 – 2,950/mo + commission',
+  salary_range: 'GH\u20B52,500 \u2013 2,950/mo + commission',
   short_description: 'Keep our client pipeline moving, coordinate referral partners, and grow with a tech company building real systems for real businesses.',
+  full_description: 'We build custom operations systems for businesses across Ghana and beyond.\nWe help companies replace spreadsheets, WhatsApp chaos, and manual processes with software built for how they actually work.\nWe\u2019re growing fast and need someone sharp, organized, and persistent to keep things moving behind the scenes.\nAs Ops Assistant, you\u2019ll manage the space between building and closing \u2014 scheduling, follow-ups, pipeline tracking, payment chasing, referral coordination \u2014 you name it.\nThis is NOT a desk-and-wait role. You\u2019ll be on calls daily with business owners and decision-makers.\nYou\u2019ll send emails, update our CRM, and make sure every lead gets the attention it deserves.\nYou\u2019ll work directly with the founder and see how we acquire clients, deliver projects, and scale. Full visibility. Real impact.\nBasically \u2014 if you\u2019re the type who follows up without being reminded, loves being on top of things, and wants to grow inside a tech company building the future of business ops in Africa\u2026 we want to hear from you.',
+  requirements: 'Follows up without being reminded, persistent and proactive\nStrong written and verbal communication in English\nComfortable making cold and warm calls to business owners\nHighly organized, tracks tasks in systems not from memory\nFamiliar with Google Workspace (Sheets, Docs, Gmail, Calendar)\nBased in Accra, Ghana\nAvailable to start ASAP',
+  benefits: 'GH\u20B52,500 \u2013 GH\u20B52,950 monthly base (Level 1 Compensation)\nCommission on every paid project the company delivers\nUp to 10% commission on deals you directly bring in\nDirect mentorship from the founder\nReal experience inside a growing tech company\nClear growth path as the company scales',
+  perks: 'Commission on every project\nReal tech industry experience\nGrowth trajectory',
+  hero_image: '/ops-assistant-hero.png',
+  flyer_image: '/ops-assistant-flyer.jpg',
+  apply_email: 'jobs@icuni.org',
   status: 'active',
   deadline: '2026-05-18',
   _source: 'static',
@@ -337,7 +476,15 @@ export function CareersSection() {
   const openCreate = () => { setEditingListing(null); setListingForm({ ...emptyListing }); setShowListingModal(true) }
   const openEdit = (row: any) => {
     setEditingListing(row)
-    setListingForm({ title: row.title || '', type: row.type || 'Full-Time', location: row.location || '', salary_range: row.salary_range || '', short_description: row.short_description || '', status: row.status || 'active', deadline: row.deadline || '' })
+    setListingForm({
+      title: row.title || '', type: row.type || 'Full-Time', location: row.location || '',
+      salary_range: row.salary_range || '', short_description: row.short_description || '',
+      full_description: row.full_description || '', requirements: row.requirements || '',
+      benefits: row.benefits || '', perks: row.perks || '',
+      hero_image: row.hero_image || '', flyer_image: row.flyer_image || '',
+      apply_email: row.apply_email || 'jobs@icuni.org',
+      status: row.status || 'active', deadline: row.deadline || '',
+    })
     setShowListingModal(true)
   }
   const handleListingSave = async (e: React.FormEvent) => {
@@ -432,26 +579,97 @@ export function CareersSection() {
       />
       {showListingModal && (
         <div className={modalBg} onClick={() => setShowListingModal(false)}>
-          <div className={modalCard} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-white">{editingListing ? 'Edit Listing' : 'New Listing'}</h3>
               <button onClick={() => setShowListingModal(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
-            <form onSubmit={handleListingSave} className="space-y-3">
-              <input value={listingForm.title} onChange={e => setListingForm({...listingForm, title: e.target.value})} className={inputCls} placeholder="Job title" required />
-              <div className="grid grid-cols-2 gap-3">
-                <select value={listingForm.type} onChange={e => setListingForm({...listingForm, type: e.target.value})} className={inputCls}>
-                  <option>Full-Time</option><option>Part-Time</option><option>Contract</option><option>Internship</option>
-                </select>
-                <select value={listingForm.status} onChange={e => setListingForm({...listingForm, status: e.target.value})} className={inputCls}>
-                  <option value="active">Active</option><option value="draft">Draft</option><option value="inactive">Inactive</option>
-                </select>
+            <form onSubmit={handleListingSave} className="space-y-4">
+              {/* Core fields */}
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Job Title *</label>
+                <input value={listingForm.title} onChange={e => setListingForm({...listingForm, title: e.target.value})} className={inputCls} placeholder="e.g. Operations Assistant" required />
               </div>
-              <input value={listingForm.location} onChange={e => setListingForm({...listingForm, location: e.target.value})} className={inputCls} placeholder="Location" />
-              <input value={listingForm.salary_range} onChange={e => setListingForm({...listingForm, salary_range: e.target.value})} className={inputCls} placeholder="Salary range (optional)" />
-              <input type="date" value={listingForm.deadline} onChange={e => setListingForm({...listingForm, deadline: e.target.value})} className={inputCls} />
-              <textarea value={listingForm.short_description} onChange={e => setListingForm({...listingForm, short_description: e.target.value})} className={`${inputCls} resize-none`} rows={3} placeholder="Short description" />
-              <button type="submit" className={btnPrimary}>{editingListing ? 'Save Changes' : 'Create Listing'}</button>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Type</label>
+                  <select value={listingForm.type} onChange={e => setListingForm({...listingForm, type: e.target.value})} className={inputCls}>
+                    <option>Full-Time</option><option>Part-Time</option><option>Contract</option><option>Internship</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Status</label>
+                  <select value={listingForm.status} onChange={e => setListingForm({...listingForm, status: e.target.value})} className={inputCls}>
+                    <option value="active">Active</option><option value="draft">Draft</option><option value="inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Location</label>
+                  <input value={listingForm.location} onChange={e => setListingForm({...listingForm, location: e.target.value})} className={inputCls} placeholder="Accra, Ghana" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Deadline</label>
+                  <input type="date" value={listingForm.deadline} onChange={e => setListingForm({...listingForm, deadline: e.target.value})} className={inputCls} />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Salary Range</label>
+                <input value={listingForm.salary_range} onChange={e => setListingForm({...listingForm, salary_range: e.target.value})} className={inputCls} placeholder="GH₵2,500 – 2,950/mo + commission" />
+              </div>
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Short Description (card preview text)</label>
+                <textarea value={listingForm.short_description} onChange={e => setListingForm({...listingForm, short_description: e.target.value})} className={`${inputCls} resize-none`} rows={2} placeholder="Brief summary shown on the listing card" />
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-neutral-800 my-2" />
+
+              {/* Full Description */}
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Full Description <span className="text-neutral-600">(one paragraph per line)</span></label>
+                <textarea value={listingForm.full_description} onChange={e => setListingForm({...listingForm, full_description: e.target.value})} className={`${inputCls} resize-y`} rows={8} placeholder={"We build custom operations systems...\nWe're growing fast and need someone sharp...\nAs Ops Assistant, you'll manage the space between..."} />
+              </div>
+
+              {/* Requirements */}
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Requirements <span className="text-neutral-600">(one per line)</span></label>
+                <textarea value={listingForm.requirements} onChange={e => setListingForm({...listingForm, requirements: e.target.value})} className={`${inputCls} resize-y`} rows={5} placeholder={"Follows up without being reminded\nStrong written and verbal communication\nComfortable making cold and warm calls"} />
+              </div>
+
+              {/* Benefits */}
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Benefits <span className="text-neutral-600">(one per line)</span></label>
+                <textarea value={listingForm.benefits} onChange={e => setListingForm({...listingForm, benefits: e.target.value})} className={`${inputCls} resize-y`} rows={5} placeholder={"GH₵2,500 – GH₵2,950 monthly base\nCommission on every paid project\nDirect mentorship from the founder"} />
+              </div>
+
+              {/* Perks */}
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Perks / Tags <span className="text-neutral-600">(comma-separated)</span></label>
+                <input value={listingForm.perks} onChange={e => setListingForm({...listingForm, perks: e.target.value})} className={inputCls} placeholder="Commission on every project, Real tech experience, Growth trajectory" />
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-neutral-800 my-2" />
+
+              {/* Media / Links */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Hero Image URL</label>
+                  <input value={listingForm.hero_image} onChange={e => setListingForm({...listingForm, hero_image: e.target.value})} className={inputCls} placeholder="/ops-assistant-hero.png" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Flyer Image URL</label>
+                  <input value={listingForm.flyer_image} onChange={e => setListingForm({...listingForm, flyer_image: e.target.value})} className={inputCls} placeholder="/ops-assistant-flyer.jpg" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Apply Email</label>
+                <input type="email" value={listingForm.apply_email} onChange={e => setListingForm({...listingForm, apply_email: e.target.value})} className={inputCls} placeholder="jobs@icuni.org" />
+              </div>
+
+              <button type="submit" className={`${btnPrimary} w-full`}>{editingListing ? 'Save Changes' : 'Create Listing'}</button>
             </form>
           </div>
         </div>
