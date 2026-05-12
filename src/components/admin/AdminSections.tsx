@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import DataTable from './DataTable'
-import { UserPlus, X, Send } from 'lucide-react'
+import RichEditor from './RichEditor'
+import LivePreview from './LivePreview'
+import { UserPlus, X, Send, ArrowLeft } from 'lucide-react'
 import { personas } from '../../data/personaData'
 import { portfolioProjects } from '../../data/portfolioData'
 
@@ -144,12 +146,14 @@ export function ProjectsSection() {
   const [portfolioData, setPortfolioData] = useState(buildPortfolioRows)
   const [editProject, setEditProject] = useState<any>(null)
   const [editForm, setEditForm] = useState<any>(null)
+  const [projectEditorTab, setProjectEditorTab] = useState<'overview' | 'content' | 'media'>('overview')
 
   useEffect(() => { adminActions.loadProjects() }, [])
 
   const openProjectEdit = (row: any) => {
     setEditProject(row)
     setEditForm({ ...row })
+    setProjectEditorTab('overview')
   }
 
   const handleProjectSave = () => {
@@ -161,6 +165,78 @@ export function ProjectsSection() {
 
   const updateField = (field: string, value: string) => {
     setEditForm((prev: any) => ({ ...prev, [field]: value }))
+  }
+
+  // Full-screen Project Editor
+  if (editProject && editForm) {
+    return (
+      <div className="-m-6 flex flex-col h-[calc(100vh-64px)]">
+        <div className="flex items-center justify-between px-6 py-3 bg-neutral-900/50 border-b border-neutral-800">
+          <div className="flex items-center gap-3">
+            <button onClick={() => { setEditProject(null); setEditForm(null) }} className="text-neutral-500 hover:text-white cursor-pointer transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div>
+              <h2 className="text-sm font-bold text-white">{editForm.title}</h2>
+              <p className="text-[10px] text-neutral-600">{editForm.project_id}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-neutral-600 mr-2">Auto-saves to preview</span>
+            <button onClick={handleProjectSave} className={`${btnPrimary} text-xs px-4 py-1.5`}>Save Changes</button>
+          </div>
+        </div>
+        <div className="flex flex-1 overflow-hidden">
+          <div className="w-[55%] overflow-y-auto border-r border-neutral-800 p-6 space-y-4">
+            <div className="flex gap-1 mb-4">
+              {(['overview', 'content', 'media'] as const).map(id => (
+                <button key={id} onClick={() => setProjectEditorTab(id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-all capitalize ${projectEditorTab === id ? 'bg-[#00bfff]/10 text-[#00bfff] font-medium' : 'text-neutral-500 hover:text-white'}`}>
+                  {id}
+                </button>
+              ))}
+            </div>
+            {projectEditorTab === 'overview' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="text-xs text-neutral-500 mb-1 block">Title</label><input value={editForm.title} onChange={e => updateField('title', e.target.value)} className={inputCls} /></div>
+                  <div><label className="text-xs text-neutral-500 mb-1 block">Subtitle</label><input value={editForm.subtitle} onChange={e => updateField('subtitle', e.target.value)} className={inputCls} /></div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><label className="text-xs text-neutral-500 mb-1 block">Tier</label><select value={editForm.tier} onChange={e => updateField('tier', e.target.value)} className={inputCls}><option value="flagship">Flagship</option><option value="production">Production</option><option value="active">Active</option><option value="spec">Spec</option></select></div>
+                  <div><label className="text-xs text-neutral-500 mb-1 block">Visibility</label><select value={editForm.status} onChange={e => updateField('status', e.target.value)} className={inputCls}><option value="published">Published</option><option value="draft">Draft</option></select></div>
+                  <div><label className="text-xs text-neutral-500 mb-1 block">Project Status</label><input value={editForm.projectStatus} onChange={e => updateField('projectStatus', e.target.value)} className={inputCls} placeholder="e.g. Production v2.1.0" /></div>
+                </div>
+                <div><label className="text-xs text-neutral-500 mb-1 block">Tags <span className="text-neutral-600">(comma-separated)</span></label><input value={editForm.tags} onChange={e => updateField('tags', e.target.value)} className={inputCls} /></div>
+                <RichEditor label="Description" hint="Short project summary" value={editForm.description} onChange={html => updateField('description', html)} placeholder="A brief overview..." minHeight="120px" />
+              </div>
+            )}
+            {projectEditorTab === 'content' && (
+              <div className="space-y-6">
+                <RichEditor label="Client Problem" hint="What challenge did the client face?" value={editForm.clientProblem} onChange={html => updateField('clientProblem', html)} placeholder="Describe the problem..." minHeight="180px" />
+                <RichEditor label="Solution" hint="How we solved it" value={editForm.solution} onChange={html => updateField('solution', html)} placeholder="Describe the solution..." minHeight="180px" />
+                <RichEditor label="Business Impact" hint="Measurable outcomes and ROI" value={editForm.businessImpact} onChange={html => updateField('businessImpact', html)} placeholder="Quantify the impact..." minHeight="180px" />
+                <RichEditor label="Expert Deep Dive" hint="Technical architecture details" value={editForm.expertDeepDive} onChange={html => updateField('expertDeepDive', html)} placeholder="Deep technical details..." minHeight="180px" />
+              </div>
+            )}
+            {projectEditorTab === 'media' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Cover Image URL</label>
+                  <input value={editForm.imageUrl} onChange={e => updateField('imageUrl', e.target.value)} className={inputCls} />
+                  {editForm.imageUrl && <div className="mt-2 rounded-lg overflow-hidden border border-neutral-800 max-h-40"><img src={editForm.imageUrl} alt="Cover" className="w-full h-40 object-cover" onError={e => (e.currentTarget.style.display = 'none')} /></div>}
+                </div>
+                <div><label className="text-xs text-neutral-500 mb-1 block">Live URL</label><input value={editForm.projectUrl} onChange={e => updateField('projectUrl', e.target.value)} className={inputCls} placeholder="https://project.icuni.org" /></div>
+                <div><label className="text-xs text-neutral-500 mb-1 block">GitHub URL</label><input value={editForm.githubUrl} onChange={e => updateField('githubUrl', e.target.value)} className={inputCls} placeholder="https://github.com/..." /></div>
+              </div>
+            )}
+          </div>
+          <div className="w-[45%] flex flex-col">
+            <LivePreview mode="project" data={editForm as any} />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (tab === 'pipeline') {
@@ -213,108 +289,12 @@ export function ProjectsSection() {
           </div>
         )}
       />
-
-      {/* Project Edit Modal */}
-      {editProject && editForm && (
-        <div className={modalBg} onClick={() => { setEditProject(null); setEditForm(null) }}>
-          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-lg font-bold text-white">{editForm.title}</h3>
-                <p className="text-xs text-neutral-500 mt-0.5">{editForm.project_id}</p>
-              </div>
-              <button onClick={() => { setEditProject(null); setEditForm(null) }} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
-            </div>
-
-            <div className="space-y-4">
-              {/* Core Info */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Title</label>
-                  <input value={editForm.title} onChange={e => updateField('title', e.target.value)} className={inputCls} />
-                </div>
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Subtitle</label>
-                  <input value={editForm.subtitle} onChange={e => updateField('subtitle', e.target.value)} className={inputCls} />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Tier</label>
-                  <select value={editForm.tier} onChange={e => updateField('tier', e.target.value)} className={inputCls}>
-                    <option value="flagship">Flagship</option><option value="production">Production</option><option value="active">Active</option><option value="spec">Spec</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Visibility</label>
-                  <select value={editForm.status} onChange={e => updateField('status', e.target.value)} className={inputCls}>
-                    <option value="published">Published</option><option value="draft">Draft</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Project Status</label>
-                  <input value={editForm.projectStatus} onChange={e => updateField('projectStatus', e.target.value)} className={inputCls} placeholder="e.g. Production v2.1.0" />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Tags <span className="text-neutral-600">(comma-separated)</span></label>
-                <input value={editForm.tags} onChange={e => updateField('tags', e.target.value)} className={inputCls} />
-              </div>
-
-              <div className="border-t border-neutral-800 my-2" />
-
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Description</label>
-                <textarea value={editForm.description} onChange={e => updateField('description', e.target.value)} className={`${inputCls} resize-y`} rows={3} />
-              </div>
-
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Client Problem</label>
-                <textarea value={editForm.clientProblem} onChange={e => updateField('clientProblem', e.target.value)} className={`${inputCls} resize-y`} rows={4} />
-              </div>
-
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Solution</label>
-                <textarea value={editForm.solution} onChange={e => updateField('solution', e.target.value)} className={`${inputCls} resize-y`} rows={4} />
-              </div>
-
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Business Impact</label>
-                <textarea value={editForm.businessImpact} onChange={e => updateField('businessImpact', e.target.value)} className={`${inputCls} resize-y`} rows={4} />
-              </div>
-
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Expert Deep Dive</label>
-                <textarea value={editForm.expertDeepDive} onChange={e => updateField('expertDeepDive', e.target.value)} className={`${inputCls} resize-y`} rows={4} />
-              </div>
-
-              <div className="border-t border-neutral-800 my-2" />
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Image URL</label>
-                  <input value={editForm.imageUrl} onChange={e => updateField('imageUrl', e.target.value)} className={inputCls} />
-                </div>
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Live URL</label>
-                  <input value={editForm.projectUrl} onChange={e => updateField('projectUrl', e.target.value)} className={inputCls} />
-                </div>
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">GitHub URL</label>
-                  <input value={editForm.githubUrl} onChange={e => updateField('githubUrl', e.target.value)} className={inputCls} />
-                </div>
-              </div>
-
-              <button onClick={handleProjectSave} className={`${btnPrimary} w-full`}>Save Changes</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
+
+
+
 
 // ─── INVOICES ────────────────────────────────────────────
 export function InvoicesSection() {
@@ -426,6 +406,7 @@ export function CareersSection() {
   const [showListingModal, setShowListingModal] = useState(false)
   const [editingListing, setEditingListing] = useState<any>(null)
   const [listingForm, setListingForm] = useState({ ...emptyListing })
+  const [listingEditorTab, setListingEditorTab] = useState<'details' | 'description' | 'requirements' | 'media'>('details')
   // Manual Emails
   const [recipients, setRecipients] = useState([{ email: '', name: '' }])
   const [selectedTemplate, setSelectedTemplate] = useState('cv_confirmation')
@@ -553,6 +534,158 @@ export function CareersSection() {
   )
 
   // ── LISTINGS TAB ──
+  // Full-screen editor mode when editing/creating a listing
+  if (tab === 'listings' && showListingModal) {
+
+    return (
+      <div className="-m-6 flex flex-col h-[calc(100vh-64px)]">
+        {/* Editor top bar */}
+        <div className="flex items-center justify-between px-6 py-3 bg-neutral-900/50 border-b border-neutral-800">
+          <div className="flex items-center gap-3">
+            <button onClick={() => { setShowListingModal(false); setEditingListing(null) }} className="text-neutral-500 hover:text-white cursor-pointer transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <h2 className="text-sm font-bold text-white">{editingListing ? `Editing: ${listingForm.title || 'Job Listing'}` : 'New Job Listing'}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] text-neutral-600 mr-2">Auto-saves to preview</span>
+            <button onClick={async () => { const ev = { preventDefault: () => {} } as React.FormEvent; await handleListingSave(ev as any) }}
+              className={`${btnPrimary} text-xs px-4 py-1.5`}>{editingListing ? 'Save' : 'Create'}</button>
+          </div>
+        </div>
+
+        {/* Split pane */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left: Editor */}
+          <div className="w-[55%] overflow-y-auto border-r border-neutral-800 p-6 space-y-4">
+            {/* Editor sub-tabs */}
+            <div className="flex gap-1 mb-4">
+              {(['details', 'description', 'requirements', 'media'] as const).map(id => (
+                <button key={id} onClick={() => setListingEditorTab(id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-all capitalize ${listingEditorTab === id ? 'bg-[#00bfff]/10 text-[#00bfff] font-medium' : 'text-neutral-500 hover:text-white'}`}>
+                  {id}
+                </button>
+              ))}
+            </div>
+
+            {/* Details tab */}
+            {listingEditorTab === 'details' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Job Title *</label>
+                  <input value={listingForm.title} onChange={e => setListingForm({...listingForm, title: e.target.value})} className={inputCls} placeholder="e.g. Operations Assistant" required />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-neutral-500 mb-1 block">Type</label>
+                    <select value={listingForm.type} onChange={e => setListingForm({...listingForm, type: e.target.value})} className={inputCls}>
+                      <option>Full-Time</option><option>Part-Time</option><option>Contract</option><option>Internship</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-neutral-500 mb-1 block">Status</label>
+                    <select value={listingForm.status} onChange={e => setListingForm({...listingForm, status: e.target.value})} className={inputCls}>
+                      <option value="active">Active</option><option value="draft">Draft</option><option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-neutral-500 mb-1 block">Location</label>
+                    <input value={listingForm.location} onChange={e => setListingForm({...listingForm, location: e.target.value})} className={inputCls} placeholder="Accra, Ghana" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-neutral-500 mb-1 block">Deadline</label>
+                    <input type="date" value={listingForm.deadline} onChange={e => setListingForm({...listingForm, deadline: e.target.value})} className={inputCls} />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Salary Range</label>
+                  <input value={listingForm.salary_range} onChange={e => setListingForm({...listingForm, salary_range: e.target.value})} className={inputCls} placeholder="GH\u20b52,500 \u2013 2,950/mo + commission" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Short Description (card preview)</label>
+                  <textarea value={listingForm.short_description} onChange={e => setListingForm({...listingForm, short_description: e.target.value})} className={`${inputCls} resize-none`} rows={2} placeholder="Brief summary shown on the listing card" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Perks / Tags (comma-separated)</label>
+                  <input value={listingForm.perks} onChange={e => setListingForm({...listingForm, perks: e.target.value})} className={inputCls} placeholder="Commission, Real tech experience, Growth" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Apply Email</label>
+                  <input type="email" value={listingForm.apply_email} onChange={e => setListingForm({...listingForm, apply_email: e.target.value})} className={inputCls} placeholder="jobs@icuni.org" />
+                </div>
+              </div>
+            )}
+
+            {/* Description tab */}
+            {listingEditorTab === 'description' && (
+              <RichEditor
+                label="Full Job Description"
+                hint="Rich text \u2014 the full \u2018About This Role\u2019 section"
+                value={listingForm.full_description}
+                onChange={html => setListingForm({...listingForm, full_description: html})}
+                placeholder="Describe the role, day-to-day responsibilities, team culture..."
+                minHeight="400px"
+              />
+            )}
+
+            {/* Requirements tab */}
+            {listingEditorTab === 'requirements' && (
+              <div className="space-y-6">
+                <RichEditor
+                  label="Requirements"
+                  hint="What you need from the candidate"
+                  value={listingForm.requirements}
+                  onChange={html => setListingForm({...listingForm, requirements: html})}
+                  placeholder="List the skills, experience, and qualities required..."
+                  minHeight="250px"
+                />
+                <RichEditor
+                  label="Benefits & Compensation"
+                  hint="What the candidate gets"
+                  value={listingForm.benefits}
+                  onChange={html => setListingForm({...listingForm, benefits: html})}
+                  placeholder="Salary details, perks, growth opportunities..."
+                  minHeight="250px"
+                />
+              </div>
+            )}
+
+            {/* Media tab */}
+            {listingEditorTab === 'media' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Hero Image</label>
+                  <input value={listingForm.hero_image} onChange={e => setListingForm({...listingForm, hero_image: e.target.value})} className={inputCls} placeholder="/ops-assistant-hero.png" />
+                  {listingForm.hero_image && (
+                    <div className="mt-2 rounded-lg overflow-hidden border border-neutral-800 max-h-40">
+                      <img src={listingForm.hero_image} alt="Hero" className="w-full h-40 object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Flyer Image</label>
+                  <input value={listingForm.flyer_image} onChange={e => setListingForm({...listingForm, flyer_image: e.target.value})} className={inputCls} placeholder="/ops-assistant-flyer.jpg" />
+                  {listingForm.flyer_image && (
+                    <div className="mt-2 rounded-lg overflow-hidden border border-neutral-800 max-h-40">
+                      <img src={listingForm.flyer_image} alt="Flyer" className="w-full h-40 object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right: Live Preview */}
+          <div className="w-[45%] flex flex-col">
+            <LivePreview mode="job" data={listingForm as any} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (tab === 'listings') return (
     <div>
       <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', applications.length)}{tabBtn('emails', 'Manual Emails')}</div>
@@ -577,103 +710,6 @@ export function CareersSection() {
           </div>
         )}
       />
-      {showListingModal && (
-        <div className={modalBg} onClick={() => setShowListingModal(false)}>
-          <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-white">{editingListing ? 'Edit Listing' : 'New Listing'}</h3>
-              <button onClick={() => setShowListingModal(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
-            </div>
-            <form onSubmit={handleListingSave} className="space-y-4">
-              {/* Core fields */}
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Job Title *</label>
-                <input value={listingForm.title} onChange={e => setListingForm({...listingForm, title: e.target.value})} className={inputCls} placeholder="e.g. Operations Assistant" required />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Type</label>
-                  <select value={listingForm.type} onChange={e => setListingForm({...listingForm, type: e.target.value})} className={inputCls}>
-                    <option>Full-Time</option><option>Part-Time</option><option>Contract</option><option>Internship</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Status</label>
-                  <select value={listingForm.status} onChange={e => setListingForm({...listingForm, status: e.target.value})} className={inputCls}>
-                    <option value="active">Active</option><option value="draft">Draft</option><option value="inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Location</label>
-                  <input value={listingForm.location} onChange={e => setListingForm({...listingForm, location: e.target.value})} className={inputCls} placeholder="Accra, Ghana" />
-                </div>
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Deadline</label>
-                  <input type="date" value={listingForm.deadline} onChange={e => setListingForm({...listingForm, deadline: e.target.value})} className={inputCls} />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Salary Range</label>
-                <input value={listingForm.salary_range} onChange={e => setListingForm({...listingForm, salary_range: e.target.value})} className={inputCls} placeholder="GH₵2,500 – 2,950/mo + commission" />
-              </div>
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Short Description (card preview text)</label>
-                <textarea value={listingForm.short_description} onChange={e => setListingForm({...listingForm, short_description: e.target.value})} className={`${inputCls} resize-none`} rows={2} placeholder="Brief summary shown on the listing card" />
-              </div>
-
-              {/* Divider */}
-              <div className="border-t border-neutral-800 my-2" />
-
-              {/* Full Description */}
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Full Description <span className="text-neutral-600">(one paragraph per line)</span></label>
-                <textarea value={listingForm.full_description} onChange={e => setListingForm({...listingForm, full_description: e.target.value})} className={`${inputCls} resize-y`} rows={8} placeholder={"We build custom operations systems...\nWe're growing fast and need someone sharp...\nAs Ops Assistant, you'll manage the space between..."} />
-              </div>
-
-              {/* Requirements */}
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Requirements <span className="text-neutral-600">(one per line)</span></label>
-                <textarea value={listingForm.requirements} onChange={e => setListingForm({...listingForm, requirements: e.target.value})} className={`${inputCls} resize-y`} rows={5} placeholder={"Follows up without being reminded\nStrong written and verbal communication\nComfortable making cold and warm calls"} />
-              </div>
-
-              {/* Benefits */}
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Benefits <span className="text-neutral-600">(one per line)</span></label>
-                <textarea value={listingForm.benefits} onChange={e => setListingForm({...listingForm, benefits: e.target.value})} className={`${inputCls} resize-y`} rows={5} placeholder={"GH₵2,500 – GH₵2,950 monthly base\nCommission on every paid project\nDirect mentorship from the founder"} />
-              </div>
-
-              {/* Perks */}
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Perks / Tags <span className="text-neutral-600">(comma-separated)</span></label>
-                <input value={listingForm.perks} onChange={e => setListingForm({...listingForm, perks: e.target.value})} className={inputCls} placeholder="Commission on every project, Real tech experience, Growth trajectory" />
-              </div>
-
-              {/* Divider */}
-              <div className="border-t border-neutral-800 my-2" />
-
-              {/* Media / Links */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Hero Image URL</label>
-                  <input value={listingForm.hero_image} onChange={e => setListingForm({...listingForm, hero_image: e.target.value})} className={inputCls} placeholder="/ops-assistant-hero.png" />
-                </div>
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Flyer Image URL</label>
-                  <input value={listingForm.flyer_image} onChange={e => setListingForm({...listingForm, flyer_image: e.target.value})} className={inputCls} placeholder="/ops-assistant-flyer.jpg" />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Apply Email</label>
-                <input type="email" value={listingForm.apply_email} onChange={e => setListingForm({...listingForm, apply_email: e.target.value})} className={inputCls} placeholder="jobs@icuni.org" />
-              </div>
-
-              <button type="submit" className={`${btnPrimary} w-full`}>{editingListing ? 'Save Changes' : 'Create Listing'}</button>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 
