@@ -678,4 +678,26 @@ export const adminActions = {
       return null
     }
   },
+
+  // ── Profile Management ──
+  getProfile: async (): Promise<any> => {
+    try {
+      return await apiPost('getProfile', { token: state.token })
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  updateProfile: async (data: Record<string, any>): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('updateProfile', { token: state.token, ...data })
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
 }

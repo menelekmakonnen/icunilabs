@@ -25,6 +25,8 @@ function doPost(e) {
         if (action === 'logout')            return handleLogout(payload);
         if (action === 'setPassword')       return handleSetPassword(payload);
         if (action === 'setPin')            return handleSetPin(payload);
+        if (action === 'getProfile')        return handleGetProfile(payload);
+        if (action === 'updateProfile')     return handleUpdateProfile(payload);
 
         // ── User Management ──
         if (action === 'getUsers')          return handleGetUsers(payload);

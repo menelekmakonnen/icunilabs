@@ -4,6 +4,7 @@ import AdminLogin from './AdminLogin'
 import DashboardSection from './DashboardSection'
 import SettingsSection from './SettingsSection'
 import { ClientsSection, ProjectsSection, InvoicesSection, CareersSection, ReferralsSection, UsersSection, LogsSection, SLASection } from './AdminSections'
+import ProfileSection from './ProfileSection'
 import ReferralPortal from '../portal/ReferralPortal'
 import ClientPortal from '../portal/ClientPortal'
 import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, ChevronLeft, ChevronRight, Eye, UserCircle, X } from 'lucide-react'
@@ -68,6 +69,7 @@ export default function AdminPanel() {
       case 'users': return <UsersSection />
       case 'logs': return <LogsSection />
       case 'settings': return <SettingsSection />
+      case 'profile': return <ProfileSection />
       default: return <DashboardSection />
     }
   }
@@ -130,11 +132,23 @@ export default function AdminPanel() {
         {/* Bottom */}
         <div className="border-t border-neutral-800 p-3 space-y-2 shrink-0">
           {!collapsed && (
-            <div className="px-2 mb-2">
-              <div className="text-xs text-white font-medium truncate">{user.name}</div>
+            <button
+              onClick={() => adminActions.setSection('profile')}
+              className="w-full text-left px-2 mb-2 rounded-lg hover:bg-neutral-800/50 py-2 transition-all cursor-pointer group"
+            >
+              <div className="text-xs text-white font-medium truncate group-hover:text-[#00bfff] transition-colors">{user.name}</div>
               <div className="text-[10px] text-neutral-600 truncate">{user.email}</div>
               <div className="text-[10px] text-[#ff7a00] font-bold">{user.role}</div>
-            </div>
+            </button>
+          )}
+          {collapsed && (
+            <button
+              onClick={() => adminActions.setSection('profile')}
+              className="w-full flex items-center justify-center py-2 rounded-lg hover:bg-neutral-800/50 transition-all cursor-pointer mb-2"
+              title="Profile"
+            >
+              <svg className="w-5 h-5 text-neutral-500 hover:text-[#00bfff]" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.3"/><path d="M3.5 17c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+            </button>
           )}
           <button onClick={() => setCollapsed(!collapsed)}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-600 hover:text-neutral-300 hover:bg-neutral-800/50 text-xs transition-all cursor-pointer">

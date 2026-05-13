@@ -387,6 +387,49 @@ function handleDeactivateUser(payload) {
     return successResponse_(null, 'User deactivated.');
 }
 
+// ── PROFILE MANAGEMENT ──────────────────────────────────
+
+function handleGetProfile(payload) {
+    var auth = requireAuth_(payload.token);
+    if (auth.error) return auth.error;
+    var user = findRow_(SHEETS.USERS, 'email', auth.user.email);
+    if (!user) return errorResponse_('User not found.');
+    var contactDetails = {};
+    try { contactDetails = JSON.parse(user.contact_details || '{}'); } catch(e) {}
+    return successResponse_({
+        name: user.name,
+        email: user.email,
+        phone: user.phone || '',
+        role: user.role,
+        profile_pic_url: user.profile_pic_url || '',
+        cover_image_url: user.cover_image_url || '',
+        contact_details: contactDetails,
+        has_password: !!user.password_hash,
+        has_pin: !!user.pin_hash
+    });
+}
+
+function handleUpdateProfile(payload) {
+    var auth = requireAuth_(payload.token);
+    if (auth.error) return auth.error;
+    var user = findRow_(SHEETS.USERS, 'email', auth.user.email);
+    if (!user) return errorResponse_('User not found.');
+
+    var updates = {};
+    if (payload.name && payload.name.trim()) updates.name = payload.name.trim();
+    if (payload.phone !== undefined) updates.phone = payload.phone;
+    if (payload.profile_pic_url !== undefined) updates.profile_pic_url = payload.profile_pic_url;
+    if (payload.cover_image_url !== undefined) updates.cover_image_url = payload.cover_image_url;
+    if (payload.contact_details !== undefined) {
+        updates.contact_details = JSON.stringify(payload.contact_details);
+    }
+
+    if (Object.keys(updates).length === 0) return errorResponse_('No changes to save.');
+    updateRow_(SHEETS.USERS, user._rowIndex, updates);
+    logAction_(auth.user.user_id, auth.user.name, 'PROFILE_UPDATED', Object.keys(updates).join(', '));
+    return successResponse_(null, 'Profile updated.');
+}
+
 // ─── OTP HELPERS ─────────────────────────────────────────
 
 function generateSecureOTP_() {
