@@ -114,9 +114,11 @@ function doPost(e) {
         if (action === 'deleteApplication') return handleDeleteApplication(payload);
         if (action === 'createApplication') return handleCreateApplication(payload);
 
-        // ── Referrals (admin read) ──
+        // ── Referrals (admin read + email) ──
         if (action === 'getReferrers') return handleGetReferrers(payload);
         if (action === 'getReferrals') return handleGetReferrals(payload);
+        if (action === 'sendReferrerEmail') return handleSendReferrerEmail(payload);
+        if (action === 'previewReferrerEmail') return handlePreviewReferrerEmail(payload);
 
         // ── Bug Reports ──
         if (action === 'report_bug' || action === 'reportBug') return handleBugReport(payload);

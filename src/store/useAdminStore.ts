@@ -646,4 +646,36 @@ export const adminActions = {
       setState({ loading: false })
     }
   },
+
+  // ── Referrer Email System ──
+  sendReferrerEmail: async (template: string, recipients: { email: string; name: string }[], extras?: Record<string, any>): Promise<{ sent: number; failed: number } | null> => {
+    setState({ loading: true, error: null })
+    try {
+      const result = await apiPost('sendReferrerEmail', {
+        token: state.token,
+        template,
+        recipients,
+        extras: extras || {},
+      })
+      setState({ loading: false })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return null
+    }
+  },
+
+  previewReferrerEmail: async (template: string, name?: string, extras?: Record<string, any>): Promise<{ html: string; subject: string } | null> => {
+    try {
+      return await apiPost('previewReferrerEmail', {
+        token: state.token,
+        template,
+        name: name || 'Partner',
+        extras: extras || {},
+      })
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
 }

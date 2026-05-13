@@ -358,8 +358,8 @@ function Detail({job}:{job:typeof jobs[0]}){
                 </div>
                 <div className="border-t border-neutral-800 mt-4 pt-4">
                   <p className="text-xs text-neutral-500 mb-4">{job.shortDesc}</p>
-                  <a href={`#apply/${job.id}`} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 rounded-lg hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer text-sm">
-                    <Send className="w-4 h-4"/> Apply Now
+                  <a href={(job as any).applyLink || `#apply/${job.id}`} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 rounded-lg hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer text-sm">
+                    <Send className="w-4 h-4"/> {(job as any).applyLink ? 'Join Program' : 'Apply Now'}
                   </a>
                 </div>
               </div>
@@ -492,8 +492,9 @@ function AppForm({job}:{job:typeof jobs[0]}){
 
   function b64(f:File|Blob):Promise<string>{return new Promise(r=>{const rd=new FileReader();rd.onloadend=()=>r((rd.result as string).split(',')[1]);rd.readAsDataURL(f);});}
 
+  const isReferral = job.type === 'Commission';
   const audioOk=audioBlob||audioFile;
-  const ok=!busy&&audioOk&&!audioErr;
+  const ok=!busy&&(isReferral||audioOk)&&!audioErr;
   const fmt=(s:number)=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
   const dropCls=(active:boolean,has:boolean)=>active?'border-[#00bfff] bg-[#00bfff]/10':has?'border-[#00bfff]/50 bg-[#00bfff]/5':'border-neutral-800 hover:border-neutral-700';
 
@@ -526,6 +527,8 @@ function AppForm({job}:{job:typeof jobs[0]}){
         <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} className={inp} placeholder="Email"/>
         <input type="tel" required value={phone} onChange={e=>setPhone(e.target.value)} className={inp} placeholder="Phone"/>
 
+        {/* CV & Voice — hidden for referral/commission roles */}
+        {!isReferral && (<>
         {/* CV: tab toggle document vs video */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Your CV</label>
@@ -600,6 +603,7 @@ function AppForm({job}:{job:typeof jobs[0]}){
           {audioErr&&<p className="text-xs text-red-400 mt-2">{audioErr}</p>}
           {!audioOk&&!audioErr&&<p className="text-xs text-red-400/70 mt-2">Required — record or upload a voice intro (15 sec – 2 min)</p>}
         </div>
+        </>)}
 
         <textarea value={note} onChange={e=>setNote(e.target.value)} className={`${inp} resize-none`} rows={3} placeholder="Anything else you'd like to add? (or Cover Letter) — optional"/>
 

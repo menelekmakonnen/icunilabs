@@ -824,3 +824,169 @@ function handleGetReferrals(payload) {
     referrals.sort(function(a, b) { return new Date(b.created_at || 0) - new Date(a.created_at || 0); });
     return successResponse_(referrals);
 }
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN — REFERRER EMAIL SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+var REFERRER_TEMPLATES = ['welcome', 'stage_update', 'payment_sent', 'meeting_reminder', 'new_material', 'custom'];
+
+function handleSendReferrerEmail(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var template = payload.template;
+    if (!template || REFERRER_TEMPLATES.indexOf(template) === -1) {
+        return errorResponse_('Invalid template. Must be one of: ' + REFERRER_TEMPLATES.join(', '));
+    }
+    var recipients = [];
+    if (payload.recipients && Array.isArray(payload.recipients) && payload.recipients.length > 0) {
+        recipients = payload.recipients;
+    } else if (payload.email) {
+        recipients = [{ email: payload.email, name: payload.name || '' }];
+    } else {
+        return errorResponse_('At least one recipient email is required.');
+    }
+    var sent = 0, failed = 0, errors = [];
+    for (var i = 0; i < recipients.length; i++) {
+        var r = recipients[i];
+        var email = r.email;
+        var name = r.name || email.split('@')[0];
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { failed++; errors.push(email + ': invalid email'); continue; }
+        var tpl = buildReferrerTemplate_(name, template, payload.extras || {});
+        var finalHtml = payload.rawHtml || buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts);
+        var finalSubject = payload.rawSubject || tpl.subject;
+        try {
+            sendEmail_({ to: email, subject: finalSubject, htmlBody: finalHtml, from: 'hello@icuni.org' });
+            logEmail_(email, tpl.subject, 'admin_referrer_' + template, 'sent');
+            sent++;
+        } catch(e) {
+            logEmail_(email, tpl.subject, 'admin_referrer_' + template, 'failed');
+            failed++; errors.push(email + ': ' + e.message);
+        }
+    }
+    logAction_(auth.user.user_id, auth.user.name, 'REFERRER_EMAIL', template + ' -> ' + sent + ' sent, ' + failed + ' failed');
+    var msg = sent + ' email' + (sent !== 1 ? 's' : '') + ' sent';
+    if (failed > 0) msg += ', ' + failed + ' failed';
+    return successResponse_({ sent: sent, failed: failed, errors: errors }, msg + '.');
+}
+
+function handlePreviewReferrerEmail(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var template = payload.template;
+    if (!template || REFERRER_TEMPLATES.indexOf(template) === -1) return errorResponse_('Invalid template.');
+    var name = payload.name || 'Partner';
+    var tpl = buildReferrerTemplate_(name, template, payload.extras || {});
+    var html = buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts);
+    return successResponse_({ html: html, subject: tpl.subject });
+}
+
+function buildReferrerTemplate_(name, template, extras) {
+    extras = extras || {};
+    switch (template) {
+        case 'welcome':
+            return {
+                subject: 'Welcome to the ICUNI Labs Referral Program',
+                title: 'Welcome Aboard, Partner!',
+                body:
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<span style="display:inline-block;background:linear-gradient(135deg,#ff7a00,#ff9533);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;">YOU\'RE IN</span>' +
+                    '</div>' +
+                    'Welcome to the ICUNI Labs Referral Partner program. We\'re excited to have you on board.<br><br>' +
+                    'Here\'s how it works:<br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#ff7a00;font-size:13px;letter-spacing:2px;margin-bottom:10px;">YOUR PATH TO EARNINGS</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:2;">' +
+                    '1. Introduce us to a business owner or decision maker<br>' +
+                    '2. We handle the meeting, pitch, and proposal<br>' +
+                    '3. When the deal closes, you earn <strong style="color:#ff7a00;">GH\\u20B51,000+</strong> or 10% of the deal<br>' +
+                    '4. Payment hits as soon as the first payment lands' +
+                    '</div></div>' +
+                    'Log in to your referral dashboard to access portfolio decks, demo sites, and tracking tools.<br><br>' +
+                    'We look forward to building together.',
+                opts: { ctaText: 'Go to Dashboard', ctaLink: 'https://labs.icuni.org/#referral' }
+            };
+        case 'stage_update':
+            var stageName = extras.stageName || 'the next stage';
+            var prospectName = extras.prospectName || 'your referral';
+            return {
+                subject: 'Referral Update \u2014 ' + prospectName + ' | ICUNI Labs',
+                title: 'Your Referral is Moving Forward',
+                body:
+                    'Great news \u2014 <strong>' + prospectName + '</strong> has progressed to <strong style="color:#00bfff;">' + stageName + '</strong>.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<div style="color:#00bfff;font-size:13px;letter-spacing:2px;margin-bottom:8px;">CURRENT STATUS</div>' +
+                    '<div style="color:#e8ecf4;font-size:15px;font-weight:600;">' + stageName + '</div>' +
+                    '<div style="color:#94a3b8;font-size:12px;margin-top:6px;">Prospect: ' + prospectName + '</div>' +
+                    '</div>' +
+                    'We\'ll keep you updated as things progress. You can also check your dashboard for real-time status.',
+                opts: { ctaText: 'View Dashboard', ctaLink: 'https://labs.icuni.org/#referral' }
+            };
+        case 'payment_sent':
+            var amount = extras.amount || '1,000';
+            var method = extras.method || 'your preferred method';
+            return {
+                subject: 'Payment Sent \u2014 GH\\u20B5' + amount + ' | ICUNI Labs',
+                title: 'You Just Got Paid!',
+                body:
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<span style="display:inline-block;background:linear-gradient(135deg,#10b981,#34d399);color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:700;letter-spacing:1px;">PAYMENT SENT</span>' +
+                    '</div>' +
+                    'Congratulations! Your referral commission has been processed.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<table style="width:100%;border-collapse:collapse;">' +
+                    '<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#94a3b8;font-size:14px;">Amount</td>' +
+                    '<td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#10b981;font-size:18px;font-weight:700;text-align:right;">GH\\u20B5' + amount + '</td></tr>' +
+                    '<tr><td style="padding:8px 12px;color:#94a3b8;font-size:14px;">Method</td>' +
+                    '<td style="padding:8px 12px;color:#e8ecf4;font-size:14px;text-align:right;">' + method + '</td></tr>' +
+                    '</table></div>' +
+                    'Thank you for the introduction \u2014 keep them coming. Every deal you bring in earns you more.',
+                opts: { ctaText: 'Refer Another', ctaLink: 'https://labs.icuni.org/#referral' }
+            };
+        case 'meeting_reminder':
+            var meetDate = extras.meetingDate || 'TBC';
+            var meetTime = extras.meetingTime || 'TBC';
+            var prospect = extras.prospectName || 'your referral';
+            return {
+                subject: 'Meeting Reminder \u2014 ' + prospect + ' | ICUNI Labs',
+                title: 'Meeting Coming Up',
+                body:
+                    'Just a heads up \u2014 the meeting with <strong>' + prospect + '</strong> is scheduled:<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<table style="width:100%;border-collapse:collapse;">' +
+                    '<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#94a3b8;font-size:13px;width:80px;">Date</td>' +
+                    '<td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#e8ecf4;font-size:15px;font-weight:600;">' + meetDate + '</td></tr>' +
+                    '<tr><td style="padding:8px 12px;color:#94a3b8;font-size:13px;">Time</td>' +
+                    '<td style="padding:8px 12px;color:#e8ecf4;font-size:15px;font-weight:600;">' + meetTime + '</td></tr>' +
+                    '</table></div>' +
+                    'We\'ll handle the meeting. If the prospect has invited you to attend, feel free to join \u2014 otherwise sit back and let us do our thing.<br><br>' +
+                    'We\'ll update you as soon as it\'s done.',
+                opts: { ctaText: 'View Dashboard', ctaLink: 'https://labs.icuni.org/#referral' }
+            };
+        case 'new_material':
+            var matTitle = extras.materialTitle || 'New Material';
+            var matDesc = extras.materialDescription || 'New portfolio and demo materials are now available.';
+            return {
+                subject: 'New Material Available | ICUNI Labs',
+                title: 'Fresh Material for Your Toolkit',
+                body:
+                    'We\'ve added new material to your referral toolkit:<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#8b5cf6;font-size:13px;letter-spacing:2px;margin-bottom:8px;">NEW MATERIAL</div>' +
+                    '<div style="color:#e8ecf4;font-size:16px;font-weight:600;margin-bottom:6px;">' + matTitle + '</div>' +
+                    '<div style="color:#94a3b8;font-size:14px;line-height:1.6;">' + matDesc + '</div>' +
+                    '</div>' +
+                    'Use this when speaking with prospects. Log in to your dashboard to view and download.',
+                opts: { ctaText: 'View Materials', ctaLink: 'https://labs.icuni.org/#referral' }
+            };
+        case 'custom':
+            return {
+                subject: extras.subject || 'A Message from ICUNI Labs',
+                title: extras.title || 'Hello from ICUNI Labs',
+                body: extras.body || 'This is a custom message from our team.',
+                opts: extras.ctaLink ? { ctaText: extras.ctaText || 'Visit ICUNI Labs', ctaLink: extras.ctaLink } : { hideCta: true }
+            };
+        default:
+            throw new Error('Unknown referrer template: ' + template);
+    }
+}

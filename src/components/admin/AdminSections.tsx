@@ -1226,9 +1226,18 @@ export function CareersSection() {
 // ─── REFERRALS ───────────────────────────────────────────
 const PIPELINE_STAGES = ['Submitted', 'Meeting Scheduled', 'Meeting Done', 'Proposal Sent', 'Closed Won', 'Closed Lost']
 
+const REF_EMAIL_TEMPLATES = [
+  { key: 'welcome', label: 'Welcome to Program', desc: 'Welcome new referral partner to the program.', color: 'text-[#ff7a00]' },
+  { key: 'stage_update', label: 'Stage Update', desc: 'Notify referrer their referral has progressed.', color: 'text-[#00bfff]' },
+  { key: 'payment_sent', label: 'Payment Sent', desc: 'Confirm commission payment to referrer.', color: 'text-emerald-400' },
+  { key: 'meeting_reminder', label: 'Meeting Reminder', desc: 'Remind about upcoming prospect meeting.', color: 'text-purple-400' },
+  { key: 'new_material', label: 'New Material', desc: 'Notify about new portfolio/demo materials.', color: 'text-violet-400' },
+  { key: 'custom', label: 'Custom Email', desc: 'Write your own branded email from scratch.', color: 'text-amber-400' },
+] as const
+
 export function ReferralsSection() {
   const { referrers, referrals, referrerMaterials, referrerNotifications, loading } = useAdminStore()
-  const [tab, setTab] = useState<'referrers' | 'pipeline' | 'materials' | 'notifications'>('referrers')
+  const [tab, setTab] = useState<'referrers' | 'pipeline' | 'materials' | 'notifications' | 'emails'>('referrers')
   const [notifyTarget, setNotifyTarget] = useState<any>(null)
   const [notifyMsg, setNotifyMsg] = useState('')
   const [notifyType, setNotifyType] = useState('stage_update')
@@ -1236,6 +1245,38 @@ export function ReferralsSection() {
   const [matForm, setMatForm] = useState({ title: '', description: '', type: 'deck', url: '' })
   const [closeModal, setCloseModal] = useState<any>(null)
   const [dealValue, setDealValue] = useState('')
+
+  // ── Referrer Email State ──
+  const [emailRow, setEmailRow] = useState<any>(null)
+  const [refTemplate, setRefTemplate] = useState('welcome')
+  const [refPreviewHtml, setRefPreviewHtml] = useState('')
+  const [refSending, setRefSending] = useState(false)
+  const [refSent, setRefSent] = useState(false)
+  const [refExtras, setRefExtras] = useState<Record<string, string>>({ amount: '', method: 'MoMo', stageName: '', prospectName: '', meetingDate: '', meetingTime: '', materialTitle: '', materialDescription: '', subject: '', title: '', body: '', ctaText: '', ctaLink: '' })
+  const refIframeRef = useRef<HTMLIFrameElement>(null)
+
+  const loadRefPreview = async (tpl: string, name?: string) => {
+    const preview = await adminActions.previewReferrerEmail(tpl, name || emailRow?.name || 'Partner', refExtras)
+    if (preview) setRefPreviewHtml(preview.html)
+  }
+  const openRefEmail = async (row: any) => {
+    setEmailRow(row); setRefSent(false); setRefTemplate('welcome')
+    const preview = await adminActions.previewReferrerEmail('welcome', row.name || 'Partner')
+    if (preview) setRefPreviewHtml(preview.html)
+  }
+  const changeRefTemplate = async (tpl: string) => {
+    setRefTemplate(tpl); setRefSent(false)
+    await loadRefPreview(tpl)
+  }
+  const handleRefSend = async () => {
+    if (!emailRow) return
+    setRefSending(true)
+    const doc = refIframeRef.current?.contentDocument
+    const rawHtml = doc?.documentElement?.outerHTML || ''
+    const result = await adminActions.sendReferrerEmail(refTemplate, [{ email: emailRow.email, name: emailRow.name || '' }], { ...refExtras, ...(rawHtml ? { rawHtml } : {}) })
+    setRefSending(false)
+    if (result) setRefSent(true)
+  }
 
   useEffect(() => { adminActions.loadReferrals(); adminActions.loadMaterials(); adminActions.loadReferrerNotifications() }, [])
 
@@ -1250,6 +1291,7 @@ export function ReferralsSection() {
           <button onClick={() => setTab('pipeline')} className={tabCls('pipeline')}>Pipeline ({referrals.length})</button>
           <button onClick={() => setTab('materials')} className={tabCls('materials')}>Materials ({referrerMaterials.length})</button>
           <button onClick={() => setTab('notifications')} className={tabCls('notifications')}>Notifications</button>
+          <button onClick={() => setTab('emails')} className={tabCls('emails')}>Emails</button>
         </div>
         <DataTable title="Referrers" subtitle="Partner referral network" loading={loading} data={referrers}
           columns={[
@@ -1262,6 +1304,10 @@ export function ReferralsSection() {
             { key: 'total_earned', label: 'Earned', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : 'GH₵0' },
           ]}
           searchKeys={['name', 'email']}
+          renderRowActions={(row) => (
+            <button onClick={() => { setTab('emails'); setTimeout(() => openRefEmail(row), 100) }}
+              className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Email</button>
+          )}
         />
       </div>
     )
@@ -1276,6 +1322,7 @@ export function ReferralsSection() {
           <button className={tabCls('pipeline')}>Pipeline ({referrals.length})</button>
           <button onClick={() => setTab('materials')} className={tabCls('materials')}>Materials</button>
           <button onClick={() => setTab('notifications')} className={tabCls('notifications')}>Notifications</button>
+          <button onClick={() => setTab('emails')} className={tabCls('emails')}>Emails</button>
         </div>
         <DataTable title="Referral Pipeline" subtitle="All referrals across all partners" loading={loading} data={referrals}
           columns={[
@@ -1361,6 +1408,7 @@ export function ReferralsSection() {
           <button onClick={() => setTab('pipeline')} className={tabCls('pipeline')}>Pipeline</button>
           <button className={tabCls('materials')}>Materials ({referrerMaterials.length})</button>
           <button onClick={() => setTab('notifications')} className={tabCls('notifications')}>Notifications</button>
+          <button onClick={() => setTab('emails')} className={tabCls('emails')}>Emails</button>
         </div>
         <DataTable title="Referrer Materials" subtitle="Portfolio decks, demos, and case studies for referrers" loading={loading} data={referrerMaterials}
           onAdd={() => setMatModal(true)} addLabel="Add Material"
@@ -1406,6 +1454,7 @@ export function ReferralsSection() {
   }
 
   // ── TAB: NOTIFICATIONS ──
+  if (tab === 'notifications') {
   return (
     <div>
       <div className="flex gap-2 mb-4">
@@ -1413,6 +1462,7 @@ export function ReferralsSection() {
         <button onClick={() => setTab('pipeline')} className={tabCls('pipeline')}>Pipeline</button>
         <button onClick={() => setTab('materials')} className={tabCls('materials')}>Materials</button>
         <button className={tabCls('notifications')}>Notifications</button>
+        <button onClick={() => setTab('emails')} className={tabCls('emails')}>Emails</button>
       </div>
       <DataTable title="Notification Log" subtitle="All notifications sent to referrers" loading={loading} data={referrerNotifications}
         columns={[
@@ -1423,6 +1473,147 @@ export function ReferralsSection() {
         ]}
         searchKeys={['referrer_name', 'type', 'message']}
       />
+    </div>
+  )
+  }
+
+  // ── TAB: EMAILS ──
+  return (
+    <div>
+      <div className="flex gap-2 mb-4">
+        <button onClick={() => setTab('referrers')} className={tabCls('referrers')}>Referrers</button>
+        <button onClick={() => setTab('pipeline')} className={tabCls('pipeline')}>Pipeline</button>
+        <button onClick={() => setTab('materials')} className={tabCls('materials')}>Materials</button>
+        <button onClick={() => setTab('notifications')} className={tabCls('notifications')}>Notifications</button>
+        <button className={tabCls('emails')}>Emails</button>
+      </div>
+
+      {!emailRow ? (
+        <DataTable title="Referrer Email" subtitle="Select a referrer to send a branded email" loading={loading} data={referrers}
+          columns={[
+            { key: 'name', label: 'Name', render: (v) => <span className="text-white font-medium">{v}</span> },
+            { key: 'email', label: 'Email' },
+            { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
+          ]}
+          searchKeys={['name', 'email']}
+          renderRowActions={(row) => (
+            <button onClick={() => openRefEmail(row)} className="text-xs text-[#00bfff] hover:text-white cursor-pointer">Compose</button>
+          )}
+        />
+      ) : (
+        <div className="bg-[#0d0d0d] border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl" style={{ height: '80vh' }}>
+          <div className="flex items-center justify-between px-6 py-3 border-b border-neutral-800">
+            <div>
+              <h3 className="text-sm font-bold text-white">Email to {emailRow.name}</h3>
+              <p className="text-[10px] text-neutral-500 mt-0.5">{emailRow.email}</p>
+            </div>
+            <button onClick={() => setEmailRow(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="flex" style={{ height: 'calc(100% - 52px)' }}>
+            {/* Left: template picker */}
+            <div className="w-[280px] flex-shrink-0 overflow-y-auto border-r border-neutral-800 p-4 space-y-3">
+              <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold mb-1">Template</p>
+              <div className="space-y-1.5">
+                {REF_EMAIL_TEMPLATES.map(tpl => (
+                  <button key={tpl.key} type="button" onClick={() => changeRefTemplate(tpl.key)}
+                    className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all cursor-pointer ${
+                      refTemplate === tpl.key ? 'bg-[#00bfff]/10 border-[#00bfff]/40' : 'bg-neutral-900/40 border-neutral-800 hover:border-neutral-700'
+                    }`}>
+                    <span className={`text-xs font-semibold ${refTemplate === tpl.key ? 'text-white' : tpl.color}`}>{tpl.label}</span>
+                    <p className="text-[9px] text-neutral-600 mt-0.5 leading-tight">{tpl.desc}</p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Template-specific fields */}
+              {refTemplate === 'stage_update' && (
+                <div className="pt-3 border-t border-neutral-800 space-y-2">
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Stage Details</p>
+                  <input value={refExtras.prospectName} onChange={e => setRefExtras({...refExtras, prospectName: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Prospect name" />
+                  <input value={refExtras.stageName} onChange={e => setRefExtras({...refExtras, stageName: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Stage name (e.g. Meeting Scheduled)" />
+                  <button onClick={() => loadRefPreview(refTemplate)} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
+                </div>
+              )}
+              {refTemplate === 'payment_sent' && (
+                <div className="pt-3 border-t border-neutral-800 space-y-2">
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Payment Details</p>
+                  <input value={refExtras.amount} onChange={e => setRefExtras({...refExtras, amount: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Amount (e.g. 1,000)" />
+                  <select value={refExtras.method} onChange={e => setRefExtras({...refExtras, method: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`}>
+                    <option>MoMo</option><option>Bank Transfer</option><option>Cash</option>
+                  </select>
+                  <button onClick={() => loadRefPreview(refTemplate)} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
+                </div>
+              )}
+              {refTemplate === 'meeting_reminder' && (
+                <div className="pt-3 border-t border-neutral-800 space-y-2">
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Meeting Details</p>
+                  <input value={refExtras.prospectName} onChange={e => setRefExtras({...refExtras, prospectName: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Prospect name" />
+                  <input type="date" value={refExtras.meetingDate} onChange={e => setRefExtras({...refExtras, meetingDate: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} />
+                  <input type="time" value={refExtras.meetingTime} onChange={e => setRefExtras({...refExtras, meetingTime: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} />
+                  <button onClick={() => loadRefPreview(refTemplate)} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
+                </div>
+              )}
+              {refTemplate === 'new_material' && (
+                <div className="pt-3 border-t border-neutral-800 space-y-2">
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Material Details</p>
+                  <input value={refExtras.materialTitle} onChange={e => setRefExtras({...refExtras, materialTitle: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Material title" />
+                  <textarea value={refExtras.materialDescription} onChange={e => setRefExtras({...refExtras, materialDescription: e.target.value})} className={`${inputCls} !py-1.5 !text-xs resize-none`} rows={2} placeholder="Description" />
+                  <button onClick={() => loadRefPreview(refTemplate)} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
+                </div>
+              )}
+              {refTemplate === 'custom' && (
+                <div className="pt-3 border-t border-neutral-800 space-y-2">
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Custom Content</p>
+                  <input value={refExtras.subject} onChange={e => setRefExtras({...refExtras, subject: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Subject line" />
+                  <input value={refExtras.title} onChange={e => setRefExtras({...refExtras, title: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Heading" />
+                  <textarea value={refExtras.body} onChange={e => setRefExtras({...refExtras, body: e.target.value})} className={`${inputCls} !py-1.5 !text-xs resize-y`} rows={4} placeholder="Email body" />
+                  <input value={refExtras.ctaText} onChange={e => setRefExtras({...refExtras, ctaText: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button text (optional)" />
+                  <input value={refExtras.ctaLink} onChange={e => setRefExtras({...refExtras, ctaLink: e.target.value})} className={`${inputCls} !py-1.5 !text-xs`} placeholder="Button URL (optional)" />
+                  <button onClick={() => loadRefPreview(refTemplate)} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh</button>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-neutral-800">
+                {refSent ? (
+                  <div className="flex items-center justify-center gap-2 py-2.5 text-emerald-400 font-bold text-sm">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                    Sent
+                  </div>
+                ) : (
+                  <button onClick={handleRefSend} disabled={refSending}
+                    className={`${btnPrimary} w-full flex items-center justify-center gap-2`}>
+                    {refSending ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Sending...</> : <><Send className="w-4 h-4" />Send Email</>}
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Right: preview */}
+            <div className="flex-1 min-w-0 p-4 flex flex-col">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] text-neutral-600">Click the preview to edit text directly</span>
+              </div>
+              <div className="rounded-xl border border-neutral-800 bg-white overflow-hidden flex-1">
+                {refPreviewHtml ? (
+                  <iframe
+                    ref={refIframeRef}
+                    srcDoc={refPreviewHtml}
+                    className="w-full h-full border-0"
+                    title="Referrer Email Preview"
+                    onLoad={() => {
+                      try {
+                        const doc = refIframeRef.current?.contentDocument
+                        if (doc) doc.designMode = 'on'
+                      } catch { /* sandbox */ }
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-neutral-400 text-sm bg-neutral-950">Loading preview...</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
