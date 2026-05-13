@@ -21,8 +21,9 @@ interface ProfileData {
 }
 
 export default function ProfileSection() {
-  const { user, loading } = useAdminStore()
+  const { user } = useAdminStore()
   const [profile, setProfile] = useState<ProfileData | null>(null)
+  const [profileLoading, setProfileLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null)
 
@@ -51,16 +52,54 @@ export default function ProfileSection() {
   }, [])
 
   async function loadProfile() {
-    const data = await adminActions.getProfile()
-    if (data) {
-      setProfile(data)
-      setName(data.name || '')
-      setPhone(data.phone || '')
-      setSecondaryPhone(data.contact_details?.secondary_phone || '')
-      setPersonalEmail(data.contact_details?.personal_email || '')
-      setProfilePic(data.profile_pic_url || '')
-      setCoverImage(data.cover_image_url || '')
+    setProfileLoading(true)
+    try {
+      const data = await Promise.race([
+        adminActions.getProfile(),
+        new Promise<null>(r => setTimeout(() => r(null), 8000)),
+      ])
+      if (data) {
+        setProfile(data)
+        setName(data.name || '')
+        setPhone(data.phone || '')
+        setSecondaryPhone(data.contact_details?.secondary_phone || '')
+        setPersonalEmail(data.contact_details?.personal_email || '')
+        setProfilePic(data.profile_pic_url || '')
+        setCoverImage(data.cover_image_url || '')
+      } else {
+        // Fallback: populate from local user store
+        if (user) {
+          setName(user.name || '')
+          setProfile({
+            name: user.name || '',
+            email: user.email || '',
+            phone: '',
+            role: user.role || '',
+            profile_pic_url: '',
+            cover_image_url: '',
+            contact_details: {},
+            has_password: false,
+            has_pin: false,
+          })
+        }
+      }
+    } catch {
+      if (user) {
+        setName(user.name || '')
+        setProfile({
+          name: user.name || '',
+          email: user.email || '',
+          phone: '',
+          role: user.role || '',
+          profile_pic_url: '',
+          cover_image_url: '',
+          contact_details: {},
+          has_password: false,
+          has_pin: false,
+        })
+      }
     }
+    setProfileLoading(false)
   }
 
   function flash(msg: string, type: 'ok' | 'err' = 'ok') {
@@ -105,7 +144,6 @@ export default function ProfileSection() {
   }
 
   function handleFileSelect(type: 'pic' | 'cover') {
-    // For now, prompt for URL — Drive upload can be added later
     const url = prompt(`Enter ${type === 'pic' ? 'profile picture' : 'cover image'} URL:`)
     if (url) {
       if (type === 'pic') setProfilePic(url)
@@ -113,12 +151,8 @@ export default function ProfileSection() {
     }
   }
 
-  if (!profile && !loading) {
-    return (
-      <div className="flex items-center justify-center py-32">
-        <span className="w-6 h-6 rounded-full border-2 border-white border-t-transparent animate-spin" />
-      </div>
-    )
+  if (profileLoading) {
+    return <ProfileSkeleton />
   }
 
   return (
@@ -300,6 +334,84 @@ export default function ProfileSection() {
           )}
         </div>
       </motion.section>
+    </div>
+  )
+}
+
+const pulse = 'animate-pulse bg-neutral-800/60 rounded'
+
+function ProfileSkeleton() {
+  return (
+    <div className="max-w-3xl">
+      {/* Cover image ghost */}
+      <div className={`h-48 rounded-2xl ${pulse} mb-8`} />
+
+      {/* Avatar + name row */}
+      <div className="flex items-end gap-6 -mt-20 mb-8 ml-6 relative z-10">
+        <div className={`w-24 h-24 rounded-2xl border-4 border-neutral-950 ${pulse}`} />
+        <div className="pb-1 space-y-2">
+          <div className={`h-6 w-40 ${pulse}`} />
+          <div className="flex gap-2">
+            <div className={`h-4 w-48 ${pulse}`} />
+            <div className={`h-4 w-16 rounded-full ${pulse}`} />
+          </div>
+        </div>
+      </div>
+
+      {/* Personal Information section */}
+      <div className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-6 mb-6">
+        <div className="flex items-center gap-2 mb-5">
+          <div className={`w-5 h-5 rounded ${pulse}`} />
+          <div className={`h-5 w-44 ${pulse}`} />
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i}>
+              <div className={`h-3 w-24 mb-2 ${pulse}`} />
+              <div className={`h-11 w-full rounded-lg ${pulse}`} />
+            </div>
+          ))}
+          <div className="md:col-span-2">
+            <div className={`h-3 w-28 mb-2 ${pulse}`} />
+            <div className={`h-11 w-full rounded-lg ${pulse}`} />
+          </div>
+        </div>
+        <div className={`h-11 w-36 mt-6 rounded-lg ${pulse}`} />
+      </div>
+
+      {/* Security section */}
+      <div className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <div className={`w-5 h-5 rounded ${pulse}`} />
+          <div className={`h-5 w-24 ${pulse}`} />
+        </div>
+        {/* Password row */}
+        <div className="border border-neutral-800 rounded-xl p-5 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-4 h-4 rounded ${pulse}`} />
+              <div className={`h-4 w-20 ${pulse}`} />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className={`h-5 w-14 rounded-full ${pulse}`} />
+              <div className={`h-4 w-16 ${pulse}`} />
+            </div>
+          </div>
+        </div>
+        {/* PIN row */}
+        <div className="border border-neutral-800 rounded-xl p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-4 h-4 rounded ${pulse}`} />
+              <div className={`h-4 w-20 ${pulse}`} />
+            </div>
+            <div className="flex items-center gap-3">
+              <div className={`h-5 w-14 rounded-full ${pulse}`} />
+              <div className={`h-4 w-16 ${pulse}`} />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

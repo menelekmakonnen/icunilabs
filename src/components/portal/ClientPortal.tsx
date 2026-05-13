@@ -426,7 +426,25 @@ export default function ClientPortal({ demoMode }: { demoMode?: boolean } = {}) 
         </header>
 
         {loading && activeProjects.length === 0 ? (
-          <div className="text-center py-20"><span className="w-6 h-6 rounded-full border-2 border-white border-t-transparent animate-spin inline-block"></span></div>
+          <div className="space-y-4">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-neutral-900/40 border border-neutral-800 p-6 rounded-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <div className="h-5 w-48 animate-pulse bg-neutral-800/60 rounded mb-2" />
+                    <div className="h-3.5 w-28 animate-pulse bg-neutral-800/60 rounded" />
+                  </div>
+                  <div className="text-right space-y-1.5">
+                    <div className="h-4 w-10 animate-pulse bg-neutral-800/60 rounded ml-auto" />
+                    <div className="h-4 w-4 animate-pulse bg-neutral-800/60 rounded ml-auto" />
+                  </div>
+                </div>
+                <div className="h-1.5 bg-neutral-950 rounded-full overflow-hidden border border-neutral-800">
+                  <div className="h-full w-1/3 animate-pulse bg-neutral-800/60 rounded-full" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className="space-y-4">
             {activeProjects.map(project => {

@@ -511,8 +511,31 @@ function DashboardView({ session, dashboard, loading, onLogout, onRefresh, showS
         </header>
 
         {loading && !dashboard ? (
-          <div className="flex items-center justify-center py-20">
-            <span className="w-6 h-6 rounded-full border-2 border-white border-t-transparent animate-spin" />
+          <div className="space-y-8">
+            {/* Stats row skeleton */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-4 h-4 animate-pulse bg-neutral-800/60 rounded" />
+                    <div className="h-3 w-20 animate-pulse bg-neutral-800/60 rounded" />
+                  </div>
+                  <div className="h-7 w-16 animate-pulse bg-neutral-800/60 rounded" />
+                </div>
+              ))}
+            </div>
+            {/* Table skeleton */}
+            <div className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-6">
+              <div className="h-5 w-32 animate-pulse bg-neutral-800/60 rounded mb-6" />
+              {[1, 2, 3].map(i => (
+                <div key={i} className="flex items-center gap-4 py-4 border-b border-neutral-800/50 last:border-0">
+                  <div className="h-4 w-1/4 animate-pulse bg-neutral-800/60 rounded" />
+                  <div className="h-4 w-1/5 animate-pulse bg-neutral-800/60 rounded" />
+                  <div className="h-4 w-16 animate-pulse bg-neutral-800/60 rounded-full" />
+                  <div className="h-4 w-20 animate-pulse bg-neutral-800/60 rounded ml-auto" />
+                </div>
+              ))}
+            </div>
           </div>
         ) : (
           <>
