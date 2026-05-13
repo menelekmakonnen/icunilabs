@@ -406,7 +406,7 @@ function handleCreateApplication(payload) {
 // ADMIN — APPLICANT EMAIL SYSTEM
 // ═══════════════════════════════════════════════════════════
 
-var APPLICANT_TEMPLATES = ['cv_confirmation', 'interview_selected', 'not_selected', 'interview_thanks', 'interview_confirmed', 'role_offered', 'role_rejected', 'custom'];
+var APPLICANT_TEMPLATES = ['cv_confirmation', 'interview_selected', 'not_selected', 'interview_thanks', 'interview_confirmed', 'trial_invitation', 'role_offered', 'role_rejected', 'custom'];
 
 /**
  * Send a curated email template to one or more applicants.
@@ -675,7 +675,69 @@ function buildApplicantTemplate_(name, template, extras) {
                 newStatus: null
             };
 
-        // ── 6. You Have Been Selected for the Role ───────────
+        // ── 6. Paid Trial Invitation ─────────────────────────
+        case 'trial_invitation':
+            var rate = extras.weeklyRate || '700';
+            return {
+                subject: "Congratulations \u2014 You've Been Selected for the Next Stage | ICUNI Labs",
+                title: 'Paid Working Trial Invitation',
+                body:
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<span style="display:inline-block;background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;">YOU STOOD OUT</span>' +
+                    '</div>' +
+                    'Congratulations. Out of all the applicants we reviewed for the Operations Assistant role, ' +
+                    'you stood out \u2014 and I would like to personally invite you to the next stage of our process.<br><br>' +
+                    'This is a <strong>one-week paid working trial</strong> \u2014 a structured week where you will perform ' +
+                    'the core function of the role with full support, real tools, and real compensation. ' +
+                    'The purpose is mutual: I get to see how you work in a live environment, and you get to ' +
+                    'experience what it is actually like to work with me and this company.<br><br>' +
+
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#00bfff;font-size:13px;letter-spacing:2px;margin-bottom:10px;">WHAT YOU WILL DO</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:2;">' +
+                    '\u2022 Receive a demo video, outreach scripts, and access to our demo sites<br>' +
+                    '\u2022 Identify and qualify <strong style="color:white;">10 strong prospective leads</strong><br>' +
+                    '\u2022 Deliver <strong style="color:white;">2 fully qualified, meeting-ready leads</strong> to me for closing<br>' +
+                    '\u2022 You will not be expected to sell, negotiate, or close' +
+                    '</div></div>' +
+
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#10b981;font-size:13px;letter-spacing:2px;margin-bottom:10px;">COMPENSATION</div>' +
+                    '<table style="width:100%;border-collapse:collapse;">' +
+                    '<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#94a3b8;font-size:14px;">Base Pay</td>' +
+                    '<td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#e8ecf4;font-size:15px;font-weight:600;text-align:right;">GH\u20B5' + rate + ' for the week</td></tr>' +
+                    '<tr><td style="padding:8px 12px;color:#94a3b8;font-size:14px;">Commission</td>' +
+                    '<td style="padding:8px 12px;color:#ff7a00;font-size:15px;font-weight:600;text-align:right;">GH\u20B51,000 or 10% of deal</td></tr>' +
+                    '</table>' +
+                    '<div style="color:#64748b;font-size:12px;margin-top:10px;">Commission applies to any deal that closes from a lead you deliver during the trial \u2014 whichever is higher.</div>' +
+                    '</div>' +
+
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#f59e0b;font-size:13px;letter-spacing:2px;margin-bottom:10px;">NEXT STEP</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:1.7;">' +
+                    'If you accept, I would like to schedule a <strong style="color:white;">1-hour briefing call today</strong> ' +
+                    'to walk you through the tools, scripts, expectations, and answer any questions.<br><br>' +
+                    'Please select a time between <strong style="color:white;">12:00 PM and 5:00 PM today</strong> ' +
+                    'and reply to this email with your preferred slot.' +
+                    '</div></div>' +
+
+                    'After the briefing, you will receive a short <strong>Independent Contractor Agreement</strong> ' +
+                    'to review and sign. This formalises the arrangement and protects both parties.<br><br>' +
+
+                    'At the end of the 5 days, we will have a brief wrap-up conversation. If the fit is right on both sides, ' +
+                    'we move into a formal offer. If not, you walk away with your full pay and commission \u2014 no obligations.<br><br>' +
+
+                    'I look forward to working with you this week.<br><br>' +
+
+                    '<div style="border-top:1px solid #2a2a4a;padding-top:16px;margin-top:16px;">' +
+                    '<strong style="color:white;">Menelek (Mikael) Makonnen</strong><br>' +
+                    '<span style="color:#64748b;font-size:13px;">Founder, ICUNI Labs \u2014 labs.icuni.org</span>' +
+                    '</div>',
+                opts: { hideCta: true },
+                newStatus: 'trial_invited'
+            };
+
+        // ── 7. You Have Been Selected for the Role ───────────
         case 'role_offered':
             return {
                 subject: 'Offer of Employment — ICUNI Labs',
