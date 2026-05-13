@@ -282,7 +282,7 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
                 You Introduce.<br /><span className="bg-gradient-to-r from-[#ff7a00] to-[#ff9944] bg-clip-text text-transparent">We Close. You Earn.</span>
               </h1>
               <p className="text-lg md:text-xl text-neutral-400 max-w-2xl mb-4">
-                We build business operations systems — dashboards, trackers, automations — for companies across <span className="text-neutral-200">Warehouse, Construction, Finance, Tax, Media, Oil & Gas, Printing</span>, and more.
+                Every business you refer gets a working demo before they commit to anything. No risk for them, commission for you. We build operations systems across <span className="text-neutral-200">Warehouse, Construction, Finance, Tax, Media, Oil & Gas, Printing</span>, and more.
               </p>
               <p className="text-lg md:text-xl text-neutral-300 max-w-2xl mb-8">
                 If you can get us in a room with a business decision maker who needs our help, we're offering <span className="text-[#ff7a00] font-bold">GH&#x20B5;1,000</span> commission — or <span className="text-[#ff7a00] font-bold">10% of the deal</span>, whichever is higher. No cap.

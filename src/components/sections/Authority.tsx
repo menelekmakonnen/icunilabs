@@ -6,15 +6,15 @@ import { TOTAL_PROJECT_COUNT } from '../../data/portfolioData';
 const pillars = [
     {
         icon: Eye,
-        title: "Strategic enough to see the real bottleneck",
+        title: "We see the real problem — not the symptom",
     },
     {
         icon: Wrench,
-        title: "Practical enough to build what actually works",
+        title: "We build the proof — demo in 1-3 days",
     },
     {
         icon: Zap,
-        title: "Lean enough to move without enterprise drag",
+        title: "No software subscriptions — the system is yours forever",
     },
 ];
 
@@ -31,8 +31,8 @@ export default function Authority() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.5 }}
                 >
-                    {TOTAL_PROJECT_COUNT}+ Projects.{' '}
-                    <span className="text-[#00bfff] drop-shadow-[0_0_15px_rgba(0,191,255,0.4)]">One Developer.</span>
+                    {TOTAL_PROJECT_COUNT}+ Systems Built.{' '}
+                    <span className="text-[#00bfff] drop-shadow-[0_0_15px_rgba(0,191,255,0.4)]">Zero Unsolvable Problems.</span>
                 </motion.h2>
 
                 <motion.p
@@ -42,7 +42,7 @@ export default function Authority() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: 0.1 }}
                 >
-                    A lot of firms can explain your problem back to you in expensive language. ICUNI Labs is for teams that need the system designed and built around the way the work really happens. From Google Apps Script ERPs to Adobe Premiere extensions to .NET WPF media managers — the goal is not to make the business sound sophisticated. The goal is to make it run better.
+                    Print shops, construction sites, swim schools, block factories, warehouses, property portfolios — every industry, every challenge, every time. We don't just promise delivery. We prove it with a working demo before you commit to anything.
                 </motion.p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">

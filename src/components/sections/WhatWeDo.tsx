@@ -2,7 +2,7 @@
 import { motion } from 'framer-motion';
 import {
     Workflow, LayoutDashboard, BrainCircuit,
-    Clapperboard, Wrench,
+    Clapperboard, Wrench, Globe,
 } from 'lucide-react';
 import DashboardSVG from '../animations/DashboardSVG';
 
@@ -21,9 +21,9 @@ const services = [
     },
     {
         icon: BrainCircuit,
-        title: "AI-Enabled Business Operations Systems",
-        desc: "For structured productivity, internal support, workflow acceleration, and practical AI integration.",
-        example: "e.g. Internal AI assistant for repeated admin tasks",
+        title: "AI That Actually Works For Your Business",
+        desc: "We build your system to work well first, so the AI has a structured environment to operate from. Document processing, smart scheduling, predictive analytics — practical AI built on solid operational foundations.",
+        example: "e.g. AI-assisted financial reconciliation",
     },
     {
         icon: Clapperboard,
@@ -34,8 +34,14 @@ const services = [
     {
         icon: Wrench,
         title: "Custom Internal Tools",
-        desc: "For businesses whose operations are too specific for off-the-shelf software.",
+        desc: "For businesses whose operations are too specific for off-the-shelf software. If it doesn't exist, we build it.",
         example: "e.g. Internal portal tailored to how the team actually works",
+    },
+    {
+        icon: Globe,
+        title: "Websites, Apps & Portals",
+        desc: "Client-facing portals, internal dashboards, mobile apps, marketing websites — any digital product your business needs to exist.",
+        example: "e.g. Client portal with real-time project tracking",
     },
 ];
 
@@ -54,8 +60,8 @@ export default function WhatWeDo() {
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.5 }}
                             >
-                                Business Operations Systems for{' '}
-                                <span className="text-[#00bfff] drop-shadow-[0_0_15px_rgba(0,191,255,0.4)]">Real Execution</span>
+                                Business Operations Systems —{' '}
+                                <span className="text-[#00bfff] drop-shadow-[0_0_15px_rgba(0,191,255,0.4)]">We Build Everything. Fast.</span>
                             </motion.h2>
                             <motion.p
                                 className="text-neutral-400 text-lg max-w-2xl"
@@ -64,7 +70,7 @@ export default function WhatWeDo() {
                                 viewport={{ once: true }}
                                 transition={{ duration: 0.5, delay: 0.1 }}
                             >
-                                Different businesses break in different places. The common issue is usually the same: the work is moving, but the operations underneath it are weak.
+                                Whatever your business runs on — spreadsheets, chats, guesswork — we replace it with a system that actually works. Custom-built for how your team operates.
                             </motion.p>
                         </div>
 

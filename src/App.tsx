@@ -20,6 +20,7 @@ import Portfolio from './components/sections/Portfolio';
 import ProjectDetail from './components/sections/ProjectDetail';
 import AdminPanel from './components/admin/AdminPanel';
 import DemosPage from './components/sections/DemosPage';
+import DemoDetailPage from './components/sections/DemoDetailPage';
 import PersonaPage from './components/sections/PersonaPage';
 import WhoWeHelpPage from './components/sections/WhoWeHelpPage';
 import PersonaDrawer from './components/layout/PersonaDrawer';
@@ -58,6 +59,16 @@ function App() {
       <>
         <Navbar />
         <DemosPage />
+      </>
+    );
+  }
+
+  if (currentHash.startsWith('#demo/')) {
+    const demoId = currentHash.replace('#demo/', '');
+    return (
+      <>
+        <Navbar />
+        <DemoDetailPage demoId={demoId} />
       </>
     );
   }

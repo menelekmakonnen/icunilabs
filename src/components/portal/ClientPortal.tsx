@@ -327,7 +327,7 @@ export default function ClientPortal({ demoMode }: { demoMode?: boolean } = {}) 
                     Welcome to your<br /><span className="bg-gradient-to-r from-[#00bfff] to-[#00e5ff] bg-clip-text text-transparent">project hub</span>
                   </h1>
                   <p className="text-neutral-400 text-lg mb-8 max-w-md">
-                    Track your project's progress, view invoices, and communicate with the team — all in one place.
+                    Track milestones, review demos, manage invoices, and communicate with the build team — all from one secure dashboard.
                   </p>
                 </motion.div>
 

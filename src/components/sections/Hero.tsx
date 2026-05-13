@@ -11,12 +11,12 @@ interface SubheadlineSegment {
 type Subheadline = SubheadlineSegment[];
 
 const allSubheadlines: Subheadline[] = [
-    [{ text: "Custom Business Operations Systems for " }, { text: "scaling companies.", color: "#00bfff" }],
-    [{ text: "Accelerating team execution with " }, { text: "tailored internal tools.", color: "#ff7a00" }],
-    [{ text: "Dashboards, automations, and portals—" }, { text: "built to perform.", color: "#00bfff" }],
-    [{ text: "Replacing manual processes with " }, { text: "automated workflows.", color: "#ff7a00" }],
-    [{ text: "Custom software that runs your " }, { text: "daily operations natively.", color: "#00bfff" }],
-    [{ text: "We build the systems that teams use to " }, { text: "execute faster.", color: "#ff7a00" }],
+    [{ text: "We can build literally " }, { text: "any digital product.", color: "#00bfff" }, { text: " Challenge us." }],
+    [{ text: "Demo in 3 days. No proposal. No commitment. " }, { text: "Just proof.", color: "#ff7a00" }],
+    [{ text: "From print shops to swim schools — " }, { text: "if it runs on data, we build it.", color: "#00bfff" }],
+    [{ text: "AI-powered systems " }, { text: "that run your business while you sleep.", color: "#ff7a00" }],
+    [{ text: "No subscriptions. No vendor lock-in. " }, { text: "Just your system, forever.", color: "#00bfff" }],
+    [{ text: "60+ systems built. Zero we couldn't solve. " }, { text: "Your move.", color: "#ff7a00" }],
 ];
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -190,10 +190,10 @@ export default function Hero() {
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </a>
                     <a
-                        href="#portfolio"
+                        href="#demos"
                         className="flex items-center justify-center px-8 py-4 bg-transparent border border-[#ff7a00]/50 text-[#ff7a00] font-bold rounded hover:bg-[#ff7a00]/10 hover:border-[#ff7a00] transition-all shadow-[inset_0_0_10px_rgba(255,102,0,0.05)]"
                     >
-                        View Portfolio
+                        See Live Demos
                     </a>
                 </motion.div>
 
@@ -203,7 +203,7 @@ export default function Hero() {
                     animate={{ opacity: 0.7 }}
                     transition={{ duration: 0.8, delay: 0.5 }}
                 >
-                    Built for growing teams, creative businesses, and operations-heavy companies that have outgrown hustle.
+                    We don't pitch. We build. Tell us what can't be solved — we'll show you it can.
                 </motion.p>
 
             </div>

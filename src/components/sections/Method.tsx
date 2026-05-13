@@ -18,7 +18,7 @@ export default function Method() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.5 }}
                     >
-                        From Bottleneck to Working System
+                        Challenge Us. We'll Prove It.
                     </motion.h2>
                     <motion.p
                         className="text-lg text-neutral-500 font-medium"
@@ -27,7 +27,7 @@ export default function Method() {
                         viewport={{ once: true }}
                         transition={{ duration: 0.5, delay: 0.2 }}
                     >
-                        We don't start with software for the sake of it. We start with where the business is slowing down, breaking, or depending too much on manual effort.
+                        Tell us what your business struggles with. We'll diagnose the bottleneck, build a working demo, and show you the solution — no commitment required. If you don't like it, walk away.
                     </motion.p>
                 </div>
 
@@ -85,10 +85,10 @@ export default function Method() {
                                 
                                 {/* Pipeline items */}
                                 {[
-                                    { status: 'completed', num: '01', title: 'Diagnose', desc: 'Identify bottlenecks and map friction points.' },
-                                    { status: 'completed', num: '02', title: 'Design', desc: 'Define operating logic and shape the system.' },
-                                    { status: 'active', num: '03', title: 'Build', desc: 'Develop tools, automations, and AI workflow layers.' },
-                                    { status: 'pending', num: '04', title: 'Refine', desc: 'Deploy to the team and adapt to real-world use.' },
+                                    { status: 'completed', num: '01', title: 'Diagnose', desc: 'Tell us your hardest operational problem.' },
+                                    { status: 'completed', num: '02', title: 'Design', desc: 'We map the solution architecture in hours.' },
+                                    { status: 'active', num: '03', title: 'Build', desc: 'Working demo in 1-3 days. Not a mockup — a demo.' },
+                                    { status: 'pending', num: '04', title: 'Refine', desc: 'Deploy, train your team, iterate until perfect.' },
                                 ].map((step, idx) => (
                                     <motion.div 
                                         key={idx} 
