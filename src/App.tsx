@@ -19,6 +19,7 @@ import JobsPage from './components/sections/JobsPage';
 import Portfolio from './components/sections/Portfolio';
 import ProjectDetail from './components/sections/ProjectDetail';
 import AdminPanel from './components/admin/AdminPanel';
+import DemosPage from './components/sections/DemosPage';
 import PersonaPage from './components/sections/PersonaPage';
 import WhoWeHelpPage from './components/sections/WhoWeHelpPage';
 import PersonaDrawer from './components/layout/PersonaDrawer';
@@ -50,6 +51,15 @@ function App() {
 
   if (currentHash === '#showcase') {
     return <AnimationShowcase />;
+  }
+
+  if (currentHash === '#demos') {
+    return (
+      <>
+        <Navbar />
+        <DemosPage />
+      </>
+    );
   }
 
   if (currentHash === '#jobs' || currentHash.startsWith('#job/') || currentHash.startsWith('#apply/')) {
