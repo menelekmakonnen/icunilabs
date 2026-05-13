@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Plus, X, Users, TrendingUp, Clock, DollarSign, ChevronRight, ArrowLeft, FolderOpen, Wallet, Copy, ExternalLink, Calendar, MessageSquare } from 'lucide-react';
-import ReferralProcessSVG, { STAGE_LABELS } from './ReferralProcessSVG';
+import { LogOut, Plus, X, Users, TrendingUp, Clock, DollarSign, ChevronRight, ArrowLeft, FolderOpen, Wallet, Copy, ExternalLink, Calendar } from 'lucide-react';
+import ReferralProcessSVG from './ReferralProcessSVG';
 
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 

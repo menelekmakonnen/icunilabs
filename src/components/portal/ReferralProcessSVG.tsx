@@ -30,7 +30,6 @@ export const STAGE_COUNT = STAGES.length;
 // ── Icon paths for each stage ──
 function StageIcon({ index, size = 20, color }: { index: number; size?: number; color: string }) {
   const s = size;
-  const half = s / 2;
   const common = { fill: 'none', stroke: color, strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
   switch (index) {
