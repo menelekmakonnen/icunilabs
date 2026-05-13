@@ -272,23 +272,34 @@ function ProjectDashboard({ project, onBack }: { project: PortalProject; onBack:
 }
 
 // ─── MAIN EXPORT ───
-export default function ClientPortal() {
+export default function ClientPortal({ demoMode }: { demoMode?: boolean } = {}) {
   const { token, user, projects, loading, error, otpSent } = usePortalStore();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [selectedProject, setSelectedProject] = useState<PortalProject | null>(null);
   const [showBugReport, setShowBugReport] = useState(false);
 
+  // Demo mode data
+  const demoUser = { name: 'Ama Owusu', email: 'ama@freshfoods.com', role: 'client' };
+  const demoProjects: PortalProject[] = [
+    { project_id: 'DEMO-P1', client_id: 'DEMO-C1', title: 'FreshFoods Inventory Tracker', client_name: 'FreshFoods GH', status: 'active', step: 4, type: 'custom', description: 'End-to-end inventory management system with supplier integration and automated reorder alerts.', estimated_cost: 8500, total_paid: 5100, balance: 3400, start_date: '2025-10-01', est_completion: '2026-01-15' },
+    { project_id: 'DEMO-P2', client_id: 'DEMO-C1', title: 'Staff Scheduling Portal', client_name: 'FreshFoods GH', status: 'active', step: 2, type: 'custom', description: 'Shift management and employee scheduling dashboard with WhatsApp notifications.', estimated_cost: 4200, total_paid: 2100, balance: 2100, start_date: '2025-12-01', est_completion: '2026-03-01' },
+  ];
+
+  const activeUser = demoMode ? demoUser : user;
+  const activeProjects = demoMode ? demoProjects : projects;
+  const isAuthed = demoMode || (token && user);
+
   useEffect(() => {
-    if (token && !user) portalActions.validateExistingToken();
+    if (!demoMode && token && !user) portalActions.validateExistingToken();
   }, []);
 
   useEffect(() => {
-    if (token && user) portalActions.loadProjects();
+    if (!demoMode && token && user) portalActions.loadProjects();
   }, [token, user]);
 
   // ── LOGIN SCREEN (redesigned) ──
-  if (!token || !user) {
+  if (!isAuthed) {
     return (
       <div className="min-h-screen bg-neutral-950 text-neutral-50 selection:bg-neutral-800 selection:text-white">
         {/* Navbar spacing */}
@@ -399,25 +410,26 @@ export default function ClientPortal() {
       <div className="max-w-4xl mx-auto px-6">
         <header className="flex items-end justify-between gap-6 mb-10 border-b border-neutral-900 pb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight mb-1">Welcome, {user.name}</h1>
-            <p className="text-neutral-400">{projects.length} project{projects.length !== 1 ? 's' : ''}</p>
+            <h1 className="text-3xl font-bold tracking-tight mb-1">Welcome, {activeUser!.name}</h1>
+            <p className="text-neutral-400">{activeProjects.length} project{activeProjects.length !== 1 ? 's' : ''}</p>
           </div>
           <div className="flex items-center gap-3">
             <button onClick={() => setShowBugReport(true)}
               className="flex items-center gap-2 text-sm text-amber-500/80 hover:text-amber-400 transition-colors cursor-pointer border border-amber-500/20 hover:border-amber-500/40 rounded-lg px-3 py-1.5">
               <AlertTriangle className="w-3.5 h-3.5" /> Report Issue
             </button>
-            <button onClick={portalActions.logout} className="flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors cursor-pointer">
+            {!demoMode && <button onClick={portalActions.logout} className="flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors cursor-pointer">
               <LogOut className="w-4 h-4" /> Sign Out
-            </button>
+            </button>}
+
           </div>
         </header>
 
-        {loading && projects.length === 0 ? (
+        {loading && activeProjects.length === 0 ? (
           <div className="text-center py-20"><span className="w-6 h-6 rounded-full border-2 border-white border-t-transparent animate-spin inline-block"></span></div>
         ) : (
           <div className="space-y-4">
-            {projects.map(project => {
+            {activeProjects.map(project => {
               const step = Number(project.step) || 0;
               const pct = Math.round((step / 10) * 100);
               return (
@@ -440,7 +452,7 @@ export default function ClientPortal() {
                 </motion.button>
               );
             })}
-            {projects.length === 0 && !loading && (
+            {activeProjects.length === 0 && !loading && (
               <div className="text-center py-20 text-neutral-500">No projects found for your account.</div>
             )}
           </div>
@@ -449,7 +461,7 @@ export default function ClientPortal() {
 
       {/* Bug Report Modal */}
       <AnimatePresence>
-        {showBugReport && <BugReportModal projects={projects} onClose={() => setShowBugReport(false)} />}
+        {showBugReport && <BugReportModal projects={activeProjects} onClose={() => setShowBugReport(false)} />}
       </AnimatePresence>
     </div>
   );

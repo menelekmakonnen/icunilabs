@@ -41,7 +41,7 @@ export default function AdminPanel() {
     return (
       <>
         <ActingAsBanner role="Referrer" />
-        <ReferralPortal />
+        <ReferralPortal demoMode />
       </>
     )
   }
@@ -49,7 +49,7 @@ export default function AdminPanel() {
     return (
       <>
         <ActingAsBanner role="Client" />
-        <ClientPortal />
+        <ClientPortal demoMode />
       </>
     )
   }

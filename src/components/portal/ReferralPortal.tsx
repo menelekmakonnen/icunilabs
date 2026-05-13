@@ -87,15 +87,16 @@ function formatDate(iso: string) {
 }
 
 // ─── MAIN COMPONENT ───
-export default function ReferralPortal() {
-  const [view, setView] = useState<ViewMode>('auth');
-  const [session, setSession] = useState<ReferrerSession | null>(null);
+export default function ReferralPortal({ demoMode }: { demoMode?: boolean } = {}) {
+  const [view, setView] = useState<ViewMode>(demoMode ? 'dashboard' : 'auth');
+  const [session, setSession] = useState<ReferrerSession | null>(demoMode ? { referrerId: 'DEMO-001', name: 'Kwame Mensah', email: 'kwame@example.com' } : null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Restore session
+  // Restore session (skip in demo mode)
   useEffect(() => {
+    if (demoMode) return;
     const saved = localStorage.getItem('icuni_referrer');
     if (saved) {
       try {
@@ -108,7 +109,14 @@ export default function ReferralPortal() {
 
   // Fetch dashboard when session is set
   useEffect(() => {
-    if (session && view === 'dashboard') fetchDashboard();
+    if (session && view === 'dashboard') {
+      if (demoMode) {
+        // Use demo data immediately — linked to the same component so design changes propagate
+        setDashboard(DEMO_DASHBOARD);
+      } else {
+        fetchDashboard();
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, view]);
 
@@ -136,6 +144,7 @@ export default function ReferralPortal() {
   }
 
   function handleLogout() {
+    if (demoMode) return; // Don't allow logout in demo mode
     setSession(null);
     setDashboard(null);
     localStorage.removeItem('icuni_referrer');
@@ -154,7 +163,7 @@ export default function ReferralPortal() {
             dashboard={dashboard}
             loading={loading}
             onLogout={handleLogout}
-            onRefresh={fetchDashboard}
+            onRefresh={demoMode ? () => {} : fetchDashboard}
             showSubmitModal={showSubmitModal}
             setShowSubmitModal={setShowSubmitModal}
           />
