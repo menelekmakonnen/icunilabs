@@ -95,7 +95,7 @@ export default function Navbar() {
                     </div>
 
                     <a href="#portfolio" className="hover:text-neutral-50 transition-colors">Portfolio</a>
-                    <a href="#jobs" className="hover:text-neutral-50 transition-colors">Jobs</a>
+                    <a href="#jobs" className="hover:text-neutral-50 transition-colors">Careers</a>
                 </nav>
 
                 {/* CTA + Mobile Toggle */}
@@ -148,7 +148,7 @@ export default function Navbar() {
                     </div>
 
                     <a href="#portfolio" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Portfolio</a>
-                    <a href="#jobs" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Jobs</a>
+                    <a href="#jobs" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Careers</a>
                     <a href="#referral" className="py-3 hover:text-white transition-colors border-b border-neutral-900 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] bg-clip-text text-transparent font-semibold" onClick={() => setMobileOpen(false)}>Refer & Earn</a>
                     <a href="#portal" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Client Login</a>
 

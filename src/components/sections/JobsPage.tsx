@@ -116,42 +116,87 @@ export default function JobsPage(){
 }
 
 function Listing(){
+  const [view, setView] = useState<'grid'|'row'>('grid');
   return(
     <div className="min-h-screen bg-neutral-950 text-neutral-50 pt-24 pb-20">
-      <div className="max-w-4xl mx-auto px-6">
+      <div className="max-w-5xl mx-auto px-6">
         <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}}>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-800 bg-neutral-900/50 text-xs font-medium text-neutral-400 mb-6">
-            <Briefcase className="w-3 h-3 text-[#00bfff]"/>{jobs.length} open position{jobs.length!==1?'s':''}
+          <div className="flex items-center justify-between mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-neutral-800 bg-neutral-900/50 text-xs font-medium text-neutral-400">
+              <Briefcase className="w-3 h-3 text-[#00bfff]"/>{jobs.length} open position{jobs.length!==1?'s':''}
+            </div>
+            <div className="flex items-center gap-1 bg-neutral-900/60 border border-neutral-800 rounded-lg p-0.5">
+              <button onClick={()=>setView('grid')} className={`p-1.5 rounded-md cursor-pointer transition-all ${view==='grid' ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-white'}`} title="Grid view">
+                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.2"/></svg>
+              </button>
+              <button onClick={()=>setView('row')} className={`p-1.5 rounded-md cursor-pointer transition-all ${view==='row' ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-white'}`} title="Row view">
+                <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none"><rect x="1" y="2" width="14" height="3.5" rx="1" stroke="currentColor" strokeWidth="1.2"/><rect x="1" y="7.5" width="14" height="3.5" rx="1" stroke="currentColor" strokeWidth="1.2"/></svg>
+              </button>
+            </div>
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-3">Careers</h1>
           <p className="text-lg text-neutral-400 max-w-xl mb-12">Join a team building custom operations systems for businesses across Ghana and beyond.</p>
         </motion.div>
-        <div className="space-y-4">
-          {jobs.map((j,i)=>(
-            <motion.a key={j.id} href={`#job/${j.id}`}
-              className="block rounded-xl relative overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all group cursor-pointer shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
-              initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1+i*0.1}}>
-              <img src={j.heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity duration-500"/>
-              <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/95 via-neutral-950/80 to-neutral-950/60"/>
-              <div className="relative p-6 md:p-8 flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#00bfff] transition-colors">{j.title}</h3>
-                  <p className="text-sm text-neutral-300 mb-4 leading-relaxed">{j.shortDesc}</p>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-400 mb-4">
-                    <span className={`flex items-center gap-1 ${j.type === 'Commission' ? 'text-[#ff7a00] font-bold' : ''}`}><Clock className="w-3 h-3"/>{j.type}</span>
-                    <span className="text-neutral-700">&#183;</span>
-                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/>{j.location}</span>
-                    {j.type === 'Commission' && <span className="px-2 py-0.5 rounded-full bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00] text-[10px] font-bold tracking-wider">EARN GH₵1,000+</span>}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {j.perks.map(p=><span key={p} className={`text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-sm border ${j.type === 'Commission' ? 'bg-[#ff7a00]/5 border-[#ff7a00]/15 text-[#ff7a00]/80' : 'bg-white/5 border-white/10 text-neutral-300'}`}>{p}</span>)}
+
+        {view === 'grid' ? (
+          /* ── GRID VIEW ── */
+          <div className="grid md:grid-cols-2 gap-5">
+            {jobs.map((j,i)=>(
+              <motion.a key={j.id} href={`#job/${j.id}`}
+                className="block rounded-xl relative overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all group cursor-pointer shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col"
+                initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1+i*0.1}}>
+                {/* Hero image top */}
+                <div className="relative h-44 overflow-hidden flex-shrink-0">
+                  <img src={j.heroImage} alt="" className="w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-500"/>
+                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent"/>
+                  <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider backdrop-blur-sm ${j.type==='Commission'?'bg-[#ff7a00]/20 border border-[#ff7a00]/30 text-[#ff7a00]':'bg-white/10 border border-white/10 text-white'}`}>{j.type}</span>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-neutral-600 group-hover:text-[#00bfff] group-hover:translate-x-1 transition-all flex-shrink-0 mt-1"/>
-              </div>
-            </motion.a>
-          ))}
-        </div>
+                {/* Content */}
+                <div className="relative p-5 flex-1 flex flex-col">
+                  <h3 className="text-lg font-bold text-white mb-2 group-hover:text-[#00bfff] transition-colors">{j.title}</h3>
+                  <p className="text-sm text-neutral-400 mb-4 leading-relaxed flex-1">{j.shortDesc}</p>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500 mb-3">
+                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/>{j.location}</span>
+                    {j.type === 'Commission' && <span className="px-2 py-0.5 rounded-full bg-[#ff7a00]/10 border border-[#ff7a00]/20 text-[#ff7a00] text-[10px] font-bold">EARN GH₵1,000+</span>}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {j.perks.map(p=><span key={p} className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${j.type==='Commission'?'bg-[#ff7a00]/5 border-[#ff7a00]/15 text-[#ff7a00]/80':'bg-white/5 border-white/10 text-neutral-400'}`}>{p}</span>)}
+                  </div>
+                </div>
+              </motion.a>
+            ))}
+          </div>
+        ) : (
+          /* ── ROW VIEW ── */
+          <div className="space-y-4">
+            {jobs.map((j,i)=>(
+              <motion.a key={j.id} href={`#job/${j.id}`}
+                className="block rounded-xl relative overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all group cursor-pointer shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+                initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1+i*0.1}}>
+                <img src={j.heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity duration-500"/>
+                <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/95 via-neutral-950/80 to-neutral-950/60"/>
+                <div className="relative p-6 md:p-8 flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-[#00bfff] transition-colors">{j.title}</h3>
+                    <p className="text-sm text-neutral-300 mb-4 leading-relaxed">{j.shortDesc}</p>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-neutral-400 mb-4">
+                      <span className={`flex items-center gap-1 ${j.type === 'Commission' ? 'text-[#ff7a00] font-bold' : ''}`}><Clock className="w-3 h-3"/>{j.type}</span>
+                      <span className="text-neutral-700">&#183;</span>
+                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3"/>{j.location}</span>
+                      {j.type === 'Commission' && <span className="px-2 py-0.5 rounded-full bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00] text-[10px] font-bold tracking-wider">EARN GH₵1,000+</span>}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {j.perks.map(p=><span key={p} className={`text-[11px] font-medium px-2.5 py-1 rounded-full backdrop-blur-sm border ${j.type === 'Commission' ? 'bg-[#ff7a00]/5 border-[#ff7a00]/15 text-[#ff7a00]/80' : 'bg-white/5 border-white/10 text-neutral-300'}`}>{p}</span>)}
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-neutral-600 group-hover:text-[#00bfff] group-hover:translate-x-1 transition-all flex-shrink-0 mt-1"/>
+                </div>
+              </motion.a>
+            ))}
+          </div>
+        )}
         <div className="mt-12 text-center">
           <p className="text-sm text-neutral-500">{"Don't see a fit? Email "}<a href="mailto:jobs@icuni.org" className="text-[#00bfff] hover:underline">jobs@icuni.org</a>{" anyway."}</p>
         </div>
@@ -188,7 +233,7 @@ function Detail({job}:{job:typeof jobs[0]}){
               <span className="flex items-center gap-1 text-sm text-neutral-300"><MapPin className="w-3.5 h-3.5"/>{job.location}</span>
               <button onClick={()=>setShowSalary(!showSalary)} className="flex items-center gap-1.5 text-[#ff7a00] hover:text-[#ff9533] transition-colors cursor-pointer text-sm font-medium">
                 <span className="text-base font-bold leading-none">₵</span>
-                {showSalary?job.salary:'Reveal salary'}{showSalary?<EyeOff className="w-3 h-3"/>:<Eye className="w-3 h-3"/>}
+                {showSalary?job.salary:(job.type === 'Commission' ? 'Reveal commission' : 'Reveal salary')}{showSalary?<EyeOff className="w-3 h-3"/>:<Eye className="w-3 h-3"/>}
               </button>
             </div>
             {/* CTA #1 */}
@@ -209,65 +254,92 @@ function Detail({job}:{job:typeof jobs[0]}){
                   <span className="w-8 h-8 rounded-lg bg-[#00bfff]/10 flex items-center justify-center"><ChevronRight className="w-4 h-4 text-[#00bfff]"/></span>
                   About This Role
                 </h2>
-                {/* Chat interface */}
-                <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 overflow-hidden">
-                  {/* Chat header */}
-                  <div className="flex items-center gap-3 px-5 py-3 bg-neutral-900/80 border-b border-neutral-800">
-                    <img src="/icuni_logo.png" alt="ICUNI Labs" className="w-9 h-9 rounded-full bg-neutral-800 p-1 object-contain"/>
-                    <div>
-                      <p className="text-sm font-semibold text-white">ICUNI Labs</p>
-                      <p className="text-[10px] text-[#10b981] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#10b981] inline-block"/>Online now</p>
+
+                {job.type === 'Commission' ? (
+                  /* ── FORMAL GROUPED LAYOUT for Commission/Referral ── */
+                  <div className="space-y-6">
+                    {(() => {
+                      const groups = [
+                        { title: 'What We Do', icon: <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none"><rect x="2" y="3" width="16" height="14" rx="2" stroke="#00bfff" strokeWidth="1.2"/><path d="M6 8h8M6 11h5" stroke="#00bfff" strokeWidth="1" strokeLinecap="round"/></svg>, items: job.fullDescription.slice(0, 2) },
+                        { title: 'The Opportunity', icon: <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#ff7a00" strokeWidth="1.2"/><text x="10" y="13" textAnchor="middle" fill="#ff7a00" fontSize="8" fontWeight="bold">$</text></svg>, items: job.fullDescription.slice(2, 4) },
+                        { title: 'How It Works', icon: <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none"><path d="M3 16l4-5 3 3 4-6 3 4" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>, items: job.fullDescription.slice(4, 7) },
+                        { title: 'The Bottom Line', icon: <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none"><path d="M10 2l2.5 5 5.5.8-4 3.9.9 5.3-4.9-2.6-4.9 2.6.9-5.3-4-3.9 5.5-.8z" stroke="#ff7a00" strokeWidth="1.2" fill="rgba(255,122,0,0.15)"/></svg>, items: job.fullDescription.slice(7) },
+                      ].filter(g => g.items.length > 0);
+                      return groups.map((g, gi) => (
+                        <motion.div key={gi} initial={{opacity:0,y:20}} whileInView={{opacity:1,y:0}} viewport={{once:true}} transition={{delay:gi*0.1}}
+                          className="rounded-xl border border-neutral-800 bg-neutral-900/30 overflow-hidden">
+                          <div className="flex items-center gap-3 px-5 py-3 bg-neutral-900/60 border-b border-neutral-800">
+                            {g.icon}
+                            <h3 className="text-sm font-bold text-white tracking-wide">{g.title}</h3>
+                          </div>
+                          <div className="p-5 space-y-3">
+                            {g.items.map((item, ii) => (
+                              <div key={ii} className="flex items-start gap-3">
+                                <div className="w-1.5 h-1.5 rounded-full bg-[#00bfff] mt-2 flex-shrink-0"/>
+                                <p className="text-[14px] text-neutral-300 leading-relaxed">{item}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      ));
+                    })()}
+                  </div>
+                ) : (
+                  /* ── CHAT INTERFACE for standard jobs ── */
+                  <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 overflow-hidden">
+                    <div className="flex items-center gap-3 px-5 py-3 bg-neutral-900/80 border-b border-neutral-800">
+                      <img src="/icuni_logo.png" alt="ICUNI Labs" className="w-9 h-9 rounded-full bg-neutral-800 p-1 object-contain"/>
+                      <div>
+                        <p className="text-sm font-semibold text-white">ICUNI Labs</p>
+                        <p className="text-[10px] text-[#10b981] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#10b981] inline-block"/>Online now</p>
+                      </div>
+                    </div>
+                    <div className="p-3 space-y-0 min-h-[200px]">
+                      {job.fullDescription.map((msg,i)=>{
+                        const total=job.fullDescription.length;
+                        const minsAgo=total-1-i;
+                        const timeLabel=minsAgo===0?'Now':minsAgo===1?'1m ago':`${minsAgo}m ago`;
+                        return(
+                          <div key={i}>
+                            <motion.div
+                              initial={{opacity:1}} whileInView={{opacity:0}}
+                              viewport={{once:true,margin:'-10px'}}
+                              transition={{duration:0.25,delay:0.5}}
+                              className="mb-0.5"
+                            >
+                              <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#ff7a00]/10 border border-[#ff7a00]/10 w-fit ml-auto">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'0ms'}}/>
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'150ms'}}/>
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'300ms'}}/>
+                              </div>
+                            </motion.div>
+                            <motion.div
+                              initial={{opacity:0,y:16,scale:0.92}}
+                              whileInView={{opacity:1,y:0,scale:1}}
+                              onViewportEnter={()=>setLatestMsg(m=>Math.max(m,i))}
+                              viewport={{once:true,margin:'-10px'}}
+                              transition={{duration:0.35,delay:0.55,ease:'easeOut'}}
+                              className="mb-1.5"
+                            >
+                              <div className="max-w-[80%] ml-auto group">
+                                <div className={`relative px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-500 group-hover:shadow-[0_4px_20px_rgba(255,122,0,0.2)] group-hover:-translate-y-[1px] ${
+                                  latestMsg===i?'bg-gradient-to-br from-[#ff7a00]/25 to-[#cc5500]/15 border border-[#ff7a00]/30 text-white shadow-[0_2px_12px_rgba(255,122,0,0.1)]'
+                                  :'bg-gradient-to-br from-[#ff7a00]/8 to-neutral-800/80 border border-[#ff7a00]/10 text-neutral-200 group-hover:border-[#ff7a00]/25'
+                                }`}>
+                                  {msg}
+                                  <svg className="absolute -bottom-[6px] right-3 w-3 h-2" viewBox="0 0 12 8" fill="none">
+                                    <path d="M0 0L6 8L12 0Z" fill={latestMsg===i?'rgba(180,80,0,0.2)':'rgba(100,60,20,0.15)'}/>
+                                  </svg>
+                                </div>
+                                <p className="text-[10px] text-neutral-600 mt-1 text-right mr-1">{timeLabel}</p>
+                              </div>
+                            </motion.div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                  {/* Messages */}
-                  <div className="p-3 space-y-0 min-h-[200px]">
-                    {job.fullDescription.map((msg,i)=>{
-                      const total=job.fullDescription.length;
-                      const minsAgo=total-1-i;
-                      const timeLabel=minsAgo===0?'Now':minsAgo===1?'1m ago':`${minsAgo}m ago`;
-                      return(
-                        <div key={i}>
-                          {/* Typing indicator appears first */}
-                          <motion.div
-                            initial={{opacity:1}} whileInView={{opacity:0}}
-                            viewport={{once:true,margin:'-10px'}}
-                            transition={{duration:0.25,delay:0.5}}
-                            className="mb-0.5"
-                          >
-                            <div className="flex gap-1 px-3 py-2 rounded-2xl rounded-br-sm bg-[#ff7a00]/10 border border-[#ff7a00]/10 w-fit ml-auto">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'0ms'}}/>
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'150ms'}}/>
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#ff7a00]/60 animate-bounce" style={{animationDelay:'300ms'}}/>
-                            </div>
-                          </motion.div>
-                          {/* Message bubble */}
-                          <motion.div
-                            initial={{opacity:0,y:16,scale:0.92}}
-                            whileInView={{opacity:1,y:0,scale:1}}
-                            onViewportEnter={()=>setLatestMsg(m=>Math.max(m,i))}
-                            viewport={{once:true,margin:'-10px'}}
-                            transition={{duration:0.35,delay:0.55,ease:'easeOut'}}
-                            className="mb-1.5"
-                          >
-                            <div className="max-w-[80%] ml-auto group">
-                              <div className={`relative px-4 py-2.5 rounded-2xl rounded-br-sm text-[14px] leading-[1.7] transition-all duration-500 group-hover:shadow-[0_4px_20px_rgba(255,122,0,0.2)] group-hover:-translate-y-[1px] ${
-                                latestMsg===i?'bg-gradient-to-br from-[#ff7a00]/25 to-[#cc5500]/15 border border-[#ff7a00]/30 text-white shadow-[0_2px_12px_rgba(255,122,0,0.1)]'
-                                :'bg-gradient-to-br from-[#ff7a00]/8 to-neutral-800/80 border border-[#ff7a00]/10 text-neutral-200 group-hover:border-[#ff7a00]/25'
-                              }`}>
-                                {msg}
-                                {/* Speech tail */}
-                                <svg className="absolute -bottom-[6px] right-3 w-3 h-2" viewBox="0 0 12 8" fill="none">
-                                  <path d="M0 0L6 8L12 0Z" fill={latestMsg===i?'rgba(180,80,0,0.2)':'rgba(100,60,20,0.15)'}/>
-                                </svg>
-                              </div>
-                              <p className="text-[10px] text-neutral-600 mt-1 text-right mr-1">{timeLabel}</p>
-                            </div>
-                          </motion.div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                )}
               </motion.div>
             </section>
 
@@ -553,7 +625,7 @@ function AppForm({job}:{job:typeof jobs[0]}){
 
         {/* Voice Intro: tab toggle record vs upload */}
         <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Voice Intro <span className="text-red-500">*</span></label>
+          <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Informal Voice Intro <span className="text-red-500">*</span></label>
           <p className="text-xs text-neutral-400 mb-2">Tell us why you're right for this role — between <strong className="text-neutral-300">15 seconds</strong> and <strong className="text-neutral-300">2 minutes</strong></p>
           <TabToggle tabs={['Record','Upload File']} active={voiceTab} onChange={setVoiceTab}/>
           {voiceTab===0?(
