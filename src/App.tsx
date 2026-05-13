@@ -61,6 +61,17 @@ function App() {
     );
   }
 
+  if (currentHash === '#contact') {
+    return (
+      <>
+        <Navbar />
+        <div className="pt-16">
+          <Contact />
+        </div>
+      </>
+    );
+  }
+
   if (currentHash === '#portal') {
     return (
       <>
@@ -108,7 +119,6 @@ function App() {
       <PortfolioProof />
       <Method />
       <Authority />
-      <Contact />
 
       {/* Floating 'Who We Help' trigger */}
       <button
