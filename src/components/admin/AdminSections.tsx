@@ -391,8 +391,9 @@ const EMAIL_TEMPLATES = [
   { key: 'interview_selected', label: 'Selected for Interview', desc: 'Invite them with date/time options to choose from.', color: 'text-emerald-400', icon: '✅' },
   { key: 'not_selected', label: 'Not Selected (Next Step)', desc: 'They did not make it past the application stage.', color: 'text-red-400', icon: '❌' },
   { key: 'interview_thanks', label: 'Interview Thank You', desc: 'Thank them for attending the interview today.', color: 'text-sky-400', icon: '🤝' },
-  { key: 'interview_confirmed', label: 'Interview Confirmed', desc: 'Confirm their slot with date, time, and meeting link.', color: 'text-teal-400', icon: '📅' },
-  { key: 'role_offered', label: 'Selected for the Role', desc: 'Congratulations — they got the job!', color: 'text-amber-400', icon: '🏆' },
+  { key: 'interview_confirmed', label: 'Interview Confirmed', desc: 'Confirm their slot with date, time, and meeting link.', color: 'text-teal-400', icon: 'C' },
+  { key: 'trial_invitation', label: 'Paid Trial Invitation', desc: 'Invite to a 1-week paid working trial with briefing.', color: 'text-[#ff7a00]', icon: 'T' },
+  { key: 'role_offered', label: 'Selected for the Role', desc: 'Congratulations - they got the job!', color: 'text-amber-400', icon: 'O' },
   { key: 'role_rejected', label: 'Not Selected (Final)', desc: 'Final rejection after interview stage.', color: 'text-rose-400', icon: '🚫' },
   { key: 'custom', label: 'Custom Email', desc: 'Write your own branded email from scratch.', color: 'text-violet-400', icon: '✏️' },
 ] as const
@@ -465,6 +466,7 @@ export function CareersSection() {
   const [confirmedDate, setConfirmedDate] = useState('')
   const [confirmedTime, setConfirmedTime] = useState('')
   const [meetingLink, setMeetingLink] = useState('')
+  const [trialWeeklyRate, setTrialWeeklyRate] = useState('700')
 
   const fmtDate = (d: string) => { if (!d) return ''; try { return new Date(d + 'T00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) } catch { return d } }
   const fmtTime = (t: string) => { if (!t) return ''; const [h, m] = t.split(':'); const hr = parseInt(h); return `${hr > 12 ? hr - 12 : hr || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}` }
@@ -474,6 +476,7 @@ export function CareersSection() {
       return { dateOptions: dateOptions.filter(o => o.date || o.time).map(o => [fmtDate(o.date), fmtTime(o.time)].filter(Boolean).join(' at ')) }
     }
     if (tpl === 'interview_confirmed') return { confirmedDate: fmtDate(confirmedDate), confirmedTime: fmtTime(confirmedTime), meetingLink }
+    if (tpl === 'trial_invitation') return { weeklyRate: trialWeeklyRate }
     if (tpl === 'custom') return { subject: customSubject, title: customTitle, body: customBody, ctaText: customCtaText, ctaLink: customCtaLink }
     return {}
   }
@@ -885,6 +888,17 @@ export function CareersSection() {
                     <button onClick={refreshRowPreview} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
                   </div>
                 )}
+                {rowTemplate === 'trial_invitation' && (
+                  <div className="pt-3 border-t border-neutral-800 space-y-2">
+                    <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Trial Details</p>
+                    <div>
+                      <label className="text-[10px] text-neutral-500 block mb-1">Weekly Pay (GH&#x20B5;)</label>
+                      <input type="number" value={trialWeeklyRate} onChange={e => setTrialWeeklyRate(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="700" />
+                    </div>
+                    <p className="text-[10px] text-neutral-600">Based on GH&#x20B5;2,500-3,000/mo = GH&#x20B5;625-750/week</p>
+                    <button onClick={refreshRowPreview} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+                  </div>
+                )}
                 {rowTemplate === 'custom' && (
                   <div className="pt-3 border-t border-neutral-800 space-y-2">
                     <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Custom Content</p>
@@ -1147,6 +1161,19 @@ export function CareersSection() {
               <button onClick={loadPreview} className="mt-2 text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
             </div>
           )}
+          {selectedTemplate === 'trial_invitation' && (
+            <div>
+              <label className="text-xs text-neutral-500 mb-2 block">Paid Trial Week Details</label>
+              <div className="space-y-2">
+                <div>
+                  <label className="text-[10px] text-neutral-600 block mb-1">Weekly Pay (GH&#x20B5;)</label>
+                  <input type="number" value={trialWeeklyRate} onChange={e => setTrialWeeklyRate(e.target.value)} className={inputCls} placeholder="700" />
+                </div>
+                <p className="text-[10px] text-neutral-500">Monthly range GH&#x20B5;2,500-3,000 = GH&#x20B5;625-750/week. Includes full referral commission on closes.</p>
+              </div>
+              <button onClick={loadPreview} className="mt-2 text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
+            </div>
+          )}
           {selectedTemplate === 'custom' && (
             <div>
               <label className="text-xs text-neutral-500 mb-2 block">Custom Email Content</label>
@@ -1197,49 +1224,204 @@ export function CareersSection() {
 }
 
 // ─── REFERRALS ───────────────────────────────────────────
+const PIPELINE_STAGES = ['Submitted', 'Meeting Scheduled', 'Meeting Done', 'Proposal Sent', 'Closed Won', 'Closed Lost']
+
 export function ReferralsSection() {
-  const { referrers, referrals, loading } = useAdminStore()
-  const [tab, setTab] = useState<'referrers' | 'referrals'>('referrers')
+  const { referrers, referrals, referrerMaterials, referrerNotifications, loading } = useAdminStore()
+  const [tab, setTab] = useState<'referrers' | 'pipeline' | 'materials' | 'notifications'>('referrers')
+  const [notifyTarget, setNotifyTarget] = useState<any>(null)
+  const [notifyMsg, setNotifyMsg] = useState('')
+  const [notifyType, setNotifyType] = useState('stage_update')
+  const [matModal, setMatModal] = useState(false)
+  const [matForm, setMatForm] = useState({ title: '', description: '', type: 'deck', url: '' })
+  const [closeModal, setCloseModal] = useState<any>(null)
+  const [dealValue, setDealValue] = useState('')
 
-  useEffect(() => { adminActions.loadReferrals() }, [])
+  useEffect(() => { adminActions.loadReferrals(); adminActions.loadMaterials(); adminActions.loadReferrerNotifications() }, [])
 
-  if (tab === 'referrals') {
+  const tabCls = (id: string) => `px-3 py-1.5 rounded-lg text-sm cursor-pointer ${tab === id ? 'bg-neutral-800 text-white font-medium' : 'text-neutral-500 hover:text-white'}`
+
+  // ── TAB: REFERRERS ──
+  if (tab === 'referrers') {
     return (
       <div>
         <div className="flex gap-2 mb-4">
-          <button onClick={() => setTab('referrers')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Referrers</button>
-          <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Referrals</button>
+          <button className={tabCls('referrers')}>Referrers</button>
+          <button onClick={() => setTab('pipeline')} className={tabCls('pipeline')}>Pipeline ({referrals.length})</button>
+          <button onClick={() => setTab('materials')} className={tabCls('materials')}>Materials ({referrerMaterials.length})</button>
+          <button onClick={() => setTab('notifications')} className={tabCls('notifications')}>Notifications</button>
         </div>
-        <DataTable title="Referrals" subtitle="Referral submissions and pipeline" loading={loading} data={referrals}
+        <DataTable title="Referrers" subtitle="Partner referral network" loading={loading} data={referrers}
           columns={[
-            { key: 'referral_id', label: 'ID', width: '120px' },
-            { key: 'client_name', label: 'Referred Client', render: (v) => <span className="text-white font-medium">{v}</span> },
-            { key: 'client_email', label: 'Email' },
-            { key: 'business_type', label: 'Business' },
+            { key: 'referrer_id', label: 'ID', width: '120px' },
+            { key: 'name', label: 'Name', render: (v) => <span className="text-white font-medium">{v}</span> },
+            { key: 'email', label: 'Email' },
+            { key: 'phone', label: 'Phone' },
+            { key: 'is_whatsapp', label: 'WhatsApp', render: (v) => v ? <span className="text-[#25D366] text-xs font-bold">Yes</span> : <span className="text-neutral-600 text-xs">No</span> },
             { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
-            { key: 'payout_amount', label: 'Payout', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : '—' },
+            { key: 'total_earned', label: 'Earned', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : 'GH₵0' },
           ]}
-          searchKeys={['client_name', 'client_email']}
+          searchKeys={['name', 'email']}
         />
       </div>
     )
   }
 
+  // ── TAB: PIPELINE ──
+  if (tab === 'pipeline') {
+    return (
+      <div>
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setTab('referrers')} className={tabCls('referrers')}>Referrers</button>
+          <button className={tabCls('pipeline')}>Pipeline ({referrals.length})</button>
+          <button onClick={() => setTab('materials')} className={tabCls('materials')}>Materials</button>
+          <button onClick={() => setTab('notifications')} className={tabCls('notifications')}>Notifications</button>
+        </div>
+        <DataTable title="Referral Pipeline" subtitle="All referrals across all partners" loading={loading} data={referrals}
+          columns={[
+            { key: 'referral_id', label: 'ID', width: '100px' },
+            { key: 'referrer_name', label: 'Referrer', render: (v) => <span className="text-white font-medium">{v}</span> },
+            { key: 'client_name', label: 'Prospect' },
+            { key: 'client_email', label: 'Email' },
+            { key: 'stage', label: 'Stage', render: (v) => {
+              const idx = Number(v) || 0
+              const stage = PIPELINE_STAGES[idx] || 'Submitted'
+              const colors: Record<string, string> = { 'Submitted': 'text-neutral-400', 'Meeting Scheduled': 'text-[#00bfff]', 'Meeting Done': 'text-purple-400', 'Proposal Sent': 'text-amber-400', 'Closed Won': 'text-emerald-400', 'Closed Lost': 'text-red-400' }
+              return <span className={`text-xs font-bold ${colors[stage] || 'text-neutral-400'}`}>{stage}</span>
+            }},
+            { key: 'payout_amount', label: 'Payout', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : '—' },
+          ]}
+          searchKeys={['client_name', 'client_email', 'referrer_name']}
+          renderRowActions={(row) => (
+            <div className="flex items-center gap-2">
+              {Number(row.stage || 0) < 4 && (
+                <button onClick={() => adminActions.advanceReferralStage(row.referral_id, (Number(row.stage || 0)) + 1)}
+                  className="text-xs text-[#00bfff] hover:text-white cursor-pointer whitespace-nowrap">Advance</button>
+              )}
+              {Number(row.stage || 0) < 4 && (
+                <button onClick={() => setCloseModal(row)}
+                  className="text-xs text-emerald-400 hover:text-white cursor-pointer">Close</button>
+              )}
+              <button onClick={() => setNotifyTarget(row)}
+                className="text-xs text-amber-400 hover:text-white cursor-pointer">Notify</button>
+            </div>
+          )}
+        />
+
+        {/* Close Referral Modal */}
+        {closeModal && (
+          <div className={modalBg} onClick={() => setCloseModal(null)}>
+            <div className={modalCard} onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-white mb-4">Close Referral: {closeModal.client_name}</h3>
+              <div className="space-y-3">
+                <input value={dealValue} onChange={e => setDealValue(e.target.value)} className={inputCls} placeholder="Deal value (GH₵)" type="number" />
+                <div className="flex gap-2">
+                  <button onClick={async () => { await adminActions.closeReferral(closeModal.referral_id, 'won', Number(dealValue)); setCloseModal(null); setDealValue('') }}
+                    className="flex-1 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-lg text-sm font-bold cursor-pointer hover:bg-emerald-500/20 transition-all">Closed Won</button>
+                  <button onClick={async () => { await adminActions.closeReferral(closeModal.referral_id, 'lost'); setCloseModal(null); setDealValue('') }}
+                    className="flex-1 py-2 bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg text-sm font-bold cursor-pointer hover:bg-red-500/20 transition-all">Closed Lost</button>
+                </div>
+                <button onClick={() => setCloseModal(null)} className="w-full text-sm text-neutral-500 hover:text-white cursor-pointer mt-2">Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notify Modal */}
+        {notifyTarget && (
+          <div className={modalBg} onClick={() => setNotifyTarget(null)}>
+            <div className={modalCard} onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-white mb-4">Notify Referrer: {notifyTarget.referrer_name || notifyTarget.name}</h3>
+              <div className="space-y-3">
+                <select value={notifyType} onChange={e => setNotifyType(e.target.value)} className={inputCls}>
+                  <option value="stage_update">Stage Update</option>
+                  <option value="payment_due">Payment Due</option>
+                  <option value="meeting_reminder">Meeting Reminder</option>
+                  <option value="custom">Custom Message</option>
+                </select>
+                <textarea value={notifyMsg} onChange={e => setNotifyMsg(e.target.value)} className={`${inputCls} resize-none`} rows={3} placeholder="Message to referrer..." />
+                <button onClick={async () => {
+                  await adminActions.sendReferrerNotification(notifyTarget.referrer_id, notifyType, notifyMsg, notifyTarget.referral_id)
+                  setNotifyTarget(null); setNotifyMsg('')
+                }} className={btnPrimary}>Send Notification</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── TAB: MATERIALS ──
+  if (tab === 'materials') {
+    return (
+      <div>
+        <div className="flex gap-2 mb-4">
+          <button onClick={() => setTab('referrers')} className={tabCls('referrers')}>Referrers</button>
+          <button onClick={() => setTab('pipeline')} className={tabCls('pipeline')}>Pipeline</button>
+          <button className={tabCls('materials')}>Materials ({referrerMaterials.length})</button>
+          <button onClick={() => setTab('notifications')} className={tabCls('notifications')}>Notifications</button>
+        </div>
+        <DataTable title="Referrer Materials" subtitle="Portfolio decks, demos, and case studies for referrers" loading={loading} data={referrerMaterials}
+          onAdd={() => setMatModal(true)} addLabel="Add Material"
+          columns={[
+            { key: 'id', label: 'ID', width: '100px' },
+            { key: 'title', label: 'Title', render: (v) => <span className="text-white font-medium">{v}</span> },
+            { key: 'type', label: 'Type', render: (v) => {
+              const colors: Record<string, string> = { deck: '#ff7a00', video: '#8b5cf6', 'case-study': '#00bfff', pricing: '#10b981' }
+              return <span className="text-xs font-bold uppercase" style={{ color: colors[v] || '#999' }}>{v}</span>
+            }},
+            { key: 'url', label: 'URL', render: (v) => <a href={v} target="_blank" rel="noreferrer" className="text-[#00bfff] text-xs hover:underline truncate max-w-[200px] block">{v}</a> },
+          ]}
+          searchKeys={['title', 'type']}
+          renderRowActions={(row) => (
+            <button onClick={() => { if (confirm(`Delete "${row.title}"?`)) adminActions.deleteMaterial(row.id) }}
+              className="text-xs text-red-400 hover:text-red-300 cursor-pointer">Delete</button>
+          )}
+        />
+        {matModal && (
+          <div className={modalBg} onClick={() => setMatModal(false)}>
+            <div className={modalCard} onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">Add Material</h3>
+                <button onClick={() => setMatModal(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+              </div>
+              <form onSubmit={async e => { e.preventDefault(); const ok = await adminActions.createMaterial(matForm); if (ok) { setMatModal(false); setMatForm({ title: '', description: '', type: 'deck', url: '' }) } }} className="space-y-3">
+                <input value={matForm.title} onChange={e => setMatForm({...matForm, title: e.target.value})} className={inputCls} placeholder="Material title" required />
+                <textarea value={matForm.description} onChange={e => setMatForm({...matForm, description: e.target.value})} className={`${inputCls} resize-none`} rows={2} placeholder="Description" />
+                <select value={matForm.type} onChange={e => setMatForm({...matForm, type: e.target.value})} className={inputCls}>
+                  <option value="deck">Portfolio Deck</option>
+                  <option value="video">Demo Video</option>
+                  <option value="case-study">Case Study</option>
+                  <option value="pricing">Pricing Overview</option>
+                </select>
+                <input value={matForm.url} onChange={e => setMatForm({...matForm, url: e.target.value})} className={inputCls} placeholder="URL (hosted file link)" required />
+                <button type="submit" className={btnPrimary}>Create Material</button>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ── TAB: NOTIFICATIONS ──
   return (
     <div>
       <div className="flex gap-2 mb-4">
-        <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Referrers</button>
-        <button onClick={() => setTab('referrals')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Referrals ({referrals.length})</button>
+        <button onClick={() => setTab('referrers')} className={tabCls('referrers')}>Referrers</button>
+        <button onClick={() => setTab('pipeline')} className={tabCls('pipeline')}>Pipeline</button>
+        <button onClick={() => setTab('materials')} className={tabCls('materials')}>Materials</button>
+        <button className={tabCls('notifications')}>Notifications</button>
       </div>
-      <DataTable title="Referrers" subtitle="Partner referral network" loading={loading} data={referrers}
+      <DataTable title="Notification Log" subtitle="All notifications sent to referrers" loading={loading} data={referrerNotifications}
         columns={[
-          { key: 'referrer_id', label: 'ID', width: '120px' },
-          { key: 'name', label: 'Name', render: (v) => <span className="text-white font-medium">{v}</span> },
-          { key: 'email', label: 'Email' },
-          { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
-          { key: 'total_earned', label: 'Earned', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : 'GH₵0' },
+          { key: 'timestamp', label: 'Sent', width: '150px', render: (v) => v ? new Date(v).toLocaleString() : '—' },
+          { key: 'referrer_name', label: 'Referrer', render: (v) => <span className="text-white font-medium">{v || '—'}</span> },
+          { key: 'type', label: 'Type', render: (v) => <span className="text-xs font-bold text-[#00bfff] uppercase">{(v || '').replace(/_/g, ' ')}</span> },
+          { key: 'message', label: 'Message' },
         ]}
-        searchKeys={['name', 'email']}
+        searchKeys={['referrer_name', 'type', 'message']}
       />
     </div>
   )

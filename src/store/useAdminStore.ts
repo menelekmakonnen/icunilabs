@@ -35,6 +35,10 @@ interface AdminState {
   applications: any[]
   referrers: any[]
   referrals: any[]
+  referrerMaterials: any[]
+  referrerNotifications: any[]
+  actingAs: string | null  // 'client' | 'referrer' | 'staff' | null
+  impersonating: any | null  // specific user object or null
   logs: any[]
   slaStatuses: any[]
   slaCosts: any[]
@@ -76,6 +80,10 @@ let state: AdminState = {
   applications: [],
   referrers: [],
   referrals: [],
+  referrerMaterials: [],
+  referrerNotifications: [],
+  actingAs: null,
+  impersonating: null,
   logs: [],
   slaStatuses: [],
   slaCosts: [],
@@ -267,6 +275,127 @@ export const adminActions = {
       ])
       setState({ referrers: referrers || [], referrals: referrals || [] })
     } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  // ── Referrer Materials CRUD ──
+  loadMaterials: async () => {
+    try {
+      const materials = await apiPost('getReferrerMaterials', { token: state.token })
+      setState({ referrerMaterials: materials || [] })
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  createMaterial: async (data: Record<string, any>): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('createReferrerMaterial', { token: state.token, ...data })
+      await adminActions.loadMaterials()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  updateMaterial: async (data: Record<string, any>): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('updateReferrerMaterial', { token: state.token, ...data })
+      await adminActions.loadMaterials()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  deleteMaterial: async (materialId: string): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('deleteReferrerMaterial', { token: state.token, materialId })
+      await adminActions.loadMaterials()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  // ── Referral Pipeline Management ──
+  advanceReferralStage: async (referralId: string, newStage: number): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('advanceReferralStage', { token: state.token, referralId, newStage })
+      await adminActions.loadReferrals()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  closeReferral: async (referralId: string, outcome: 'won' | 'lost', dealValue?: number): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('closeReferral', { token: state.token, referralId, outcome, dealValue })
+      await adminActions.loadReferrals()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  confirmPayout: async (referralId: string): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('confirmReferralPayout', { token: state.token, referralId })
+      await adminActions.loadReferrals()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  // ── Referrer Notifications ──
+  sendReferrerNotification: async (referrerId: string, type: string, message: string, referralId?: string): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('sendReferrerNotification', { token: state.token, referrerId, type, message, referralId })
+      await adminActions.loadReferrerNotifications()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  loadReferrerNotifications: async () => {
+    try {
+      const notifications = await apiPost('getReferrerNotifications', { token: state.token })
+      setState({ referrerNotifications: notifications || [] })
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  // ── Act As / Impersonate ──
+  setActingAs: (role: string | null) => {
+    setState({ actingAs: role, impersonating: null })
+  },
+
+  setImpersonating: (user: any) => {
+    setState({ impersonating: user, actingAs: null })
+  },
+
+  clearImpersonation: () => {
+    setState({ actingAs: null, impersonating: null })
   },
 
   loadSLA: async () => {

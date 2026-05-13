@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogOut, Plus, X, Users, TrendingUp, Clock, DollarSign, ChevronRight, ArrowLeft } from 'lucide-react';
+import { LogOut, Plus, X, Users, TrendingUp, Clock, DollarSign, ChevronRight, ArrowLeft, FolderOpen, Wallet, Copy, ExternalLink, Calendar, MessageSquare } from 'lucide-react';
+import ReferralProcessSVG, { STAGE_LABELS } from './ReferralProcessSVG';
 
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
@@ -10,18 +11,37 @@ type AuthTab = 'login' | 'signup';
 interface Referral {
   referralId: string;
   leadName: string;
+  leadEmail: string;
+  leadPhone: string;
   leadCompany: string;
+  stage: number;
   status: string;
   dealValue: number;
   payoutAmount: number;
+  payoutStatus: 'pending' | 'paid' | 'n/a';
   dateSubmitted: string;
+  meetingDate: string;
+  meetingTime: string;
+  referrerAttending: boolean;
   dateClosed: string;
+  notes: string;
+}
+
+interface Material {
+  id: string;
+  title: string;
+  description: string;
+  type: 'deck' | 'video' | 'case-study' | 'pricing';
+  url: string;
+  thumbnailUrl: string;
+  uploadedAt: string;
 }
 
 interface DashboardData {
   referrer: { name: string; email: string; joinDate: string };
-  stats: { totalReferrals: number; closedWon: number; closedLost: number; pending: number; totalEarned: number; conversionRate: number };
+  stats: { totalReferrals: number; closedWon: number; closedLost: number; pending: number; totalEarned: number; pendingPayout: number; conversionRate: number };
   referrals: Referral[];
+  materials: Material[];
 }
 
 interface ReferrerSession {
@@ -101,8 +121,9 @@ export default function ReferralPortal() {
       // Demo data fallback
       setDashboard({
         referrer: { name: session.name, email: session.email, joinDate: new Date().toISOString() },
-        stats: { totalReferrals: 0, closedWon: 0, closedLost: 0, pending: 0, totalEarned: 0, conversionRate: 0 },
-        referrals: []
+        stats: { totalReferrals: 0, closedWon: 0, closedLost: 0, pending: 0, totalEarned: 0, pendingPayout: 0, conversionRate: 0 },
+        referrals: [],
+        materials: [],
       });
     }
     setLoading(false);
@@ -144,15 +165,23 @@ export default function ReferralPortal() {
 }
 
 // ─── Demo data for the preview dashboard ───
+const DEMO_MATERIALS: Material[] = [
+  { id: 'M-001', title: 'ICUNI Labs Portfolio Deck', description: 'Full portfolio overview with case studies and pricing tiers.', type: 'deck', url: '#', thumbnailUrl: '', uploadedAt: '2025-09-01' },
+  { id: 'M-002', title: 'Product Demo Video', description: '3-minute walkthrough of a live dashboard we built for a logistics company.', type: 'video', url: '#', thumbnailUrl: '', uploadedAt: '2025-09-10' },
+  { id: 'M-003', title: 'Warehouse Ops Case Study', description: 'How we replaced 14 spreadsheets with one system for a warehouse in Tema.', type: 'case-study', url: '#', thumbnailUrl: '', uploadedAt: '2025-10-05' },
+  { id: 'M-004', title: 'Pricing Overview', description: 'Transparent pricing guide for prospects — what to expect per project tier.', type: 'pricing', url: '#', thumbnailUrl: '', uploadedAt: '2025-11-01' },
+];
+
 const DEMO_DASHBOARD: DashboardData = {
   referrer: { name: 'Kwame Mensah', email: 'kwame@example.com', joinDate: '2025-09-15' },
-  stats: { totalReferrals: 7, closedWon: 3, closedLost: 1, pending: 3, totalEarned: 4500, conversionRate: 43 },
+  stats: { totalReferrals: 7, closedWon: 3, closedLost: 1, pending: 3, totalEarned: 4500, pendingPayout: 1200, conversionRate: 43 },
   referrals: [
-    { referralId: 'R-001', leadName: 'Ama Owusu', leadCompany: 'FreshFoods GH', status: 'Closed Won', dealValue: 15000, payoutAmount: 1500, dateSubmitted: '2025-10-02', dateClosed: '2025-11-10' },
-    { referralId: 'R-002', leadName: 'Yaw Boateng', leadCompany: 'Kofi Motors', status: 'Meeting Set', dealValue: 0, payoutAmount: 0, dateSubmitted: '2025-11-20', dateClosed: '' },
-    { referralId: 'R-003', leadName: 'Akua Serwaa', leadCompany: 'Bright Academy', status: 'Closed Won', dealValue: 12000, payoutAmount: 1200, dateSubmitted: '2025-10-15', dateClosed: '2025-12-01' },
-    { referralId: 'R-004', leadName: 'Kofi Adu', leadCompany: 'LogiTrack Ltd', status: 'In Progress', dealValue: 0, payoutAmount: 0, dateSubmitted: '2025-12-05', dateClosed: '' },
+    { referralId: 'R-001', leadName: 'Ama Owusu', leadEmail: 'ama@freshfoods.com', leadPhone: '024 111 2222', leadCompany: 'FreshFoods GH', stage: 4, status: 'Closed Won', dealValue: 15000, payoutAmount: 1500, payoutStatus: 'paid', dateSubmitted: '2025-10-02', meetingDate: '2025-10-10', meetingTime: '10:00', referrerAttending: false, dateClosed: '2025-11-10', notes: '' },
+    { referralId: 'R-002', leadName: 'Yaw Boateng', leadEmail: 'yaw@kofimotors.com', leadPhone: '020 333 4444', leadCompany: 'Kofi Motors', stage: 1, status: 'Meeting Scheduled', dealValue: 0, payoutAmount: 0, payoutStatus: 'n/a', dateSubmitted: '2025-11-20', meetingDate: '2025-12-02', meetingTime: '14:00', referrerAttending: true, dateClosed: '', notes: '' },
+    { referralId: 'R-003', leadName: 'Akua Serwaa', leadEmail: 'akua@bright.edu', leadPhone: '027 555 6666', leadCompany: 'Bright Academy', stage: 4, status: 'Closed Won', dealValue: 12000, payoutAmount: 1200, payoutStatus: 'pending', dateSubmitted: '2025-10-15', meetingDate: '2025-10-25', meetingTime: '11:00', referrerAttending: false, dateClosed: '2025-12-01', notes: '' },
+    { referralId: 'R-004', leadName: 'Kofi Adu', leadEmail: 'kofi@logitrack.com', leadPhone: '055 777 8888', leadCompany: 'LogiTrack Ltd', stage: 2, status: 'Meeting Done', dealValue: 0, payoutAmount: 0, payoutStatus: 'n/a', dateSubmitted: '2025-12-05', meetingDate: '2025-12-15', meetingTime: '09:30', referrerAttending: true, dateClosed: '', notes: '' },
   ],
+  materials: DEMO_MATERIALS,
 };
 
 // ─── LANDING PAGE (unauthenticated) ───
@@ -171,6 +200,7 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [isWhatsApp, setIsWhatsApp] = useState(true);
   const [background, setBackground] = useState('');
   const [payoutPreference, setPayoutPreference] = useState<'momo' | 'cash'>('momo');
 
@@ -212,7 +242,7 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
     e.preventDefault();
     setError('');
     setBusy(true);
-    const res = await apiCall({ action: 'referrer_signup', name, email, phone, background, payoutPreference });
+    const res = await apiCall({ action: 'referrer_signup', name, email, phone, isWhatsApp, background, payoutPreference });
     if (res?.status === 200 && res.data) {
       onLogin({ referrerId: res.data.referrerId, name: res.data.name, email: res.data.email });
     } else if (res?.status === 409) {
@@ -258,27 +288,31 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
 
             {/* ── Join form (side-by-side on lg+) ── */}
             <div id="join-form" className="w-full lg:w-[420px] lg:flex-shrink-0 mt-12 lg:mt-0 scroll-mt-24">
-              <AuthFormCard tab={tab} setTab={setTab} error={error} setError={setError} otpStep={otpStep} setOtpStep={setOtpStep} otpCode={otpCode} setOtpCode={setOtpCode} pendingEmail={pendingEmail} setPendingEmail={setPendingEmail} loginEmail={loginEmail} setLoginEmail={setLoginEmail} name={name} setName={setName} email={email} setEmail={setEmail} phone={phone} setPhone={setPhone} background={background} setBackground={setBackground} payoutPreference={payoutPreference} setPayoutPreference={setPayoutPreference} busy={busy} setBusy={setBusy} onLogin={onLogin} handleLoginSubmit={handleLoginSubmit} handleSignupSubmit={handleSignupSubmit} handleOtpVerify={handleOtpVerify} />
+              <AuthFormCard tab={tab} setTab={setTab} error={error} setError={setError} otpStep={otpStep} setOtpStep={setOtpStep} otpCode={otpCode} setOtpCode={setOtpCode} pendingEmail={pendingEmail} setPendingEmail={setPendingEmail} loginEmail={loginEmail} setLoginEmail={setLoginEmail} name={name} setName={setName} email={email} setEmail={setEmail} phone={phone} setPhone={setPhone} isWhatsApp={isWhatsApp} setIsWhatsApp={setIsWhatsApp} background={background} setBackground={setBackground} payoutPreference={payoutPreference} setPayoutPreference={setPayoutPreference} busy={busy} setBusy={setBusy} onLogin={onLogin} handleLoginSubmit={handleLoginSubmit} handleSignupSubmit={handleSignupSubmit} handleOtpVerify={handleOtpVerify} />
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── BENEFIT CARDS with animated SVGs ── */}
+      {/* ── ANIMATED PIPELINE HERO ── */}
+      <section className="px-6 pb-16">
+        <div className="max-w-5xl mx-auto">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            className={`${cardCls} p-8 md:p-10`}>
+            <h2 className="text-2xl font-black tracking-tight mb-2 text-center">Your Role in 5 Steps</h2>
+            <p className="text-neutral-500 text-sm text-center mb-8">Show our work. Book the meeting. We close. You earn.</p>
+            <ReferralProcessSVG />
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── BENEFIT CARDS ── */}
       <section className="px-6 pb-20 relative overflow-hidden">
-        {/* Animated SVG decorations */}
-        <svg className="absolute -left-20 top-10 w-64 h-64 opacity-[0.04]" viewBox="0 0 200 200" fill="none">
-          <motion.circle cx="100" cy="100" r="80" stroke="#ff7a00" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 4, repeat: Infinity, repeatType: 'reverse' }} />
-          <motion.circle cx="100" cy="100" r="50" stroke="#00bfff" strokeWidth="0.5" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 3, delay: 1, repeat: Infinity, repeatType: 'reverse' }} />
-        </svg>
-        <svg className="absolute -right-16 bottom-0 w-48 h-48 opacity-[0.04]" viewBox="0 0 200 200" fill="none">
-          <motion.rect x="20" y="20" width="160" height="160" rx="20" stroke="#10b981" strokeWidth="1" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 5, repeat: Infinity, repeatType: 'reverse' }} />
-        </svg>
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-4 relative z-10">
           {[
-            { icon: DollarSign, color: '#ff7a00', title: 'GH₵1,000+ Per Deal', desc: 'Earn GH₵1,000 flat or 10% of deal value — whichever is higher. No cap.' },
-            { icon: Users, color: '#00bfff', title: 'Just Warm Intros', desc: "You don't sell. Introduce, set the meeting, we handle the rest. Follow up if needed." },
-            { icon: TrendingUp, color: '#10b981', title: 'Track Everything', desc: 'Real-time dashboard shows your referrals, statuses, and total earnings live.' },
+            { icon: DollarSign, color: '#ff7a00', title: 'GH\u20B51,000+ Per Deal', desc: 'Earn GH\u20B51,000 flat or 10% of deal value \u2014 whichever is higher. No cap.' },
+            { icon: Users, color: '#00bfff', title: 'Just Warm Intros', desc: "You don't sell. Show our portfolio, set the meeting, we handle the rest." },
+            { icon: TrendingUp, color: '#10b981', title: 'Track Everything', desc: 'Real-time dashboard shows your referrals, pipeline stage, and total earnings live.' },
           ].map((b, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
               className={`${cardCls} p-6 group hover:border-neutral-700 transition-all`}>
@@ -301,7 +335,7 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
               <div className="flex-1">
                 <h3 className="text-2xl font-black tracking-tight mb-2">Are you the decision maker?</h3>
                 <p className="text-neutral-400 leading-relaxed">
-                  If you're a business owner or operations lead and you landed here — you just found your way in.
+                  If you're a business owner or operations lead and you landed here \u2014 you just found your way in.
                   We build custom systems that replace spreadsheets, manual tracking, and WhatsApp chaos with real software built for how your business actually works.
                 </p>
               </div>
@@ -310,26 +344,6 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
               </a>
             </div>
           </motion.div>
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section className="px-6 pb-20">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-black tracking-tight mb-10 text-center">How It Works</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { step: '01', title: 'Introduce', desc: 'Know a business owner struggling with spreadsheets, WhatsApp chaos, or manual ops? Introduce them to ICUNI Labs.' },
-              { step: '02', title: 'We Close', desc: 'Set a meeting. We take it from there — audit, propose, build, and deliver the system they need.' },
-              { step: '03', title: 'You Earn', desc: 'Deal closes? You get paid. GH₵1,000 or 10% of deal value, whichever is higher. Via MoMo or cash.' },
-            ].map((s, i) => (
-              <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }} className="text-center">
-                <span className="text-4xl font-black text-neutral-800 mb-3 block">{s.step}</span>
-                <h3 className="text-lg font-bold mb-2">{s.title}</h3>
-                <p className="text-sm text-neutral-400 leading-relaxed">{s.desc}</p>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -365,7 +379,7 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
 }
 
 // ─── EXTRACTED AUTH FORM CARD ───
-function AuthFormCard({ tab, setTab, error, setError, otpStep, setOtpStep, otpCode, setOtpCode, pendingEmail, loginEmail, setLoginEmail, name, setName, email, setEmail, phone, setPhone, background, setBackground, payoutPreference, setPayoutPreference, busy, handleLoginSubmit, handleSignupSubmit, handleOtpVerify }: any) {
+function AuthFormCard({ tab, setTab, error, setError, otpStep, setOtpStep, otpCode, setOtpCode, pendingEmail, loginEmail, setLoginEmail, name, setName, email, setEmail, phone, setPhone, isWhatsApp, setIsWhatsApp, background, setBackground, payoutPreference, setPayoutPreference, busy, handleLoginSubmit, handleSignupSubmit, handleOtpVerify }: any) {
   return (
     <motion.div initial={{ y: 20 }} whileInView={{ y: 0 }} viewport={{ once: true }} className={`${cardCls} p-8`}>
       <div className="text-center mb-8">
@@ -410,7 +424,17 @@ function AuthFormCard({ tab, setTab, error, setError, otpStep, setOtpStep, otpCo
           <motion.form key="signup" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} onSubmit={handleSignupSubmit} className="space-y-4">
             <div><label className="block text-sm font-medium text-neutral-400 mb-2">Full Name</label><input type="text" required value={name} onChange={(e: any) => setName(e.target.value)} className={inputCls} placeholder="Kwame Mensah" /></div>
             <div><label className="block text-sm font-medium text-neutral-400 mb-2">Email</label><input type="email" required value={email} onChange={(e: any) => setEmail(e.target.value)} className={inputCls} placeholder="kwame@email.com" /></div>
-            <div><label className="block text-sm font-medium text-neutral-400 mb-2">Phone (MoMo)</label><input type="tel" required value={phone} onChange={(e: any) => setPhone(e.target.value)} className={inputCls} placeholder="024 XXX XXXX" /></div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-400 mb-2">Phone Number</label>
+              <input type="tel" required value={phone} onChange={(e: any) => setPhone(e.target.value)} className={inputCls} placeholder="024 XXX XXXX" />
+              <label className="flex items-center gap-2.5 mt-2.5 cursor-pointer group">
+                <button type="button" onClick={() => setIsWhatsApp(!isWhatsApp)}
+                  className={`relative w-9 h-5 rounded-full transition-all duration-300 flex-shrink-0 ${isWhatsApp ? 'bg-[#25D366]' : 'bg-neutral-700'}`}>
+                  <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-300 ${isWhatsApp ? 'translate-x-4' : 'translate-x-0'}`} />
+                </button>
+                <span className="text-xs text-neutral-500 group-hover:text-neutral-300 transition-colors">This number is on WhatsApp</span>
+              </label>
+            </div>
             <div>
               <label className="block text-sm font-medium text-neutral-400 mb-2">Payout Preference</label>
               <div className="flex gap-3">
@@ -430,6 +454,9 @@ function AuthFormCard({ tab, setTab, error, setError, otpStep, setOtpStep, otpCo
 }
 
 // ─── DASHBOARD VIEW ───
+type DashTab = 'pipeline' | 'materials' | 'earnings';
+const MATERIAL_COLORS: Record<string, string> = { deck: '#ff7a00', video: '#8b5cf6', 'case-study': '#00bfff', pricing: '#10b981' };
+
 function DashboardView({ session, dashboard, loading, onLogout, onRefresh, showSubmitModal, setShowSubmitModal }: {
   session: ReferrerSession;
   dashboard: DashboardData | null;
@@ -440,6 +467,17 @@ function DashboardView({ session, dashboard, loading, onLogout, onRefresh, showS
   setShowSubmitModal: (v: boolean) => void;
 }) {
   const stats = dashboard?.stats;
+  const [dashTab, setDashTab] = useState<DashTab>('pipeline');
+
+  const tabBtn = (id: DashTab, label: string, icon: any) => {
+    const Icon = icon;
+    return (
+      <button key={id} onClick={() => setDashTab(id)}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${dashTab === id ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-white'}`}>
+        <Icon className="w-4 h-4" />{label}
+      </button>
+    );
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="pt-24 pb-20">
@@ -470,16 +508,14 @@ function DashboardView({ session, dashboard, loading, onLogout, onRefresh, showS
         ) : (
           <>
             {/* Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               {[
                 { label: 'Total Referrals', value: stats?.totalReferrals ?? 0, icon: Users, color: '#00bfff' },
                 { label: 'Closed Won', value: stats?.closedWon ?? 0, icon: TrendingUp, color: '#10b981' },
                 { label: 'Pending', value: stats?.pending ?? 0, icon: Clock, color: '#f59e0b' },
                 { label: 'Total Earned', value: formatCurrency(stats?.totalEarned ?? 0), icon: DollarSign, color: '#ff7a00' },
               ].map((s, i) => (
-                <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                  className={`${cardCls} p-5`}
-                >
+                <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }} className={`${cardCls} p-5`}>
                   <div className="flex items-center gap-2 mb-3">
                     <s.icon className="w-4 h-4" style={{ color: s.color }} />
                     <span className="text-xs font-medium text-neutral-500 uppercase tracking-wider">{s.label}</span>
@@ -489,76 +525,130 @@ function DashboardView({ session, dashboard, loading, onLogout, onRefresh, showS
               ))}
             </div>
 
-            {/* Conversion Rate Bar */}
-            {(stats?.totalReferrals ?? 0) > 0 && (
-              <div className={`${cardCls} p-5 mb-10`}>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-neutral-400">Conversion Rate</span>
-                  <span className="text-sm font-mono text-neutral-500">{stats?.conversionRate ?? 0}%</span>
+            {/* Tab Nav */}
+            <div className="flex gap-1 mb-6">{tabBtn('pipeline', 'Pipeline', TrendingUp)}{tabBtn('materials', 'Materials', FolderOpen)}{tabBtn('earnings', 'Earnings', Wallet)}</div>
+
+            {/* ── PIPELINE TAB ── */}
+            {dashTab === 'pipeline' && (
+              <div className={`${cardCls} p-6`}>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold">Your Referrals</h2>
+                  <button onClick={onRefresh} className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer">Refresh</button>
                 </div>
-                <div className="h-2 w-full bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
-                  <motion.div className="h-full bg-gradient-to-r from-[#00bfff] to-[#10b981]" initial={{ width: 0 }}
-                    animate={{ width: `${stats?.conversionRate ?? 0}%` }} transition={{ duration: 1, ease: 'easeOut' }} />
-                </div>
+                {(dashboard?.referrals?.length ?? 0) === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-900 flex items-center justify-center"><Users className="w-7 h-7 text-neutral-700" /></div>
+                    <p className="text-neutral-500 mb-2">No referrals yet</p>
+                    <p className="text-sm text-neutral-600 mb-6 max-w-xs mx-auto">Know someone whose business needs better systems? Submit your first referral and start earning.</p>
+                    <button onClick={() => setShowSubmitModal(true)} className="text-sm font-medium text-[#00bfff] hover:underline cursor-pointer">Submit your first referral</button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {dashboard!.referrals.map((ref, i) => (
+                      <motion.div key={ref.referralId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                        className="p-4 bg-neutral-900/40 border border-neutral-800/50 rounded-lg hover:border-neutral-700 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <p className="font-medium text-sm">{ref.leadName}</p>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusColors[ref.status] || 'bg-neutral-800 text-neutral-400 border-neutral-700'}`}>{ref.status}</span>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            {ref.status === 'Closed Won' ? <p className="text-sm font-bold text-[#ff7a00]">{formatCurrency(ref.payoutAmount)}</p>
+                            : ref.status === 'Closed Lost' ? <p className="text-xs text-neutral-600">No payout</p>
+                            : null}
+                          </div>
+                        </div>
+                        <ReferralProcessSVG compact activeStep={ref.stage} className="mb-3" />
+                        <div className="flex items-center gap-4 text-xs text-neutral-500 flex-wrap">
+                          {ref.leadCompany && <span>{ref.leadCompany}</span>}
+                          <span>Submitted {formatDate(ref.dateSubmitted)}</span>
+                          {ref.meetingDate && <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{formatDate(ref.meetingDate)} {ref.meetingTime}</span>}
+                          {ref.referrerAttending && <span className="text-[#00bfff]">You're attending</span>}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Referrals List */}
-            <div className={`${cardCls} p-6`}>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold">Your Referrals</h2>
-                <button onClick={onRefresh} className="text-xs text-neutral-500 hover:text-white transition-colors cursor-pointer">Refresh</button>
-              </div>
-
-              {(dashboard?.referrals?.length ?? 0) === 0 ? (
-                <div className="text-center py-16">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-neutral-900 flex items-center justify-center">
-                    <Users className="w-7 h-7 text-neutral-700" />
+            {/* ── MATERIALS TAB ── */}
+            {dashTab === 'materials' && (
+              <div>
+                <p className="text-sm text-neutral-400 mb-6">Use these materials to show prospects what we do. Share links or download for meetings.</p>
+                {(dashboard?.materials?.length ?? 0) === 0 ? (
+                  <div className={`${cardCls} p-12 text-center`}>
+                    <FolderOpen className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
+                    <p className="text-neutral-500">No materials available yet. Check back soon.</p>
                   </div>
-                  <p className="text-neutral-500 mb-2">No referrals yet</p>
-                  <p className="text-sm text-neutral-600 mb-6 max-w-xs mx-auto">Know someone whose business needs better systems? Submit your first referral and start earning.</p>
-                  <button onClick={() => setShowSubmitModal(true)} className="text-sm font-medium text-[#00bfff] hover:underline cursor-pointer">
-                    Submit your first referral
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {dashboard!.referrals.map((ref, i) => (
-                    <motion.div key={ref.referralId} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                      className="flex items-center justify-between p-4 bg-neutral-900/40 border border-neutral-800/50 rounded-lg hover:border-neutral-700 transition-colors group"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-3 mb-1">
-                          <p className="font-medium text-sm truncate">{ref.leadName}</p>
-                          <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${statusColors[ref.status] || 'bg-neutral-800 text-neutral-400 border-neutral-700'}`}>
-                            {ref.status}
-                          </span>
+                ) : (
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {dashboard!.materials.map(mat => (
+                      <motion.div key={mat.id} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+                        className={`${cardCls} p-5 group hover:border-neutral-700 transition-all`}>
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${MATERIAL_COLORS[mat.type] || '#666'}15` }}>
+                            <FolderOpen className="w-4 h-4" style={{ color: MATERIAL_COLORS[mat.type] || '#666' }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-bold text-white truncate">{mat.title}</h3>
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ color: MATERIAL_COLORS[mat.type], backgroundColor: `${MATERIAL_COLORS[mat.type]}15` }}>{mat.type}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-4 text-xs text-neutral-500">
-                          {ref.leadCompany && <span>{ref.leadCompany}</span>}
-                          <span>{formatDate(ref.dateSubmitted)}</span>
+                        <p className="text-xs text-neutral-500 leading-relaxed mb-4">{mat.description}</p>
+                        <div className="flex gap-2">
+                          <button onClick={() => navigator.clipboard.writeText(mat.url)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-neutral-400 hover:text-white border border-neutral-800 rounded-lg hover:border-neutral-700 transition-all cursor-pointer">
+                            <Copy className="w-3 h-3" />Copy Link
+                          </button>
+                          <a href={mat.url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-[#00bfff] hover:text-white border border-[#00bfff]/20 rounded-lg hover:border-[#00bfff]/40 transition-all">
+                            <ExternalLink className="w-3 h-3" />Open
+                          </a>
                         </div>
-                      </div>
-                      <div className="text-right flex-shrink-0 ml-4">
-                        {ref.status === 'Closed Won' ? (
-                          <p className="text-sm font-bold text-[#ff7a00]">{formatCurrency(ref.payoutAmount)}</p>
-                        ) : ref.status === 'Closed Lost' ? (
-                          <p className="text-xs text-neutral-600">No payout</p>
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-neutral-700 group-hover:text-neutral-400 transition-colors" />
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-            {/* Payout Info */}
+            {/* ── EARNINGS TAB ── */}
+            {dashTab === 'earnings' && (
+              <div className={`${cardCls} p-6`}>
+                <h2 className="text-lg font-semibold mb-6">Earnings Breakdown</h2>
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="p-4 rounded-lg bg-neutral-900/50 border border-neutral-800">
+                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Total Earned</p>
+                    <p className="text-2xl font-bold text-[#ff7a00]">{formatCurrency(stats?.totalEarned ?? 0)}</p>
+                  </div>
+                  <div className="p-4 rounded-lg bg-neutral-900/50 border border-neutral-800">
+                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Pending Payout</p>
+                    <p className="text-2xl font-bold text-amber-400">{formatCurrency(stats?.pendingPayout ?? 0)}</p>
+                  </div>
+                </div>
+                {dashboard?.referrals?.filter(r => r.status === 'Closed Won').length ? (
+                  <div className="space-y-2">
+                    <p className="text-xs text-neutral-500 uppercase tracking-wider mb-3">Closed Deals</p>
+                    {dashboard.referrals.filter(r => r.status === 'Closed Won').map(ref => (
+                      <div key={ref.referralId} className="flex items-center justify-between p-3 bg-neutral-900/30 border border-neutral-800/40 rounded-lg">
+                        <div>
+                          <p className="text-sm font-medium text-white">{ref.leadName}</p>
+                          <p className="text-xs text-neutral-500">{ref.leadCompany} &middot; Closed {formatDate(ref.dateClosed)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-[#ff7a00]">{formatCurrency(ref.payoutAmount)}</p>
+                          <span className={`text-[10px] font-bold uppercase ${ref.payoutStatus === 'paid' ? 'text-emerald-400' : 'text-amber-400'}`}>{ref.payoutStatus}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-neutral-600 text-center py-8">No closed deals yet. Keep referring!</p>
+                )}
+              </div>
+            )}
+
             <div className="mt-8 text-center">
-              <p className="text-xs text-neutral-600">
-                Payouts: <span className="text-neutral-400">GH&#x20B5;1,000</span> or <span className="text-neutral-400">10% of deal value</span> — whichever is higher. Processed after deal closure.
-              </p>
+              <p className="text-xs text-neutral-600">Payouts: <span className="text-neutral-400">GH&#x20B5;1,000</span> or <span className="text-neutral-400">10% of deal value</span> — whichever is higher. Processed after deal closure.</p>
             </div>
           </>
         )}
@@ -580,6 +670,9 @@ function SubmitReferralModal({ session, onClose, onSuccess }: { session: Referre
   const [leadEmail, setLeadEmail] = useState('');
   const [leadPhone, setLeadPhone] = useState('');
   const [leadCompany, setLeadCompany] = useState('');
+  const [meetingDate, setMeetingDate] = useState('');
+  const [meetingTime, setMeetingTime] = useState('');
+  const [attending, setAttending] = useState(false);
   const [introNotes, setIntroNotes] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -591,7 +684,9 @@ function SubmitReferralModal({ session, onClose, onSuccess }: { session: Referre
     await apiCall({
       action: 'submit_referral',
       referrerId: session.referrerId,
-      leadName, leadEmail, leadPhone, leadCompany, introNotes
+      leadName, leadEmail, leadPhone, leadCompany,
+      meetingDate, meetingTime, referrerAttending: attending,
+      introNotes
     });
     setBusy(false);
     onSuccess();
@@ -603,7 +698,7 @@ function SubmitReferralModal({ session, onClose, onSuccess }: { session: Referre
       onClick={onClose}
     >
       <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-        className={`${cardCls} w-full max-w-lg p-8`}
+        className={`${cardCls} w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto`}
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
@@ -613,7 +708,7 @@ function SubmitReferralModal({ session, onClose, onSuccess }: { session: Referre
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-2">Lead Name</label>
+            <label className="block text-sm font-medium text-neutral-400 mb-2">Prospect Name</label>
             <input type="text" required value={leadName} onChange={e => setLeadName(e.target.value)} className={inputCls} placeholder="Ama Owusu" />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -630,16 +725,36 @@ function SubmitReferralModal({ session, onClose, onSuccess }: { session: Referre
             <label className="block text-sm font-medium text-neutral-400 mb-2">Company <span className="text-neutral-600">(optional)</span></label>
             <input type="text" value={leadCompany} onChange={e => setLeadCompany(e.target.value)} className={inputCls} placeholder="Company name" />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-neutral-400 mb-2">Intro Notes <span className="text-neutral-600">(optional)</span></label>
-            <textarea value={introNotes} onChange={e => setIntroNotes(e.target.value)} className={`${inputCls} resize-none`} rows={3} placeholder="Brief context about the lead and their needs..." />
+
+          {/* Meeting scheduling */}
+          <div className="border-t border-neutral-800 pt-4 mt-4">
+            <p className="text-xs text-neutral-500 uppercase tracking-wider font-bold mb-3 flex items-center gap-2"><Calendar className="w-3.5 h-3.5" />Meeting Details <span className="text-neutral-700 normal-case font-normal">(if scheduled)</span></p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">Date</label>
+                <input type="date" value={meetingDate} onChange={e => setMeetingDate(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-400 mb-2">Time</label>
+                <input type="time" value={meetingTime} onChange={e => setMeetingTime(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+            <label className="flex items-center gap-2.5 mt-3 cursor-pointer group">
+              <input type="checkbox" checked={attending} onChange={e => setAttending(e.target.checked)}
+                className="w-4 h-4 rounded border-neutral-700 bg-neutral-900 text-[#00bfff] focus:ring-[#00bfff] cursor-pointer" />
+              <span className="text-sm text-neutral-500 group-hover:text-neutral-300 transition-colors">I plan to attend the meeting</span>
+            </label>
           </div>
 
-          {/* Confirmation checkbox */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-400 mb-2">Intro Notes <span className="text-neutral-600">(optional)</span></label>
+            <textarea value={introNotes} onChange={e => setIntroNotes(e.target.value)} className={`${inputCls} resize-none`} rows={3} placeholder="Brief context about the prospect and their needs..." />
+          </div>
+
           <label className="flex items-start gap-3 pt-2 cursor-pointer">
             <input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)}
               className="mt-1 w-4 h-4 rounded border-neutral-700 bg-neutral-900 text-[#00bfff] focus:ring-[#00bfff] cursor-pointer" />
-            <span className="text-sm text-neutral-400">I confirm I have introduced this person to ICUNI Labs or will do so prior to the meeting.</span>
+            <span className="text-sm text-neutral-400">I confirm I have introduced this prospect to ICUNI Labs and they are aware of the meeting.</span>
           </label>
 
           <button type="submit" disabled={busy || !confirmed}
@@ -651,3 +766,4 @@ function SubmitReferralModal({ session, onClose, onSuccess }: { session: Referre
     </motion.div>
   );
 }
+

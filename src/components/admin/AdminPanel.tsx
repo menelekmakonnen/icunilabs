@@ -4,7 +4,9 @@ import AdminLogin from './AdminLogin'
 import DashboardSection from './DashboardSection'
 import SettingsSection from './SettingsSection'
 import { ClientsSection, ProjectsSection, InvoicesSection, CareersSection, ReferralsSection, UsersSection, LogsSection, SLASection } from './AdminSections'
-import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, ChevronLeft, ChevronRight } from 'lucide-react'
+import ReferralPortal from '../portal/ReferralPortal'
+import ClientPortal from '../portal/ClientPortal'
+import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, ChevronLeft, ChevronRight, Eye, UserCircle, X } from 'lucide-react'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 
@@ -22,13 +24,35 @@ const NAV = [
 ]
 
 export default function AdminPanel() {
-  const { token, user, activeSection } = useAdminStore()
+  const { token, user, activeSection, actingAs, impersonating, users } = useAdminStore()
   const [collapsed, setCollapsed] = useState(false)
+  const [showActAs, setShowActAs] = useState(false)
+  const [showImpersonate, setShowImpersonate] = useState(false)
 
   useEffect(() => { adminActions.validateSession() }, [])
 
   // Not logged in or not admin
   if (!token || !user) return <AdminLogin />
+
+  const isGodmode = user.role === 'Godmode'
+
+  // ── Act As: render target portal ──
+  if (actingAs === 'referrer') {
+    return (
+      <>
+        <ActingAsBanner role="Referrer" />
+        <ReferralPortal />
+      </>
+    )
+  }
+  if (actingAs === 'client') {
+    return (
+      <>
+        <ActingAsBanner role="Client" />
+        <ClientPortal />
+      </>
+    )
+  }
 
   const sidebarWidth = collapsed ? 64 : 240
 
@@ -131,6 +155,30 @@ export default function AdminPanel() {
             <h1 className="text-lg font-bold text-white capitalize">{activeSection}</h1>
           </div>
           <div className="flex items-center gap-3">
+            {isGodmode && (
+              <div className="relative">
+                <button onClick={() => { setShowActAs(!showActAs); setShowImpersonate(false) }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer border border-neutral-800">
+                  <Eye className="w-3.5 h-3.5" />Act as...
+                </button>
+                {showActAs && (
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl overflow-hidden z-50">
+                    {[['referrer', 'Referrer'], ['client', 'Client']].map(([key, label]) => (
+                      <button key={key} onClick={() => { adminActions.setActingAs(key); setShowActAs(false) }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer">
+                        View as {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {isGodmode && (
+              <button onClick={() => { setShowImpersonate(!showImpersonate); setShowActAs(false); if (!users.length) adminActions.loadUsers() }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer border border-neutral-800">
+                <UserCircle className="w-3.5 h-3.5" />Impersonate
+              </button>
+            )}
             <a href="/" className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors">← Back to Site</a>
           </div>
         </header>
@@ -140,6 +188,59 @@ export default function AdminPanel() {
           {renderSection()}
         </div>
       </main>
+
+      {/* Impersonate Picker Modal */}
+      {showImpersonate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowImpersonate(false)}>
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl w-full max-w-md p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2"><UserCircle className="w-5 h-5 text-[#00bfff]" />Impersonate User</h3>
+              <button onClick={() => setShowImpersonate(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-xs text-neutral-500 mb-4">View the app as this user sees it. Useful for demoing and troubleshooting.</p>
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {users.length === 0 ? (
+                <p className="text-sm text-neutral-600 text-center py-4">Loading users...</p>
+              ) : (
+                users.map((u: any) => (
+                  <button key={u.id} onClick={() => { adminActions.setImpersonating(u); setShowImpersonate(false) }}
+                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-neutral-800 transition-all cursor-pointer group">
+                    <div className="text-left">
+                      <p className="text-sm text-white font-medium">{u.name}</p>
+                      <p className="text-[11px] text-neutral-500">{u.email}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                      u.role === 'Godmode' ? 'text-[#ff7a00] bg-[#ff7a00]/10' : u.role === 'Referrer' ? 'text-emerald-400 bg-emerald-500/10' : 'text-[#00bfff] bg-[#00bfff]/10'
+                    }`}>{u.role}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Impersonating Banner */}
+      {impersonating && (
+        <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 py-2 bg-gradient-to-r from-purple-600/90 to-[#00bfff]/90 backdrop-blur-sm">
+          <UserCircle className="w-4 h-4 text-white" />
+          <span className="text-sm text-white font-bold">Impersonating: {impersonating.name} ({impersonating.role})</span>
+          <button onClick={() => adminActions.clearImpersonation()}
+            className="ml-2 px-3 py-1 text-xs font-bold text-white bg-white/20 rounded-lg hover:bg-white/30 transition-all cursor-pointer">Exit</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Floating banner for Act As mode ──
+function ActingAsBanner({ role }: { role: string }) {
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 py-2 bg-gradient-to-r from-[#ff7a00]/90 to-amber-500/90 backdrop-blur-sm">
+      <Eye className="w-4 h-4 text-white" />
+      <span className="text-sm text-white font-bold">Viewing as {role}</span>
+      <button onClick={() => adminActions.clearImpersonation()}
+        className="ml-2 px-3 py-1 text-xs font-bold text-white bg-white/20 rounded-lg hover:bg-white/30 transition-all cursor-pointer">Exit</button>
     </div>
   )
 }
