@@ -513,6 +513,39 @@ function handleDeleteEmailAlias(payload) {
 // EMAIL TEMPLATES
 // ═══════════════════════════════════════════════════════════
 
+// Master template catalog — references existing builders in CMS.js
+var MAIL_HUB_TEMPLATES = [
+    // ── CAREERS (Applicant) ──
+    { id: 'applicant:cv_confirmation',    name: 'Application Received',        category: 'careers',   builder: 'applicant', from: 'jobs@icuni.org',  desc: 'Confirm receipt of their application materials.' },
+    { id: 'applicant:interview_selected', name: 'Selected for Interview',      category: 'careers',   builder: 'applicant', from: 'jobs@icuni.org',  desc: 'Invite them with date/time options to choose from.' },
+    { id: 'applicant:not_selected',       name: 'Not Selected (Application)',  category: 'careers',   builder: 'applicant', from: 'jobs@icuni.org',  desc: 'They did not make it past the application stage.' },
+    { id: 'applicant:interview_thanks',   name: 'Interview Thank You',         category: 'careers',   builder: 'applicant', from: 'jobs@icuni.org',  desc: 'Thank them for attending the interview today.' },
+    { id: 'applicant:interview_confirmed',name: 'Interview Confirmed',         category: 'careers',   builder: 'applicant', from: 'jobs@icuni.org',  desc: 'Confirm their slot with date, time, and meeting link.' },
+    { id: 'applicant:trial_invitation',   name: 'Paid Trial Invitation',       category: 'careers',   builder: 'applicant', from: 'jobs@icuni.org',  desc: 'Invite to a 1-week paid working trial.' },
+    { id: 'applicant:role_offered',       name: 'Role Offered',                category: 'careers',   builder: 'applicant', from: 'jobs@icuni.org',  desc: 'Congratulations — they got the job!' },
+    { id: 'applicant:role_rejected',      name: 'Not Selected (Final)',        category: 'careers',   builder: 'applicant', from: 'jobs@icuni.org',  desc: 'Final rejection after interview stage.' },
+    // ── REFERRER ──
+    { id: 'referrer:welcome',             name: 'Referrer Welcome',            category: 'referrer',  builder: 'referrer',  from: 'hello@icuni.org', desc: 'Welcome to the ICUNI Labs Referral Program.' },
+    { id: 'referrer:stage_update',        name: 'Referral Stage Update',       category: 'referrer',  builder: 'referrer',  from: 'hello@icuni.org', desc: 'Notify referrer their referral progressed.' },
+    { id: 'referrer:payment_sent',        name: 'Referrer Payment Sent',       category: 'referrer',  builder: 'referrer',  from: 'hello@icuni.org', desc: 'Confirm commission payment to the referrer.' },
+    { id: 'referrer:meeting_reminder',    name: 'Referrer Meeting Reminder',   category: 'referrer',  builder: 'referrer',  from: 'hello@icuni.org', desc: 'Remind about an upcoming prospect meeting.' },
+    { id: 'referrer:new_material',        name: 'New Referral Material',       category: 'referrer',  builder: 'referrer',  from: 'hello@icuni.org', desc: 'New portfolio or demo material available.' },
+    // ── CLIENT ──
+    { id: 'client:welcome',              name: 'Client Welcome',              category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Welcome them as a new ICUNI Labs client.' },
+    { id: 'client:project_kickoff',      name: 'Project Kickoff',             category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Kickoff call scheduled, outline what happens next.' },
+    { id: 'client:milestone_update',     name: 'Milestone Update',            category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Share progress on their project milestone.' },
+    { id: 'client:invoice_reminder',     name: 'Invoice Reminder',            category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Friendly reminder about an outstanding invoice.' },
+    { id: 'client:review_request',       name: 'Review Request',              category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Ask client to review deliverables or leave feedback.' },
+    { id: 'client:thank_you',            name: 'Client Thank You',            category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Thank client after project completion.' },
+    { id: 'client:follow_up',            name: 'Client Follow-Up',            category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Check in after delivery or a quiet period.' },
+    { id: 'client:upsell',              name: 'Upsell / New Offer',          category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Propose additional services or upgrades.' },
+    { id: 'client:check_in',            name: 'Periodic Check-In',           category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Routine touchpoint to maintain the relationship.' },
+    // ── TEAM ──
+    { id: 'team:announcement',           name: 'Team Announcement',           category: 'team',      builder: 'custom',    from: 'labs@icuni.org',  desc: 'Internal announcement to all staff.' },
+    // ── CUSTOM ──
+    { id: 'custom',                      name: 'Custom Email',                category: 'custom',    builder: 'custom',    from: 'labs@icuni.org',  desc: 'Write your own branded email from scratch.' }
+];
+
 /**
  * Get available email templates.
  * payload: { token }
@@ -521,74 +554,32 @@ function handleGetEmailTemplates(payload) {
     var auth = requireAuth_(payload.token);
     if (auth.error) return auth.error;
 
-    // Return system templates + user-saved templates
-    var systemTemplates = [
-        {
-            id: 'welcome_client',
-            name: 'Welcome Client',
-            category: 'client',
-            subject: '[ICUNI Labs] Welcome to ICUNI Labs',
-            body: 'Thank you for choosing ICUNI Labs. We are excited to work with you on building custom solutions for your business.\n\nYour account has been set up and our team will be in touch shortly to schedule a kickoff meeting.\n\nIn the meantime, feel free to explore your client dashboard.',
-            opts: { ctaText: 'View Dashboard', ctaLink: 'https://labs.icuni.org' },
+    var templates = [];
+    for (var i = 0; i < MAIL_HUB_TEMPLATES.length; i++) {
+        var t = MAIL_HUB_TEMPLATES[i];
+        templates.push({
+            id: t.id,
+            name: t.name,
+            category: t.category,
+            builder: t.builder,
+            from: t.from,
+            desc: t.desc,
             system: true
-        },
-        {
-            id: 'invoice_reminder',
-            name: 'Invoice Reminder',
-            category: 'client',
-            subject: '[ICUNI Labs] Invoice Payment Reminder',
-            body: 'This is a friendly reminder that you have an outstanding invoice with ICUNI Labs.\n\nPlease review and make payment at your earliest convenience to avoid any delays in your project timeline.',
-            opts: { ctaText: 'View Invoice', ctaLink: 'https://labs.icuni.org' },
-            system: true
-        },
-        {
-            id: 'project_update',
-            name: 'Project Update',
-            category: 'client',
-            subject: '[ICUNI Labs] Project Progress Update',
-            body: 'We wanted to give you an update on your project progress.\n\nOur team has been working hard and we have some exciting developments to share. Please check your dashboard for the latest status.',
-            opts: { ctaText: 'View Project', ctaLink: 'https://labs.icuni.org' },
-            system: true
-        },
-        {
-            id: 'referral_thankyou',
-            name: 'Referral Thank You',
-            category: 'referrer',
-            subject: '[ICUNI Labs] Thank You for Your Referral',
-            body: 'Thank you for referring a client to ICUNI Labs! We truly appreciate your support and trust in our services.\n\nWe will keep you updated on the progress and ensure your referral commission is processed promptly.',
-            opts: { ctaText: 'View Referral Status', ctaLink: 'https://labs.icuni.org' },
-            system: true
-        },
-        {
-            id: 'team_announcement',
-            name: 'Team Announcement',
-            category: 'team',
-            subject: '[ICUNI Labs] Team Update',
-            body: 'Hi team,\n\nWe have an important update to share with everyone.',
-            opts: { ctaText: 'View Dashboard', ctaLink: 'https://labs.icuni.org' },
-            system: true
-        },
-        {
-            id: 'custom',
-            name: 'Custom Email',
-            category: 'custom',
-            subject: '',
-            body: '',
-            opts: {},
-            system: true
-        }
-    ];
+        });
+    }
 
     // Load user-saved templates from sheet
-    var saved = [];
     try {
         var rows = sheetToObjects_(SHEETS.EMAIL_TEMPLATES);
-        for (var i = 0; i < rows.length; i++) {
-            var r = rows[i];
-            saved.push({
+        for (var j = 0; j < rows.length; j++) {
+            var r = rows[j];
+            templates.push({
                 id: r.template_id,
                 name: r.name,
                 category: r.category || 'custom',
+                builder: 'custom',
+                from: r.from_alias || 'labs@icuni.org',
+                desc: r.description || '',
                 subject: r.subject,
                 body: r.body,
                 opts: r.opts ? JSON.parse(r.opts) : {},
@@ -601,7 +592,7 @@ function handleGetEmailTemplates(payload) {
         // Sheet may not exist yet
     }
 
-    return successResponse_(systemTemplates.concat(saved));
+    return successResponse_(templates);
 }
 
 /**
@@ -616,11 +607,10 @@ function handleSaveEmailTemplate(payload) {
     }
 
     var sheet = ensureSheet_(SHEETS.EMAIL_TEMPLATES, [
-        'template_id', 'name', 'category', 'subject', 'body', 'opts', 'created_by', 'created_at', 'updated_at'
+        'template_id', 'name', 'category', 'subject', 'body', 'opts', 'from_alias', 'description', 'created_by', 'created_at', 'updated_at'
     ]);
 
     if (payload.template_id) {
-        // Update existing
         var existing = findRow_(SHEETS.EMAIL_TEMPLATES, 'template_id', payload.template_id);
         if (existing) {
             updateRow_(SHEETS.EMAIL_TEMPLATES, existing._rowIndex, {
@@ -635,18 +625,11 @@ function handleSaveEmailTemplate(payload) {
         }
     }
 
-    // Create new
     var templateId = generateId_('TPL');
     sheet.appendRow([
-        templateId,
-        payload.name,
-        payload.category || 'custom',
-        payload.subject,
-        payload.body,
-        JSON.stringify(payload.opts || {}),
-        auth.user.name,
-        now_(),
-        now_()
+        templateId, payload.name, payload.category || 'custom', payload.subject,
+        payload.body, JSON.stringify(payload.opts || {}), payload.fromAlias || 'labs@icuni.org',
+        payload.description || '', auth.user.name, now_(), now_()
     ]);
 
     logAction_(auth.user.user_id, auth.user.name, 'EMAIL_TEMPLATE_CREATED', templateId + ': ' + payload.name);
@@ -654,18 +637,59 @@ function handleSaveEmailTemplate(payload) {
 }
 
 /**
- * Preview a branded email (returns HTML).
- * payload: { token, subject, body, recipientName?, opts? }
+ * Preview a branded email using the CMS template builders.
+ * payload: { token, templateId, recipientName?, extras? }
+ * OR: { token, subject, body, recipientName?, opts? } for freeform
  */
 function handlePreviewBrandedEmail(payload) {
     var auth = requireAuth_(payload.token);
     if (auth.error) return auth.error;
 
     var name = payload.recipientName || 'Recipient';
+    var extras = payload.extras || {};
+
+    // If a templateId is provided, route through the correct builder
+    if (payload.templateId) {
+        var parts = payload.templateId.split(':');
+        var builder = parts[0];
+        var tplKey = parts.length > 1 ? parts[1] : 'custom';
+
+        var tpl;
+        try {
+            if (builder === 'applicant') {
+                tpl = buildApplicantTemplate_(name, tplKey, extras);
+            } else if (builder === 'referrer') {
+                tpl = buildReferrerTemplate_(name, tplKey, extras);
+            } else if (builder === 'client') {
+                tpl = buildClientTemplate_(name, tplKey, extras);
+            } else {
+                // Custom / team — use provided subject + body
+                tpl = {
+                    subject: payload.subject || 'A Message from ICUNI Labs',
+                    title: payload.subject || 'Hello from ICUNI Labs',
+                    body: (payload.body || '').replace(/\n/g, '<br>'),
+                    opts: payload.opts || {}
+                };
+            }
+        } catch (e) {
+            // Fallback for unknown template keys
+            tpl = {
+                subject: payload.subject || 'Preview',
+                title: payload.subject || 'Preview',
+                body: (payload.body || '').replace(/\n/g, '<br>'),
+                opts: payload.opts || {}
+            };
+        }
+
+        var html = buildBrandedEmail_(name, tpl.title || tpl.subject, tpl.body, tpl.opts);
+        return successResponse_({ html: html, subject: tpl.subject });
+    }
+
+    // Freeform preview
     var subject = payload.subject || 'Preview';
     var body = (payload.body || '').replace(/\n/g, '<br>');
     var opts = payload.opts || {};
-
     var html = buildBrandedEmail_(name, subject, body, opts);
     return successResponse_({ html: html, subject: subject });
 }
+

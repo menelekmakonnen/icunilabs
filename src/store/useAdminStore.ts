@@ -585,9 +585,9 @@ export const adminActions = {
     }
   },
 
-  previewBrandedEmail: async (subject: string, body: string, recipientName?: string, opts?: any) => {
+  previewBrandedEmail: async (data: { templateId?: string; subject?: string; body?: string; recipientName?: string; opts?: any; extras?: any }) => {
     try {
-      return await apiPost('previewBrandedEmail', { token: state.token, subject, body, recipientName, opts })
+      return await apiPost('previewBrandedEmail', { token: state.token, ...data })
     } catch (err: any) {
       setState({ error: err.message })
       return null
