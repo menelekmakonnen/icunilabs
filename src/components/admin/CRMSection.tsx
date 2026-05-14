@@ -3,6 +3,7 @@ import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save, MapPin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
+import { FormButton, ActionButton } from './ActionButton'
 import './crm.css'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
@@ -66,10 +67,23 @@ export default function CRMSection() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [stagePopup, setStagePopup] = useState<{ clientId: string; stage: string; direction: 'advance'|'regress' } | null>(null)
   const [stageNote, setStageNote] = useState('')
+  // Per-action busy states for spinner feedback
+  const [busyAdd, setBusyAdd] = useState(false)
+  const [busyProspect, setBusyProspect] = useState(false)
+  const [busyBatch, setBusyBatch] = useState(false)
+  const [busyNote, setBusyNote] = useState(false)
+  const [busyTag, setBusyTag] = useState(false)
+  const [busySave, setBusySave] = useState(false)
+  const [busyDelete, setBusyDelete] = useState(false)
+  const [busyStage, setBusyStage] = useState(false)
+  const [busyOpen, setBusyOpen] = useState<string | null>(null)
 
   useEffect(() => { adminActions.loadClients() }, [])
 
-  const filtered = clients.filter((c: any) => {
+
+  const activeClients = clients.filter((c: any) => (c.status || '').toLowerCase() !== 'deleted')
+
+  const filtered = activeClients.filter((c: any) => {
     if (!search) return true
     const q = search.toLowerCase()
     return (c.name||'').toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q) || (c.company||'').toLowerCase().includes(q)
@@ -78,57 +92,78 @@ export default function CRMSection() {
   const openClient = async (c: any) => {
     setDetailTab('overview')
     setEditing(false)
+    setBusyOpen(c.client_id)
     try {
       await adminActions.getClient(c.client_id)
       adminActions.getClientActivity(c.client_id)
     } catch (err) {
       console.error('Failed to open client:', err)
+    } finally {
+      setBusyOpen(null)
     }
   }
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    const ok = await adminActions.createClient(form)
-    if (ok) { setShowAdd(false); setForm({ name:'', email:'', phone:'', company:'', source:'', industry:'', website:'' }) }
+    setBusyAdd(true)
+    try {
+      const ok = await adminActions.createClient(form)
+      if (ok) { setShowAdd(false); setForm({ name:'', email:'', phone:'', company:'', source:'', industry:'', website:'' }) }
+    } finally { setBusyAdd(false) }
   }
 
   const handleAddProspect = async (e: React.FormEvent) => {
     e.preventDefault()
-    const payload: any = { ...prospectForm, prospect_stage: 'prospect' }
-    if (prospectForm.location) payload.address = prospectForm.location
-    const ok = await adminActions.createClient(payload)
-    if (ok) { setShowAddProspect(false); setProspectForm({ name:'', email:'', phone:'', company:'', source:'', location:'', buyer_profile:'', first_contact_date:'' }) }
+    setBusyProspect(true)
+    try {
+      const payload: any = { ...prospectForm, prospect_stage: 'prospect' }
+      if (prospectForm.location) payload.address = prospectForm.location
+      const ok = await adminActions.createClient(payload)
+      if (ok) { setShowAddProspect(false); setProspectForm({ name:'', email:'', phone:'', company:'', source:'', location:'', buyer_profile:'', first_contact_date:'' }) }
+    } finally { setBusyProspect(false) }
   }
 
   const handleBatchAdd = async () => {
     if (!batchName.trim()) return
-    const payload: any = { name: batchName.trim(), source: 'Google Maps', prospect_stage: 'prospect' }
-    if (batchLocation.trim()) payload.address = batchLocation.trim()
-    const ok = await adminActions.createClient(payload)
-    if (ok) setBatchName('')
+    setBusyBatch(true)
+    try {
+      const payload: any = { name: batchName.trim(), source: 'Google Maps', prospect_stage: 'prospect' }
+      if (batchLocation.trim()) payload.address = batchLocation.trim()
+      const ok = await adminActions.createClient(payload)
+      if (ok) setBatchName('')
+    } finally { setBusyBatch(false) }
   }
 
   const handleAddNote = async () => {
     if (!noteText.trim() || !activeClient) return
-    await adminActions.addClientNote(activeClient.client_id, noteText)
-    setNoteText('')
+    setBusyNote(true)
+    try {
+      await adminActions.addClientNote(activeClient.client_id, noteText)
+      setNoteText('')
+    } finally { setBusyNote(false) }
   }
 
   const handleAddTag = async () => {
     if (!tagInput.trim() || !activeClient) return
-    const existing = activeClient.tags_list || []
-    await adminActions.updateClientTags(activeClient.client_id, [...existing, tagInput.trim()])
-    setTagInput('')
+    setBusyTag(true)
+    try {
+      const existing = activeClient.tags_list || []
+      await adminActions.updateClientTags(activeClient.client_id, [...existing, tagInput.trim()])
+      setTagInput('')
+    } finally { setBusyTag(false) }
   }
 
   const handleAdvanceStage = async (clientId: string, stage: string) => {
-    if (stageNote.trim()) {
-      await adminActions.updateClientStatus(clientId, stage, stageNote.trim())
-    } else {
-      await adminActions.updateClientStatus(clientId, stage)
-    }
-    setStagePopup(null)
-    setStageNote('')
+    setBusyStage(true)
+    try {
+      if (stageNote.trim()) {
+        await adminActions.updateClientStatus(clientId, stage, stageNote.trim())
+      } else {
+        await adminActions.updateClientStatus(clientId, stage)
+      }
+      setStagePopup(null)
+      setStageNote('')
+    } finally { setBusyStage(false) }
   }
 
   const openStagePopup = (clientId: string, stage: string, direction: 'advance'|'regress') => {
@@ -160,14 +195,20 @@ export default function CRMSection() {
 
   const handleSaveEdit = async () => {
     if (!activeClient) return
-    const ok = await adminActions.updateClient(activeClient.client_id, editForm)
-    if (ok) setEditing(false)
+    setBusySave(true)
+    try {
+      const ok = await adminActions.updateClient(activeClient.client_id, editForm)
+      if (ok) setEditing(false)
+    } finally { setBusySave(false) }
   }
 
   const handleDeleteClient = async () => {
     if (!activeClient) return
-    await adminActions.deleteClient(activeClient.client_id)
-    setShowDeleteConfirm(false)
+    setBusyDelete(true)
+    try {
+      await adminActions.deleteClient(activeClient.client_id)
+      setShowDeleteConfirm(false)
+    } finally { setBusyDelete(false) }
   }
 
   const handleRemoveTag = async (tag: string) => {
@@ -254,8 +295,8 @@ export default function CRMSection() {
                     <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider">Edit Client</p>
                     <div className="flex gap-2">
                       <button onClick={() => setEditing(false)} className="px-3 py-1.5 text-xs text-neutral-500 hover:text-white cursor-pointer transition-colors">Cancel</button>
-                      <button onClick={handleSaveEdit} className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-xs font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all">
-                        <Save className="w-3.5 h-3.5" />Save Changes
+                      <button onClick={handleSaveEdit} disabled={busySave} className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-xs font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all disabled:opacity-40">
+                        {busySave ? <><svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>Saving...</> : <><Save className="w-3.5 h-3.5" />Save Changes</>}
                       </button>
                     </div>
                   </div>
@@ -469,9 +510,9 @@ export default function CRMSection() {
               {/* Add Note */}
               <div className="flex gap-3">
                 <textarea value={noteText} onChange={e => setNoteText(e.target.value)} className="crm-note-input flex-1" placeholder="Write a note about this client..." rows={2} />
-                <button onClick={handleAddNote} disabled={!noteText.trim()}
+                <button onClick={handleAddNote} disabled={!noteText.trim() || busyNote}
                   className="self-end px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all disabled:opacity-30 flex items-center gap-2">
-                  <Send className="w-4 h-4" />Add
+                  {busyNote ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg> : <Send className="w-4 h-4" />}{busyNote ? '' : 'Add'}
                 </button>
               </div>
               {/* Notes List */}
@@ -565,7 +606,7 @@ export default function CRMSection() {
               <p className="text-sm text-neutral-400 mb-4">Are you sure you want to delete <strong className="text-white">{c.name}</strong>? This action cannot be undone.</p>
               <div className="flex justify-end gap-3">
                 <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors">Cancel</button>
-                <button onClick={handleDeleteClient} className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-sm font-bold cursor-pointer hover:bg-red-500/30 transition-all">Delete Client</button>
+                <button onClick={handleDeleteClient} disabled={busyDelete} className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-sm font-bold cursor-pointer hover:bg-red-500/30 transition-all disabled:opacity-40 flex items-center gap-2">{busyDelete ? <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>Deleting...</> : 'Delete Client'}</button>
               </div>
             </div>
           </div>
@@ -575,9 +616,9 @@ export default function CRMSection() {
   }
 
   // ═══ CLIENTS LIST VIEW (CRM Home) ═══
-  const totalRevenue = clients.reduce((s: number, c: any) => s + Number(c.total_revenue || 0), 0)
-  const activeCount = clients.filter((c: any) => c.active_projects > 0).length
-  const outstandingTotal = clients.reduce((s: number, c: any) => s + Number(c.outstanding || 0), 0)
+  const totalRevenue = activeClients.reduce((s: number, c: any) => s + Number(c.total_revenue || 0), 0)
+  const activeCount = activeClients.filter((c: any) => c.active_projects > 0).length
+  const outstandingTotal = activeClients.reduce((s: number, c: any) => s + Number(c.outstanding || 0), 0)
 
   return (
     <div className="crm-fade-in">
@@ -585,7 +626,7 @@ export default function CRMSection() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Client CRM</h1>
-          <p className="text-sm text-neutral-500 mt-0.5">{clients.length} clients — {fmtMoney(totalRevenue)} total revenue</p>
+          <p className="text-sm text-neutral-500 mt-0.5">{activeClients.length} clients — {fmtMoney(totalRevenue)} total revenue</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex bg-neutral-900 rounded-lg p-0.5 border border-neutral-800">
@@ -647,9 +688,9 @@ export default function CRMSection() {
                 <div className="space-y-2">
                   {stageClients.map((c: any) => (
                     <div key={c.client_id} onClick={() => openClient(c)}
-                      className="bg-neutral-900/60 border border-neutral-800 rounded-xl p-3 cursor-pointer hover:border-neutral-700 transition-all hover:translate-y-[-1px]">
+                      className={`bg-neutral-900/60 border border-neutral-800 rounded-xl p-3 cursor-pointer hover:border-neutral-700 transition-all hover:translate-y-[-1px] ${busyOpen === c.client_id ? 'opacity-60 pointer-events-none' : ''}`}>
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white" style={{ background: getAvatarColor(c.name || c.company || '') }}>{getInitials(c.name || c.company || c.email || '?').charAt(0)}</div>
+                        {busyOpen === c.client_id ? <svg className="animate-spin w-6 h-6 text-[#00bfff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg> : <div className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white" style={{ background: getAvatarColor(c.name || c.company || '') }}>{getInitials(c.name || c.company || c.email || '?').charAt(0)}</div>}
                         <span className="text-sm text-white font-medium truncate">{c.name || c.company || c.email || 'Unnamed'}</span>
                       </div>
                       <p className="text-[10px] text-neutral-600 truncate">{c.company || c.email}</p>
@@ -774,9 +815,9 @@ export default function CRMSection() {
                 <input value={form.source} onChange={e => setForm({...form, source: e.target.value})} className={inputCls} placeholder="Source (e.g. Referral)" />
               </div>
               <input value={form.website} onChange={e => setForm({...form, website: e.target.value})} className={inputCls} placeholder="Website (optional)" />
-              <button type="submit" className="w-full px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all">
+              <FormButton busy={busyAdd} busyText="Creating..." className="w-full px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all">
                 Create Client
-              </button>
+              </FormButton>
             </form>
           </div>
         </div>
@@ -811,9 +852,9 @@ export default function CRMSection() {
                   <input value={batchName} onChange={e => setBatchName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleBatchAdd() } }}
                     className={`${inputCls} flex-1`} placeholder="Business name" autoFocus />
-                  <button onClick={handleBatchAdd} disabled={!batchName.trim()}
-                    className="px-4 py-2.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-neutral-700 transition-all disabled:opacity-30">
-                    Add
+                  <button onClick={handleBatchAdd} disabled={!batchName.trim() || busyBatch}
+                    className="px-4 py-2.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-neutral-700 transition-all disabled:opacity-30 flex items-center gap-1.5">
+                    {busyBatch ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg> : 'Add'}
                   </button>
                 </div>
                 <p className="text-[10px] text-neutral-600 text-center">Press Enter or click Add — then type the next name. Source auto-set to "Google Maps".</p>
@@ -839,11 +880,11 @@ export default function CRMSection() {
                   <label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Expected First Contact</label>
                   <input type="datetime-local" value={prospectForm.first_contact_date} onChange={e => setProspectForm({...prospectForm, first_contact_date: e.target.value})} className={inputCls} />
                 </div>
-                <button type="submit"
+                <FormButton busy={busyProspect} busyText="Adding..."
                   disabled={!prospectForm.name && !prospectForm.email && !prospectForm.company}
-                  className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-neutral-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                  className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-neutral-700 transition-all disabled:cursor-not-allowed">
                   Add as Prospect
-                </button>
+                </FormButton>
                 {!prospectForm.name && !prospectForm.email && !prospectForm.company && (
                   <p className="text-[10px] text-neutral-600 text-center">Enter at least a name, email, or company</p>
                 )}
@@ -871,12 +912,14 @@ export default function CRMSection() {
               <button onClick={() => { setStagePopup(null); setStageNote('') }}
                 className="px-4 py-2 text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors">Cancel</button>
               <button onClick={() => handleAdvanceStage(stagePopup.clientId, stagePopup.stage)}
-                className={`px-5 py-2 rounded-lg text-sm font-bold cursor-pointer transition-all ${
+                disabled={busyStage}
+                className={`px-5 py-2 rounded-lg text-sm font-bold cursor-pointer transition-all flex items-center gap-2 disabled:opacity-40 ${
                   stagePopup.direction === 'advance'
                     ? 'bg-[#00bfff]/15 text-[#00bfff] border border-[#00bfff]/30 hover:bg-[#00bfff]/25'
                     : 'bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25'
                 }`}>
-                {stagePopup.direction === 'advance' ? 'Advance' : 'Regress'}
+                {busyStage ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg> : null}
+                {busyStage ? 'Working...' : stagePopup.direction === 'advance' ? 'Advance' : 'Regress'}
               </button>
             </div>
           </div>

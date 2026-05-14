@@ -21,7 +21,7 @@ const NAV = [
   { id: 'careers', label: 'Careers', icon: Briefcase },
   { id: 'referrals', label: 'Referrals', icon: UserCheck },
   { id: 'sla', label: 'SLA', icon: Clock },
-  { id: 'users', label: 'Users', icon: Shield },
+  { id: 'users', label: 'Team', icon: Shield },
   { id: 'logs', label: 'Logs', icon: Activity },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]

@@ -1629,6 +1629,8 @@ export function UsersSection() {
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [editPerms, setEditPerms] = useState<Record<string, boolean>>({})
   const [savingPerms, setSavingPerms] = useState(false)
+  const [busyAddUser, setBusyAddUser] = useState(false)
+  const [busyInviteAdmin, setBusyInviteAdmin] = useState(false)
 
   const isGodmode = currentUser?.role === 'Godmode'
 
@@ -1639,14 +1641,20 @@ export function UsersSection() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    const ok = await adminActions.addUser(form)
-    if (ok) { setShowAdd(false); setForm({ name: '', email: '', phone: '', role: 'Staff' }) }
+    setBusyAddUser(true)
+    try {
+      const ok = await adminActions.addUser(form)
+      if (ok) { setShowAdd(false); setForm({ name: '', email: '', phone: '', role: 'Staff' }) }
+    } finally { setBusyAddUser(false) }
   }
 
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault()
-    const ok = await adminActions.createAdmin(adminEmail, adminJobTitle)
-    if (ok) { setShowCreateAdmin(false); setAdminEmail(''); setAdminJobTitle('Operations Assistant') }
+    setBusyInviteAdmin(true)
+    try {
+      const ok = await adminActions.createAdmin(adminEmail, adminJobTitle)
+      if (ok) { setShowCreateAdmin(false); setAdminEmail(''); setAdminJobTitle('Operations Assistant') }
+    } finally { setBusyInviteAdmin(false) }
   }
 
   const openPermissions = (u: any) => {
@@ -1686,12 +1694,12 @@ export function UsersSection() {
 
   return (
     <>
-      <DataTable title="Users" subtitle={`${adminUsers.length} admin & staff accounts`} loading={loading} data={adminUsers}
-        onAdd={() => setShowAdd(true)} addLabel="Add User"
+      <DataTable title="Team" subtitle={`${adminUsers.length} admin & staff accounts`} loading={loading} data={adminUsers}
+        onAdd={() => setShowAdd(true)} addLabel="Add Staff"
         headerActions={isGodmode ? (
           <button onClick={() => setShowCreateAdmin(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#8b5cf6] to-purple-600 text-white rounded-lg text-sm font-bold hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] transition-all cursor-pointer">
-            <UserPlus className="w-4 h-4" />Create Admin
+            <UserPlus className="w-4 h-4" />Invite Admin
           </button>
         ) : undefined}
         columns={[
@@ -1719,21 +1727,21 @@ export function UsersSection() {
         )}
       />
 
-      {/* Create Admin Modal */}
+      {/* Invite Admin Modal — Godmode only, elevated access */}
       {showCreateAdmin && (
         <div className={modalBg} onClick={() => setShowCreateAdmin(false)}>
           <div className={`${modalCard} !max-w-lg`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <svg className="w-5 h-5 text-[#8b5cf6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0" strokeLinecap="round"/><path d="M17 10l2 2 4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Create Admin Account
+                Invite Admin
               </h3>
               <button onClick={() => setShowCreateAdmin(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
             <div className="bg-[#8b5cf6]/5 border border-[#8b5cf6]/20 rounded-lg p-3 mb-4">
               <p className="text-xs text-[#8b5cf6]/80 leading-relaxed">
-                Admin users get all your privileges by default. You can toggle specific sections on/off after creation.
-                They will receive a login code via email and can set their own password and PIN.
+                <strong>Admin</strong> = full console access (all sections). Use this to invite someone who manages operations alongside you.
+                You can restrict specific sections after creation via Permissions.
               </p>
             </div>
             <form onSubmit={handleCreateAdmin} className="space-y-3">
@@ -1746,8 +1754,8 @@ export function UsersSection() {
                 <input value={adminJobTitle} onChange={e => setAdminJobTitle(e.target.value)} className={inputCls} placeholder="Operations Assistant" />
               </div>
               <p className="text-xs text-neutral-600">A login code will be emailed. They can set their password and PIN on first login.</p>
-              <button type="submit" className="w-full px-4 py-2.5 bg-gradient-to-r from-[#8b5cf6] to-purple-600 text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] transition-all">
-                Send Invite
+              <button type="submit" disabled={busyInviteAdmin} className="w-full px-4 py-2.5 bg-gradient-to-r from-[#8b5cf6] to-purple-600 text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] transition-all disabled:opacity-40 flex items-center justify-center gap-2">
+                {busyInviteAdmin ? <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>Sending Invite...</> : 'Send Invite'}
               </button>
             </form>
           </div>
@@ -1788,23 +1796,27 @@ export function UsersSection() {
         </div>
       )}
 
-      {/* Standard Add User Modal */}
+      {/* Add Staff Member Modal */}
       {showAdd && (
         <div className={modalBg} onClick={() => setShowAdd(false)}>
           <div className={modalCard} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2"><UserPlus className="w-5 h-5 text-[#00bfff]" />Add User</h3>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2"><UserPlus className="w-5 h-5 text-[#00bfff]" />Add Staff Member</h3>
               <button onClick={() => setShowAdd(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="bg-[#00bfff]/5 border border-[#00bfff]/20 rounded-lg p-3 mb-4">
+              <p className="text-xs text-[#00bfff]/80 leading-relaxed">
+                <strong>Staff</strong> = limited access. They can view dashboards and manage assigned work but cannot configure system settings or invite admins.
+              </p>
             </div>
             <form onSubmit={handleAdd} className="space-y-3">
               <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={inputCls} placeholder="Full name" required />
               <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className={inputCls} placeholder="Email" required />
               <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputCls} placeholder="Phone (optional)" />
-              <select value={form.role} onChange={e => setForm({...form, role: e.target.value})} className={inputCls}>
-                <option>Staff</option><option>Client</option><option>Referrer</option>
-              </select>
               <p className="text-xs text-neutral-600">A temporary password will be emailed to the user.</p>
-              <button type="submit" className={btnPrimary}>Create User</button>
+              <button type="submit" disabled={busyAddUser} className={`${btnPrimary} flex items-center justify-center gap-2`}>
+                {busyAddUser ? <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>Creating...</> : 'Create Staff Member'}
+              </button>
             </form>
           </div>
         </div>
