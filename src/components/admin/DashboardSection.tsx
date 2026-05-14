@@ -113,7 +113,7 @@ export default function DashboardSection() {
   }
 
   const stats = [
-    { label: 'Active Clients', value: s.clients.length, icon: Users, color: '#00bfff' },
+    { label: 'Active Clients', value: s.clients.filter((c: any) => (c.status || '').toLowerCase() !== 'deleted').length, icon: Users, color: '#00bfff' },
     { label: 'Active Projects', value: activeProjects, icon: FolderOpen, color: '#ff7a00' },
     { label: 'Pending Invoices', value: pendingInvoices, icon: FileText, color: '#d97706' },
     { label: 'Total Revenue', value: `GH\u20B5${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: '#10b981' },

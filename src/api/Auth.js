@@ -433,6 +433,7 @@ function handleCreateAdmin(payload) {
     logAction_(auth.user.user_id, auth.user.name, 'ADMIN_CREATED', 'Created Admin: ' + email + ' (' + jobTitle + ')');
 
     // Send OTP welcome email so they can log in
+    var emailSent = false;
     try {
         var otp = generateSecureOTP_();
         var cache = CacheService.getScriptCache();
@@ -447,9 +448,18 @@ function handleCreateAdmin(payload) {
             htmlBody: buildAdminWelcomeEmail_(email.split('@')[0], otp),
             from: 'hello@icuni.org'
         });
-    } catch(e) { Logger.log('Admin welcome email failed: ' + e.message); }
+        emailSent = true;
+        logEmail_(email, 'Admin Welcome + OTP', 'admin_invite', 'sent');
+    } catch(e) {
+        Logger.log('Admin welcome email FAILED for ' + email + ': ' + e.message + '\n' + (e.stack || ''));
+        logEmail_(email, 'Admin Welcome + OTP', 'admin_invite', 'failed: ' + e.message);
+    }
 
-    return successResponse_({ userId: userId }, 'Admin account created. Login code sent to ' + email + '.');
+    if (emailSent) {
+        return successResponse_({ userId: userId }, 'Admin account created. Login code sent to ' + email + '.');
+    } else {
+        return successResponse_({ userId: userId, emailFailed: true }, 'Admin account created but the welcome email could not be sent. The user may need to request a login code manually from the login page.');
+    }
 }
 
 // ─── PERMISSION MANAGEMENT (Godmode only) ────────────────
