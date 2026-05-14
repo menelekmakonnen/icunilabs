@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import { KeyRound, Hash, Shield, Bell, Save, Check, Eye, EyeOff } from 'lucide-react'
@@ -9,6 +9,9 @@ const btnPrimary = 'flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#
 
 export default function SettingsSection() {
   const { user, loading, error } = useAdminStore()
+
+  // Clear stale errors from other sections on mount
+  useEffect(() => { if (error) adminActions.setError('') }, [])
   const [pw, setPw] = useState('')
   const [pwConfirm, setPwConfirm] = useState('')
   const [showPw, setShowPw] = useState(false)

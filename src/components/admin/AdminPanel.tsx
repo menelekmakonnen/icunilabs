@@ -113,6 +113,7 @@ export default function AdminPanel() {
   // Close mobile sidebar when section changes
   const handleNavClick = (id: string) => {
     adminActions.setSection(id)
+    adminActions.setError('')  // Clear stale errors on nav
     setMobileOpen(false)
   }
 
