@@ -19,7 +19,7 @@ function getAliasRegistry_() {
     var sheet = ensureSheet_(SHEETS.EMAIL_ALIASES, [
         'alias', 'name', 'visibility', 'owner', 'category', 'can_send', 'can_receive', 'created_at'
     ]);
-    var rows = getSheetData_(SHEETS.EMAIL_ALIASES);
+    var rows = sheetToObjects_(SHEETS.EMAIL_ALIASES);
     if (rows.length > 0) {
         var registry = {};
         for (var i = 0; i < rows.length; i++) {
@@ -582,7 +582,7 @@ function handleGetEmailTemplates(payload) {
     // Load user-saved templates from sheet
     var saved = [];
     try {
-        var rows = getSheetData_(SHEETS.EMAIL_TEMPLATES);
+        var rows = sheetToObjects_(SHEETS.EMAIL_TEMPLATES);
         for (var i = 0; i < rows.length; i++) {
             var r = rows[i];
             saved.push({

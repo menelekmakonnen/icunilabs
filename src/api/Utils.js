@@ -50,8 +50,14 @@ function getSheetByName_(sheetName) {
     }
     // Logs
     else if ([SHEETS.ACTIVITY_LOG, SHEETS.ERROR_LOG, SHEETS.EMAIL_LOG,
-              SHEETS.SLA_LOG, SHEETS.SLA_COSTS, SHEETS.ARCHIVES].indexOf(sheetName) >= 0) {
+              SHEETS.SLA_LOG, SHEETS.SLA_COSTS, SHEETS.ARCHIVES,
+              SHEETS.IMPERSONATION_LOG].indexOf(sheetName) >= 0) {
         ssGetter = getLogsSS_;
+    }
+    // Email Hub & Ecosystem (stored in Main SS)
+    else if ([SHEETS.EMAIL_ALIASES, SHEETS.EMAIL_TEMPLATES,
+              SHEETS.ICUNI_PROJECTS].indexOf(sheetName) >= 0) {
+        ssGetter = getMainSS_;
     }
     else {
         throw new Error('Unknown sheet: ' + sheetName);
