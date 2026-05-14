@@ -27,7 +27,7 @@ import PersonaDrawer from './components/layout/PersonaDrawer';
 import { portfolioProjects } from './data/portfolioData';
 import { getPersonaBySlug } from './data/personaData';
 
-const personaSlugs = ['founders', 'operations', 'product-systems', 'creative-ops', 'ai-adoption', 'remote-owner'];
+const personaSlugs = ['founders', 'operations', 'product-systems', 'creative-ops', 'ai-adoption', 'remote-owner', 'financial-ops'];
 
 function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash);
