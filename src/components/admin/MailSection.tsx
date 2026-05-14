@@ -96,7 +96,7 @@ export default function MailSection() {
               <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-600" />
               <select value={aliasFilter} onChange={e => changeAlias(e.target.value)} className={`${cls} !pl-9 !w-auto !min-w-[180px]`}>
                 <option value="all">All Mailboxes</option>
-                {aliases.map((a: any) => <option key={a.alias || a} value={a.alias || a}>{a.name || a.alias} ({a.alias})</option>)}
+                {aliases.map((a: any) => { const al = typeof a === 'string' ? a : a.alias; const nm = typeof a === 'string' ? a.split('@')[0] : (a.name || a.alias); return <option key={al} value={al}>{nm} ({al})</option> })}
               </select>
             </div>
             <div className="flex-1 relative">
