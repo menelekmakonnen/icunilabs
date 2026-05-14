@@ -18,9 +18,13 @@ function createSession_(user) {
     appendRow_(SHEETS.SESSIONS, sessionRow);
     logAction_(user.id || 'unknown', user.name, 'LOGIN', 'Session created');
 
+    // Parse permissions for session response
+    var permissions = {};
+    try { permissions = JSON.parse(user.permissions_json || '{}'); } catch(e) {}
+
     return {
         token: token,
-        user: { name: user.name, email: user.email, role: user.role },
+        user: { name: user.name, email: user.email, role: user.role, job_title: user.job_title || '', permissions: permissions },
         needs_password_setup: !!user.must_change_pw
     };
 }
@@ -53,6 +57,7 @@ function requireAuth_(token, allowedRoles) {
 }
 
 function requireStaff_(token)   { return requireAuth_(token, [ROLES.STAFF]); }
+function requireAdmin_(token)   { return requireAuth_(token, [ROLES.ADMIN]); }
 function requireGodmode_(token) { return requireAuth_(token, [ROLES.GODMODE]); }
 
 // ─── USER LOOKUP ─────────────────────────────────────────
@@ -345,8 +350,8 @@ function handleAddUser(payload) {
         email: { required: true, type: 'email', label: 'Email' },
         role: { required: true, oneOf: Object.values ? Object.values(ROLES) : [ROLES.GODMODE, ROLES.ASST_GODMODE, ROLES.STAFF, ROLES.CLIENT, ROLES.REFERRER], label: 'Role' }
     });
-    // Only Godmode can create Godmode/Asst Godmode
-    if ([ROLES.GODMODE, ROLES.ASST_GODMODE].indexOf(payload.role) >= 0 && auth.user.role !== ROLES.GODMODE) {
+    // Only Godmode can create Godmode/Admin
+    if ([ROLES.GODMODE, ROLES.ADMIN].indexOf(payload.role) >= 0 && auth.user.role !== ROLES.GODMODE) {
         return errorResponse_('Only Godmode can create admin accounts.');
     }
     var existing = findUserByEmail_(payload.email);
@@ -357,7 +362,8 @@ function handleAddUser(payload) {
     appendRow_(SHEETS.USERS, [
         userId, payload.name, payload.email, payload.phone || '', payload.role,
         'Active', hashPassword_(tempPw), '',
-        true, true, now_(), '', '', true
+        true, true, now_(), '', '', true, '', '',
+        payload.permissions_json || '{}', payload.job_title || ''
     ]);
     logAction_(auth.user.user_id, auth.user.name, 'USER_ADDED', 'Added: ' + payload.name + ' as ' + payload.role);
 
@@ -387,6 +393,99 @@ function handleDeactivateUser(payload) {
     return successResponse_(null, 'User deactivated.');
 }
 
+// ─── ADMIN CREATION (Godmode only, email-only seeding) ──
+
+function handleCreateAdmin(payload) {
+    var auth = requireGodmode_(payload.token);
+    if (auth.error) return auth.error;
+
+    var email = (payload.email || '').trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return errorResponse_('Please enter a valid email address.');
+    }
+
+    var existing = findUserByEmail_(email);
+    if (existing) return errorResponse_('A user with this email already exists.');
+
+    // Build default permissions (all sections enabled)
+    var defaultPerms = {
+        dashboard: true, clients: true, projects: true, invoices: true,
+        careers: true, referrals: true, sla: true, logs: true, settings: true
+    };
+    // Apply any permission overrides from payload
+    if (payload.permissions) {
+        for (var key in payload.permissions) {
+            if (payload.permissions.hasOwnProperty(key)) {
+                defaultPerms[key] = !!payload.permissions[key];
+            }
+        }
+    }
+
+    var userId = generateId_('USR');
+    var jobTitle = payload.job_title || 'Operations Assistant';
+    appendRow_(SHEETS.USERS, [
+        userId, email.split('@')[0], email, '', ROLES.ADMIN,
+        'Active', '', '',  // no password, no pin — they use OTP first
+        true, true, now_(), '', '', true, '', '',
+        JSON.stringify(defaultPerms), jobTitle
+    ]);
+
+    logAction_(auth.user.user_id, auth.user.name, 'ADMIN_CREATED', 'Created Admin: ' + email + ' (' + jobTitle + ')');
+
+    // Send OTP welcome email so they can log in
+    try {
+        var otp = generateSecureOTP_();
+        var cache = CacheService.getScriptCache();
+        cache.put('otp_' + email, JSON.stringify({
+            otp: otp, email: email, user_id: userId, name: email.split('@')[0], role: ROLES.ADMIN,
+            attempts: 0, created: now_()
+        }), OTP_TTL_SECONDS);
+
+        sendEmail_({
+            to: email,
+            subject: 'Welcome to ICUNI Labs — Your Admin Account',
+            htmlBody: buildAdminWelcomeEmail_(email.split('@')[0], otp),
+            from: 'hello@icuni.org'
+        });
+    } catch(e) { Logger.log('Admin welcome email failed: ' + e.message); }
+
+    return successResponse_({ userId: userId }, 'Admin account created. Login code sent to ' + email + '.');
+}
+
+// ─── PERMISSION MANAGEMENT (Godmode only) ────────────────
+
+function handleUpdateUserPermissions(payload) {
+    var auth = requireGodmode_(payload.token);
+    if (auth.error) return auth.error;
+
+    var user = findRow_(SHEETS.USERS, 'id', payload.userId);
+    if (!user) return errorResponse_('User not found.');
+    if (user.role === ROLES.GODMODE) return errorResponse_('Cannot modify Godmode permissions.');
+
+    var perms = payload.permissions || {};
+    updateRow_(SHEETS.USERS, user._rowIndex, { permissions_json: JSON.stringify(perms) });
+    logAction_(auth.user.user_id, auth.user.name, 'PERMISSIONS_UPDATED', user.name + ': ' + Object.keys(perms).filter(function(k) { return perms[k]; }).join(', '));
+    return successResponse_(null, 'Permissions updated for ' + user.name + '.');
+}
+
+function handleGetUserPermissions(payload) {
+    var auth = requireAuth_(payload.token);
+    if (auth.error) return auth.error;
+
+    var targetId = payload.userId || auth.user.user_id;
+    // Non-godmode can only see their own permissions
+    if (targetId !== auth.user.user_id && auth.user.role !== ROLES.GODMODE) {
+        return errorResponse_('Access denied.');
+    }
+
+    var user = findRow_(SHEETS.USERS, 'id', targetId);
+    if (!user) return errorResponse_('User not found.');
+
+    var permissions = {};
+    try { permissions = JSON.parse(user.permissions_json || '{}'); } catch(e) {}
+    return successResponse_({ userId: user.id, name: user.name, role: user.role, permissions: permissions });
+}
+
 // ── PROFILE MANAGEMENT ──────────────────────────────────
 
 function handleGetProfile(payload) {
@@ -396,14 +495,18 @@ function handleGetProfile(payload) {
     if (!user) return errorResponse_('User not found.');
     var contactDetails = {};
     try { contactDetails = JSON.parse(user.contact_details || '{}'); } catch(e) {}
+    var permissions = {};
+    try { permissions = JSON.parse(user.permissions_json || '{}'); } catch(e) {}
     return successResponse_({
         name: user.name,
         email: user.email,
         phone: user.phone || '',
         role: user.role,
+        job_title: user.job_title || '',
         profile_pic_url: user.profile_pic_url || '',
         cover_image_url: user.cover_image_url || '',
         contact_details: contactDetails,
+        permissions: permissions,
         has_password: !!user.password_hash,
         has_pin: !!user.pin_hash
     });
@@ -476,6 +579,22 @@ function buildWelcomeEmail_(name, email, tempPw, role) {
         '<div style="background:#1a1a2e;border:2px solid #ff7a00;border-radius:8px;padding:12px;text-align:center;margin:12px 0;font-family:monospace;font-size:18px;color:#ff7a00;font-weight:700;">' + tempPw + '</div>' +
         'Please log in and change your password immediately.',
         { ctaText: 'Log In Now', ctaLink: 'https://labs.icuni.org' }
+    );
+}
+
+function buildAdminWelcomeEmail_(name, otp) {
+    var digits = otp.split('');
+    var boxes = digits.map(function(d) {
+        return '<td style="width:44px;height:52px;text-align:center;font-family:monospace;font-size:28px;font-weight:700;color:#8b5cf6;background:#1a1a2e;border:2px solid #2a2a4a;border-radius:10px;">' + d + '</td>';
+    }).join('<td style="width:6px;"></td>');
+
+    return buildBrandedEmail_(name,
+        'Welcome to the Team',
+        'You have been invited to join <strong style="color:#ff7a00;">ICUNI Labs</strong> as an <strong style="color:#8b5cf6;">Admin</strong>.<br><br>' +
+        'Use the login code below to access your account for the first time:<br><br>' +
+        '<table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr>' + boxes + '</tr></table><br>' +
+        'Once logged in, you can set up your password and PIN for faster access.',
+        { ctaText: 'Log In to ICUNI Labs', ctaLink: 'https://labs.icuni.org' }
     );
 }
 

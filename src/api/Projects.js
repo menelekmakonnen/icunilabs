@@ -8,7 +8,25 @@
 function handleGetClients(payload) {
     var auth = requireStaff_(payload.token);
     if (auth.error) return auth.error;
-    return successResponse_(sheetToObjects_(SHEETS.CLIENTS));
+    var clients = sheetToObjects_(SHEETS.CLIENTS);
+    // Enrich with aggregated stats for CRM cards
+    var allProjects = sheetToObjects_(SHEETS.CLIENT_PROJECTS);
+    var allInvoices = sheetToObjects_(SHEETS.INVOICES);
+    var allPayments = sheetToObjects_(SHEETS.PAYMENTS);
+    clients.forEach(function(c) {
+        var myProjects = allProjects.filter(function(p) { return p.client_id === c.client_id; });
+        var myInvoices = allInvoices.filter(function(inv) { return inv.client_id === c.client_id; });
+        var myPayments = allPayments.filter(function(pay) { return pay.client_id === c.client_id; });
+        c.project_count = myProjects.length;
+        c.active_projects = myProjects.filter(function(p) { return p.status === 'active'; }).length;
+        c.total_revenue = myPayments.reduce(function(sum, pay) { return sum + Number(pay.amount || 0); }, 0);
+        c.total_invoiced = myInvoices.reduce(function(sum, inv) { return sum + Number(inv.total || 0); }, 0);
+        c.outstanding = c.total_invoiced - c.total_revenue;
+        c.last_activity = c.last_activity || c.created_at;
+        // Parse tags
+        try { c.tags_list = c.tags ? c.tags.split(',').map(function(t) { return t.trim(); }).filter(Boolean) : []; } catch(e) { c.tags_list = []; }
+    });
+    return successResponse_(clients);
 }
 
 function handleAddClient(payload) {
@@ -28,7 +46,10 @@ function handleAddClient(payload) {
     appendRow_(SHEETS.CLIENTS, [
         clientId, payload.name, payload.email, payload.phone || '',
         payload.company || '', 'Active', payload.referrer_id || '',
-        now_(), payload.notes || '', clientFolder.getUrl()
+        now_(), payload.notes || '', clientFolder.getUrl(),
+        payload.tags || '', payload.source || '', payload.industry || '',
+        payload.address || '', payload.website || '', now_(),
+        payload.prospect_stage || 'new_lead'
     ]);
     
     // Create user account for client
@@ -44,6 +65,107 @@ function handleAddClient(payload) {
     
     logAction_(auth.user.user_id, auth.user.name, 'CLIENT_ADDED', 'Added client: ' + payload.name);
     return successResponse_({ clientId: clientId }, 'Client created.');
+}
+
+function handleGetClient(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var client = findRow_(SHEETS.CLIENTS, 'client_id', payload.clientId);
+    if (!client) return errorResponse_('Client not found.');
+    // Enrich with projects, invoices, payments
+    client.projects = sheetToObjects_(SHEETS.CLIENT_PROJECTS).filter(function(p) { return p.client_id === client.client_id; });
+    client.invoices = sheetToObjects_(SHEETS.INVOICES).filter(function(inv) { return inv.client_id === client.client_id; });
+    client.payments = sheetToObjects_(SHEETS.PAYMENTS).filter(function(pay) { return pay.client_id === client.client_id; });
+    client.total_revenue = client.payments.reduce(function(sum, p) { return sum + Number(p.amount || 0); }, 0);
+    client.total_invoiced = client.invoices.reduce(function(sum, inv) { return sum + Number(inv.total || 0); }, 0);
+    client.outstanding = client.total_invoiced - client.total_revenue;
+    // Parse notes
+    try {
+        client.notes_list = sheetToObjects_(SHEETS.CLIENT_NOTES).filter(function(n) { return n.client_id === client.client_id; });
+    } catch(e) { client.notes_list = []; }
+    // Parse tags
+    try { client.tags_list = client.tags ? client.tags.split(',').map(function(t) { return t.trim(); }).filter(Boolean) : []; } catch(e) { client.tags_list = []; }
+    return successResponse_(client);
+}
+
+function handleGetClientActivity(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var clientId = payload.clientId;
+    if (!clientId) return errorResponse_('Client ID required.');
+    var activities = [];
+    // Projects
+    sheetToObjects_(SHEETS.CLIENT_PROJECTS).filter(function(p) { return p.client_id === clientId; }).forEach(function(p) {
+        activities.push({ type: 'project_created', title: 'Project Created: ' + p.title, detail: p.type + ' — GH\u20B5' + Number(p.estimated_cost || 0).toLocaleString(), timestamp: p.created_at, icon: 'folder' });
+    });
+    // Invoices
+    sheetToObjects_(SHEETS.INVOICES).filter(function(inv) { return inv.client_id === clientId; }).forEach(function(inv) {
+        activities.push({ type: 'invoice_sent', title: 'Invoice ' + inv.invoice_id, detail: inv.type + ' — GH\u20B5' + Number(inv.total || 0).toLocaleString(), timestamp: inv.created_at, icon: 'file-text' });
+    });
+    // Payments
+    sheetToObjects_(SHEETS.PAYMENTS).filter(function(pay) { return pay.client_id === clientId; }).forEach(function(pay) {
+        activities.push({ type: 'payment_received', title: 'Payment Received', detail: 'GH\u20B5' + Number(pay.amount || 0).toLocaleString() + ' via ' + pay.method, timestamp: pay.paid_at, icon: 'check-circle' });
+    });
+    // Notes
+    try {
+        sheetToObjects_(SHEETS.CLIENT_NOTES).filter(function(n) { return n.client_id === clientId; }).forEach(function(n) {
+            activities.push({ type: 'note', title: 'Note by ' + (n.author || 'Staff'), detail: n.content, timestamp: n.created_at, icon: 'message-square' });
+        });
+    } catch(e) {}
+    // Sort by timestamp descending
+    activities.sort(function(a, b) { return new Date(b.timestamp || 0) - new Date(a.timestamp || 0); });
+    return successResponse_(activities);
+}
+
+function handleAddClientNote(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var clientId = payload.clientId;
+    var content = (payload.content || '').trim();
+    if (!clientId || !content) return errorResponse_('Client ID and note content required.');
+    var noteId = generateId_('NTE');
+    appendRow_(SHEETS.CLIENT_NOTES, [
+        noteId, clientId, content, auth.user.name, auth.user.email, now_()
+    ]);
+    // Update last_activity on client
+    var client = findRow_(SHEETS.CLIENTS, 'client_id', clientId);
+    if (client) updateRow_(SHEETS.CLIENTS, client._rowIndex, { last_activity: now_() });
+    logAction_(auth.user.user_id, auth.user.name, 'CLIENT_NOTE', 'Note on ' + clientId);
+    return successResponse_({ noteId: noteId }, 'Note added.');
+}
+
+function handleUpdateClientTags(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var client = findRow_(SHEETS.CLIENTS, 'client_id', payload.clientId);
+    if (!client) return errorResponse_('Client not found.');
+    var tags = Array.isArray(payload.tags) ? payload.tags.join(',') : (payload.tags || '');
+    updateRow_(SHEETS.CLIENTS, client._rowIndex, { tags: tags });
+    logAction_(auth.user.user_id, auth.user.name, 'CLIENT_TAGS', client.name + ': ' + tags);
+    return successResponse_(null, 'Tags updated.');
+}
+
+function handleUpdateClientStatus(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var client = findRow_(SHEETS.CLIENTS, 'client_id', payload.clientId);
+    if (!client) return errorResponse_('Client not found.');
+    var updates = { last_activity: now_() };
+    if (payload.prospect_stage) updates.prospect_stage = payload.prospect_stage;
+    if (payload.status) updates.status = payload.status;
+    updateRow_(SHEETS.CLIENTS, client._rowIndex, updates);
+    // Auto-add a note about stage change
+    if (payload.prospect_stage) {
+        var noteId = generateId_('NTE');
+        appendRow_(SHEETS.CLIENT_NOTES, [
+            noteId, payload.clientId,
+            'Stage changed to: ' + payload.prospect_stage + (payload.note ? ' — ' + payload.note : ''),
+            auth.user.name, auth.user.email, now_()
+        ]);
+    }
+    logAction_(auth.user.user_id, auth.user.name, 'CLIENT_STAGE',
+        client.name + ' → ' + (payload.prospect_stage || payload.status));
+    return successResponse_(null, 'Client status updated.');
 }
 
 function handleUpdateClient(payload) {

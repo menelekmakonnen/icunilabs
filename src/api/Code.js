@@ -32,14 +32,24 @@ function doPost(e) {
         if (action === 'getUsers')          return handleGetUsers(payload);
         if (action === 'addUser')           return handleAddUser(payload);
         if (action === 'deactivateUser')    return handleDeactivateUser(payload);
+        if (action === 'createAdmin')       return handleCreateAdmin(payload);
+        if (action === 'updateUserPermissions') return handleUpdateUserPermissions(payload);
+        if (action === 'getUserPermissions')    return handleGetUserPermissions(payload);
 
         // ── Dashboard ──
         if (action === 'getDashboard')      return handleGetDashboard(payload);
 
         // ── Clients ──
         if (action === 'getClients')        return handleGetClients(payload);
+        if (action === 'getClient')         return handleGetClient(payload);
         if (action === 'addClient')         return handleAddClient(payload);
         if (action === 'updateClient')      return handleUpdateClient(payload);
+        if (action === 'getClientActivity') return handleGetClientActivity(payload);
+        if (action === 'addClientNote')     return handleAddClientNote(payload);
+        if (action === 'updateClientTags')  return handleUpdateClientTags(payload);
+        if (action === 'updateClientStatus') return handleUpdateClientStatus(payload);
+        if (action === 'sendClientEmail')   return handleSendClientEmail(payload);
+        if (action === 'previewClientEmail') return handlePreviewClientEmail(payload);
 
         // ── Projects ──
         if (action === 'createProject')     return handleCreateProject(payload);

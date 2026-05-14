@@ -41,6 +41,7 @@ var SHEETS = {
     // Clients
     CLIENTS:       'Clients',
     CLIENT_PROJECTS: 'Client_Projects',
+    CLIENT_NOTES:  'Client_Notes',
     INVOICES:      'Invoices',
     INVOICE_ITEMS: 'Invoice_Items',
     PAYMENTS:      'Payments',
@@ -67,12 +68,16 @@ var COL = {
         NOTIF_EMAIL: 8, NOTIF_BROWSER: 9,
         CREATED_AT: 10, LAST_LOGIN: 11,
         PROFILE_PIC_URL: 12, MUST_CHANGE_PW: 13,
-        COVER_IMAGE_URL: 14, CONTACT_DETAILS: 15
+        COVER_IMAGE_URL: 14, CONTACT_DETAILS: 15,
+        PERMISSIONS_JSON: 16, JOB_TITLE: 17
     },
     CLIENTS: {
         ID: 0, NAME: 1, EMAIL: 2, PHONE: 3, COMPANY: 4,
         STATUS: 5, REFERRER_ID: 6, CREATED_AT: 7,
-        NOTES: 8, DRIVE_FOLDER_URL: 9
+        NOTES: 8, DRIVE_FOLDER_URL: 9,
+        TAGS: 10, SOURCE: 11, INDUSTRY: 12,
+        ADDRESS: 13, WEBSITE: 14, LAST_ACTIVITY: 15,
+        PROSPECT_STAGE: 16
     },
     CLIENT_PROJECTS: {
         ID: 0, CLIENT_ID: 1, TITLE: 2, DESCRIPTION: 3,
@@ -98,13 +103,13 @@ var COL = {
 // ─── ROLES ───────────────────────────────────────────────
 var ROLES = {
     GODMODE:          'Godmode',
-    ASST_GODMODE:     'AssistantGodmode',
+    ADMIN:            'Admin',
     STAFF:            'Staff',
     CLIENT:           'Client',
     REFERRER:         'Referrer'
 };
 
-var ROLE_HIERARCHY = [ROLES.REFERRER, ROLES.CLIENT, ROLES.STAFF, ROLES.ASST_GODMODE, ROLES.GODMODE];
+var ROLE_HIERARCHY = [ROLES.REFERRER, ROLES.CLIENT, ROLES.STAFF, ROLES.ADMIN, ROLES.GODMODE];
 
 // ─── PROJECT STEPS ───────────────────────────────────────
 var PROJECT_STEPS = {

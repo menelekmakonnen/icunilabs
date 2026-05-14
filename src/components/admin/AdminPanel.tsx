@@ -3,7 +3,8 @@ import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import AdminLogin from './AdminLogin'
 import DashboardSection from './DashboardSection'
 import SettingsSection from './SettingsSection'
-import { ClientsSection, ProjectsSection, InvoicesSection, CareersSection, ReferralsSection, UsersSection, LogsSection, SLASection } from './AdminSections'
+import { ProjectsSection, InvoicesSection, CareersSection, ReferralsSection, UsersSection, LogsSection, SLASection } from './AdminSections'
+import CRMSection from './CRMSection'
 import ProfileSection from './ProfileSection'
 import ReferralPortal from '../portal/ReferralPortal'
 import ClientPortal from '../portal/ClientPortal'
@@ -36,6 +37,21 @@ export default function AdminPanel() {
   if (!token || !user) return <AdminLogin />
 
   const isGodmode = user.role === 'Godmode'
+  const isAdmin = user.role === 'Admin'
+  const userPerms = user.permissions || {}
+
+  // Filter nav items based on permissions (Godmode sees everything)
+  const filteredNav = NAV.filter(item => {
+    // Godmode always sees all
+    if (isGodmode) return true
+    // Users section is Godmode-only
+    if (item.id === 'users') return false
+    // For Admin, check permission toggles (default: enabled)
+    if (isAdmin) {
+      return userPerms[item.id] !== false
+    }
+    return true
+  })
 
   // ── Act As: render target portal ──
   if (actingAs === 'referrer') {
@@ -60,7 +76,7 @@ export default function AdminPanel() {
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard': return <DashboardSection />
-      case 'clients': return <ClientsSection />
+      case 'clients': return <CRMSection />
       case 'projects': return <ProjectsSection />
       case 'invoices': return <InvoicesSection />
       case 'careers': return <CareersSection />
@@ -89,7 +105,7 @@ export default function AdminPanel() {
 
         {/* Nav */}
         <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-          {NAV.map(item => {
+          {filteredNav.map(item => {
             const active = activeSection === item.id
             return (
               <motion.button key={item.id} onClick={() => adminActions.setSection(item.id)}

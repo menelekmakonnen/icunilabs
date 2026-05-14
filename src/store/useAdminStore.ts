@@ -12,6 +12,8 @@ export interface AdminUser {
   name: string
   email: string
   role: string
+  job_title?: string
+  permissions?: Record<string, boolean>
 }
 
 interface AdminState {
@@ -49,6 +51,10 @@ interface AdminState {
   // Detail views
   activeInvoiceHTML: string | null
   activeInvoice: any | null
+
+  // CRM
+  activeClient: any | null
+  clientActivity: any[]
 }
 
 async function apiPost(action: string, payload: Record<string, any> = {}): Promise<any> {
@@ -92,6 +98,8 @@ let state: AdminState = {
   portfolio: [],
   activeInvoiceHTML: null,
   activeInvoice: null,
+  activeClient: null,
+  clientActivity: [],
 }
 
 const listeners = new Set<() => void>()
@@ -111,7 +119,7 @@ export function useAdminStore() {
   return useSyncExternalStore(subscribeAdmin, getAdminState)
 }
 
-const ALLOWED_ROLES = ['Godmode', 'AssistantGodmode']
+const ALLOWED_ROLES = ['Godmode', 'Admin']
 
 export const adminActions = {
   setError: (error: string | null) => setState({ error }),
@@ -473,6 +481,32 @@ export const adminActions = {
     }
   },
 
+  createAdmin: async (email: string, jobTitle?: string, permissions?: Record<string, boolean>) => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('createAdmin', { token: state.token, email, job_title: jobTitle || 'Operations Assistant', permissions })
+      await adminActions.loadUsers()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  updateUserPermissions: async (userId: string, permissions: Record<string, boolean>) => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('updateUserPermissions', { token: state.token, userId, permissions })
+      await adminActions.loadUsers()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
   createClient: async (data: any) => {
     setState({ loading: true, error: null })
     try {
@@ -693,6 +727,97 @@ export const adminActions = {
     setState({ loading: true, error: null })
     try {
       await apiPost('updateProfile', { token: state.token, ...data })
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  // ── CRM Actions ──
+  getClient: async (clientId: string) => {
+    setState({ loading: true, error: null })
+    try {
+      const client = await apiPost('getClient', { token: state.token, clientId })
+      setState({ activeClient: client || null, loading: false })
+      return client
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return null
+    }
+  },
+
+  clearActiveClient: () => setState({ activeClient: null, clientActivity: [] }),
+
+  getClientActivity: async (clientId: string) => {
+    try {
+      const activity = await apiPost('getClientActivity', { token: state.token, clientId })
+      setState({ clientActivity: activity || [] })
+      return activity
+    } catch (err: any) {
+      setState({ error: err.message })
+      return []
+    }
+  },
+
+  addClientNote: async (clientId: string, content: string): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('addClientNote', { token: state.token, clientId, content })
+      // Refresh client + activity
+      await adminActions.getClient(clientId)
+      await adminActions.getClientActivity(clientId)
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  updateClientTags: async (clientId: string, tags: string[]): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('updateClientTags', { token: state.token, clientId, tags })
+      await adminActions.getClient(clientId)
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  updateClientStatus: async (clientId: string, prospectStage: string, note?: string): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('updateClientStatus', { token: state.token, clientId, prospect_stage: prospectStage, note })
+      await adminActions.getClient(clientId)
+      await adminActions.getClientActivity(clientId)
+      await adminActions.loadClients()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  previewClientEmail: async (template: string, clientName?: string, extras?: Record<string, any>) => {
+    try {
+      const result = await apiPost('previewClientEmail', { token: state.token, template, clientName, extras })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  sendClientEmail: async (template: string, email: string, clientName?: string, extras?: Record<string, any>, rawHtml?: string, rawSubject?: string): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('sendClientEmail', { token: state.token, template, email, clientName, extras, rawHtml, rawSubject })
       setState({ loading: false })
       return true
     } catch (err: any) {

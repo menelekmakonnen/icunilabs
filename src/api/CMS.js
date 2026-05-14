@@ -990,3 +990,245 @@ function buildReferrerTemplate_(name, template, extras) {
             throw new Error('Unknown referrer template: ' + template);
     }
 }
+
+// ═══════════════════════════════════════════════════════════
+// CLIENT EMAIL SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+var CLIENT_TEMPLATES = ['welcome', 'project_kickoff', 'milestone_update', 'invoice_reminder',
+    'review_request', 'thank_you', 'follow_up', 'upsell', 'check_in', 'custom'];
+
+function handleSendClientEmail(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var template = payload.template;
+    if (!template || CLIENT_TEMPLATES.indexOf(template) === -1) {
+        return errorResponse_('Invalid template. Must be one of: ' + CLIENT_TEMPLATES.join(', '));
+    }
+    var recipients = [];
+    if (payload.recipients && Array.isArray(payload.recipients) && payload.recipients.length > 0) {
+        recipients = payload.recipients;
+    } else if (payload.email) {
+        recipients = [{ email: payload.email, name: payload.clientName || '' }];
+    } else {
+        return errorResponse_('At least one recipient email is required.');
+    }
+    var sent = 0, failed = 0, errors = [];
+    for (var i = 0; i < recipients.length; i++) {
+        var r = recipients[i];
+        var email = r.email;
+        var name = r.name || email.split('@')[0];
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { failed++; errors.push(email + ': invalid email'); continue; }
+        var tpl = buildClientTemplate_(name, template, payload.extras || {});
+        var finalHtml = payload.rawHtml || buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts);
+        var finalSubject = payload.rawSubject || tpl.subject;
+        try {
+            sendEmail_({ to: email, subject: finalSubject, htmlBody: finalHtml, from: 'hello@icuni.org' });
+            logEmail_(email, tpl.subject, 'admin_client_' + template, 'sent');
+            sent++;
+        } catch(e) {
+            logEmail_(email, tpl.subject, 'admin_client_' + template, 'failed');
+            failed++; errors.push(email + ': ' + e.message);
+        }
+    }
+    logAction_(auth.user.user_id, auth.user.name, 'CLIENT_EMAIL', template + ' -> ' + sent + ' sent, ' + failed + ' failed');
+    var msg = sent + ' email' + (sent !== 1 ? 's' : '') + ' sent';
+    if (failed > 0) msg += ', ' + failed + ' failed';
+    return successResponse_({ sent: sent, failed: failed, errors: errors }, msg + '.');
+}
+
+function handlePreviewClientEmail(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var template = payload.template;
+    if (!template || CLIENT_TEMPLATES.indexOf(template) === -1) return errorResponse_('Invalid template.');
+    var name = payload.clientName || 'Client';
+    var tpl = buildClientTemplate_(name, template, payload.extras || {});
+    var html = buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts);
+    return successResponse_({ html: html, subject: tpl.subject });
+}
+
+function buildClientTemplate_(name, template, extras) {
+    extras = extras || {};
+    switch (template) {
+        case 'welcome':
+            return {
+                subject: 'Welcome to ICUNI Labs \u2014 Let\u2019s Build Something Great',
+                title: 'Welcome to ICUNI Labs',
+                body:
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<span style="display:inline-block;background:linear-gradient(135deg,#00bfff,#0099cc);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;">WELCOME</span>' +
+                    '</div>' +
+                    'We\u2019re excited to officially welcome you as a client of ICUNI Labs. ' +
+                    'From this point forward, you have a dedicated team working behind the scenes to bring your vision to life.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#00bfff;font-size:13px;letter-spacing:2px;margin-bottom:10px;">WHAT HAPPENS NEXT</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:2;">' +
+                    '1. Your dedicated project folder has been created<br>' +
+                    '2. We\u2019ll schedule a kickoff call to align on your goals<br>' +
+                    '3. You\u2019ll receive access to your client portal for real-time tracking<br>' +
+                    '4. Development begins according to your approved timeline' +
+                    '</div></div>' +
+                    'If you have any questions at all, simply reply to this email. We\u2019re here for you.',
+                opts: { ctaText: 'Visit Your Portal', ctaLink: 'https://labs.icuni.org/#client' }
+            };
+        case 'project_kickoff':
+            var projName = extras.projectName || 'your project';
+            var timeline = extras.timeline || '4\u20136 weeks';
+            return {
+                subject: 'Project Kickoff \u2014 ' + projName + ' | ICUNI Labs',
+                title: 'Your Project Has Officially Launched',
+                body:
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<span style="display:inline-block;background:linear-gradient(135deg,#10b981,#34d399);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;">LAUNCHED</span>' +
+                    '</div>' +
+                    'Great news \u2014 <strong>' + projName + '</strong> is now officially in development.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#10b981;font-size:13px;letter-spacing:2px;margin-bottom:10px;">PROJECT DETAILS</div>' +
+                    '<table style="width:100%;border-collapse:collapse;">' +
+                    '<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#94a3b8;font-size:14px;">Project</td>' +
+                    '<td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#e8ecf4;font-size:15px;font-weight:600;text-align:right;">' + projName + '</td></tr>' +
+                    '<tr><td style="padding:8px 12px;color:#94a3b8;font-size:14px;">Est. Timeline</td>' +
+                    '<td style="padding:8px 12px;color:#e8ecf4;font-size:15px;font-weight:600;text-align:right;">' + timeline + '</td></tr>' +
+                    '</table></div>' +
+                    'You\u2019ll receive milestone updates as we hit key checkpoints. We build in the open \u2014 expect regular demos and feedback sessions.',
+                opts: { ctaText: 'Track Progress', ctaLink: 'https://labs.icuni.org/#client' }
+            };
+        case 'milestone_update':
+            var milestone = extras.milestone || 'a key milestone';
+            var stepNum = extras.step || '5';
+            return {
+                subject: 'Milestone Reached \u2014 ' + milestone + ' | ICUNI Labs',
+                title: 'Milestone Update',
+                body:
+                    'Your project has reached <strong style="color:#00bfff;">' + milestone + '</strong> (Step ' + stepNum + '/10).<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<div style="color:#00bfff;font-size:13px;letter-spacing:2px;margin-bottom:8px;">PROGRESS</div>' +
+                    '<div style="height:8px;background:#2a2a4a;border-radius:4px;overflow:hidden;margin:8px 0;">' +
+                    '<div style="height:100%;width:' + (parseInt(stepNum) * 10) + '%;background:linear-gradient(90deg,#00bfff,#8b5cf6);border-radius:4px;"></div></div>' +
+                    '<div style="color:#94a3b8;font-size:12px;text-align:center;">' + (parseInt(stepNum) * 10) + '% Complete</div>' +
+                    '</div>' +
+                    (extras.details || 'Everything is progressing smoothly. We\u2019ll notify you at the next checkpoint.'),
+                opts: { ctaText: 'View Full Update', ctaLink: 'https://labs.icuni.org/#client' }
+            };
+        case 'invoice_reminder':
+            var invId = extras.invoiceId || 'INV-XXX';
+            var amount = extras.amount || '0';
+            var dueDate = extras.dueDate || 'soon';
+            return {
+                subject: 'Payment Reminder \u2014 ' + invId + ' | ICUNI Labs',
+                title: 'Friendly Payment Reminder',
+                body:
+                    'This is a friendly reminder that invoice <strong style="color:#ff7a00;">' + invId + '</strong> is due.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #4a3a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<table style="width:100%;border-collapse:collapse;">' +
+                    '<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#94a3b8;font-size:14px;">Invoice</td>' +
+                    '<td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#ff7a00;font-size:15px;font-weight:700;text-align:right;">' + invId + '</td></tr>' +
+                    '<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#94a3b8;font-size:14px;">Amount</td>' +
+                    '<td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#e8ecf4;font-size:18px;font-weight:700;text-align:right;">GH\u20B5' + amount + '</td></tr>' +
+                    '<tr><td style="padding:8px 12px;color:#94a3b8;font-size:14px;">Due Date</td>' +
+                    '<td style="padding:8px 12px;color:#e8ecf4;font-size:15px;font-weight:600;text-align:right;">' + dueDate + '</td></tr>' +
+                    '</table></div>' +
+                    'If you\u2019ve already made this payment, please disregard this message. Otherwise, please process at your earliest convenience.<br><br>' +
+                    'If you have any questions about the invoice, simply reply to this email.',
+                opts: { ctaText: 'View Invoice', ctaLink: 'https://labs.icuni.org/#client' }
+            };
+        case 'review_request':
+            var projName2 = extras.projectName || 'your project';
+            var demoLink = extras.demoLink || 'https://labs.icuni.org';
+            return {
+                subject: 'Demo Ready for Review \u2014 ' + projName2 + ' | ICUNI Labs',
+                title: 'Your Demo is Ready',
+                body:
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<span style="display:inline-block;background:linear-gradient(135deg,#8b5cf6,#a78bfa);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;">REVIEW REQUESTED</span>' +
+                    '</div>' +
+                    'A new build of <strong>' + projName2 + '</strong> is ready for your review and feedback.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #3a2a5a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#8b5cf6;font-size:13px;letter-spacing:2px;margin-bottom:10px;">WHAT WE NEED FROM YOU</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:2;">' +
+                    '1. Click the link below to view the latest build<br>' +
+                    '2. Test the features and user flow<br>' +
+                    '3. Reply to this email with your feedback and any revision requests' +
+                    '</div></div>' +
+                    'Your input is critical to making this project perfect. We aim to incorporate feedback within 24\u201348 hours.',
+                opts: { ctaText: 'View Demo', ctaLink: demoLink }
+            };
+        case 'thank_you':
+            return {
+                subject: 'Thank You \u2014 ICUNI Labs',
+                title: 'Thank You for Choosing ICUNI Labs',
+                body:
+                    'It\u2019s been a genuine pleasure working with you. We\u2019re proud of what we\u2019ve built together, ' +
+                    'and we hope it delivers real value for your business.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#10b981;font-size:13px;letter-spacing:2px;margin-bottom:10px;">ONGOING SUPPORT</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
+                    'Your project is complete, but we\u2019re not going anywhere. We offer:<br>' +
+                    '\u2022 30-day post-launch support included<br>' +
+                    '\u2022 Priority access for future projects<br>' +
+                    '\u2022 Retainer packages for ongoing maintenance' +
+                    '</div></div>' +
+                    'If you know anyone who could benefit from what we do, we\u2019d love an introduction. ' +
+                    'Every referral that converts earns you (or your nominee) a bonus.<br><br>' +
+                    'Thank you for trusting us with your vision.',
+                opts: { ctaText: 'Refer a Friend', ctaLink: 'https://labs.icuni.org/#referral' }
+            };
+        case 'follow_up':
+            var daysSince = extras.daysSince || 'a while';
+            return {
+                subject: 'Just Checking In | ICUNI Labs',
+                title: 'Checking In',
+                body:
+                    'It\u2019s been ' + daysSince + ' since we last connected, and we wanted to reach out.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:1.8;">' +
+                    'We\u2019re here if you need anything \u2014 whether it\u2019s a quick question, a new feature, ' +
+                    'or an entirely new project. Our team is always ready to help.' +
+                    '</div></div>' +
+                    'Simply reply to this email to get the conversation started.',
+                opts: { ctaText: 'Let\u2019s Talk', ctaLink: 'https://labs.icuni.org' }
+            };
+        case 'upsell':
+            var offerTitle = extras.offerTitle || 'an expanded scope';
+            var offerDesc = extras.offerDescription || 'We\u2019ve identified opportunities to expand your current project.';
+            return {
+                subject: 'Growth Opportunity \u2014 ' + offerTitle + ' | ICUNI Labs',
+                title: 'A Growth Opportunity',
+                body:
+                    'Based on the success of our work together, we\u2019ve identified an opportunity to take things further.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #4a3a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#ff7a00;font-size:13px;letter-spacing:2px;margin-bottom:10px;">OPPORTUNITY</div>' +
+                    '<div style="color:#e8ecf4;font-size:16px;font-weight:600;margin-bottom:6px;">' + offerTitle + '</div>' +
+                    '<div style="color:#94a3b8;font-size:14px;line-height:1.6;">' + offerDesc + '</div>' +
+                    '</div>' +
+                    'Interested? Reply to this email or schedule a call and we\u2019ll walk you through the details.',
+                opts: { ctaText: 'Learn More', ctaLink: 'https://labs.icuni.org' }
+            };
+        case 'check_in':
+            return {
+                subject: 'How\u2019s Everything Going? | ICUNI Labs',
+                title: 'Quick Check-In',
+                body:
+                    'We like to periodically check in with our clients to make sure everything is running smoothly.<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:16px;margin:12px 0;">' +
+                    '<div style="color:#00bfff;font-size:13px;letter-spacing:2px;margin-bottom:8px;">QUICK QUESTIONS</div>' +
+                    '<div style="color:#e8ecf4;font-size:14px;line-height:2;">' +
+                    '\u2022 Is your product/service performing as expected?<br>' +
+                    '\u2022 Have you encountered any issues we should know about?<br>' +
+                    '\u2022 Are there new features or improvements you\u2019d like to explore?' +
+                    '</div></div>' +
+                    'Your feedback helps us improve. Simply reply to this email with your thoughts.',
+                opts: { ctaText: 'Share Feedback', ctaLink: 'https://labs.icuni.org' }
+            };
+        case 'custom':
+            return {
+                subject: extras.subject || 'A Message from ICUNI Labs',
+                title: extras.title || 'Hello from ICUNI Labs',
+                body: extras.body || 'This is a custom message from our team.',
+                opts: extras.ctaLink ? { ctaText: extras.ctaText || 'Visit ICUNI Labs', ctaLink: extras.ctaLink } : { hideCta: true }
+            };
+        default:
+            throw new Error('Unknown client template: ' + template);
+    }
+}

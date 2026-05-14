@@ -33,7 +33,8 @@ function setupSpreadsheets() {
         'id', 'name', 'email', 'phone', 'role',
         'status', 'password_hash', 'pin_hash',
         'notif_email', 'notif_browser',
-        'created_at', 'last_login', 'profile_pic_url', 'must_change_pw'
+        'created_at', 'last_login', 'profile_pic_url', 'must_change_pw',
+        'cover_image_url', 'contact_details', 'permissions_json', 'job_title'
     ]);
     setupSheetHeaders_(ssMain, SHEETS.SESSIONS, [
         'token', 'user_id', 'email', 'name', 'role', 'created_at', 'expires_at', 'source'
@@ -101,7 +102,12 @@ function setupSpreadsheets() {
     props.setProperty(PROP_KEYS.SS_CLIENTS, ssClients.getId());
     setupSheetHeaders_(ssClients, SHEETS.CLIENTS, [
         'client_id', 'name', 'email', 'phone', 'company',
-        'status', 'referrer_id', 'created_at', 'notes', 'drive_folder_url'
+        'status', 'referrer_id', 'created_at', 'notes', 'drive_folder_url',
+        'tags', 'source', 'industry', 'address', 'website', 'last_activity',
+        'prospect_stage'
+    ]);
+    setupSheetHeaders_(ssClients, SHEETS.CLIENT_NOTES, [
+        'note_id', 'client_id', 'content', 'author', 'author_email', 'created_at'
     ]);
     setupSheetHeaders_(ssClients, SHEETS.CLIENT_PROJECTS, [
         'project_id', 'client_id', 'title', 'description',

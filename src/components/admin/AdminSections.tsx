@@ -1620,9 +1620,17 @@ export function ReferralsSection() {
 
 // ─── USERS ───────────────────────────────────────────────
 export function UsersSection() {
-  const { users, loading } = useAdminStore()
+  const { users, loading, user: currentUser } = useAdminStore()
   const [showAdd, setShowAdd] = useState(false)
+  const [showCreateAdmin, setShowCreateAdmin] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'Staff' })
+  const [adminEmail, setAdminEmail] = useState('')
+  const [adminJobTitle, setAdminJobTitle] = useState('Operations Assistant')
+  const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [editPerms, setEditPerms] = useState<Record<string, boolean>>({})
+  const [savingPerms, setSavingPerms] = useState(false)
+
+  const isGodmode = currentUser?.role === 'Godmode'
 
   useEffect(() => { adminActions.loadUsers() }, [])
 
@@ -1632,29 +1640,152 @@ export function UsersSection() {
     if (ok) { setShowAdd(false); setForm({ name: '', email: '', phone: '', role: 'Staff' }) }
   }
 
+  const handleCreateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const ok = await adminActions.createAdmin(adminEmail, adminJobTitle)
+    if (ok) { setShowCreateAdmin(false); setAdminEmail(''); setAdminJobTitle('Operations Assistant') }
+  }
+
+  const openPermissions = (u: any) => {
+    setSelectedUser(u)
+    try {
+      setEditPerms(JSON.parse(u.permissions_json || '{}'))
+    } catch { setEditPerms({}) }
+  }
+
+  const savePermissions = async () => {
+    if (!selectedUser) return
+    setSavingPerms(true)
+    await adminActions.updateUserPermissions(selectedUser.id, editPerms)
+    setSavingPerms(false)
+    setSelectedUser(null)
+  }
+
+  const SECTION_LIST = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'clients', label: 'CRM / Clients' },
+    { id: 'projects', label: 'Projects' },
+    { id: 'invoices', label: 'Invoices' },
+    { id: 'careers', label: 'Careers' },
+    { id: 'referrals', label: 'Referrals' },
+    { id: 'sla', label: 'SLA' },
+    { id: 'logs', label: 'Logs' },
+    { id: 'settings', label: 'Settings' },
+  ]
+
+  const roleColor = (role: string) => {
+    if (role === 'Godmode') return 'text-[#ff7a00] bg-[#ff7a00]/10'
+    if (role === 'Admin') return 'text-[#8b5cf6] bg-[#8b5cf6]/10'
+    if (role === 'Staff') return 'text-[#00bfff] bg-[#00bfff]/10'
+    if (role === 'Client') return 'text-emerald-400 bg-emerald-400/10'
+    return 'text-neutral-400 bg-neutral-800'
+  }
+
   return (
     <>
       <DataTable title="Users" subtitle="System users and access control" loading={loading} data={users}
         onAdd={() => setShowAdd(true)} addLabel="Add User"
+        headerActions={isGodmode ? (
+          <button onClick={() => setShowCreateAdmin(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#8b5cf6] to-purple-600 text-white rounded-lg text-sm font-bold hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] transition-all cursor-pointer">
+            <UserPlus className="w-4 h-4" />Create Admin
+          </button>
+        ) : undefined}
         columns={[
           { key: 'id', label: 'ID', width: '120px' },
-          { key: 'name', label: 'Name', render: (v) => <span className="text-white font-medium">{v}</span> },
+          { key: 'name', label: 'Name', render: (v: any) => <span className="text-white font-medium">{v}</span> },
           { key: 'email', label: 'Email' },
-          { key: 'role', label: 'Role', render: (v) => {
-            const c = v === 'Godmode' ? 'text-[#ff7a00]' : v === 'AssistantGodmode' ? 'text-purple-400' : v === 'Staff' ? 'text-[#00bfff]' : 'text-neutral-400'
-            return <span className={`font-bold ${c}`}>{v}</span>
-          }},
-          { key: 'status', label: 'Status', render: (v) => <Badge status={v} /> },
-          { key: 'last_login', label: 'Last Login', render: (v) => v ? new Date(v).toLocaleDateString() : 'Never' },
+          { key: 'job_title', label: 'Job Title', render: (v: any) => v ? <span className="text-neutral-400 text-xs">{v}</span> : <span className="text-neutral-700 text-xs">—</span> },
+          { key: 'role', label: 'Role', render: (v: any) => (
+            <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${roleColor(v)}`}>{v}</span>
+          )},
+          { key: 'status', label: 'Status', render: (v: any) => <Badge status={v} /> },
+          { key: 'last_login', label: 'Last Login', render: (v: any) => v ? new Date(v).toLocaleDateString() : 'Never' },
         ]}
-        searchKeys={['name', 'email', 'role']}
+        searchKeys={['name', 'email', 'role', 'job_title']}
         renderRowActions={(row) => (
-          row.role !== 'Godmode' && row.status === 'Active' ? (
-            <button onClick={() => { if (confirm(`Deactivate ${row.name}?`)) adminActions.deactivateUser(row.id) }}
-              className="text-xs text-red-400 hover:text-red-300 cursor-pointer">Deactivate</button>
-          ) : null
+          <div className="flex gap-3">
+            {isGodmode && row.role === 'Admin' && (
+              <button onClick={() => openPermissions(row)} className="text-xs text-[#8b5cf6] hover:text-purple-300 cursor-pointer transition-colors">Permissions</button>
+            )}
+            {row.role !== 'Godmode' && row.status === 'Active' ? (
+              <button onClick={() => { if (confirm(`Deactivate ${row.name}?`)) adminActions.deactivateUser(row.id) }}
+                className="text-xs text-red-400 hover:text-red-300 cursor-pointer">Deactivate</button>
+            ) : null}
+          </div>
         )}
       />
+
+      {/* Create Admin Modal */}
+      {showCreateAdmin && (
+        <div className={modalBg} onClick={() => setShowCreateAdmin(false)}>
+          <div className={`${modalCard} !max-w-lg`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#8b5cf6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0" strokeLinecap="round"/><path d="M17 10l2 2 4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Create Admin Account
+              </h3>
+              <button onClick={() => setShowCreateAdmin(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="bg-[#8b5cf6]/5 border border-[#8b5cf6]/20 rounded-lg p-3 mb-4">
+              <p className="text-xs text-[#8b5cf6]/80 leading-relaxed">
+                Admin users get all your privileges by default. You can toggle specific sections on/off after creation.
+                They will receive a login code via email and can set their own password and PIN.
+              </p>
+            </div>
+            <form onSubmit={handleCreateAdmin} className="space-y-3">
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Email Address *</label>
+                <input type="email" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} className={inputCls} placeholder="their.email@example.com" required autoFocus />
+              </div>
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Job Title</label>
+                <input value={adminJobTitle} onChange={e => setAdminJobTitle(e.target.value)} className={inputCls} placeholder="Operations Assistant" />
+              </div>
+              <p className="text-xs text-neutral-600">A login code will be emailed. They can set their password and PIN on first login.</p>
+              <button type="submit" className="w-full px-4 py-2.5 bg-gradient-to-r from-[#8b5cf6] to-purple-600 text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] transition-all">
+                Send Invite
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Permission Toggle Modal */}
+      {selectedUser && (
+        <div className={modalBg} onClick={() => setSelectedUser(null)}>
+          <div className={`${modalCard} !max-w-md`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white">Permissions</h3>
+                <p className="text-xs text-neutral-500 mt-0.5">{selectedUser.name} ({selectedUser.email})</p>
+              </div>
+              <button onClick={() => setSelectedUser(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-2 mb-5">
+              {SECTION_LIST.map(sec => {
+                const enabled = editPerms[sec.id] !== false
+                return (
+                  <div key={sec.id} className={`flex items-center justify-between p-3 rounded-lg border transition-all ${enabled ? 'bg-[#8b5cf6]/5 border-[#8b5cf6]/20' : 'bg-neutral-900/50 border-neutral-800'}`}>
+                    <span className={`text-sm font-medium ${enabled ? 'text-white' : 'text-neutral-600'}`}>{sec.label}</span>
+                    <button onClick={() => setEditPerms(prev => ({ ...prev, [sec.id]: !enabled }))}
+                      className={`relative w-10 h-5 rounded-full transition-all cursor-pointer ${enabled ? 'bg-[#8b5cf6]' : 'bg-neutral-700'}`}>
+                      <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${enabled ? 'left-5.5' : 'left-0.5'}`}
+                        style={enabled ? { left: '22px' } : { left: '2px' }} />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            <button onClick={savePermissions} disabled={savingPerms}
+              className={`${btnPrimary} w-full flex items-center justify-center gap-2`}>
+              {savingPerms ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving...</> : 'Save Permissions'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Standard Add User Modal */}
       {showAdd && (
         <div className={modalBg} onClick={() => setShowAdd(false)}>
           <div className={modalCard} onClick={e => e.stopPropagation()}>
@@ -1667,7 +1798,7 @@ export function UsersSection() {
               <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className={inputCls} placeholder="Email" required />
               <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputCls} placeholder="Phone (optional)" />
               <select value={form.role} onChange={e => setForm({...form, role: e.target.value})} className={inputCls}>
-                <option>Staff</option><option>Client</option><option>Referrer</option><option>AssistantGodmode</option><option>Godmode</option>
+                <option>Staff</option><option>Client</option><option>Referrer</option>
               </select>
               <p className="text-xs text-neutral-600">A temporary password will be emailed to the user.</p>
               <button type="submit" className={btnPrimary}>Create User</button>
