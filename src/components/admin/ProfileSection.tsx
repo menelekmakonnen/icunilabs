@@ -143,12 +143,43 @@ export default function ProfileSection() {
     else flash('Failed to set PIN.', 'err')
   }
 
+  const [uploading, setUploading] = useState<'pic'|'cover'|null>(null)
+
   function handleFileSelect(type: 'pic' | 'cover') {
-    const url = prompt(`Enter ${type === 'pic' ? 'profile picture' : 'cover image'} URL:`)
-    if (url) {
-      if (type === 'pic') setProfilePic(url)
-      else setCoverImage(url)
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange = async () => {
+      const file = input.files?.[0]
+      if (!file) return
+      if (file.size > 5 * 1024 * 1024) { flash('Image must be under 5MB.', 'err'); return }
+
+      // Show local preview immediately
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        const base64 = e.target?.result as string
+        if (type === 'pic') setProfilePic(base64)
+        else setCoverImage(base64)
+
+        // Upload to Drive
+        setUploading(type)
+        try {
+          const result = await adminActions.uploadProfileImage(base64, file.name, type === 'pic' ? 'profile' : 'cover')
+          if (result?.url) {
+            if (type === 'pic') setProfilePic(result.url)
+            else setCoverImage(result.url)
+            flash('Image uploaded successfully.')
+          } else {
+            flash('Upload failed. Image shown locally only.', 'err')
+          }
+        } catch {
+          flash('Upload failed. Image shown locally only.', 'err')
+        }
+        setUploading(null)
+      }
+      reader.readAsDataURL(file)
     }
+    input.click()
   }
 
   if (profileLoading) {
@@ -183,11 +214,17 @@ export default function ProfileSection() {
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-[#00bfff]/10 via-neutral-900 to-[#ff7a00]/10" />
         )}
-        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-          <Camera className="w-6 h-6 text-white" />
-        </div>
+        {uploading === 'cover' ? (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+            <svg className="animate-spin w-8 h-8 text-[#00bfff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>
+          </div>
+        ) : (
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+            <Camera className="w-6 h-6 text-white" />
+          </div>
+        )}
         <div className="absolute bottom-3 right-3 px-2 py-1 rounded-md bg-black/60 text-[10px] text-neutral-400 font-medium">
-          Click to change cover
+          {uploading === 'cover' ? 'Uploading...' : 'Click to change cover'}
         </div>
       </motion.div>
 
@@ -204,9 +241,15 @@ export default function ProfileSection() {
               <User className="w-10 h-10 text-neutral-500" />
             </div>
           )}
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
-            <Camera className="w-5 h-5 text-white" />
-          </div>
+          {uploading === 'pic' ? (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-2xl">
+              <svg className="animate-spin w-6 h-6 text-[#00bfff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>
+            </div>
+          ) : (
+            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-2xl">
+              <Camera className="w-5 h-5 text-white" />
+            </div>
+          )}
         </div>
         <div className="pb-1">
           <h2 className="text-2xl font-bold text-white">{name || user?.name}</h2>

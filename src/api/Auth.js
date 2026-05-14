@@ -533,6 +533,38 @@ function handleUpdateProfile(payload) {
     return successResponse_(null, 'Profile updated.');
 }
 
+function handleUploadProfileImage(payload) {
+    var auth = requireAuth_(payload.token);
+    if (auth.error) return auth.error;
+    if (!payload.base64 || !payload.fileName) return errorResponse_('File data and name required.');
+    var type = payload.type || 'profile'; // 'profile' or 'cover'
+
+    // Save to Drive
+    var usersFolder = getDriveSubfolder_(DRIVE_FOLDERS.USERS || 'User Files');
+    var userFolder = getOrCreateFolder_(usersFolder, auth.user.name + ' — ' + auth.user.user_id);
+
+    var parts = payload.base64.split(',');
+    var raw = parts.length > 1 ? parts[1] : parts[0];
+    var mimeMatch = payload.base64.match(/^data:([^;]+);/);
+    var mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    var blob = Utilities.newBlob(Utilities.base64Decode(raw), mime, payload.fileName);
+    var file = userFolder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    var fileUrl = file.getUrl();
+
+    // Auto-update the user's profile
+    var user = findRow_(SHEETS.USERS, 'email', auth.user.email);
+    if (user) {
+        var updates = {};
+        if (type === 'cover') updates.cover_image_url = fileUrl;
+        else updates.profile_pic_url = fileUrl;
+        updateRow_(SHEETS.USERS, user._rowIndex, updates);
+    }
+
+    logAction_(auth.user.user_id, auth.user.name, 'PROFILE_IMAGE_UPLOADED', type + ': ' + payload.fileName);
+    return successResponse_({ url: fileUrl }, 'Image uploaded.');
+}
+
 // ─── OTP HELPERS ─────────────────────────────────────────
 
 function generateSecureOTP_() {

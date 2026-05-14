@@ -27,6 +27,7 @@ function doPost(e) {
         if (action === 'setPin')            return handleSetPin(payload);
         if (action === 'getProfile')        return handleGetProfile(payload);
         if (action === 'updateProfile')     return handleUpdateProfile(payload);
+        if (action === 'uploadProfileImage') return handleUploadProfileImage(payload);
 
         // ── User Management ──
         if (action === 'getUsers')          return handleGetUsers(payload);

@@ -735,6 +735,16 @@ export const adminActions = {
     }
   },
 
+  uploadProfileImage: async (base64: string, fileName: string, type: 'profile' | 'cover'): Promise<{ url: string } | null> => {
+    try {
+      const result = await apiPost('uploadProfileImage', { token: state.token, base64, fileName, type })
+      return result
+    } catch (err: any) {
+      console.error('Upload failed:', err.message)
+      return null
+    }
+  },
+
   // ── CRM Actions ──
   getClient: async (clientId: string) => {
     setState({ loading: true, error: null })
