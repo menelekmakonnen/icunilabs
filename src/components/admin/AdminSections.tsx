@@ -1632,6 +1632,9 @@ export function UsersSection() {
 
   const isGodmode = currentUser?.role === 'Godmode'
 
+  // Filter to admin/staff only — Clients and Referrers have their own pages
+  const adminUsers = users.filter((u: any) => ['Godmode', 'Admin', 'Staff'].includes(u.role))
+
   useEffect(() => { adminActions.loadUsers() }, [])
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -1683,7 +1686,7 @@ export function UsersSection() {
 
   return (
     <>
-      <DataTable title="Users" subtitle="System users and access control" loading={loading} data={users}
+      <DataTable title="Users" subtitle={`${adminUsers.length} admin & staff accounts`} loading={loading} data={adminUsers}
         onAdd={() => setShowAdd(true)} addLabel="Add User"
         headerActions={isGodmode ? (
           <button onClick={() => setShowCreateAdmin(true)}
