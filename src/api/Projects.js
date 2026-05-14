@@ -173,16 +173,23 @@ function handleUpdateClient(payload) {
     if (auth.error) return auth.error;
     var client = findRow_(SHEETS.CLIENTS, 'client_id', payload.clientId);
     if (!client) return errorResponse_('Client not found.');
-    var updates = {};
-    if (payload.name) updates.name = payload.name;
-    if (payload.email) updates.email = payload.email;
-    if (payload.phone) updates.phone = payload.phone;
-    if (payload.company) updates.company = payload.company;
-    if (payload.status) updates.status = payload.status;
-    if (payload.notes !== undefined) updates.notes = payload.notes;
+    var updates = { last_activity: now_() };
+    ['name','email','phone','company','status','notes','industry','source','website','address'].forEach(function(f) {
+        if (payload[f] !== undefined) updates[f] = payload[f];
+    });
     updateRow_(SHEETS.CLIENTS, client._rowIndex, updates);
     logAction_(auth.user.user_id, auth.user.name, 'CLIENT_UPDATED', 'Updated: ' + (payload.name || client.name));
     return successResponse_(null, 'Client updated.');
+}
+
+function handleDeleteClient(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var client = findRow_(SHEETS.CLIENTS, 'client_id', payload.clientId);
+    if (!client) return errorResponse_('Client not found.');
+    updateRow_(SHEETS.CLIENTS, client._rowIndex, { status: 'Deleted', last_activity: now_() });
+    logAction_(auth.user.user_id, auth.user.name, 'CLIENT_DELETED', client.name);
+    return successResponse_(null, 'Client deleted.');
 }
 
 // ─── PROJECT LIFECYCLE ───────────────────────────────────

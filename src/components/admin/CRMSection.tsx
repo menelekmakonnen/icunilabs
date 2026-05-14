@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, Pencil, Trash2, Save } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './crm.css'
 
@@ -54,6 +54,9 @@ export default function CRMSection() {
   const [emailPreview, setEmailPreview] = useState('')
   const [emailSubject, setEmailSubject] = useState('')
   const [sending, setSending] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editForm, setEditForm] = useState<Record<string, string>>({})
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => { adminActions.loadClients() }, [])
 
@@ -107,6 +110,25 @@ export default function CRMSection() {
     setEmailTpl(''); setEmailPreview(''); setEmailSubject('')
   }
 
+  const startEditing = () => {
+    if (!activeClient) return
+    const c = activeClient
+    setEditForm({ name: c.name||'', email: c.email||'', phone: c.phone||'', company: c.company||'', industry: c.industry||'', source: c.source||'', website: c.website||'', address: c.address||'', notes: c.notes||'' })
+    setEditing(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!activeClient) return
+    const ok = await adminActions.updateClient(activeClient.client_id, editForm)
+    if (ok) setEditing(false)
+  }
+
+  const handleDeleteClient = async () => {
+    if (!activeClient) return
+    await adminActions.deleteClient(activeClient.client_id)
+    setShowDeleteConfirm(false)
+  }
+
   const handleRemoveTag = async (tag: string) => {
     if (!activeClient) return
     const updated = (activeClient.tags_list || []).filter((t: string) => t !== tag)
@@ -149,6 +171,12 @@ export default function CRMSection() {
               className="text-xs bg-neutral-900 border border-neutral-700 text-white rounded-lg px-2 py-1 cursor-pointer">
               {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
+            <button onClick={startEditing} className="text-neutral-500 hover:text-[#00bfff] cursor-pointer transition-colors" title="Edit client">
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button onClick={() => setShowDeleteConfirm(true)} className="text-neutral-500 hover:text-red-400 cursor-pointer transition-colors" title="Delete client">
+              <Trash2 className="w-4 h-4" />
+            </button>
             <span className={`crm-health-dot ${healthStatus(c)}`} />
           </div>
         </div>
@@ -178,6 +206,32 @@ export default function CRMSection() {
         <div className="flex-1 overflow-y-auto p-6">
           {detailTab === 'overview' && (
             <div className="crm-fade-in space-y-6">
+              {/* Edit Mode */}
+              {editing ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider">Edit Client</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => setEditing(false)} className="px-3 py-1.5 text-xs text-neutral-500 hover:text-white cursor-pointer transition-colors">Cancel</button>
+                      <button onClick={handleSaveEdit} className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-xs font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all">
+                        <Save className="w-3.5 h-3.5" />Save Changes
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Name</label><input value={editForm.name||''} onChange={e => setEditForm({...editForm, name: e.target.value})} className={inputCls} /></div>
+                    <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Email</label><input value={editForm.email||''} onChange={e => setEditForm({...editForm, email: e.target.value})} className={inputCls} /></div>
+                    <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Phone</label><input value={editForm.phone||''} onChange={e => setEditForm({...editForm, phone: e.target.value})} className={inputCls} /></div>
+                    <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Company</label><input value={editForm.company||''} onChange={e => setEditForm({...editForm, company: e.target.value})} className={inputCls} /></div>
+                    <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Industry</label><input value={editForm.industry||''} onChange={e => setEditForm({...editForm, industry: e.target.value})} className={inputCls} /></div>
+                    <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Source</label><input value={editForm.source||''} onChange={e => setEditForm({...editForm, source: e.target.value})} className={inputCls} /></div>
+                    <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Website</label><input value={editForm.website||''} onChange={e => setEditForm({...editForm, website: e.target.value})} className={inputCls} /></div>
+                    <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Address</label><input value={editForm.address||''} onChange={e => setEditForm({...editForm, address: e.target.value})} className={inputCls} /></div>
+                  </div>
+                  <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Notes</label><textarea value={editForm.notes||''} onChange={e => setEditForm({...editForm, notes: e.target.value})} className={`${inputCls} min-h-[80px]`} rows={3} /></div>
+                </div>
+              ) : (
+              <>
               {/* Metrics */}
               <div className="grid grid-cols-4 gap-4">
                 {[
@@ -233,6 +287,7 @@ export default function CRMSection() {
                   </div>
                 </div>
               )}
+              </>)}
             </div>
           )}
 
@@ -374,6 +429,20 @@ export default function CRMSection() {
             </div>
           )}
         </div>
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className={modalBg} onClick={() => setShowDeleteConfirm(false)}>
+            <div className={modalCard} onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-white mb-2">Delete Client</h3>
+              <p className="text-sm text-neutral-400 mb-4">Are you sure you want to delete <strong className="text-white">{c.name}</strong>? This action cannot be undone.</p>
+              <div className="flex justify-end gap-3">
+                <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors">Cancel</button>
+                <button onClick={handleDeleteClient} className="px-4 py-2 bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg text-sm font-bold cursor-pointer hover:bg-red-500/30 transition-all">Delete Client</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

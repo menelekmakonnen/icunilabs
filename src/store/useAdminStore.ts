@@ -789,6 +789,34 @@ export const adminActions = {
     }
   },
 
+  updateClient: async (clientId: string, data: Record<string, any>): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('updateClient', { token: state.token, clientId, ...data })
+      await adminActions.getClient(clientId)
+      await adminActions.loadClients()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  deleteClient: async (clientId: string): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('deleteClient', { token: state.token, clientId })
+      adminActions.clearActiveClient()
+      await adminActions.loadClients()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
   updateClientStatus: async (clientId: string, prospectStage: string, note?: string): Promise<boolean> => {
     setState({ loading: true, error: null })
     try {
