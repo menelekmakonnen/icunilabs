@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle, Circle, ChevronDown, ChevronRight, X, Compass, BookOpen, Target, Users, FolderOpen, FileText, Clock, Zap } from 'lucide-react'
+import { CheckCircle, Circle, ChevronDown, ChevronRight, X, Compass, BookOpen, Target, Users, FolderOpen, Zap } from 'lucide-react'
 
 interface CheckItem {
   id: string
