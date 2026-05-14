@@ -3,7 +3,7 @@ import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save, MapPin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
-import { FormButton, ActionButton } from './ActionButton'
+import { FormButton } from './ActionButton'
 import './crm.css'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
@@ -72,7 +72,6 @@ export default function CRMSection() {
   const [busyProspect, setBusyProspect] = useState(false)
   const [busyBatch, setBusyBatch] = useState(false)
   const [busyNote, setBusyNote] = useState(false)
-  const [busyTag, setBusyTag] = useState(false)
   const [busySave, setBusySave] = useState(false)
   const [busyDelete, setBusyDelete] = useState(false)
   const [busyStage, setBusyStage] = useState(false)
@@ -141,16 +140,6 @@ export default function CRMSection() {
       await adminActions.addClientNote(activeClient.client_id, noteText)
       setNoteText('')
     } finally { setBusyNote(false) }
-  }
-
-  const handleAddTag = async () => {
-    if (!tagInput.trim() || !activeClient) return
-    setBusyTag(true)
-    try {
-      const existing = activeClient.tags_list || []
-      await adminActions.updateClientTags(activeClient.client_id, [...existing, tagInput.trim()])
-      setTagInput('')
-    } finally { setBusyTag(false) }
   }
 
   const handleAdvanceStage = async (clientId: string, stage: string) => {
@@ -272,7 +261,7 @@ export default function CRMSection() {
             </span>
           ))}
           <div className="flex items-center gap-1">
-            <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddTag()}
+            <input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={async e => { if (e.key === 'Enter' && tagInput.trim() && activeClient) { const existing = activeClient.tags_list || []; await adminActions.updateClientTags(activeClient.client_id, [...existing, tagInput.trim()]); setTagInput('') } }}
               className="bg-transparent border-none text-xs text-neutral-500 placeholder-neutral-700 outline-none w-24" placeholder="+ Add tag" />
           </div>
         </div>
