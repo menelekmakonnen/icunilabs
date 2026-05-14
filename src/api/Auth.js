@@ -462,7 +462,43 @@ function handleCreateAdmin(payload) {
     }
 }
 
+// ─── USER EDITING (Godmode only) ──────────────────────────
+
+function handleEditUser(payload) {
+    var auth = requireGodmode_(payload.token);
+    if (auth.error) return auth.error;
+
+    var userId = payload.userId;
+    if (!userId) return errorResponse_('User ID is required.');
+
+    var user = findRow_(SHEETS.USERS, 'id', userId);
+    if (!user) return errorResponse_('User not found.');
+    if (user.role === ROLES.GODMODE) return errorResponse_('Cannot edit Godmode users.');
+
+    var updates = {};
+    if (payload.name !== undefined && payload.name.trim()) updates.name = payload.name.trim();
+    if (payload.phone !== undefined) updates.phone = payload.phone;
+    if (payload.job_title !== undefined) updates.job_title = payload.job_title;
+    if (payload.role !== undefined) {
+        var allowed = ['Admin', 'Staff'];
+        if (allowed.indexOf(payload.role) === -1) return errorResponse_('Invalid role. Must be Admin or Staff.');
+        updates.role = payload.role;
+    }
+    if (payload.status !== undefined) {
+        var validStatus = ['Active', 'Inactive'];
+        if (validStatus.indexOf(payload.status) === -1) return errorResponse_('Invalid status.');
+        updates.status = payload.status;
+    }
+
+    if (Object.keys(updates).length === 0) return errorResponse_('No changes to save.');
+
+    updateRow_(SHEETS.USERS, user._rowIndex, updates);
+    logAction_(auth.user.user_id, auth.user.name, 'USER_EDITED', user.name + ' → ' + Object.keys(updates).join(', '));
+    return successResponse_(null, 'User updated successfully.');
+}
+
 // ─── PERMISSION MANAGEMENT (Godmode only) ────────────────
+
 
 function handleUpdateUserPermissions(payload) {
     var auth = requireGodmode_(payload.token);

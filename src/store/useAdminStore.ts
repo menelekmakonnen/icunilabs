@@ -481,6 +481,19 @@ export const adminActions = {
     }
   },
 
+  editUser: async (userId: string, data: Record<string, any>): Promise<boolean> => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('editUser', { token: state.token, userId, ...data })
+      await adminActions.loadUsers()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
   createAdmin: async (email: string, jobTitle?: string, permissions?: Record<string, boolean>) => {
     setState({ loading: true, error: null })
     try {

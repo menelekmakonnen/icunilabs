@@ -34,6 +34,7 @@ function doPost(e) {
         if (action === 'addUser')           return handleAddUser(payload);
         if (action === 'deactivateUser')    return handleDeactivateUser(payload);
         if (action === 'createAdmin')       return handleCreateAdmin(payload);
+        if (action === 'editUser')          return handleEditUser(payload);
         if (action === 'updateUserPermissions') return handleUpdateUserPermissions(payload);
         if (action === 'getUserPermissions')    return handleGetUserPermissions(payload);
 

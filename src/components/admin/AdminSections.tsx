@@ -1692,6 +1692,30 @@ export function UsersSection() {
     return 'text-neutral-400 bg-neutral-800'
   }
 
+  const [editUser, setEditUser] = useState<any>(null)
+  const [editForm, setEditForm] = useState({ name: '', phone: '', job_title: '', role: '', status: '' })
+  const [busyEdit, setBusyEdit] = useState(false)
+
+  const openEditUser = (u: any) => {
+    setEditUser(u)
+    setEditForm({
+      name: u.name || '',
+      phone: u.phone || '',
+      job_title: u.job_title || '',
+      role: u.role || 'Staff',
+      status: u.status || 'Active',
+    })
+  }
+
+  const handleEditUser = async () => {
+    if (!editUser) return
+    setBusyEdit(true)
+    try {
+      const ok = await adminActions.editUser(editUser.id, editForm)
+      if (ok) setEditUser(null)
+    } finally { setBusyEdit(false) }
+  }
+
   return (
     <>
       <DataTable title="Team" subtitle={`${adminUsers.length} admin & staff accounts`} loading={loading} data={adminUsers}
@@ -1716,6 +1740,9 @@ export function UsersSection() {
         searchKeys={['name', 'email', 'role', 'job_title']}
         renderRowActions={(row) => (
           <div className="flex gap-3">
+            {isGodmode && row.role !== 'Godmode' && (
+              <button onClick={() => openEditUser(row)} className="text-xs text-[#00bfff] hover:text-cyan-300 cursor-pointer transition-colors">Edit</button>
+            )}
             {isGodmode && row.role === 'Admin' && (
               <button onClick={() => openPermissions(row)} className="text-xs text-[#8b5cf6] hover:text-purple-300 cursor-pointer transition-colors">Permissions</button>
             )}
@@ -1726,6 +1753,62 @@ export function UsersSection() {
           </div>
         )}
       />
+
+      {/* Edit User Modal — Godmode only */}
+      {editUser && (
+        <div className={modalBg} onClick={() => setEditUser(null)}>
+          <div className={`${modalCard} !max-w-lg`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#00bfff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                  </svg>
+                  Edit Team Member
+                </h3>
+                <p className="text-xs text-neutral-500 mt-0.5">{editUser.email}</p>
+              </div>
+              <button onClick={() => setEditUser(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Full Name</label>
+                <input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className={inputCls} placeholder="Full name" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Phone</label>
+                  <input value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className={inputCls} placeholder="+233 xxx xxx" />
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Job Title</label>
+                  <input value={editForm.job_title} onChange={e => setEditForm({...editForm, job_title: e.target.value})} className={inputCls} placeholder="Operations Assistant" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Role</label>
+                  <select value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} className={inputCls}>
+                    <option value="Admin">Admin</option>
+                    <option value="Staff">Staff</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Status</label>
+                  <select value={editForm.status} onChange={e => setEditForm({...editForm, status: e.target.value})} className={inputCls}>
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+              <button onClick={handleEditUser} disabled={busyEdit}
+                className={`${btnPrimary} w-full flex items-center justify-center gap-2`}>
+                {busyEdit ? <><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>Saving...</> : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Invite Admin Modal — Godmode only, elevated access */}
       {showCreateAdmin && (
