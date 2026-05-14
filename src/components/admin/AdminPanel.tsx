@@ -34,6 +34,7 @@ export default function AdminPanel() {
   const [showActAs, setShowActAs] = useState(false)
   const [showImpersonate, setShowImpersonate] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
   useEffect(() => { adminActions.validateSession() }, [])
 
@@ -105,9 +106,6 @@ export default function AdminPanel() {
       default: return <DashboardSection />
     }
   }
-
-  // Mobile sidebar state
-  const [mobileOpen, setMobileOpen] = useState(false)
 
   // Close mobile sidebar when section changes
   const handleNavClick = (id: string) => {
