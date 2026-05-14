@@ -48,6 +48,18 @@ function doPost(e) {
         if (action === 'addProject')             return handleAddProject(payload);
         if (action === 'removeProject')          return handleRemoveProject(payload);
 
+        // ── Email Hub ──
+        if (action === 'getInbox')              return handleGetInbox(payload);
+        if (action === 'getThread')             return handleGetThread(payload);
+        if (action === 'replyToThread')         return handleReplyToThread(payload);
+        if (action === 'sendBrandedEmail')      return handleSendBrandedEmail(payload);
+        if (action === 'getEmailAliases')       return handleGetEmailAliases(payload);
+        if (action === 'updateEmailAlias')      return handleUpdateEmailAlias(payload);
+        if (action === 'deleteEmailAlias')      return handleDeleteEmailAlias(payload);
+        if (action === 'getEmailTemplates')     return handleGetEmailTemplates(payload);
+        if (action === 'saveEmailTemplate')     return handleSaveEmailTemplate(payload);
+        if (action === 'previewBrandedEmail')   return handlePreviewBrandedEmail(payload);
+
         // ── Dashboard ──
         if (action === 'getDashboard')      return handleGetDashboard(payload);
 

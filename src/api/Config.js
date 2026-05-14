@@ -61,7 +61,11 @@ var SHEETS = {
 
     // ICUNI Ecosystem
     ICUNI_PROJECTS:    'ICUNI_Projects',
-    IMPERSONATION_LOG: 'Impersonation_Log'
+    IMPERSONATION_LOG: 'Impersonation_Log',
+
+    // Email Hub
+    EMAIL_ALIASES:     'Email_Aliases',
+    EMAIL_TEMPLATES:   'Email_Templates'
 };
 
 // ─── COLUMN MAPS ─────────────────────────────────────────
@@ -177,6 +181,18 @@ var LOG_ARCHIVE_THRESHOLD = 40000;
 // ─── ADMIN EMAIL ─────────────────────────────────────────
 var ADMIN_EMAIL = 'labs@icuni.org';
 var JOBS_EMAIL = 'jobs@icuni.org';
+
+// ─── EMAIL ALIASES ───────────────────────────────────────
+var EMAIL_ALIASES = {
+    'labs@icuni.org':       { name: 'ICUNI Labs',     visibility: 'all',      category: 'general' },
+    'hello@icuni.org':      { name: 'Hello',          visibility: 'all',      category: 'general' },
+    'donotreply@icuni.org': { name: 'Do Not Reply',   visibility: 'all',      category: 'system' },
+    'feedback@icuni.org':   { name: 'Feedback',       visibility: 'all',      category: 'general' },
+    'jobs@icuni.org':       { name: 'Jobs / Careers',  visibility: 'all',      category: 'careers' },
+    'tech.issue@icuni.org': { name: 'Tech Issues',    visibility: 'all',      category: 'support' },
+    'menelek@icuni.org':    { name: 'Menelek',        visibility: 'private',  owner: 'menelek@icuni.org' },
+    'josephine@icuni.org':  { name: 'Josephine',      visibility: 'private',  owner: 'josephine@icuni.org' }
+};
 
 // ─── DRIVE FOLDERS ───────────────────────────────────────
 var DRIVE_FOLDERS = {

@@ -8,14 +8,16 @@ import CRMSection from './CRMSection'
 import ProfileSection from './ProfileSection'
 import ReferralPortal from '../portal/ReferralPortal'
 import ClientPortal from '../portal/ClientPortal'
-import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe } from 'lucide-react'
+import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe, Mail } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import OnboardingChecklist from './OnboardingChecklist'
 import EcosystemSection from './EcosystemSection'
+import MailSection from './MailSection'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'mail', label: 'Mail', icon: Mail },
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'projects', label: 'Projects', icon: FolderOpen },
   { id: 'invoices', label: 'Invoices', icon: FileText },
@@ -48,9 +50,9 @@ export default function AdminPanel() {
 
   // Department scope mapping (frontend mirror of backend DEPARTMENT_SCOPE)
   const DEPT_SCOPE: Record<string, string[]> = {
-    'Admin':      ['dashboard', 'clients', 'projects', 'invoices', 'sla', 'careers', 'referrals', 'logs', 'settings'],
-    'Sales':      ['dashboard', 'clients', 'referrals', 'careers'],
-    'Product':    ['dashboard', 'projects', 'sla', 'logs']
+    'Admin':      ['dashboard', 'mail', 'clients', 'projects', 'invoices', 'sla', 'careers', 'referrals', 'logs', 'settings'],
+    'Sales':      ['dashboard', 'mail', 'clients', 'referrals', 'careers'],
+    'Product':    ['dashboard', 'mail', 'projects', 'sla', 'logs']
   }
 
   // Filter nav items based on role + permissions
@@ -92,6 +94,7 @@ export default function AdminPanel() {
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard': return <DashboardSection />
+      case 'mail': return <MailSection />
       case 'clients': return <CRMSection />
       case 'projects': return <ProjectsSection />
       case 'invoices': return <InvoicesSection />

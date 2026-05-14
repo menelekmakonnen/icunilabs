@@ -61,6 +61,13 @@ interface AdminState {
   // ICUNI Ecosystem
   projectRegistry: any[]
   impersonationToken: string | null
+
+  // Email Hub
+  inbox: any[]
+  inboxLoading: boolean
+  activeThread: any | null
+  emailAliases: any[]
+  emailTemplates: any[]
 }
 
 async function apiPost(action: string, payload: Record<string, any> = {}): Promise<any> {
@@ -108,6 +115,11 @@ let state: AdminState = {
   clientActivity: [],
   projectRegistry: [],
   impersonationToken: null,
+  inbox: [],
+  inboxLoading: false,
+  activeThread: null,
+  emailAliases: [],
+  emailTemplates: [],
 }
 
 const listeners = new Set<() => void>()
@@ -467,6 +479,118 @@ export const adminActions = {
     } catch (err: any) {
       setState({ error: err.message })
       return false
+    }
+  },
+
+  // ── Email Hub ──
+  loadInbox: async (alias?: string, page?: number, query?: string) => {
+    setState({ inboxLoading: true })
+    try {
+      const result = await apiPost('getInbox', { token: state.token, alias: alias || 'all', page: page || 0, query })
+      setState({ inbox: result?.threads || [], inboxLoading: false, emailAliases: result?.aliases || state.emailAliases })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message, inboxLoading: false })
+      return null
+    }
+  },
+
+  clearActiveThread: () => { setState({ activeThread: null }) },
+
+  loadThread: async (threadId: string) => {
+    try {
+      const result = await apiPost('getThread', { token: state.token, threadId })
+      setState({ activeThread: result })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  replyToThread: async (threadId: string, body: string, fromAlias?: string, useTemplate?: boolean) => {
+    try {
+      await apiPost('replyToThread', { token: state.token, threadId, body, fromAlias, useTemplate })
+      // Reload thread to show new reply
+      await adminActions.loadThread(threadId)
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  sendBrandedEmail: async (data: { to?: string; subject: string; body: string; fromAlias?: string; recipients?: any[]; useTemplate?: boolean; templateOpts?: any; recipientName?: string }) => {
+    try {
+      const result = await apiPost('sendBrandedEmail', { token: state.token, ...data })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  loadEmailAliases: async () => {
+    try {
+      const result = await apiPost('getEmailAliases', { token: state.token })
+      setState({ emailAliases: result || [] })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  updateEmailAlias: async (data: Record<string, any>) => {
+    try {
+      await apiPost('updateEmailAlias', { token: state.token, ...data })
+      await adminActions.loadEmailAliases()
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  deleteEmailAlias: async (alias: string) => {
+    try {
+      await apiPost('deleteEmailAlias', { token: state.token, alias })
+      await adminActions.loadEmailAliases()
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  loadEmailTemplates: async () => {
+    try {
+      const result = await apiPost('getEmailTemplates', { token: state.token })
+      setState({ emailTemplates: result || [] })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  saveEmailTemplate: async (data: Record<string, any>) => {
+    try {
+      const result = await apiPost('saveEmailTemplate', { token: state.token, ...data })
+      await adminActions.loadEmailTemplates()
+      return result
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  previewBrandedEmail: async (subject: string, body: string, recipientName?: string, opts?: any) => {
+    try {
+      return await apiPost('previewBrandedEmail', { token: state.token, subject, body, recipientName, opts })
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
     }
   },
 
