@@ -40,7 +40,7 @@ function getSheetByName_(sheetName) {
         ssGetter = getPortfolioSS_;
     }
     // Clients
-    else if ([SHEETS.CLIENTS, SHEETS.CLIENT_PROJECTS, SHEETS.INVOICES,
+    else if ([SHEETS.CLIENTS, SHEETS.CLIENT_PROJECTS, SHEETS.CLIENT_NOTES, SHEETS.INVOICES,
               SHEETS.INVOICE_ITEMS, SHEETS.PAYMENTS].indexOf(sheetName) >= 0) {
         ssGetter = getClientsSS_;
     }
