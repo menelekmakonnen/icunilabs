@@ -749,6 +749,7 @@ export const adminActions = {
   },
 
   clearActiveClient: () => setState({ activeClient: null, clientActivity: [] }),
+  clearError: () => setState({ error: null }),
 
   getClientActivity: async (clientId: string) => {
     try {

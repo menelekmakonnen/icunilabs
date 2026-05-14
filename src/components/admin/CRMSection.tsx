@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, Pencil, Trash2, Save } from 'lucide-react'
+import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './crm.css'
 
@@ -43,7 +43,7 @@ const EMAIL_TEMPLATES = [
 ]
 
 export default function CRMSection() {
-  const { clients, loading, activeClient, clientActivity } = useAdminStore()
+  const { clients, loading, error, activeClient, clientActivity } = useAdminStore()
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showAddProspect, setShowAddProspect] = useState(false)
@@ -60,6 +60,8 @@ export default function CRMSection() {
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState<Record<string, string>>({})
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [stagePopup, setStagePopup] = useState<{ clientId: string; stage: string; direction: 'advance'|'regress' } | null>(null)
+  const [stageNote, setStageNote] = useState('')
 
   useEffect(() => { adminActions.loadClients() }, [])
 
@@ -71,8 +73,13 @@ export default function CRMSection() {
 
   const openClient = async (c: any) => {
     setDetailTab('overview')
-    await adminActions.getClient(c.client_id)
-    adminActions.getClientActivity(c.client_id)
+    setEditing(false)
+    try {
+      await adminActions.getClient(c.client_id)
+      adminActions.getClientActivity(c.client_id)
+    } catch (err) {
+      console.error('Failed to open client:', err)
+    }
   }
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -101,7 +108,18 @@ export default function CRMSection() {
   }
 
   const handleAdvanceStage = async (clientId: string, stage: string) => {
-    await adminActions.updateClientStatus(clientId, stage)
+    if (stageNote.trim()) {
+      await adminActions.updateClientStatus(clientId, stage, stageNote.trim())
+    } else {
+      await adminActions.updateClientStatus(clientId, stage)
+    }
+    setStagePopup(null)
+    setStageNote('')
+  }
+
+  const openStagePopup = (clientId: string, stage: string, direction: 'advance'|'regress') => {
+    setStagePopup({ clientId, stage, direction })
+    setStageNote('')
   }
 
   const loadEmailPreview = async (tpl: string) => {
@@ -254,6 +272,62 @@ export default function CRMSection() {
                     <p className="text-xl font-bold" style={{ color: m.color }}>{m.value}</p>
                   </div>
                 ))}
+              </div>
+
+              {/* Pipeline Journey Tracker */}
+              <div className="crm-metric !py-4 !px-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Pipeline Journey</p>
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const curIdx = STAGES.findIndex(s => s.id === (c.prospect_stage || 'new_lead'))
+                      const prevStage = curIdx > 0 ? STAGES[curIdx - 1] : null
+                      const nextStage = curIdx < STAGES.length - 2 ? STAGES[curIdx + 1] : null
+                      return (<>
+                        {prevStage && (
+                          <button onClick={() => openStagePopup(c.client_id, prevStage.id, 'regress')}
+                            className="text-[10px] text-neutral-600 hover:text-red-400 flex items-center gap-0.5 cursor-pointer transition-colors">
+                            <ChevronLeft className="w-3 h-3" /> Regress
+                          </button>
+                        )}
+                        {nextStage && (
+                          <button onClick={() => openStagePopup(c.client_id, nextStage.id, 'advance')}
+                            className="text-[10px] text-neutral-600 hover:text-[#00bfff] flex items-center gap-0.5 cursor-pointer transition-colors">
+                            Advance <ChevronRight className="w-3 h-3" />
+                          </button>
+                        )}
+                      </>)
+                    })()}
+                  </div>
+                </div>
+                <div className="flex items-center gap-0">
+                  {STAGES.filter(s => s.id !== 'lost').map((s, i, arr) => {
+                    const currentIdx = arr.findIndex(st => st.id === (c.prospect_stage || 'new_lead'))
+                    const isActive = i === currentIdx
+                    const isPast = i < currentIdx
+                    return (
+                      <div key={s.id} className="flex items-center" style={{ flex: i < arr.length - 1 ? 1 : 0 }}>
+                        <div className="relative flex flex-col items-center" style={{ minWidth: 18 }}>
+                          <div className={`w-3.5 h-3.5 rounded-full border-2 transition-all ${
+                            isActive ? 'scale-125' : ''
+                          }`} style={{
+                            borderColor: isPast || isActive ? s.color : 'rgba(255,255,255,0.1)',
+                            background: isPast ? s.color : isActive ? `${s.color}30` : 'transparent',
+                            boxShadow: isActive ? `0 0 8px ${s.color}40` : 'none'
+                          }} />
+                          <span className={`absolute top-5 text-[8px] whitespace-nowrap ${isActive ? 'text-white font-bold' : isPast ? 'text-neutral-500' : 'text-neutral-700'}`}>
+                            {s.label}
+                          </span>
+                        </div>
+                        {i < arr.length - 1 && (
+                          <div className="flex-1 h-0.5 mx-0.5" style={{
+                            background: isPast ? `linear-gradient(90deg, ${s.color}, ${arr[i+1].color})` : 'rgba(255,255,255,0.06)'
+                          }} />
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
 
               {/* Info Grid */}
@@ -523,17 +597,25 @@ export default function CRMSection() {
                     <div key={c.client_id} onClick={() => openClient(c)}
                       className="bg-neutral-900/60 border border-neutral-800 rounded-xl p-3 cursor-pointer hover:border-neutral-700 transition-all hover:translate-y-[-1px]">
                       <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white" style={{ background: getAvatarColor(c.name) }}>{getInitials(c.name).charAt(0)}</div>
-                        <span className="text-sm text-white font-medium truncate">{c.name}</span>
+                        <div className="w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold text-white" style={{ background: getAvatarColor(c.name || c.company || '') }}>{getInitials(c.name || c.company || c.email || '?').charAt(0)}</div>
+                        <span className="text-sm text-white font-medium truncate">{c.name || c.company || c.email || 'Unnamed'}</span>
                       </div>
                       <p className="text-[10px] text-neutral-600 truncate">{c.company || c.email}</p>
                       {c.total_revenue > 0 && <p className="text-[10px] text-emerald-500 font-semibold mt-1">{fmtMoney(c.total_revenue)}</p>}
-                      {stage.id !== 'won' && (
-                        <button onClick={(e) => { e.stopPropagation(); const nextIdx = STAGES.findIndex(s => s.id === stage.id) + 1; if (nextIdx < STAGES.length) handleAdvanceStage(c.client_id, STAGES[nextIdx].id) }}
-                          className="mt-2 w-full text-[10px] text-neutral-600 hover:text-[#00bfff] flex items-center justify-center gap-1 cursor-pointer transition-colors">
-                          Advance <ChevronRight className="w-3 h-3" />
-                        </button>
-                      )}
+                      <div className="mt-2 flex items-center gap-1">
+                        {(() => { const curIdx = STAGES.findIndex(s => s.id === stage.id); return curIdx > 0 ? (
+                          <button onClick={(e) => { e.stopPropagation(); openStagePopup(c.client_id, STAGES[curIdx - 1].id, 'regress') }}
+                            className="flex-1 text-[10px] text-neutral-600 hover:text-[#ef4444] flex items-center justify-center gap-0.5 cursor-pointer transition-colors">
+                            <ChevronLeft className="w-3 h-3" /> Regress
+                          </button>
+                        ) : null })()}
+                        {stage.id !== 'won' && (() => { const nextIdx = STAGES.findIndex(s => s.id === stage.id) + 1; return nextIdx < STAGES.length ? (
+                          <button onClick={(e) => { e.stopPropagation(); openStagePopup(c.client_id, STAGES[nextIdx].id, 'advance') }}
+                            className="flex-1 text-[10px] text-neutral-600 hover:text-[#00bfff] flex items-center justify-center gap-0.5 cursor-pointer transition-colors">
+                            Advance <ChevronRight className="w-3 h-3" />
+                          </button>
+                        ) : null })()}
+                      </div>
                     </div>
                   ))}
                   {stageClients.length === 0 && <div className="text-center py-6 text-neutral-700 text-xs">Empty</div>}
@@ -571,11 +653,11 @@ export default function CRMSection() {
               <motion.div key={c.client_id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 transition={{ delay: i * 0.03, duration: 0.3 }} onClick={() => openClient(c)} className="crm-card">
                 <div className="flex items-center gap-3 mb-3 relative z-10">
-                  <div className="crm-avatar" style={{ background: `linear-gradient(135deg, ${getAvatarColor(c.name)}, ${getAvatarColor(c.name)}88)` }}>
-                    {getInitials(c.name)}
+                  <div className="crm-avatar" style={{ background: `linear-gradient(135deg, ${getAvatarColor(c.name || c.company || '')}, ${getAvatarColor(c.name || c.company || '')}88)` }}>
+                    {getInitials(c.name || c.company || c.email || '?')}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-white truncate">{c.name}</h3>
+                    <h3 className="text-sm font-bold text-white truncate">{c.name || c.company || c.email || 'Unnamed'}</h3>
                     <p className="text-[11px] text-neutral-500 truncate">{c.company || c.email}</p>
                   </div>
                   <span className={`crm-health-dot ${healthStatus(c)}`} />
@@ -647,28 +729,71 @@ export default function CRMSection() {
         </div>
       )}
 
-      {/* Add Prospect Modal */}
+      {/* Add Prospect Modal — no required fields */}
       {showAddProspect && (
         <div className={modalBg} onClick={() => setShowAddProspect(false)}>
           <div className={`${modalCard} !max-w-md`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-bold text-white">Add Prospect</h3>
-                <p className="text-xs text-neutral-500 mt-0.5">Prospects can be graduated to New Lead in the pipeline</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Fill in any details you have. At least one identifier needed.</p>
               </div>
               <button onClick={() => setShowAddProspect(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleAddProspect} className="space-y-3">
-              <input value={prospectForm.name} onChange={e => setProspectForm({...prospectForm, name: e.target.value})} className={inputCls} placeholder="Contact name *" required />
-              <input type="email" value={prospectForm.email} onChange={e => setProspectForm({...prospectForm, email: e.target.value})} className={inputCls} placeholder="Email *" required />
-              <div className="grid grid-cols-2 gap-3">
-                <input value={prospectForm.company} onChange={e => setProspectForm({...prospectForm, company: e.target.value})} className={inputCls} placeholder="Company" />
-                <input value={prospectForm.source} onChange={e => setProspectForm({...prospectForm, source: e.target.value})} className={inputCls} placeholder="Source" />
-              </div>
-              <button type="submit" className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-neutral-700 transition-all">
+              <input value={prospectForm.name} onChange={e => setProspectForm({...prospectForm, name: e.target.value})} className={inputCls} placeholder="Contact name" />
+              <input value={prospectForm.company} onChange={e => setProspectForm({...prospectForm, company: e.target.value})} className={inputCls} placeholder="Company name" />
+              <input type="email" value={prospectForm.email} onChange={e => setProspectForm({...prospectForm, email: e.target.value})} className={inputCls} placeholder="Email" />
+              <input value={prospectForm.source} onChange={e => setProspectForm({...prospectForm, source: e.target.value})} className={inputCls} placeholder="Source / How you found them" />
+              <button type="submit"
+                disabled={!prospectForm.name && !prospectForm.email && !prospectForm.company}
+                className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-neutral-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
                 Add as Prospect
               </button>
+              {!prospectForm.name && !prospectForm.email && !prospectForm.company && (
+                <p className="text-[10px] text-neutral-600 text-center">Enter at least a name, email, or company</p>
+              )}
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Stage Change Note Popup */}
+      {stagePopup && (
+        <div className={modalBg} onClick={() => { setStagePopup(null); setStageNote('') }}>
+          <div className={`${modalCard} !max-w-sm`} onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white mb-1">
+              {stagePopup.direction === 'advance' ? 'Advance' : 'Regress'} Stage
+            </h3>
+            <p className="text-xs text-neutral-500 mb-4">
+              Moving to <span className="font-bold" style={{ color: STAGES.find(s => s.id === stagePopup.stage)?.color || '#fff' }}>
+                {STAGES.find(s => s.id === stagePopup.stage)?.label}
+              </span>
+            </p>
+            <textarea value={stageNote} onChange={e => setStageNote(e.target.value)}
+              className="crm-note-input mb-4" placeholder="Add a note about this stage change (optional)..." rows={3} />
+            <div className="flex justify-end gap-3">
+              <button onClick={() => { setStagePopup(null); setStageNote('') }}
+                className="px-4 py-2 text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors">Cancel</button>
+              <button onClick={() => handleAdvanceStage(stagePopup.clientId, stagePopup.stage)}
+                className={`px-5 py-2 rounded-lg text-sm font-bold cursor-pointer transition-all ${
+                  stagePopup.direction === 'advance'
+                    ? 'bg-[#00bfff]/15 text-[#00bfff] border border-[#00bfff]/30 hover:bg-[#00bfff]/25'
+                    : 'bg-red-500/15 text-red-400 border border-red-500/30 hover:bg-red-500/25'
+                }`}>
+                {stagePopup.direction === 'advance' ? 'Advance' : 'Regress'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <div className="fixed bottom-6 right-6 z-50 bg-red-500/10 border border-red-500/30 text-red-400 px-5 py-3 rounded-xl text-sm max-w-md backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-3">
+            <span>{error}</span>
+            <button onClick={() => adminActions.clearError()} className="text-red-500 hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
           </div>
         </div>
       )}

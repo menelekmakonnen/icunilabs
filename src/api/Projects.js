@@ -32,39 +32,55 @@ function handleGetClients(payload) {
 function handleAddClient(payload) {
     var auth = requireStaff_(payload.token);
     if (auth.error) return auth.error;
-    validateInput_(payload, {
-        name: { required: true, label: 'Client name' },
-        email: { required: true, type: 'email', label: 'Email' }
-    });
+
+    // For prospects: flexible validation — need at least one identifier
+    var isProspect = payload.prospect_stage === 'prospect';
+    if (isProspect) {
+        if (!payload.name && !payload.email && !payload.company) {
+            throw new Error('At least one identifier (name, email, or company) is required.');
+        }
+        // Validate email format only if provided
+        if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+            throw new Error('Email must be a valid email address.');
+        }
+    } else {
+        validateInput_(payload, {
+            name: { required: true, label: 'Client name' },
+            email: { required: true, type: 'email', label: 'Email' }
+        });
+    }
     
     var clientId = generateId_('CLI');
+    var displayName = payload.name || payload.company || payload.email || 'Prospect';
     
     // Create Drive folder for client
     var clientsFolder = getDriveSubfolder_(DRIVE_FOLDERS.CLIENTS);
-    var clientFolder = getOrCreateFolder_(clientsFolder, payload.name + ' — ' + clientId);
+    var clientFolder = getOrCreateFolder_(clientsFolder, displayName + ' — ' + clientId);
     
     appendRow_(SHEETS.CLIENTS, [
-        clientId, payload.name, payload.email, payload.phone || '',
-        payload.company || '', 'Active', payload.referrer_id || '',
+        clientId, payload.name || '', payload.email || '', payload.phone || '',
+        payload.company || '', isProspect ? 'Prospect' : 'Active', payload.referrer_id || '',
         now_(), payload.notes || '', clientFolder.getUrl(),
         payload.tags || '', payload.source || '', payload.industry || '',
         payload.address || '', payload.website || '', now_(),
         payload.prospect_stage || 'new_lead'
     ]);
     
-    // Create user account for client
-    try {
-        handleAddUser({
-            token: payload.token,
-            name: payload.name,
-            email: payload.email,
-            phone: payload.phone || '',
-            role: ROLES.CLIENT
-        });
-    } catch(e) { Logger.log('Client user creation note: ' + e.message); }
+    // Create user account only for full clients (not prospects)
+    if (!isProspect && payload.email) {
+        try {
+            handleAddUser({
+                token: payload.token,
+                name: payload.name,
+                email: payload.email,
+                phone: payload.phone || '',
+                role: ROLES.CLIENT
+            });
+        } catch(e) { Logger.log('Client user creation note: ' + e.message); }
+    }
     
-    logAction_(auth.user.user_id, auth.user.name, 'CLIENT_ADDED', 'Added client: ' + payload.name);
-    return successResponse_({ clientId: clientId }, 'Client created.');
+    logAction_(auth.user.user_id, auth.user.name, isProspect ? 'PROSPECT_ADDED' : 'CLIENT_ADDED', 'Added: ' + displayName);
+    return successResponse_({ clientId: clientId }, isProspect ? 'Prospect added.' : 'Client created.');
 }
 
 function handleGetClient(payload) {
