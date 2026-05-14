@@ -629,7 +629,9 @@ function handleUploadProfileImage(payload) {
     var blob = Utilities.newBlob(Utilities.base64Decode(raw), mime, payload.fileName);
     var file = userFolder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    var fileUrl = file.getUrl();
+    // Use direct image URL format (renderable in <img> tags)
+    var fileId = file.getId();
+    var fileUrl = 'https://lh3.googleusercontent.com/d/' + fileId;
 
     // Auto-update the user's profile
     var user = findRow_(SHEETS.USERS, 'email', auth.user.email);

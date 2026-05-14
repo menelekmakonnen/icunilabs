@@ -8,7 +8,7 @@ import CRMSection from './CRMSection'
 import ProfileSection from './ProfileSection'
 import ReferralPortal from '../portal/ReferralPortal'
 import ClientPortal from '../portal/ClientPortal'
-import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, ChevronLeft, ChevronRight, Eye, UserCircle, X, BookOpen, Globe } from 'lucide-react'
+import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import OnboardingChecklist from './OnboardingChecklist'
@@ -106,109 +106,157 @@ export default function AdminPanel() {
     }
   }
 
+  // Mobile sidebar state
+  const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Close mobile sidebar when section changes
+  const handleNavClick = (id: string) => {
+    adminActions.setSection(id)
+    setMobileOpen(false)
+  }
+
+  // Profile picture helper
+  const userPic = user.profile_pic_url || ''
+
   return (
     <div className="min-h-screen bg-neutral-950">
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={() => setMobileOpen(false)} />
+      )}
+
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setMobileOpen(!mobileOpen)}
+        className="fixed top-3 left-3 z-50 md:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-400 hover:text-white transition-all cursor-pointer"
+      >
+        {mobileOpen ? <X className="w-5 h-5" /> : (
+          <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M3 5h14M3 10h14M3 15h14" />
+          </svg>
+        )}
+      </button>
+
       {/* Fixed Sidebar */}
       <aside
-        className="fixed top-0 left-0 h-screen bg-neutral-900/50 border-r border-neutral-800 flex flex-col z-30 transition-all duration-200"
+        className={`fixed top-0 left-0 h-screen bg-neutral-900/80 backdrop-blur-md border-r border-neutral-800 flex z-40 transition-all duration-200
+          ${mobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
         style={{ width: sidebarWidth }}
       >
-        {/* Logo */}
-        <div className="h-16 flex items-center gap-3 px-4 border-b border-neutral-800 shrink-0">
-          <img src="/icuni_logo.png" alt="ICUNI" className="w-8 h-8 rounded-md object-contain shrink-0" />
-          {!collapsed && <span className="font-bold text-sm text-white tracking-tight">Ops Console</span>}
-        </div>
+        {/* Sidebar Content */}
+        <div className="flex flex-col flex-1 min-w-0">
+          {/* Logo */}
+          <div className="h-16 flex items-center gap-3 px-4 border-b border-neutral-800 shrink-0">
+            <img src="/icuni_logo.png" alt="ICUNI" className="w-8 h-8 rounded-md object-contain shrink-0" />
+            {!collapsed && <span className="font-bold text-sm text-white tracking-tight">Ops Console</span>}
+          </div>
 
-        {/* Nav */}
-        <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-          {filteredNav.map(item => {
-            const active = activeSection === item.id
-            return (
-              <motion.button key={item.id} onClick={() => adminActions.setSection(item.id)}
-                whileTap={{ scale: 0.95 }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer group ${
-                  active
-                    ? 'bg-[#00bfff]/10 text-[#00bfff] border border-[#00bfff]/20'
-                    : 'text-neutral-500 hover:text-white hover:bg-neutral-800/50 border border-transparent'
-                }`}>
-                <motion.div
-                  animate={active ? {
-                    scale: [1, 1.15, 1],
-                    rotate: [0, -8, 8, 0],
-                  } : {}}
-                  transition={active ? {
-                    duration: 2,
-                    repeat: Infinity,
-                    repeatDelay: 3,
-                    ease: 'easeInOut',
-                  } : {}}
-                  whileHover={{
-                    y: [0, -3, 0],
-                    transition: { duration: 0.4, ease: 'easeOut' },
-                  }}
-                  whileTap={{
-                    scale: 0.8,
-                    rotate: -12,
-                    transition: { duration: 0.15 },
-                  }}
-                  className="shrink-0"
-                >
-                  <item.icon className={`w-[18px] h-[18px] ${active ? 'text-[#00bfff]' : 'group-hover:text-white transition-colors'}`} />
-                </motion.div>
-                {!collapsed && item.label}
-              </motion.button>
-            )
-          })}
-        </nav>
+          {/* Nav */}
+          <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+            {filteredNav.map(item => {
+              const active = activeSection === item.id
+              return (
+                <motion.button key={item.id} onClick={() => handleNavClick(item.id)}
+                  whileTap={{ scale: 0.95 }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer group ${
+                    active
+                      ? 'bg-[#00bfff]/10 text-[#00bfff] border border-[#00bfff]/20'
+                      : 'text-neutral-500 hover:text-white hover:bg-neutral-800/50 border border-transparent'
+                  }`}>
+                  <motion.div
+                    animate={active ? {
+                      scale: [1, 1.15, 1],
+                      rotate: [0, -8, 8, 0],
+                    } : {}}
+                    transition={active ? {
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatDelay: 3,
+                      ease: 'easeInOut',
+                    } : {}}
+                    whileHover={{
+                      y: [0, -3, 0],
+                      transition: { duration: 0.4, ease: 'easeOut' },
+                    }}
+                    whileTap={{
+                      scale: 0.8,
+                      rotate: -12,
+                      transition: { duration: 0.15 },
+                    }}
+                    className="shrink-0"
+                  >
+                    <item.icon className={`w-[18px] h-[18px] ${active ? 'text-[#00bfff]' : 'group-hover:text-white transition-colors'}`} />
+                  </motion.div>
+                  {!collapsed && item.label}
+                </motion.button>
+              )
+            })}
+          </nav>
 
-        {/* Bottom */}
-        <div className="border-t border-neutral-800 p-3 space-y-2 shrink-0">
-          {!collapsed && (
+          {/* Bottom — Profile + Actions */}
+          <div className="border-t border-neutral-800 p-3 space-y-2 shrink-0">
+            {/* Profile button with picture */}
             <button
-              onClick={() => adminActions.setSection('profile')}
-              className="w-full text-left px-2 mb-2 rounded-lg hover:bg-neutral-800/50 py-2 transition-all cursor-pointer group"
-            >
-              <div className="text-xs text-white font-medium truncate group-hover:text-[#00bfff] transition-colors">{user.name}</div>
-              <div className="text-[10px] text-neutral-600 truncate">{user.email}</div>
-              <div className="text-[10px] text-[#ff7a00] font-bold">{user.role}</div>
-            </button>
-          )}
-          {collapsed && (
-            <button
-              onClick={() => adminActions.setSection('profile')}
-              className="w-full flex items-center justify-center py-2 rounded-lg hover:bg-neutral-800/50 transition-all cursor-pointer mb-2"
+              onClick={() => handleNavClick('profile')}
+              className={`w-full flex items-center gap-3 rounded-lg hover:bg-neutral-800/50 transition-all cursor-pointer group ${collapsed ? 'justify-center py-2' : 'px-2 py-2.5 text-left'}`}
               title="Profile"
             >
-              <svg className="w-5 h-5 text-neutral-500 hover:text-[#00bfff]" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.3"/><path d="M3.5 17c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+              {/* Profile picture circle */}
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-800 shrink-0 border-2 border-neutral-700 group-hover:border-[#00bfff]/40 transition-colors">
+                {userPic ? (
+                  <img src={userPic} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00bfff]/20 to-[#ff7a00]/20">
+                    <svg className="w-4 h-4 text-neutral-500" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.3"/><path d="M3.5 17c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                  </div>
+                )}
+              </div>
+              {!collapsed && (
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-white font-medium truncate group-hover:text-[#00bfff] transition-colors">{user.name}</div>
+                  <div className="text-[10px] text-neutral-600 truncate">{user.email}</div>
+                </div>
+              )}
             </button>
-          )}
-          <button onClick={() => setShowOnboarding(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-600 hover:text-[#ff7a00] hover:bg-[#ff7a00]/5 text-xs transition-all cursor-pointer border border-transparent hover:border-[#ff7a00]/20">
-            <BookOpen className="w-4 h-4" />{!collapsed && 'Onboarding'}
-          </button>
-          <button onClick={() => setCollapsed(!collapsed)}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-600 hover:text-neutral-300 hover:bg-neutral-800/50 text-xs transition-all cursor-pointer">
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <><ChevronLeft className="w-4 h-4" />Collapse</>}
-          </button>
-          <button onClick={() => { adminActions.logout(); window.location.hash = '' }}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-500/60 hover:text-red-400 hover:bg-red-500/5 text-xs transition-all cursor-pointer">
-            <LogOut className="w-4 h-4" />{!collapsed && 'Logout'}
-          </button>
+
+            <button onClick={() => setShowOnboarding(true)}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-600 hover:text-[#ff7a00] hover:bg-[#ff7a00]/5 text-xs transition-all cursor-pointer border border-transparent hover:border-[#ff7a00]/20">
+              <BookOpen className="w-4 h-4" />{!collapsed && 'Onboarding'}
+            </button>
+            <button onClick={() => { adminActions.logout(); window.location.hash = '' }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-500/60 hover:text-red-400 hover:bg-red-500/5 text-xs transition-all cursor-pointer">
+              <LogOut className="w-4 h-4" />{!collapsed && 'Logout'}
+            </button>
+          </div>
         </div>
+
+        {/* Right-edge collapse toggle strip — hidden on mobile */}
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="hidden md:flex w-3 shrink-0 items-center justify-center cursor-pointer hover:bg-neutral-700/30 transition-colors border-l border-neutral-800/50 group"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <div className="w-0.5 h-8 rounded-full bg-neutral-700 group-hover:bg-[#00bfff]/50 transition-colors" />
+        </button>
       </aside>
 
-      {/* Main Content — offset by sidebar width */}
-      <main className="min-h-screen transition-all duration-200" style={{ marginLeft: sidebarWidth }}>
+      {/* Main Content — offset by sidebar width on desktop, full width on mobile */}
+      <main className="min-h-screen transition-all duration-200">
+        {/* CSS-driven sidebar offset: hidden on mobile, applied on md+ */}
+        <style>{`@media (min-width: 768px) { .admin-main { margin-left: ${sidebarWidth}px; } }`}</style>
+        <div className="admin-main transition-all duration-200">
         {/* Top bar */}
-        <header className="h-16 flex items-center justify-between px-6 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur-sm sticky top-0 z-10">
+        <header className="h-16 flex items-center justify-between px-4 md:px-6 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur-sm sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-bold text-white capitalize">{activeSection}</h1>
+            {/* Spacer for hamburger on mobile */}
+            <div className="w-10 md:hidden" />
+            <h1 className="text-base md:text-lg font-bold text-white capitalize">{activeSection}</h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             {isElevated && (
               <div className="relative">
                 <button onClick={() => { setShowActAs(!showActAs); setShowImpersonate(false) }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer border border-neutral-800">
+                  className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer border border-neutral-800">
                   <Eye className="w-3.5 h-3.5" />Act as...
                 </button>
                 {showActAs && (
@@ -225,7 +273,7 @@ export default function AdminPanel() {
             )}
             {isElevated && (
               <button onClick={() => { setShowImpersonate(!showImpersonate); setShowActAs(false); if (!users.length) adminActions.loadUsers() }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer border border-neutral-800">
+                className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer border border-neutral-800">
                 <UserCircle className="w-3.5 h-3.5" />Impersonate
               </button>
             )}
@@ -234,8 +282,9 @@ export default function AdminPanel() {
         </header>
 
         {/* Content */}
-        <div className="p-6 max-w-7xl">
+        <div className="p-3 md:p-6 max-w-7xl">
           {renderSection()}
+        </div>
         </div>
       </main>
 

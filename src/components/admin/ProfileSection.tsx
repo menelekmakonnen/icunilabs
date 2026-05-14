@@ -120,8 +120,13 @@ export default function ProfileSection() {
       },
     })
     setSaving(false)
-    if (ok) flash('Profile saved successfully.')
-    else flash('Failed to save profile.', 'err')
+    if (ok) {
+      flash('Profile saved successfully.')
+      // Reload profile from server to get persisted data
+      await loadProfile()
+    } else {
+      flash('Failed to save profile.', 'err')
+    }
   }
 
   async function handleSetPassword() {

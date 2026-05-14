@@ -14,6 +14,8 @@ export interface AdminUser {
   role: string
   job_title?: string
   permissions?: Record<string, boolean>
+  profile_pic_url?: string
+  cover_image_url?: string
 }
 
 interface AdminState {
@@ -791,7 +793,19 @@ export const adminActions = {
   // ── Profile Management ──
   getProfile: async (): Promise<any> => {
     try {
-      return await apiPost('getProfile', { token: state.token })
+      const profile = await apiPost('getProfile', { token: state.token })
+      // Sync store user object with latest profile data
+      if (profile && state.user) {
+        setState({
+          user: {
+            ...state.user,
+            name: profile.name || state.user.name,
+            profile_pic_url: profile.profile_pic_url || '',
+            cover_image_url: profile.cover_image_url || '',
+          }
+        })
+      }
+      return profile
     } catch (err: any) {
       setState({ error: err.message })
       return null
@@ -802,7 +816,20 @@ export const adminActions = {
     setState({ loading: true, error: null })
     try {
       await apiPost('updateProfile', { token: state.token, ...data })
-      setState({ loading: false })
+      // Sync local user object immediately
+      if (state.user) {
+        setState({
+          user: {
+            ...state.user,
+            name: data.name || state.user.name,
+            profile_pic_url: data.profile_pic_url || state.user.profile_pic_url || '',
+            cover_image_url: data.cover_image_url || state.user.cover_image_url || '',
+          },
+          loading: false,
+        })
+      } else {
+        setState({ loading: false })
+      }
       return true
     } catch (err: any) {
       setState({ error: err.message, loading: false })
