@@ -68,6 +68,8 @@ interface AdminState {
   activeThread: any | null
   emailAliases: any[]
   emailTemplates: any[]
+  // Cache timestamps (ms)
+  _cache: Record<string, number>
 }
 
 async function apiPost(action: string, payload: Record<string, any> = {}): Promise<any> {
@@ -120,6 +122,7 @@ let state: AdminState = {
   activeThread: null,
   emailAliases: [],
   emailTemplates: [],
+  _cache: {},
 }
 
 const listeners = new Set<() => void>()
@@ -530,10 +533,12 @@ export const adminActions = {
     }
   },
 
-  loadEmailAliases: async () => {
+  loadEmailAliases: async (force?: boolean) => {
+    const now = Date.now()
+    if (!force && state._cache?.aliases && now - state._cache.aliases < 120000 && state.emailAliases.length) return state.emailAliases
     try {
       const result = await apiPost('getEmailAliases', { token: state.token })
-      setState({ emailAliases: result || [] })
+      setState({ emailAliases: result || [], _cache: { ...state._cache, aliases: now } })
       return result
     } catch (err: any) {
       setState({ error: err.message })
@@ -563,10 +568,12 @@ export const adminActions = {
     }
   },
 
-  loadEmailTemplates: async () => {
+  loadEmailTemplates: async (force?: boolean) => {
+    const now = Date.now()
+    if (!force && state._cache?.templates && now - state._cache.templates < 300000 && state.emailTemplates.length) return state.emailTemplates
     try {
       const result = await apiPost('getEmailTemplates', { token: state.token })
-      setState({ emailTemplates: result || [] })
+      setState({ emailTemplates: result || [], _cache: { ...state._cache, templates: now } })
       return result
     } catch (err: any) {
       setState({ error: err.message })

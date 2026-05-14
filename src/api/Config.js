@@ -185,13 +185,14 @@ var JOBS_EMAIL = 'jobs@icuni.org';
 // ─── EMAIL ALIASES ───────────────────────────────────────
 var EMAIL_ALIASES = {
     'labs@icuni.org':       { name: 'ICUNI Labs',     visibility: 'all',      category: 'general' },
-    'hello@icuni.org':      { name: 'Hello',          visibility: 'all',      category: 'general' },
+    'hello@icuni.org':      { name: 'Hello',          visibility: 'role:Godmode', category: 'general' },
     'donotreply@icuni.org': { name: 'Do Not Reply',   visibility: 'all',      category: 'system' },
     'feedback@icuni.org':   { name: 'Feedback',       visibility: 'all',      category: 'general' },
     'jobs@icuni.org':       { name: 'Jobs / Careers',  visibility: 'all',      category: 'careers' },
     'tech.issue@icuni.org': { name: 'Tech Issues',    visibility: 'all',      category: 'support' },
     'menelek@icuni.org':    { name: 'Menelek',        visibility: 'private',  owner: 'menelek@icuni.org' },
-    'josephine@icuni.org':  { name: 'Josephine',      visibility: 'private',  owner: 'josephine@icuni.org' }
+    'josephine@icuni.org':  { name: 'Josephine',      visibility: 'private',  owner: 'josephine.johnson@icuni.org' },
+    'doreen.ahiafor@icuni.org': { name: 'Doreen',    visibility: 'private',  owner: 'doreen.ahiafor@icuni.org' }
 };
 
 // ─── DRIVE FOLDERS ───────────────────────────────────────
