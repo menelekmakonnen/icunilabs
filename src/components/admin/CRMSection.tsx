@@ -18,6 +18,7 @@ function healthStatus(c: any) { if (!c.project_count) return 'inactive'; if (c.o
 const TAG_STYLES: Record<string, string> = { priority:'priority', vip:'vip', new:'new', returning:'returning' }
 
 const STAGES = [
+  { id: 'prospect', label: 'Prospect', color: '#64748b' },
   { id: 'new_lead', label: 'New Lead', color: '#00bfff' },
   { id: 'contacted', label: 'Contacted', color: '#8b5cf6' },
   { id: 'qualified', label: 'Qualified', color: '#f59e0b' },
@@ -45,7 +46,9 @@ export default function CRMSection() {
   const { clients, loading, activeClient, clientActivity } = useAdminStore()
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [showAddProspect, setShowAddProspect] = useState(false)
   const [form, setForm] = useState({ name:'', email:'', phone:'', company:'', source:'', industry:'', website:'' })
+  const [prospectForm, setProspectForm] = useState({ name:'', email:'', company:'', source:'' })
   const [detailTab, setDetailTab] = useState<'overview'|'projects'|'invoices'|'notes'|'activity'|'email'>('overview')
   const [noteText, setNoteText] = useState('')
   const [tagInput, setTagInput] = useState('')
@@ -76,6 +79,12 @@ export default function CRMSection() {
     e.preventDefault()
     const ok = await adminActions.createClient(form)
     if (ok) { setShowAdd(false); setForm({ name:'', email:'', phone:'', company:'', source:'', industry:'', website:'' }) }
+  }
+
+  const handleAddProspect = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const ok = await adminActions.createClient({ ...prospectForm, prospect_stage: 'prospect' })
+    if (ok) { setShowAddProspect(false); setProspectForm({ name:'', email:'', company:'', source:'' }) }
   }
 
   const handleAddNote = async () => {
@@ -465,6 +474,10 @@ export default function CRMSection() {
             <button onClick={() => setViewMode('contacts')} className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all ${viewMode === 'contacts' ? 'bg-[#00bfff]/15 text-[#00bfff]' : 'text-neutral-500 hover:text-white'}`}>Contacts</button>
             <button onClick={() => setViewMode('pipeline')} className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all ${viewMode === 'pipeline' ? 'bg-[#00bfff]/15 text-[#00bfff]' : 'text-neutral-500 hover:text-white'}`}>Pipeline</button>
           </div>
+          <button onClick={() => setShowAddProspect(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
+            <Plus className="w-4 h-4" />Add Prospect
+          </button>
           <button onClick={() => setShowAdd(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-xl text-sm font-bold cursor-pointer hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all">
             <Plus className="w-4 h-4" />Add Client
@@ -628,6 +641,32 @@ export default function CRMSection() {
               <input value={form.website} onChange={e => setForm({...form, website: e.target.value})} className={inputCls} placeholder="Website (optional)" />
               <button type="submit" className="w-full px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all">
                 Create Client
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Prospect Modal */}
+      {showAddProspect && (
+        <div className={modalBg} onClick={() => setShowAddProspect(false)}>
+          <div className={`${modalCard} !max-w-md`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white">Add Prospect</h3>
+                <p className="text-xs text-neutral-500 mt-0.5">Prospects can be graduated to New Lead in the pipeline</p>
+              </div>
+              <button onClick={() => setShowAddProspect(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleAddProspect} className="space-y-3">
+              <input value={prospectForm.name} onChange={e => setProspectForm({...prospectForm, name: e.target.value})} className={inputCls} placeholder="Contact name *" required />
+              <input type="email" value={prospectForm.email} onChange={e => setProspectForm({...prospectForm, email: e.target.value})} className={inputCls} placeholder="Email *" required />
+              <div className="grid grid-cols-2 gap-3">
+                <input value={prospectForm.company} onChange={e => setProspectForm({...prospectForm, company: e.target.value})} className={inputCls} placeholder="Company" />
+                <input value={prospectForm.source} onChange={e => setProspectForm({...prospectForm, source: e.target.value})} className={inputCls} placeholder="Source" />
+              </div>
+              <button type="submit" className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-neutral-700 transition-all">
+                Add as Prospect
               </button>
             </form>
           </div>

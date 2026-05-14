@@ -79,8 +79,9 @@ function handleGetClient(payload) {
     client.total_revenue = client.payments.reduce(function(sum, p) { return sum + Number(p.amount || 0); }, 0);
     client.total_invoiced = client.invoices.reduce(function(sum, inv) { return sum + Number(inv.total || 0); }, 0);
     client.outstanding = client.total_invoiced - client.total_revenue;
-    // Parse notes
+    // Parse notes (ensure sheet has headers)
     try {
+        ensureSheet_(SHEETS.CLIENT_NOTES, ['note_id', 'client_id', 'content', 'author', 'author_email', 'created_at']);
         client.notes_list = sheetToObjects_(SHEETS.CLIENT_NOTES).filter(function(n) { return n.client_id === client.client_id; });
     } catch(e) { client.notes_list = []; }
     // Parse tags
@@ -106,8 +107,9 @@ function handleGetClientActivity(payload) {
     sheetToObjects_(SHEETS.PAYMENTS).filter(function(pay) { return pay.client_id === clientId; }).forEach(function(pay) {
         activities.push({ type: 'payment_received', title: 'Payment Received', detail: 'GH\u20B5' + Number(pay.amount || 0).toLocaleString() + ' via ' + pay.method, timestamp: pay.paid_at, icon: 'check-circle' });
     });
-    // Notes
+    // Notes (ensure sheet has headers)
     try {
+        ensureSheet_(SHEETS.CLIENT_NOTES, ['note_id', 'client_id', 'content', 'author', 'author_email', 'created_at']);
         sheetToObjects_(SHEETS.CLIENT_NOTES).filter(function(n) { return n.client_id === clientId; }).forEach(function(n) {
             activities.push({ type: 'note', title: 'Note by ' + (n.author || 'Staff'), detail: n.content, timestamp: n.created_at, icon: 'message-square' });
         });

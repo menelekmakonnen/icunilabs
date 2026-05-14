@@ -821,9 +821,13 @@ export const adminActions = {
     setState({ loading: true, error: null })
     try {
       await apiPost('updateClientStatus', { token: state.token, clientId, prospect_stage: prospectStage, note })
-      await adminActions.getClient(clientId)
-      await adminActions.getClientActivity(clientId)
+      // Refresh client list (updates pipeline view)
       await adminActions.loadClients()
+      // If viewing a client detail, refresh that too
+      if (state.activeClient && state.activeClient.client_id === clientId) {
+        const client = await apiPost('getClient', { token: state.token, clientId })
+        setState({ activeClient: client || null })
+      }
       setState({ loading: false })
       return true
     } catch (err: any) {
