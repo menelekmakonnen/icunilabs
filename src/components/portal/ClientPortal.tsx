@@ -377,13 +377,13 @@ export default function ClientPortal({ demoMode }: { demoMode?: boolean } = {}) 
                 {/* Feature bullets */}
                 <div className="grid grid-cols-2 gap-3 mt-4">
                   {[
-                    { icon: '📊', label: 'Real-time progress tracking' },
-                    { icon: '💰', label: 'Invoice & payment history' },
-                    { icon: '🔔', label: 'Milestone notifications' },
-                    { icon: '🐛', label: 'Issue reporting' },
+                    { icon: <svg className="w-3.5 h-3.5 text-[#00bfff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-6"/></svg>, label: 'Real-time progress tracking' },
+                    { icon: <svg className="w-3.5 h-3.5 text-[#10b981]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/><path d="M6 14h4"/></svg>, label: 'Invoice & payment history' },
+                    { icon: <svg className="w-3.5 h-3.5 text-[#f59e0b]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>, label: 'Milestone notifications' },
+                    { icon: <svg className="w-3.5 h-3.5 text-[#ef4444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>, label: 'Issue reporting' },
                   ].map((f, i) => (
                     <div key={i} className="flex items-center gap-2 text-xs text-neutral-500">
-                      <span>{f.icon}</span>{f.label}
+                      {f.icon}{f.label}
                     </div>
                   ))}
                 </div>

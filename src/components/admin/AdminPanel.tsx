@@ -8,9 +8,10 @@ import CRMSection from './CRMSection'
 import ProfileSection from './ProfileSection'
 import ReferralPortal from '../portal/ReferralPortal'
 import ClientPortal from '../portal/ClientPortal'
-import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, ChevronLeft, ChevronRight, Eye, UserCircle, X } from 'lucide-react'
+import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, ChevronLeft, ChevronRight, Eye, UserCircle, X, BookOpen } from 'lucide-react'
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import OnboardingChecklist from './OnboardingChecklist'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,6 +31,7 @@ export default function AdminPanel() {
   const [collapsed, setCollapsed] = useState(false)
   const [showActAs, setShowActAs] = useState(false)
   const [showImpersonate, setShowImpersonate] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   useEffect(() => { adminActions.validateSession() }, [])
 
@@ -166,6 +168,10 @@ export default function AdminPanel() {
               <svg className="w-5 h-5 text-neutral-500 hover:text-[#00bfff]" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="currentColor" strokeWidth="1.3"/><path d="M3.5 17c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
             </button>
           )}
+          <button onClick={() => setShowOnboarding(true)}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-600 hover:text-[#ff7a00] hover:bg-[#ff7a00]/5 text-xs transition-all cursor-pointer border border-transparent hover:border-[#ff7a00]/20">
+            <BookOpen className="w-4 h-4" />{!collapsed && 'Onboarding'}
+          </button>
           <button onClick={() => setCollapsed(!collapsed)}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-600 hover:text-neutral-300 hover:bg-neutral-800/50 text-xs transition-all cursor-pointer">
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <><ChevronLeft className="w-4 h-4" />Collapse</>}
@@ -259,6 +265,12 @@ export default function AdminPanel() {
             className="ml-2 px-3 py-1 text-xs font-bold text-white bg-white/20 rounded-lg hover:bg-white/30 transition-all cursor-pointer">Exit</button>
         </div>
       )}
+      {/* Onboarding Checklist */}
+      <AnimatePresence>
+        {showOnboarding && (
+          <OnboardingChecklist onClose={() => setShowOnboarding(false)} onNavigate={(section) => adminActions.setSection(section)} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -63,7 +63,10 @@ function handleAddClient(payload) {
         now_(), payload.notes || '', clientFolder.getUrl(),
         payload.tags || '', payload.source || '', payload.industry || '',
         payload.address || '', payload.website || '', now_(),
-        payload.prospect_stage || 'new_lead'
+        payload.prospect_stage || 'new_lead',
+        payload.buyer_profile || '', payload.pain_category || '',
+        payload.challenge_statement || '', payload.laugh_factor || '',
+        payload.first_contact_date || ''
     ]);
     
     // Create user account only for full clients (not prospects)
@@ -192,7 +195,8 @@ function handleUpdateClient(payload) {
     var client = findRow_(SHEETS.CLIENTS, 'client_id', payload.clientId);
     if (!client) return errorResponse_('Client not found.');
     var updates = { last_activity: now_() };
-    ['name','email','phone','company','status','notes','industry','source','website','address'].forEach(function(f) {
+    ['name','email','phone','company','status','notes','industry','source','website','address',
+     'buyer_profile','pain_category','challenge_statement','laugh_factor','first_contact_date'].forEach(function(f) {
         if (payload[f] !== undefined) updates[f] = payload[f];
     });
     updateRow_(SHEETS.CLIENTS, client._rowIndex, updates);

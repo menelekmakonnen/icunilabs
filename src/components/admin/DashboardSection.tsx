@@ -253,6 +253,80 @@ export default function DashboardSection() {
         </motion.div>
       </div>
 
+      {/* ═══ OPS PIPELINE + CHALLENGE HIT RATE ═══ */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Ops Pipeline Widget */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
+          className={card}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+              <Users className="w-4 h-4 text-[#ff7a00]" />
+              Ops Pipeline
+            </h3>
+            <button onClick={() => adminActions.setSection('clients')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Open CRM</button>
+          </div>
+          {(() => {
+            const prospects = s.clients.filter((c: any) => {
+              const stage = c.prospect_stage || 'new_lead'
+              return ['prospect', 'new_lead', 'contacted', 'qualified'].includes(stage)
+            })
+            const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+            const addedThisWeek = prospects.filter((c: any) => (c.created_at || '') >= weekAgo).length
+            const awaitingContact = prospects.filter((c: any) => (c.prospect_stage || 'new_lead') === 'prospect').length
+            const qualified = prospects.filter((c: any) => (c.prospect_stage || 'new_lead') === 'qualified').length
+            return (
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: 'Total', value: prospects.length, color: '#00bfff' },
+                    { label: 'This Week', value: addedThisWeek, color: '#ff7a00' },
+                    { label: 'Awaiting', value: awaitingContact, color: '#64748b' },
+                    { label: 'Qualified', value: qualified, color: '#f59e0b' },
+                  ].map((m, i) => (
+                    <div key={i} className="text-center p-2 bg-neutral-900/50 rounded-lg border border-neutral-800/50">
+                      <div className="text-lg font-bold" style={{ color: m.color }}>{m.value}</div>
+                      <div className="text-[9px] text-neutral-600 uppercase tracking-wider">{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+                {prospects.length === 0 && <p className="text-sm text-neutral-600 text-center py-2">No active prospects. Start prospecting!</p>}
+              </div>
+            )
+          })()}
+        </motion.div>
+
+        {/* Challenge Hit Rate */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}
+          className={card}>
+          <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <Flame className="w-4 h-4 text-amber-500" />
+            Challenge Hit Rate
+          </h3>
+          {(() => {
+            const contacted = s.clients.filter((c: any) => {
+              const stage = c.prospect_stage || 'new_lead'
+              return !['prospect', 'new_lead'].includes(stage) && stage !== 'lost'
+            })
+            const withChallenge = contacted.filter((c: any) => c.challenge_statement || c.pain_category)
+            const rate = contacted.length > 0 ? Math.round((withChallenge.length / contacted.length) * 100) : 0
+            const barColor = rate >= 70 ? '#10b981' : rate >= 40 ? '#f59e0b' : '#ef4444'
+            return (
+              <div className="space-y-4">
+                <div className="flex items-end gap-4">
+                  <div className="text-4xl font-black" style={{ color: barColor }}>{rate}%</div>
+                  <div className="text-xs text-neutral-500 pb-1">{withChallenge.length} of {contacted.length} contacted prospects have challenge data</div>
+                </div>
+                <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${rate}%` }} transition={{ duration: 0.8 }}
+                    className="h-full rounded-full" style={{ background: barColor }} />
+                </div>
+                <p className="text-[10px] text-neutral-600 italic">Target: capture the &quot;most expensive problem&quot; for every contacted prospect.</p>
+              </div>
+            )
+          })()}
+        </motion.div>
+      </div>
+
       {/* ═══ CRM FEED + SLA ROW ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* CRM Feed */}

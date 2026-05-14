@@ -71,8 +71,12 @@ export default function DemosPage() {
                 {demo.fullDemo && (
                   <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] font-bold text-emerald-400 uppercase tracking-wider">Full Demo</div>
                 )}
+                {!demo.url && (
+                  <div className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-amber-500/20 border border-amber-500/30 text-[9px] font-bold text-amber-400 uppercase tracking-wider">Coming Soon</div>
+                )}
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+                  {demo.url ? (<>
                   <button onClick={e => { e.stopPropagation(); setPreviewDemo(demo) }}
                     className="flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white text-xs font-bold px-4 py-2.5 rounded-lg hover:bg-white/20 transition-all cursor-pointer">
                     <Monitor className="w-3.5 h-3.5" /> Preview
@@ -82,6 +86,12 @@ export default function DemosPage() {
                     style={{ background: `linear-gradient(135deg, ${demo.color}, ${demo.color}dd)` }}>
                     <ExternalLink className="w-3.5 h-3.5" /> Explore
                   </a>
+                  </>) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <span className="text-white text-sm font-bold">In Development</span>
+                    <span className="text-neutral-400 text-xs">Click to learn more about this system</span>
+                  </div>
+                  )}
                 </div>
               </div>
               {/* Content */}

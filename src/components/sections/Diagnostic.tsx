@@ -15,6 +15,8 @@ const diagnosticOptions: DiagnosticOption[] = [
     { label: "We need an internal tool but can't define the requirements", personaId: "product-systems" },
     { label: "Our content or production pipeline is messy", personaId: "creative-ops" },
     { label: "We want to use AI properly but don't know where to start", personaId: "ai-adoption" },
+    { label: "I'm worried about revenue leakage when I'm not there", personaId: "remote-owner" },
+    { label: "Our transactions live in notebooks — we can't trace anything", personaId: "financial-ops" },
 ];
 
 interface FollowUp {
@@ -66,6 +68,24 @@ const followUps: Record<string, FollowUp> = {
             "A few people experiment, but it's not consistent",
             "We've tried training but nothing stuck",
             "We need help identifying where AI would actually help",
+        ],
+    },
+    'remote-owner': {
+        question: "What keeps you up at night?",
+        options: [
+            "I suspect revenue leakage but can't prove it",
+            "Staff reports don't match what I see when I visit",
+            "I can't scale because I can't monitor what I have",
+            "I need ungameable data, not curated reports",
+        ],
+    },
+    'financial-ops': {
+        question: "What's your biggest frustration with transactions?",
+        options: [
+            "End-of-day balancing never matches — I don't know why",
+            "I can't trace a transaction from last week without flipping notebooks",
+            "I suspect agents are skimming but have no proof",
+            "I want to expand to more locations but can't manage what I can't see",
         ],
     },
 };
@@ -228,15 +248,29 @@ export default function Diagnostic() {
                                     </span>
                                     {' '}problem.
                                 </h3>
-                                <p className="text-neutral-400 mb-8 max-w-md mx-auto">
+                                <p className="text-neutral-400 mb-6 max-w-md mx-auto">
                                     {matchedPersona.solutionHeadline}
                                 </p>
 
                                 {selectedFollowUp && (
-                                    <p className="text-sm text-neutral-500 mb-8 italic">
+                                    <p className="text-sm text-neutral-500 mb-6 italic">
                                         Your focus: "{selectedFollowUp}"
                                     </p>
                                 )}
+
+                                {/* Challenge Question — primes the prospect */}
+                                <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl p-5 mb-8 max-w-md mx-auto text-left">
+                                    <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold mb-3 flex items-center gap-2">
+                                        <svg className="w-3.5 h-3.5" style={{ color: matchedPersona.accentColor }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                                        Before your diagnostic call, ask yourself:
+                                    </p>
+                                    <p className="text-sm text-white font-medium leading-relaxed">
+                                        "{matchedPersona.challengeQuestions.costQuestion}"
+                                    </p>
+                                    <p className="text-[11px] text-neutral-500 mt-2 italic">
+                                        The answer to this question is the starting point for everything we build.
+                                    </p>
+                                </div>
 
                                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                                     <a

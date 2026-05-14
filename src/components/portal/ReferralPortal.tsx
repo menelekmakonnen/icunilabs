@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, Plus, X, Users, TrendingUp, Clock, DollarSign, ChevronRight, ArrowLeft, FolderOpen, Wallet, Copy, ExternalLink, Calendar } from 'lucide-react';
 import ReferralProcessSVG from './ReferralProcessSVG';
+import { personas } from '../../data/personaData';
 
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
@@ -31,7 +32,7 @@ interface Material {
   id: string;
   title: string;
   description: string;
-  type: 'deck' | 'video' | 'case-study' | 'pricing';
+  type: 'deck' | 'video' | 'case-study' | 'pricing' | 'sales-script';
   url: string;
   thumbnailUrl: string;
   uploadedAt: string;
@@ -464,7 +465,7 @@ function AuthFormCard({ tab, setTab, error, setError, otpStep, setOtpStep, otpCo
 
 // ─── DASHBOARD VIEW ───
 type DashTab = 'pipeline' | 'materials' | 'earnings';
-const MATERIAL_COLORS: Record<string, string> = { deck: '#ff7a00', video: '#8b5cf6', 'case-study': '#00bfff', pricing: '#10b981' };
+const MATERIAL_COLORS: Record<string, string> = { deck: '#ff7a00', video: '#8b5cf6', 'case-study': '#00bfff', pricing: '#10b981', 'sales-script': '#f59e0b' };
 
 function DashboardView({ session, dashboard, loading, onLogout, onRefresh, showSubmitModal, setShowSubmitModal }: {
   session: ReferrerSession;
@@ -706,6 +707,7 @@ function SubmitReferralModal({ session, onClose, onSuccess }: { session: Referre
   const [meetingTime, setMeetingTime] = useState('');
   const [attending, setAttending] = useState(false);
   const [introNotes, setIntroNotes] = useState('');
+  const [buyerProfile, setBuyerProfile] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -718,7 +720,7 @@ function SubmitReferralModal({ session, onClose, onSuccess }: { session: Referre
       referrerId: session.referrerId,
       leadName, leadEmail, leadPhone, leadCompany,
       meetingDate, meetingTime, referrerAttending: attending,
-      introNotes
+      introNotes, buyerProfile
     });
     setBusy(false);
     onSuccess();
@@ -756,6 +758,13 @@ function SubmitReferralModal({ session, onClose, onSuccess }: { session: Referre
           <div>
             <label className="block text-sm font-medium text-neutral-400 mb-2">Company <span className="text-neutral-600">(optional)</span></label>
             <input type="text" value={leadCompany} onChange={e => setLeadCompany(e.target.value)} className={inputCls} placeholder="Company name" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-400 mb-2">Buyer Profile <span className="text-neutral-600">(optional)</span></label>
+            <select value={buyerProfile} onChange={e => setBuyerProfile(e.target.value)} className={inputCls}>
+              <option value="">— Select if you know —</option>
+              {personas.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+            </select>
           </div>
 
           {/* Meeting scheduling */}

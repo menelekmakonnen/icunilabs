@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save } from 'lucide-react'
+import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save, MapPin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { personas } from '../../data/personaData'
 import './crm.css'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
@@ -48,7 +49,10 @@ export default function CRMSection() {
   const [showAdd, setShowAdd] = useState(false)
   const [showAddProspect, setShowAddProspect] = useState(false)
   const [form, setForm] = useState({ name:'', email:'', phone:'', company:'', source:'', industry:'', website:'' })
-  const [prospectForm, setProspectForm] = useState({ name:'', email:'', company:'', source:'' })
+  const [prospectForm, setProspectForm] = useState({ name:'', email:'', phone:'', company:'', source:'', location:'', buyer_profile:'', first_contact_date:'' })
+  const [batchMode, setBatchMode] = useState(false)
+  const [batchName, setBatchName] = useState('')
+  const [batchLocation, setBatchLocation] = useState('')
   const [detailTab, setDetailTab] = useState<'overview'|'projects'|'invoices'|'notes'|'activity'|'email'>('overview')
   const [noteText, setNoteText] = useState('')
   const [tagInput, setTagInput] = useState('')
@@ -90,8 +94,18 @@ export default function CRMSection() {
 
   const handleAddProspect = async (e: React.FormEvent) => {
     e.preventDefault()
-    const ok = await adminActions.createClient({ ...prospectForm, prospect_stage: 'prospect' })
-    if (ok) { setShowAddProspect(false); setProspectForm({ name:'', email:'', company:'', source:'' }) }
+    const payload: any = { ...prospectForm, prospect_stage: 'prospect' }
+    if (prospectForm.location) payload.address = prospectForm.location
+    const ok = await adminActions.createClient(payload)
+    if (ok) { setShowAddProspect(false); setProspectForm({ name:'', email:'', phone:'', company:'', source:'', location:'', buyer_profile:'', first_contact_date:'' }) }
+  }
+
+  const handleBatchAdd = async () => {
+    if (!batchName.trim()) return
+    const payload: any = { name: batchName.trim(), source: 'Google Maps', prospect_stage: 'prospect' }
+    if (batchLocation.trim()) payload.address = batchLocation.trim()
+    const ok = await adminActions.createClient(payload)
+    if (ok) setBatchName('')
   }
 
   const handleAddNote = async () => {
@@ -338,6 +352,7 @@ export default function CRMSection() {
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Email:</span>{c.email}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Phone:</span>{c.phone || '—'}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Company:</span>{c.company || '—'}</p>
+                    {c.address && <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Location:</span>{c.address}</p>}
                     {c.website && <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Web:</span><a href={c.website} target="_blank" rel="noreferrer" className="text-[#00bfff] hover:underline">{c.website}</a></p>}
                   </div>
                 </div>
@@ -346,10 +361,39 @@ export default function CRMSection() {
                   <div className="space-y-1.5 text-sm">
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Industry:</span>{c.industry || '—'}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Source:</span>{c.source || '—'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Profile:</span>{c.buyer_profile ? personas.find(p => p.id === c.buyer_profile)?.title || c.buyer_profile : '—'}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Client Since:</span>{fmtDate(c.created_at)}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Last Activity:</span>{fmtDate(c.last_activity)}</p>
                   </div>
                 </div>
+              </div>
+
+              {/* Challenge Intelligence */}
+              <div className="crm-metric !py-4 !px-5">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold flex items-center gap-2">
+                    <svg className="w-3.5 h-3.5 text-[#ff7a00]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                    Discovery Intelligence
+                  </p>
+                  <span className="text-[9px] text-neutral-700 italic">Challenge, Don't Sell</span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-1">Pain Category</p>
+                    <p className="text-sm text-neutral-300 font-medium">{c.pain_category || <span className="text-neutral-700 italic">Not captured</span>}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-1">Their Most Expensive Problem</p>
+                    <p className="text-sm text-neutral-300">{c.challenge_statement || <span className="text-neutral-700 italic">Ask: &quot;What is your most expensive problem?&quot;</span>}</p>
+                  </div>
+                </div>
+                {c.laugh_factor && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <svg className="w-3.5 h-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                    <span className="text-[10px] text-amber-500/80 font-bold">Laugh Factor</span>
+                    <span className="text-[10px] text-neutral-500">They laughed when describing it — high-value signal</span>
+                  </div>
+                )}
               </div>
 
               {/* Recent Activity Preview */}
@@ -583,10 +627,18 @@ export default function CRMSection() {
       {/* ═══ PIPELINE VIEW ═══ */}
       {viewMode === 'pipeline' && (
         <div className="flex gap-3 overflow-x-auto pb-4" style={{ minHeight: 400 }}>
-          {STAGES.filter(s => s.id !== 'lost').map(stage => {
+          {STAGES.filter(s => s.id !== 'lost').map((stage, stageIdx) => {
             const stageClients = filtered.filter((c: any) => (c.prospect_stage || 'new_lead') === stage.id)
+            const showBoundary = stage.id === 'meeting_scheduled'
             return (
-              <div key={stage.id} className="flex-shrink-0 w-64">
+              <div key={stage.id} className="flex-shrink-0 flex">
+                {showBoundary && (
+                  <div className="flex flex-col items-center justify-start mr-3 pt-1" style={{ width: 32 }}>
+                    <div className="w-px flex-1 bg-gradient-to-b from-[#ff7a00]/60 via-[#ff7a00]/20 to-transparent" />
+                    <span className="text-[8px] text-[#ff7a00]/60 font-bold uppercase tracking-wider whitespace-nowrap" style={{ writingMode: 'vertical-lr', transform: 'rotate(180deg)', marginTop: 8 }}>Handoff to Founder</span>
+                  </div>
+                )}
+              <div className="w-64">
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <div className="w-2 h-2 rounded-full" style={{ background: stage.color }} />
                   <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{stage.label}</span>
@@ -620,6 +672,7 @@ export default function CRMSection() {
                   ))}
                   {stageClients.length === 0 && <div className="text-center py-6 text-neutral-700 text-xs">Empty</div>}
                 </div>
+              </div>
               </div>
             )
           })}
@@ -729,31 +782,73 @@ export default function CRMSection() {
         </div>
       )}
 
-      {/* Add Prospect Modal — no required fields */}
+      {/* Add Prospect Modal — enriched with phone, location, buyer profile, SLA seed */}
       {showAddProspect && (
-        <div className={modalBg} onClick={() => setShowAddProspect(false)}>
+        <div className={modalBg} onClick={() => { setShowAddProspect(false); setBatchMode(false) }}>
           <div className={`${modalCard} !max-w-md`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-lg font-bold text-white">Add Prospect</h3>
-                <p className="text-xs text-neutral-500 mt-0.5">Fill in any details you have. At least one identifier needed.</p>
+                <h3 className="text-lg font-bold text-white">{batchMode ? 'Maps Batch Prospecting' : 'Add Prospect'}</h3>
+                <p className="text-xs text-neutral-500 mt-0.5">{batchMode ? 'Rapid-fire: add prospects from Google Maps.' : 'Fill in any details you have. At least one identifier needed.'}</p>
               </div>
-              <button onClick={() => setShowAddProspect(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => setBatchMode(!batchMode)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer transition-all border ${batchMode ? 'bg-[#ff7a00]/10 border-[#ff7a00]/30 text-[#ff7a00]' : 'border-neutral-700 text-neutral-500 hover:text-white'}`}>
+                  <MapPin className="w-3 h-3" />{batchMode ? 'Detail Mode' : 'Maps Mode'}
+                </button>
+                <button onClick={() => { setShowAddProspect(false); setBatchMode(false) }} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+              </div>
             </div>
-            <form onSubmit={handleAddProspect} className="space-y-3">
-              <input value={prospectForm.name} onChange={e => setProspectForm({...prospectForm, name: e.target.value})} className={inputCls} placeholder="Contact name" />
-              <input value={prospectForm.company} onChange={e => setProspectForm({...prospectForm, company: e.target.value})} className={inputCls} placeholder="Company name" />
-              <input type="email" value={prospectForm.email} onChange={e => setProspectForm({...prospectForm, email: e.target.value})} className={inputCls} placeholder="Email" />
-              <input value={prospectForm.source} onChange={e => setProspectForm({...prospectForm, source: e.target.value})} className={inputCls} placeholder="Source / How you found them" />
-              <button type="submit"
-                disabled={!prospectForm.name && !prospectForm.email && !prospectForm.company}
-                className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-neutral-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
-                Add as Prospect
-              </button>
-              {!prospectForm.name && !prospectForm.email && !prospectForm.company && (
-                <p className="text-[10px] text-neutral-600 text-center">Enter at least a name, email, or company</p>
-              )}
-            </form>
+
+            {batchMode ? (
+              /* ── Maps Batch Mode ── */
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Location / Area</label>
+                  <input value={batchLocation} onChange={e => setBatchLocation(e.target.value)} className={inputCls} placeholder="e.g. Print shops near Newtown" />
+                </div>
+                <div className="flex gap-2">
+                  <input value={batchName} onChange={e => setBatchName(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleBatchAdd() } }}
+                    className={`${inputCls} flex-1`} placeholder="Business name" autoFocus />
+                  <button onClick={handleBatchAdd} disabled={!batchName.trim()}
+                    className="px-4 py-2.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-neutral-700 transition-all disabled:opacity-30">
+                    Add
+                  </button>
+                </div>
+                <p className="text-[10px] text-neutral-600 text-center">Press Enter or click Add — then type the next name. Source auto-set to "Google Maps".</p>
+              </div>
+            ) : (
+              /* ── Detail Mode ── */
+              <form onSubmit={handleAddProspect} className="space-y-3">
+                <input value={prospectForm.name} onChange={e => setProspectForm({...prospectForm, name: e.target.value})} className={inputCls} placeholder="Contact name" />
+                <input value={prospectForm.company} onChange={e => setProspectForm({...prospectForm, company: e.target.value})} className={inputCls} placeholder="Company name" />
+                <div className="grid grid-cols-2 gap-3">
+                  <input value={prospectForm.phone} onChange={e => setProspectForm({...prospectForm, phone: e.target.value})} className={inputCls} placeholder="Phone number" />
+                  <input type="email" value={prospectForm.email} onChange={e => setProspectForm({...prospectForm, email: e.target.value})} className={inputCls} placeholder="Email" />
+                </div>
+                <input value={prospectForm.location} onChange={e => setProspectForm({...prospectForm, location: e.target.value})} className={inputCls} placeholder="Location / Area (e.g. Newtown, Accra)" />
+                <div className="grid grid-cols-2 gap-3">
+                  <input value={prospectForm.source} onChange={e => setProspectForm({...prospectForm, source: e.target.value})} className={inputCls} placeholder="Source (Google Maps, Referral...)" />
+                  <select value={prospectForm.buyer_profile} onChange={e => setProspectForm({...prospectForm, buyer_profile: e.target.value})} className={inputCls}>
+                    <option value="">— Buyer Profile —</option>
+                    {personas.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Expected First Contact</label>
+                  <input type="datetime-local" value={prospectForm.first_contact_date} onChange={e => setProspectForm({...prospectForm, first_contact_date: e.target.value})} className={inputCls} />
+                </div>
+                <button type="submit"
+                  disabled={!prospectForm.name && !prospectForm.email && !prospectForm.company}
+                  className="w-full px-4 py-2.5 bg-neutral-800 border border-neutral-700 text-white rounded-lg text-sm font-bold cursor-pointer hover:bg-neutral-700 transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+                  Add as Prospect
+                </button>
+                {!prospectForm.name && !prospectForm.email && !prospectForm.company && (
+                  <p className="text-[10px] text-neutral-600 text-center">Enter at least a name, email, or company</p>
+                )}
+              </form>
+            )}
           </div>
         </div>
       )}

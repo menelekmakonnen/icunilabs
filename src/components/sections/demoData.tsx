@@ -165,6 +165,30 @@ export const DEMOS: Demo[] = [
     color: '#06b6d4',
     fullDemo: true,
   },
+  {
+    id: 'momo-finance',
+    title: 'MoMo Finance',
+    subtitle: 'Transaction Tracing & Reconciliation',
+    tagline: 'Every send, receive, and cash-out — traced, reconciled, and accounted for.',
+    description: 'Transaction management for mobile money vendors and cash-heavy businesses — daily logging, auto-reconciliation against provider statements, agent performance, and discrepancy detection.',
+    longDescription: 'A transaction-tracing system built specifically for MoMo vendors, microfinance operators, and cash-heavy businesses. Log every transaction as it happens. Reconcile against MTN or Vodafone statements automatically. Spot discrepancies instantly. Know your actual daily profit — not the number in your head. Built for operators who process hundreds of transactions daily and need to trust their numbers.',
+    problemSolved: 'MoMo vendors and small financial operators track transactions in notebooks or not at all. End-of-day balancing never matches. They suspect agents are skimming but have no proof. They can\'t trace a specific transaction from last week without flipping through pages. They want to grow to multiple points but can\'t manage what they can\'t see.',
+    coverImage: '/demo-momo.png',
+    url: '',
+    category: 'Financial Services',
+    features: ['Transaction Log', 'Auto-Reconciliation', 'Agent Tracking', 'Discrepancy Alerts'],
+    keyBenefits: [
+      { title: 'Transaction Logging', desc: 'Every send, receive, cash-in, and cash-out logged with timestamp and agent.' },
+      { title: 'Auto-Reconciliation', desc: 'Match your records against MTN/Vodafone statements to find every discrepancy.' },
+      { title: 'Agent Performance', desc: 'Track transaction volumes and accuracy per agent or point of sale.' },
+      { title: 'Daily Profit Dashboard', desc: 'Real-time view of commissions earned, float deployed, and actual profit.' },
+      { title: 'Discrepancy Alerts', desc: 'Automatic flags when records don\'t match — no more end-of-day surprises.' },
+      { title: 'Multi-Point Management', desc: 'Manage multiple vendor points from one dashboard with per-location breakdown.' },
+    ],
+    adaptableTo: ['Forex Bureaux', 'Savings & Loans', 'Susu Collectors', 'Mobile Banking Agents', 'Cash Collection Businesses'],
+    color: '#06d6a0',
+    fullDemo: false,
+  },
 ]
 
 // Category SVG icons
@@ -181,6 +205,8 @@ export function CategoryIcon({ category, className }: { category: string; classN
       return <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
     case 'Education':
       return <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 3L2 9l10 6 10-6-10-6z" strokeLinejoin="round"/><path d="M20 9v7" strokeLinecap="round"/><path d="M6 12v5c0 2.5 3 4 6 4s6-1.5 6-4v-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    case 'Financial Services':
+      return <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2L3 7v10l9 5 9-5V7l-9-5z" strokeLinejoin="round"/><path d="M12 22V12" strokeLinecap="round"/><path d="M3 7l9 5 9-5" strokeLinejoin="round"/><circle cx="12" cy="12" r="2"/></svg>
     default:
       return <Monitor className={cls} />
   }
