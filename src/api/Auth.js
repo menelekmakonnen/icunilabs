@@ -56,9 +56,14 @@ function requireAuth_(token, allowedRoles) {
     return { user: user };
 }
 
-function requireStaff_(token)   { return requireAuth_(token, [ROLES.STAFF]); }
-function requireAdmin_(token)   { return requireAuth_(token, [ROLES.ADMIN]); }
-function requireGodmode_(token) { return requireAuth_(token, [ROLES.GODMODE]); }
+function requireStaff_(token)      { return requireAuth_(token, [ROLES.PRODUCT]); }  // Product is the new minimum console role
+function requireAdmin_(token)      { return requireAuth_(token, [ROLES.ADMIN]); }
+function requireSuperAdmin_(token) { return requireAuth_(token, [ROLES.SUPERADMIN]); }
+function requireGodmode_(token)    { return requireAuth_(token, [ROLES.GODMODE]); }
+
+// Checks if user role is Godmode or SuperAdmin (elevated management)
+function requireElevated_(token) { return requireAuth_(token, [ROLES.SUPERADMIN]); }
+
 
 // ─── USER LOOKUP ─────────────────────────────────────────
 
@@ -396,7 +401,7 @@ function handleDeactivateUser(payload) {
 // ─── ADMIN CREATION (Godmode only, email-only seeding) ──
 
 function handleCreateAdmin(payload) {
-    var auth = requireGodmode_(payload.token);
+    var auth = requireElevated_(payload.token);
     if (auth.error) return auth.error;
 
     var email = (payload.email || '').trim().toLowerCase();
@@ -407,11 +412,29 @@ function handleCreateAdmin(payload) {
     var existing = findUserByEmail_(email);
     if (existing) return errorResponse_('A user with this email already exists.');
 
-    // Build default permissions (all sections enabled)
-    var defaultPerms = {
-        dashboard: true, clients: true, projects: true, invoices: true,
-        careers: true, referrals: true, sla: true, logs: true, settings: true
-    };
+    // Determine role — default Admin, validate
+    var targetRole = payload.role || ROLES.ADMIN;
+    var validRoles = ['SuperAdmin', 'Admin', 'Sales', 'Product'];
+    if (validRoles.indexOf(targetRole) === -1) return errorResponse_('Invalid role.');
+    // Only Godmode can create SuperAdmins
+    if (targetRole === 'SuperAdmin' && auth.user.role !== ROLES.GODMODE) {
+        return errorResponse_('Only Godmode can create SuperAdmin accounts.');
+    }
+
+    // Build permissions from department scope (SuperAdmin gets all)
+    var defaultPerms = {};
+    if (targetRole === 'SuperAdmin' || targetRole === 'Godmode') {
+        defaultPerms = {
+            dashboard: true, clients: true, projects: true, invoices: true,
+            careers: true, referrals: true, sla: true, logs: true, settings: true
+        };
+    } else {
+        var scopeSections = DEPARTMENT_SCOPE[targetRole] || [];
+        var allSections = ['dashboard', 'clients', 'projects', 'invoices', 'careers', 'referrals', 'sla', 'logs', 'settings'];
+        for (var i = 0; i < allSections.length; i++) {
+            defaultPerms[allSections[i]] = scopeSections.indexOf(allSections[i]) !== -1;
+        }
+    }
     // Apply any permission overrides from payload
     if (payload.permissions) {
         for (var key in payload.permissions) {
@@ -424,13 +447,13 @@ function handleCreateAdmin(payload) {
     var userId = generateId_('USR');
     var jobTitle = payload.job_title || 'Operations Assistant';
     appendRow_(SHEETS.USERS, [
-        userId, email.split('@')[0], email, '', ROLES.ADMIN,
+        userId, email.split('@')[0], email, '', targetRole,
         'Active', '', '',  // no password, no pin — they use OTP first
         true, true, now_(), '', '', true, '', '',
         JSON.stringify(defaultPerms), jobTitle
     ]);
 
-    logAction_(auth.user.user_id, auth.user.name, 'ADMIN_CREATED', 'Created Admin: ' + email + ' (' + jobTitle + ')');
+    logAction_(auth.user.user_id, auth.user.name, 'TEAM_MEMBER_CREATED', 'Created ' + targetRole + ': ' + email + ' (' + jobTitle + ')');
 
     // Send OTP welcome email so they can log in
     var emailSent = false;
@@ -438,7 +461,7 @@ function handleCreateAdmin(payload) {
         var otp = generateSecureOTP_();
         var cache = CacheService.getScriptCache();
         cache.put('otp_' + email, JSON.stringify({
-            otp: otp, email: email, user_id: userId, name: email.split('@')[0], role: ROLES.ADMIN,
+            otp: otp, email: email, user_id: userId, name: email.split('@')[0], role: targetRole,
             attempts: 0, created: now_()
         }), OTP_TTL_SECONDS);
 
@@ -462,10 +485,10 @@ function handleCreateAdmin(payload) {
     }
 }
 
-// ─── USER EDITING (Godmode only) ──────────────────────────
+// ─── USER EDITING (Godmode + SuperAdmin) ──────────────────
 
 function handleEditUser(payload) {
-    var auth = requireGodmode_(payload.token);
+    var auth = requireElevated_(payload.token);
     if (auth.error) return auth.error;
 
     var userId = payload.userId;
@@ -474,14 +497,22 @@ function handleEditUser(payload) {
     var user = findRow_(SHEETS.USERS, 'id', userId);
     if (!user) return errorResponse_('User not found.');
     if (user.role === ROLES.GODMODE) return errorResponse_('Cannot edit Godmode users.');
+    // SuperAdmin can only edit below their level
+    if (auth.user.role === ROLES.SUPERADMIN && user.role === ROLES.SUPERADMIN) {
+        return errorResponse_('SuperAdmins cannot edit other SuperAdmins.');
+    }
 
     var updates = {};
     if (payload.name !== undefined && payload.name.trim()) updates.name = payload.name.trim();
     if (payload.phone !== undefined) updates.phone = payload.phone;
     if (payload.job_title !== undefined) updates.job_title = payload.job_title;
     if (payload.role !== undefined) {
-        var allowed = ['Admin', 'Staff'];
-        if (allowed.indexOf(payload.role) === -1) return errorResponse_('Invalid role. Must be Admin or Staff.');
+        var allowed = ['SuperAdmin', 'Admin', 'Sales', 'Product'];
+        // Only Godmode can promote to SuperAdmin
+        if (payload.role === 'SuperAdmin' && auth.user.role !== ROLES.GODMODE) {
+            return errorResponse_('Only Godmode can promote users to SuperAdmin.');
+        }
+        if (allowed.indexOf(payload.role) === -1) return errorResponse_('Invalid role.');
         updates.role = payload.role;
     }
     if (payload.status !== undefined) {
@@ -497,16 +528,18 @@ function handleEditUser(payload) {
     return successResponse_(null, 'User updated successfully.');
 }
 
-// ─── PERMISSION MANAGEMENT (Godmode only) ────────────────
-
+// ─── PERMISSION MANAGEMENT (Godmode + SuperAdmin) ────────
 
 function handleUpdateUserPermissions(payload) {
-    var auth = requireGodmode_(payload.token);
+    var auth = requireElevated_(payload.token);
     if (auth.error) return auth.error;
 
     var user = findRow_(SHEETS.USERS, 'id', payload.userId);
     if (!user) return errorResponse_('User not found.');
     if (user.role === ROLES.GODMODE) return errorResponse_('Cannot modify Godmode permissions.');
+    if (auth.user.role === ROLES.SUPERADMIN && user.role === ROLES.SUPERADMIN) {
+        return errorResponse_('SuperAdmins cannot modify other SuperAdmin permissions.');
+    }
 
     var perms = payload.permissions || {};
     updateRow_(SHEETS.USERS, user._rowIndex, { permissions_json: JSON.stringify(perms) });
@@ -676,3 +709,83 @@ function buildAdminWelcomeEmail_(name, otp) {
     );
 }
 
+// ─── IMPERSONATION (Godmode + SuperAdmin) ─────────────────
+
+function handleImpersonateUser(payload) {
+    var auth = requireElevated_(payload.token);
+    if (auth.error) return auth.error;
+
+    var targetUserId = payload.targetUserId;
+    if (!targetUserId) return errorResponse_('Target user ID is required.');
+
+    var targetUser = findRow_(SHEETS.USERS, 'id', targetUserId);
+    if (!targetUser) return errorResponse_('Target user not found.');
+    if (targetUser.role === ROLES.GODMODE) return errorResponse_('Cannot impersonate Godmode users.');
+    if (auth.user.role === ROLES.SUPERADMIN && targetUser.role === ROLES.SUPERADMIN) {
+        return errorResponse_('SuperAdmins cannot impersonate other SuperAdmins.');
+    }
+
+    // Create a time-limited impersonation token (15 minutes)
+    var impToken = generateId_('IMP');
+    var cache = CacheService.getScriptCache();
+    cache.put('imp_' + impToken, JSON.stringify({
+        impersonator_id: auth.user.user_id,
+        impersonator_name: auth.user.name,
+        impersonator_role: auth.user.role,
+        target_id: targetUser.id,
+        target_name: targetUser.name,
+        target_email: targetUser.email,
+        target_role: targetUser.role,
+        created: now_()
+    }), 900); // 15 minutes
+
+    // Log impersonation start
+    logAction_(auth.user.user_id, auth.user.name, 'IMPERSONATION_START',
+        'Impersonating: ' + targetUser.name + ' (' + targetUser.role + ')');
+
+    // Log to impersonation sheet
+    try {
+        appendRow_(SHEETS.IMPERSONATION_LOG, [
+            impToken, auth.user.user_id, auth.user.name, auth.user.role,
+            targetUser.id, targetUser.name, targetUser.role,
+            now_(), '', 'active'
+        ]);
+    } catch(e) { Logger.log('Impersonation log write failed: ' + e.message); }
+
+    return successResponse_({
+        impersonationToken: impToken,
+        targetUser: {
+            user_id: targetUser.id,
+            name: targetUser.name,
+            email: targetUser.email,
+            role: targetUser.role,
+            permissions: targetUser.permissions_json ? JSON.parse(targetUser.permissions_json) : {}
+        },
+        expiresIn: 900
+    }, 'Now impersonating ' + targetUser.name + '. Session expires in 15 minutes.');
+}
+
+function handleEndImpersonation(payload) {
+    var auth = requireAuth_(payload.token);
+    if (auth.error) return auth.error;
+
+    var impToken = payload.impersonationToken;
+    if (impToken) {
+        var cache = CacheService.getScriptCache();
+        cache.remove('imp_' + impToken);
+
+        // Update impersonation log
+        try {
+            var row = findRow_(SHEETS.IMPERSONATION_LOG, 'id', impToken);
+            if (row) {
+                updateRow_(SHEETS.IMPERSONATION_LOG, row._rowIndex, {
+                    ended_at: now_(),
+                    status: 'ended'
+                });
+            }
+        } catch(e) { /* best-effort */ }
+    }
+
+    logAction_(auth.user.user_id, auth.user.name, 'IMPERSONATION_END', 'Ended impersonation session');
+    return successResponse_(null, 'Impersonation session ended.');
+}

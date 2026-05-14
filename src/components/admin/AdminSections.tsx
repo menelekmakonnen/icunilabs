@@ -1626,6 +1626,7 @@ export function UsersSection() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'Staff' })
   const [adminEmail, setAdminEmail] = useState('')
   const [adminJobTitle, setAdminJobTitle] = useState('Operations Assistant')
+  const [adminRole, setAdminRole] = useState('Admin')
   const [selectedUser, setSelectedUser] = useState<any>(null)
   const [editPerms, setEditPerms] = useState<Record<string, boolean>>({})
   const [savingPerms, setSavingPerms] = useState(false)
@@ -1633,9 +1634,10 @@ export function UsersSection() {
   const [busyInviteAdmin, setBusyInviteAdmin] = useState(false)
 
   const isGodmode = currentUser?.role === 'Godmode'
+  const isElevated = ['Godmode', 'SuperAdmin'].includes(currentUser?.role || '')
 
   // Filter to admin/staff only — Clients and Referrers have their own pages
-  const adminUsers = users.filter((u: any) => ['Godmode', 'Admin', 'Staff'].includes(u.role))
+  const adminUsers = users.filter((u: any) => ['Godmode', 'SuperAdmin', 'Admin', 'Sales', 'Product'].includes(u.role))
 
   useEffect(() => { adminActions.loadUsers() }, [])
 
@@ -1652,8 +1654,8 @@ export function UsersSection() {
     e.preventDefault()
     setBusyInviteAdmin(true)
     try {
-      const ok = await adminActions.createAdmin(adminEmail, adminJobTitle)
-      if (ok) { setShowCreateAdmin(false); setAdminEmail(''); setAdminJobTitle('Operations Assistant') }
+      const ok = await adminActions.createAdmin(adminEmail, adminJobTitle, undefined, adminRole)
+      if (ok) { setShowCreateAdmin(false); setAdminEmail(''); setAdminJobTitle('Operations Assistant'); setAdminRole('Admin') }
     } finally { setBusyInviteAdmin(false) }
   }
 
@@ -1686,8 +1688,10 @@ export function UsersSection() {
 
   const roleColor = (role: string) => {
     if (role === 'Godmode') return 'text-[#ff7a00] bg-[#ff7a00]/10'
+    if (role === 'SuperAdmin') return 'text-amber-400 bg-amber-400/10'
     if (role === 'Admin') return 'text-[#8b5cf6] bg-[#8b5cf6]/10'
-    if (role === 'Staff') return 'text-[#00bfff] bg-[#00bfff]/10'
+    if (role === 'Sales') return 'text-emerald-400 bg-emerald-400/10'
+    if (role === 'Product') return 'text-cyan-400 bg-cyan-400/10'
     if (role === 'Client') return 'text-emerald-400 bg-emerald-400/10'
     return 'text-neutral-400 bg-neutral-800'
   }
@@ -1720,10 +1724,10 @@ export function UsersSection() {
     <>
       <DataTable title="Team" subtitle={`${adminUsers.length} admin & staff accounts`} loading={loading} data={adminUsers}
         onAdd={() => setShowAdd(true)} addLabel="Add Staff"
-        headerActions={isGodmode ? (
+        headerActions={isElevated ? (
           <button onClick={() => setShowCreateAdmin(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#8b5cf6] to-purple-600 text-white rounded-lg text-sm font-bold hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] transition-all cursor-pointer">
-            <UserPlus className="w-4 h-4" />Invite Admin
+            <UserPlus className="w-4 h-4" />Invite Team Member
           </button>
         ) : undefined}
         columns={[
@@ -1740,10 +1744,10 @@ export function UsersSection() {
         searchKeys={['name', 'email', 'role', 'job_title']}
         renderRowActions={(row) => (
           <div className="flex gap-3">
-            {isGodmode && row.role !== 'Godmode' && (
+            {isElevated && row.role !== 'Godmode' && (
               <button onClick={() => openEditUser(row)} className="text-xs text-[#00bfff] hover:text-cyan-300 cursor-pointer transition-colors">Edit</button>
             )}
-            {isGodmode && row.role === 'Admin' && (
+            {isElevated && !['Godmode', 'SuperAdmin'].includes(row.role) && (
               <button onClick={() => openPermissions(row)} className="text-xs text-[#8b5cf6] hover:text-purple-300 cursor-pointer transition-colors">Permissions</button>
             )}
             {row.role !== 'Godmode' && row.status === 'Active' ? (
@@ -1789,8 +1793,10 @@ export function UsersSection() {
                 <div>
                   <label className="text-xs text-neutral-500 mb-1 block">Role</label>
                   <select value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} className={inputCls}>
-                    <option value="Admin">Admin</option>
-                    <option value="Staff">Staff</option>
+                    {isGodmode && <option value="SuperAdmin">SuperAdmin</option>}
+                    <option value="Admin">Admin (Ops)</option>
+                    <option value="Sales">Sales (Growth)</option>
+                    <option value="Product">Product (Builders)</option>
                   </select>
                 </div>
                 <div>
@@ -1817,14 +1823,13 @@ export function UsersSection() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <svg className="w-5 h-5 text-[#8b5cf6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0" strokeLinecap="round"/><path d="M17 10l2 2 4-4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Invite Admin
+                Invite Team Member
               </h3>
               <button onClick={() => setShowCreateAdmin(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
             <div className="bg-[#8b5cf6]/5 border border-[#8b5cf6]/20 rounded-lg p-3 mb-4">
               <p className="text-xs text-[#8b5cf6]/80 leading-relaxed">
-                <strong>Admin</strong> = full console access (all sections). Use this to invite someone who manages operations alongside you.
-                You can restrict specific sections after creation via Permissions.
+                Invite a team member with a specific role. Each role determines which sections they can access by default.
               </p>
             </div>
             <form onSubmit={handleCreateAdmin} className="space-y-3">
@@ -1832,9 +1837,26 @@ export function UsersSection() {
                 <label className="text-xs text-neutral-500 mb-1 block">Email Address *</label>
                 <input type="email" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} className={inputCls} placeholder="their.email@example.com" required autoFocus />
               </div>
-              <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Job Title</label>
-                <input value={adminJobTitle} onChange={e => setAdminJobTitle(e.target.value)} className={inputCls} placeholder="Operations Assistant" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Role *</label>
+                  <select value={adminRole} onChange={e => setAdminRole(e.target.value)} className={inputCls}>
+                    {isGodmode && <option value="SuperAdmin">SuperAdmin</option>}
+                    <option value="Admin">Admin (Ops)</option>
+                    <option value="Sales">Sales (Growth)</option>
+                    <option value="Product">Product (Builder)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Job Title</label>
+                  <input value={adminJobTitle} onChange={e => setAdminJobTitle(e.target.value)} className={inputCls} placeholder="Operations Assistant" />
+                </div>
+              </div>
+              <div className="text-[11px] text-neutral-600 bg-neutral-900/50 rounded-lg p-2.5 border border-neutral-800">
+                {adminRole === 'SuperAdmin' && 'Full access to all sections. Can manage team, ecosystem, and impersonate users.'}
+                {adminRole === 'Admin' && 'Operations access: Dashboard, CRM, Projects, Invoices, SLA, Careers, Referrals, Logs, Settings.'}
+                {adminRole === 'Sales' && 'Growth access: Dashboard, CRM/Clients, Referrals, Careers.'}
+                {adminRole === 'Product' && 'Builder access: Dashboard, Projects, SLA, Logs.'}
               </div>
               <p className="text-xs text-neutral-600">A login code will be emailed. They can set their password and PIN on first login.</p>
               <button type="submit" disabled={busyInviteAdmin} className="w-full px-4 py-2.5 bg-gradient-to-r from-[#8b5cf6] to-purple-600 text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(139,92,246,0.3)] transition-all disabled:opacity-40 flex items-center justify-center gap-2">

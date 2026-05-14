@@ -55,6 +55,10 @@ interface AdminState {
   // CRM
   activeClient: any | null
   clientActivity: any[]
+
+  // ICUNI Ecosystem
+  projectRegistry: any[]
+  impersonationToken: string | null
 }
 
 async function apiPost(action: string, payload: Record<string, any> = {}): Promise<any> {
@@ -100,6 +104,8 @@ let state: AdminState = {
   activeInvoice: null,
   activeClient: null,
   clientActivity: [],
+  projectRegistry: [],
+  impersonationToken: null,
 }
 
 const listeners = new Set<() => void>()
@@ -119,7 +125,7 @@ export function useAdminStore() {
   return useSyncExternalStore(subscribeAdmin, getAdminState)
 }
 
-const ALLOWED_ROLES = ['Godmode', 'Admin']
+const ALLOWED_ROLES = ['Godmode', 'SuperAdmin', 'Admin', 'Sales', 'Product']
 
 export const adminActions = {
   setError: (error: string | null) => setState({ error }),
@@ -403,7 +409,63 @@ export const adminActions = {
   },
 
   clearImpersonation: () => {
-    setState({ actingAs: null, impersonating: null })
+    setState({ actingAs: null, impersonating: null, impersonationToken: null })
+  },
+
+  // ── Server-side Impersonation ──
+  impersonateUser: async (targetUserId: string) => {
+    try {
+      const result = await apiPost('impersonateUser', { token: state.token, targetUserId })
+      if (result?.targetUser) {
+        setState({
+          impersonating: result.targetUser,
+          impersonationToken: result.impersonationToken,
+          actingAs: null
+        })
+        return result
+      }
+      return null
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  endImpersonation: async () => {
+    try {
+      await apiPost('endImpersonation', { token: state.token, impersonationToken: state.impersonationToken })
+    } catch { /* best effort */ }
+    setState({ impersonating: null, impersonationToken: null, actingAs: null })
+  },
+
+  // ── ICUNI Project Registry ──
+  loadProjectRegistry: async () => {
+    try {
+      const registry = await apiPost('getProjectRegistry', { token: state.token })
+      setState({ projectRegistry: registry || [] })
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  updateProjectFeature: async (projectId: string, featureKey: string, enabled: boolean) => {
+    try {
+      await apiPost('updateProjectFeature', { token: state.token, projectId, featureKey, enabled })
+      await adminActions.loadProjectRegistry()
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  addProject: async (data: Record<string, any>) => {
+    try {
+      await apiPost('addProject', { token: state.token, ...data })
+      await adminActions.loadProjectRegistry()
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
   },
 
   loadSLA: async () => {
@@ -494,10 +556,10 @@ export const adminActions = {
     }
   },
 
-  createAdmin: async (email: string, jobTitle?: string, permissions?: Record<string, boolean>) => {
+  createAdmin: async (email: string, jobTitle?: string, permissions?: Record<string, boolean>, role?: string) => {
     setState({ loading: true, error: null })
     try {
-      await apiPost('createAdmin', { token: state.token, email, job_title: jobTitle || 'Operations Assistant', permissions })
+      await apiPost('createAdmin', { token: state.token, email, job_title: jobTitle || 'Operations Assistant', permissions, role: role || 'Admin' })
       await adminActions.loadUsers()
       setState({ loading: false })
       return true

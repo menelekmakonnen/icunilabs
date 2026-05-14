@@ -38,6 +38,16 @@ function doPost(e) {
         if (action === 'updateUserPermissions') return handleUpdateUserPermissions(payload);
         if (action === 'getUserPermissions')    return handleGetUserPermissions(payload);
 
+        // ── Impersonation ──
+        if (action === 'impersonateUser')    return handleImpersonateUser(payload);
+        if (action === 'endImpersonation')   return handleEndImpersonation(payload);
+
+        // ── ICUNI Project Registry ──
+        if (action === 'getProjectRegistry')     return handleGetProjectRegistry(payload);
+        if (action === 'updateProjectFeature')   return handleUpdateProjectFeature(payload);
+        if (action === 'addProject')             return handleAddProject(payload);
+        if (action === 'removeProject')          return handleRemoveProject(payload);
+
         // ── Dashboard ──
         if (action === 'getDashboard')      return handleGetDashboard(payload);
 

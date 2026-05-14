@@ -57,7 +57,11 @@ var SHEETS = {
     EMAIL_LOG:     'Email_Log',
     SLA_LOG:       'SLA_Log',
     SLA_COSTS:     'SLA_Costs',
-    ARCHIVES:      'Archives'
+    ARCHIVES:      'Archives',
+
+    // ICUNI Ecosystem
+    ICUNI_PROJECTS:    'ICUNI_Projects',
+    IMPERSONATION_LOG: 'Impersonation_Log'
 };
 
 // ─── COLUMN MAPS ─────────────────────────────────────────
@@ -103,13 +107,26 @@ var COL = {
 // ─── ROLES ───────────────────────────────────────────────
 var ROLES = {
     GODMODE:          'Godmode',
-    ADMIN:            'Admin',
-    STAFF:            'Staff',
+    SUPERADMIN:       'SuperAdmin',
+    ADMIN:            'Admin',        // Operations-related
+    SALES:            'Sales',        // BDM, Growth-related
+    PRODUCT:          'Product',      // Builders and Developers
     CLIENT:           'Client',
     REFERRER:         'Referrer'
 };
 
-var ROLE_HIERARCHY = [ROLES.REFERRER, ROLES.CLIENT, ROLES.STAFF, ROLES.ADMIN, ROLES.GODMODE];
+// Lowest → highest privilege
+var ROLE_HIERARCHY = [ROLES.REFERRER, ROLES.CLIENT, ROLES.PRODUCT, ROLES.SALES, ROLES.ADMIN, ROLES.SUPERADMIN, ROLES.GODMODE];
+
+// Console-capable roles (can log in to /#_ops)
+var CONSOLE_ROLES = [ROLES.GODMODE, ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.SALES, ROLES.PRODUCT];
+
+// Department-scoped section access (SuperAdmin and Godmode get everything)
+var DEPARTMENT_SCOPE = {
+    'Admin':      ['dashboard', 'clients', 'projects', 'invoices', 'sla', 'careers', 'referrals', 'logs', 'settings'],
+    'Sales':      ['dashboard', 'clients', 'referrals', 'careers'],
+    'Product':    ['dashboard', 'projects', 'sla', 'logs']
+};
 
 // ─── PROJECT STEPS ───────────────────────────────────────
 var PROJECT_STEPS = {
@@ -170,5 +187,6 @@ var DRIVE_FOLDERS = {
     APPLICATIONS: 'Applications',
     PORTFOLIO:    'Portfolio',
     BLOG:         'Blog',
-    BACKUPS:      'Backups'
+    BACKUPS:      'Backups',
+    USERS:        'User Files'
 };

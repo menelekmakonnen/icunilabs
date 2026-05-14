@@ -8,10 +8,11 @@ import CRMSection from './CRMSection'
 import ProfileSection from './ProfileSection'
 import ReferralPortal from '../portal/ReferralPortal'
 import ClientPortal from '../portal/ClientPortal'
-import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, ChevronLeft, ChevronRight, Eye, UserCircle, X, BookOpen } from 'lucide-react'
+import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, ChevronLeft, ChevronRight, Eye, UserCircle, X, BookOpen, Globe } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import OnboardingChecklist from './OnboardingChecklist'
+import EcosystemSection from './EcosystemSection'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -22,6 +23,7 @@ const NAV = [
   { id: 'referrals', label: 'Referrals', icon: UserCheck },
   { id: 'sla', label: 'SLA', icon: Clock },
   { id: 'users', label: 'Team', icon: Shield },
+  { id: 'ecosystem', label: 'Ecosystem', icon: Globe },
   { id: 'logs', label: 'Logs', icon: Activity },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
@@ -38,21 +40,32 @@ export default function AdminPanel() {
   // Not logged in or not admin
   if (!token || !user) return <AdminLogin />
 
-  const isGodmode = user.role === 'Godmode'
-  const isAdmin = user.role === 'Admin'
+  // ── Role Helpers ──
+  const role = user.role || ''
+  const isElevated = ['Godmode', 'SuperAdmin'].includes(role) // Can manage team + ecosystem
   const userPerms = user.permissions || {}
 
-  // Filter nav items based on permissions (Godmode sees everything)
+  // Department scope mapping (frontend mirror of backend DEPARTMENT_SCOPE)
+  const DEPT_SCOPE: Record<string, string[]> = {
+    'Admin':      ['dashboard', 'clients', 'projects', 'invoices', 'sla', 'careers', 'referrals', 'logs', 'settings'],
+    'Sales':      ['dashboard', 'clients', 'referrals', 'careers'],
+    'Product':    ['dashboard', 'projects', 'sla', 'logs']
+  }
+
+  // Filter nav items based on role + permissions
   const filteredNav = NAV.filter(item => {
-    // Godmode always sees all
-    if (isGodmode) return true
-    // Users section is Godmode-only
+    // Godmode and SuperAdmin see everything
+    if (isElevated) return true
+    // Team section is elevated-only
     if (item.id === 'users') return false
-    // For Admin, check permission toggles (default: enabled)
-    if (isAdmin) {
-      return userPerms[item.id] !== false
-    }
-    return true
+    // Ecosystem section is elevated-only
+    if (item.id === 'ecosystem') return false
+    // Check department scope first, then permission overrides
+    const deptSections = DEPT_SCOPE[role] || []
+    const inScope = deptSections.includes(item.id)
+    // Permission toggles can override scope (admin can restrict further)
+    if (userPerms[item.id] === false) return false
+    return inScope
   })
 
   // ── Act As: render target portal ──
@@ -88,6 +101,7 @@ export default function AdminPanel() {
       case 'logs': return <LogsSection />
       case 'settings': return <SettingsSection />
       case 'profile': return <ProfileSection />
+      case 'ecosystem': return <EcosystemSection />
       default: return <DashboardSection />
     }
   }
@@ -191,7 +205,7 @@ export default function AdminPanel() {
             <h1 className="text-lg font-bold text-white capitalize">{activeSection}</h1>
           </div>
           <div className="flex items-center gap-3">
-            {isGodmode && (
+            {isElevated && (
               <div className="relative">
                 <button onClick={() => { setShowActAs(!showActAs); setShowImpersonate(false) }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer border border-neutral-800">
@@ -209,7 +223,7 @@ export default function AdminPanel() {
                 )}
               </div>
             )}
-            {isGodmode && (
+            {isElevated && (
               <button onClick={() => { setShowImpersonate(!showImpersonate); setShowActAs(false); if (!users.length) adminActions.loadUsers() }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer border border-neutral-800">
                 <UserCircle className="w-3.5 h-3.5" />Impersonate
@@ -246,7 +260,13 @@ export default function AdminPanel() {
                       <p className="text-[11px] text-neutral-500">{u.email}</p>
                     </div>
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                      u.role === 'Godmode' ? 'text-[#ff7a00] bg-[#ff7a00]/10' : u.role === 'Referrer' ? 'text-emerald-400 bg-emerald-500/10' : 'text-[#00bfff] bg-[#00bfff]/10'
+                      u.role === 'Godmode' ? 'text-[#ff7a00] bg-[#ff7a00]/10' :
+                      u.role === 'SuperAdmin' ? 'text-amber-400 bg-amber-400/10' :
+                      u.role === 'Admin' ? 'text-[#8b5cf6] bg-[#8b5cf6]/10' :
+                      u.role === 'Sales' ? 'text-emerald-400 bg-emerald-400/10' :
+                      u.role === 'Product' ? 'text-cyan-400 bg-cyan-400/10' :
+                      u.role === 'Referrer' ? 'text-emerald-400 bg-emerald-500/10' :
+                      'text-[#00bfff] bg-[#00bfff]/10'
                     }`}>{u.role}</span>
                   </button>
                 ))
