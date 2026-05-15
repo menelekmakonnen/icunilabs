@@ -52,32 +52,123 @@ function getAliasRegistry_() {
 
 /**
  * Get list of aliases accessible to a specific user.
+ * Priority: 1) Godmode sees all, 2) User's assigned mailboxes from User_Mailboxes sheet,
+ * 3) User's company_email if set, 4) Role-based visibility rules from alias registry.
  */
 function getAccessibleAliases_(user) {
     var registry = getAliasRegistry_();
+    var allAliases = Object.keys(registry);
+
+    // Godmode sees everything
+    if (user.role === ROLES.GODMODE) return allAliases;
+
     var accessible = [];
-    var keys = Object.keys(registry);
+    var seen = {};
 
-    for (var i = 0; i < keys.length; i++) {
-        var alias = keys[i];
+    // 1. User's company email is always accessible
+    if (user.company_email) {
+        seen[user.company_email] = true;
+        accessible.push(user.company_email);
+    }
+
+    // 2. Explicitly assigned mailboxes from User_Mailboxes sheet
+    var assignments = getUserMailboxAssignments_(user.email || user.id);
+    for (var a = 0; a < assignments.length; a++) {
+        if (!seen[assignments[a]]) {
+            seen[assignments[a]] = true;
+            accessible.push(assignments[a]);
+        }
+    }
+
+    // 3. Private aliases owned by this user
+    for (var i = 0; i < allAliases.length; i++) {
+        var alias = allAliases[i];
         var cfg = registry[alias];
-
-        if (cfg.visibility === 'all') {
+        if (cfg.visibility === 'private' && cfg.owner === user.email && !seen[alias]) {
+            seen[alias] = true;
             accessible.push(alias);
-        } else if (cfg.visibility === 'private') {
-            // Only the owner or Godmode can see private aliases
-            if (cfg.owner === user.email || user.role === ROLES.GODMODE) {
-                accessible.push(alias);
-            }
-        } else if (cfg.visibility && cfg.visibility.indexOf('role:') === 0) {
-            var requiredRole = cfg.visibility.replace('role:', '');
-            if (user.role === requiredRole || user.role === ROLES.GODMODE || user.role === ROLES.SUPERADMIN) {
-                accessible.push(alias);
-            }
         }
     }
 
     return accessible;
+}
+
+/**
+ * Get mailbox assignments for a user from User_Mailboxes sheet.
+ */
+function getUserMailboxAssignments_(userIdentifier) {
+    ensureSheet_(SHEETS.USER_MAILBOXES || 'User_Mailboxes', ['user_email', 'mailbox', 'assigned_by', 'assigned_at']);
+    var rows = sheetToObjects_(SHEETS.USER_MAILBOXES || 'User_Mailboxes');
+    var mailboxes = [];
+    for (var i = 0; i < rows.length; i++) {
+        if (rows[i].user_email && rows[i].user_email.toString().toLowerCase().trim() === userIdentifier.toString().toLowerCase().trim()) {
+            mailboxes.push(rows[i].mailbox);
+        }
+    }
+    return mailboxes;
+}
+
+/**
+ * Assign a mailbox to a user. Godmode/SuperAdmin only.
+ */
+function handleAssignMailbox(payload) {
+    var auth = requireElevated_(payload.token);
+    if (auth.error) return auth.error;
+    var userEmail = (payload.userEmail || '').trim().toLowerCase();
+    var mailbox = (payload.mailbox || '').trim().toLowerCase();
+    if (!userEmail || !mailbox) return errorResponse_('User email and mailbox are required.');
+
+    // Check if already assigned
+    var existing = getUserMailboxAssignments_(userEmail);
+    if (existing.indexOf(mailbox) > -1) return errorResponse_('Mailbox already assigned to this user.');
+
+    var sheet = ensureSheet_(SHEETS.USER_MAILBOXES || 'User_Mailboxes', ['user_email', 'mailbox', 'assigned_by', 'assigned_at']);
+    sheet.appendRow([userEmail, mailbox, auth.user.email, now_()]);
+    logAction_(auth.user.user_id, auth.user.name, 'MAILBOX_ASSIGNED', mailbox + ' → ' + userEmail);
+    return successResponse_(null, 'Mailbox assigned.');
+}
+
+/**
+ * Remove a mailbox assignment. Godmode/SuperAdmin only.
+ */
+function handleRemoveMailbox(payload) {
+    var auth = requireElevated_(payload.token);
+    if (auth.error) return auth.error;
+    var userEmail = (payload.userEmail || '').trim().toLowerCase();
+    var mailbox = (payload.mailbox || '').trim().toLowerCase();
+    if (!userEmail || !mailbox) return errorResponse_('User email and mailbox are required.');
+
+    var sheet = ensureSheet_(SHEETS.USER_MAILBOXES || 'User_Mailboxes', ['user_email', 'mailbox', 'assigned_by', 'assigned_at']);
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+        if (data[i][0].toString().toLowerCase().trim() === userEmail &&
+            data[i][1].toString().toLowerCase().trim() === mailbox) {
+            sheet.deleteRow(i + 1);
+            logAction_(auth.user.user_id, auth.user.name, 'MAILBOX_REMOVED', mailbox + ' from ' + userEmail);
+            return successResponse_(null, 'Mailbox removed.');
+        }
+    }
+    return errorResponse_('Assignment not found.');
+}
+
+/**
+ * Get a user's mailbox assignments (for admin view).
+ */
+function handleGetUserMailboxes(payload) {
+    var auth = requireAuth_(payload.token);
+    if (auth.error) return auth.error;
+    var targetEmail = payload.userEmail || auth.user.email;
+    // Non-elevated users can only see their own
+    if (targetEmail !== auth.user.email && auth.user.role !== ROLES.GODMODE && auth.user.role !== ROLES.SUPERADMIN) {
+        return errorResponse_('Not authorized.');
+    }
+    var assigned = getUserMailboxAssignments_(targetEmail);
+    var registry = getAliasRegistry_();
+    var result = assigned.map(function(mb) {
+        var cfg = registry[mb] || {};
+        return { alias: mb, name: cfg.name || mb, category: cfg.category || 'general' };
+    });
+    return successResponse_(result);
 }
 
 /**

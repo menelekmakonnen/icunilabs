@@ -11,6 +11,7 @@ const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL || ''
 export interface AdminUser {
   name: string
   email: string
+  company_email?: string
   role: string
   job_title?: string
   permissions?: Record<string, boolean>
@@ -565,6 +566,35 @@ export const adminActions = {
     } catch (err: any) {
       setState({ error: err.message })
       return false
+    }
+  },
+
+  assignMailbox: async (userEmail: string, mailbox: string) => {
+    try {
+      await apiPost('assignMailbox', { token: state.token, userEmail, mailbox })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  removeMailbox: async (userEmail: string, mailbox: string) => {
+    try {
+      await apiPost('removeMailbox', { token: state.token, userEmail, mailbox })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  getUserMailboxes: async (userEmail?: string) => {
+    try {
+      return await apiPost('getUserMailboxes', { token: state.token, userEmail })
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
     }
   },
 

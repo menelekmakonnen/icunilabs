@@ -88,6 +88,7 @@ function findUserByIdentifier_(identifier) {
     for (var i = 0; i < users.length; i++) {
         var u = users[i];
         if ((u.email && u.email.toString().toLowerCase().trim() === identifier) ||
+            (u.company_email && u.company_email.toString().toLowerCase().trim() === identifier) ||
             (u.phone && u.phone.toString().replace(/^'/, '').trim() === identifier) ||
             (u.id && u.id.toString().toLowerCase() === identifier)) {
             return u.status === 'Active' ? u : null;
@@ -102,6 +103,11 @@ function handleSendOTP(payload) {
     var email = (payload.email || payload.identifier || '').trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return errorResponse_('Please enter a valid email address.');
+    }
+
+    // Block OTP for company emails — they use PIN/password only
+    if (email.indexOf('@icuni.org') > -1 || email.indexOf('@icuni.co.uk') > -1) {
+        return errorResponse_('Company emails use PIN or password login. OTP is only available for personal emails.');
     }
 
     var cache = CacheService.getScriptCache();
@@ -506,6 +512,7 @@ function handleEditUser(payload) {
     if (payload.name !== undefined && payload.name.trim()) updates.name = payload.name.trim();
     if (payload.phone !== undefined) updates.phone = payload.phone;
     if (payload.job_title !== undefined) updates.job_title = payload.job_title;
+    if (payload.company_email !== undefined) updates.company_email = payload.company_email.trim().toLowerCase();
     if (payload.role !== undefined) {
         var allowed = ['SuperAdmin', 'Admin', 'Sales', 'Product'];
         // Only Godmode can promote to SuperAdmin
@@ -579,6 +586,7 @@ function handleGetProfile(payload) {
     return successResponse_({
         name: user.name,
         email: user.email,
+        company_email: user.company_email || '',
         phone: user.phone || '',
         role: user.role,
         job_title: user.job_title || '',

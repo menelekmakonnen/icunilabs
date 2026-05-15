@@ -59,6 +59,9 @@ function doPost(e) {
         if (action === 'getEmailTemplates')     return handleGetEmailTemplates(payload);
         if (action === 'saveEmailTemplate')     return handleSaveEmailTemplate(payload);
         if (action === 'previewBrandedEmail')   return handlePreviewBrandedEmail(payload);
+        if (action === 'assignMailbox')         return handleAssignMailbox(payload);
+        if (action === 'removeMailbox')         return handleRemoveMailbox(payload);
+        if (action === 'getUserMailboxes')      return handleGetUserMailboxes(payload);
 
         // ── Dashboard ──
         if (action === 'getDashboard')      return handleGetDashboard(payload);
@@ -159,6 +162,20 @@ function doPost(e) {
 
         // ── Bug Reports ──
         if (action === 'report_bug' || action === 'reportBug') return handleBugReport(payload);
+
+        // ── Orbit Interconnection (Desktop Hub ↔ Cloud Hub) ──
+        if (action === 'syncOrbitData')     return handleSyncOrbitData(payload);
+        if (action === 'getOrbitStatus')    return handleGetOrbitStatus(payload);
+
+        // ── Telemetry (Client Apps → Labs) ──
+        if (action === 'telemetryReport')   return handleTelemetryReport(payload);
+        if (action === 'telemetryGet')      return handleTelemetryGet(payload);
+
+        // ── Staff/Invoice/Deployment API (Labs → Orbit Pull) ──
+        if (action === 'staffList')         return handleStaffList(payload);
+        if (action === 'invoicesList')      return handleInvoicesList(payload);
+        if (action === 'deploymentsList')   return handleDeploymentsList(payload);
+        if (action === 'staffSync')         return handleStaffSync(payload);
 
         return errorResponse_('Unknown action: ' + action, 400);
 
