@@ -105,11 +105,6 @@ function handleSendOTP(payload) {
         return errorResponse_('Please enter a valid email address.');
     }
 
-    // Block OTP for company emails — they use PIN/password only
-    if (email.indexOf('@icuni.org') > -1 || email.indexOf('@icuni.co.uk') > -1) {
-        return errorResponse_('Company emails use PIN or password login. OTP is only available for personal emails.');
-    }
-
     var cache = CacheService.getScriptCache();
     var rlKey = 'otp_rl_' + email;
     var sendCount = Number(cache.get(rlKey)) || 0;
