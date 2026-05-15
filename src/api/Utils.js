@@ -4,21 +4,42 @@
  */
 
 // ─── PROPERTY HELPERS ────────────────────────────────────
+var _propsCache = null;
+function getProps_() {
+    if (!_propsCache) _propsCache = PropertiesService.getScriptProperties().getProperties();
+    return _propsCache;
+}
 function getProp_(key) {
-    return PropertiesService.getScriptProperties().getProperty(key);
+    return getProps_()[key] || null;
 }
 
 function setProp_(key, val) {
     PropertiesService.getScriptProperties().setProperty(key, val);
+    _propsCache = null; // invalidate
 }
 
-// ─── SPREADSHEET GETTERS ─────────────────────────────────
-function getMainSS_()      { return SpreadsheetApp.openById(getProp_(PROP_KEYS.SS_MAIN)); }
-function getContentSS_()   { return SpreadsheetApp.openById(getProp_(PROP_KEYS.SS_CONTENT)); }
-function getPortfolioSS_() { return SpreadsheetApp.openById(getProp_(PROP_KEYS.SS_PORTFOLIO)); }
-function getClientsSS_()   { return SpreadsheetApp.openById(getProp_(PROP_KEYS.SS_CLIENTS)); }
-function getReferralsSS_() { return SpreadsheetApp.openById(getProp_(PROP_KEYS.SS_REFERRALS)); }
-function getLogsSS_()      { return SpreadsheetApp.openById(getProp_(PROP_KEYS.SS_LOGS)); }
+// ─── PER-REQUEST CACHES ──────────────────────────────────
+// Layer 1: Spreadsheet object cache — openById is ~200-400ms per call.
+// Module-level vars reset between GAS executions (each doPost = fresh isolate).
+var _ssCache = {};
+function getCachedSS_(propKey) {
+    if (!_ssCache[propKey]) _ssCache[propKey] = SpreadsheetApp.openById(getProp_(propKey));
+    return _ssCache[propKey];
+}
+
+// Layer 2: Sheet data cache — getDataRange().getValues() is ~200-600ms per call.
+var _sheetDataCache = {};
+function invalidateSheetCache_(sheetName) {
+    if (sheetName) { delete _sheetDataCache[sheetName]; }
+    else { _sheetDataCache = {}; }
+}
+
+function getMainSS_()      { return getCachedSS_(PROP_KEYS.SS_MAIN); }
+function getContentSS_()   { return getCachedSS_(PROP_KEYS.SS_CONTENT); }
+function getPortfolioSS_() { return getCachedSS_(PROP_KEYS.SS_PORTFOLIO); }
+function getClientsSS_()   { return getCachedSS_(PROP_KEYS.SS_CLIENTS); }
+function getReferralsSS_() { return getCachedSS_(PROP_KEYS.SS_REFERRALS); }
+function getLogsSS_()      { return getCachedSS_(PROP_KEYS.SS_LOGS); }
 
 /**
  * Map a sheet name to the correct spreadsheet.
@@ -75,8 +96,10 @@ function getSheetByName_(sheetName) {
 
 /**
  * Read all data from a sheet as array of objects (header-keyed).
+ * Results are cached per-request so repeated reads of the same sheet are free.
  */
 function sheetToObjects_(sheetName) {
+    if (_sheetDataCache[sheetName]) return _sheetDataCache[sheetName];
     var sheet = getSheetByName_(sheetName);
     if (!sheet || sheet.getLastRow() <= 1) return [];
     var data = sheet.getDataRange().getValues();
@@ -89,6 +112,7 @@ function sheetToObjects_(sheetName) {
         }
         results.push(obj);
     }
+    _sheetDataCache[sheetName] = results;
     return results;
 }
 
@@ -111,6 +135,7 @@ function findRow_(sheetName, colName, value) {
 function appendRow_(sheetName, rowArray) {
     var sheet = getSheetByName_(sheetName);
     sheet.appendRow(rowArray);
+    invalidateSheetCache_(sheetName);
 }
 
 /**
@@ -141,6 +166,7 @@ function updateRow_(sheetName, rowIndex, updates) {
             Logger.log('updateRow_ WARNING: column "' + key + '" not found in sheet ' + sheetName + '. Headers: ' + headers.join(', '));
         }
     }
+    invalidateSheetCache_(sheetName);
 }
 
 /**

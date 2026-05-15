@@ -31,13 +31,23 @@ function createSession_(user) {
 
 function validateSession_(token) {
     if (!token) return null;
+    // Layer 3: CacheService — avoids reading Sessions sheet on every API call.
+    // Cache lives across GAS executions (shared in-memory), TTL 120s.
+    var cache = CacheService.getScriptCache();
+    var cacheKey = 'sess_' + token.substring(0, 16);
+    var cached = cache.get(cacheKey);
+    if (cached) {
+        try { return JSON.parse(cached); } catch(e) { /* fall through to sheet lookup */ }
+    }
     var session = findRow_(SHEETS.SESSIONS, 'token', token);
     if (!session) return null;
     if (new Date(session.expires_at) < new Date()) return null;
-    return {
+    var result = {
         user_id: session.user_id, email: session.email,
         name: session.name, role: session.role
     };
+    try { cache.put(cacheKey, JSON.stringify(result), 120); } catch(e) {}
+    return result;
 }
 
 function requireAuth_(token, allowedRoles) {
@@ -293,6 +303,8 @@ function handleValidateSession(payload) {
 function handleLogout(payload) {
     var session = findRow_(SHEETS.SESSIONS, 'token', payload.token);
     if (session) updateRow_(SHEETS.SESSIONS, session._rowIndex, { expires_at: '1970-01-01T00:00:00Z' });
+    // Invalidate session cache
+    try { CacheService.getScriptCache().remove('sess_' + payload.token.substring(0, 16)); } catch(e) {}
     return successResponse_(null, 'Logged out');
 }
 
