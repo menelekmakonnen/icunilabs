@@ -53,8 +53,9 @@ export default function MailSection() {
   const canManage = (isGodmode || isSuperAdmin) && !isImpersonating
   const allAliases = Array.isArray(emailAliases) ? emailAliases : []
 
-  // Default mailbox = effective user's company email
-  const companyEmail = effectiveUser?.company_email || ''
+  // Default mailbox = effective user's company email (prefer company_email, then check for @icuni.org primary)
+  const companyEmail = effectiveUser?.company_email
+    || (effectiveUser?.email?.includes('@icuni.org') ? effectiveUser.email : '')
 
   // When impersonating, fetch the impersonated user's accessible mailboxes
   useEffect(() => {

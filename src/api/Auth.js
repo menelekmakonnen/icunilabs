@@ -510,7 +510,10 @@ function handleEditUser(payload) {
 
     var user = findRow_(SHEETS.USERS, 'id', userId);
     if (!user) return errorResponse_('User not found.');
-    if (user.role === ROLES.GODMODE) return errorResponse_('Cannot edit Godmode users.');
+    // Only Godmode can edit other Godmode users
+    if (user.role === ROLES.GODMODE && auth.user.role !== ROLES.GODMODE) {
+        return errorResponse_('Only Godmode users can edit other Godmode users.');
+    }
     // SuperAdmin can only edit below their level
     if (auth.user.role === ROLES.SUPERADMIN && user.role === ROLES.SUPERADMIN) {
         return errorResponse_('SuperAdmins cannot edit other SuperAdmins.');

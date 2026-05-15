@@ -1,0 +1,729 @@
+/* ─── Vercel Admin Theme — Scoped Styles ─────────────────────
+ * All styles scoped under .vercel-theme parent selector
+ * to avoid polluting the classic admin theme or public site.
+ * ─────────────────────────────────────────────────────────── */
+
+/* ── CSS Custom Properties ─────────────────────── */
+.vercel-theme {
+  --v-bg: #fafafa;
+  --v-surface: #ffffff;
+  --v-surface-secondary: #f5f5f5;
+  --v-border: #eaeaea;
+  --v-border-dark: #d4d4d4;
+  --v-text: #171717;
+  --v-text-secondary: #666666;
+  --v-text-tertiary: #999999;
+  --v-accent: #0070f3;
+  --v-accent-hover: #005bc4;
+  --v-accent-light: rgba(0, 112, 243, 0.08);
+  --v-success: #0070f3;
+  --v-warning: #f5a623;
+  --v-error: #ee0000;
+  --v-sidebar-bg: #ffffff;
+  --v-sidebar-width: 240px;
+  --v-sidebar-collapsed: 60px;
+  --v-topbar-height: 48px;
+  --v-hover: #f5f5f5;
+  --v-radius: 6px;
+  --v-radius-lg: 8px;
+  --v-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --v-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --v-transition: 150ms ease;
+
+  background: var(--v-bg);
+  color: var(--v-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Dark Mode Variant ─────────────────────── */
+.vercel-theme.v-dark {
+  --v-bg: #0a0a0a;
+  --v-surface: #111111;
+  --v-surface-secondary: #1a1a1a;
+  --v-border: #2e2e2e;
+  --v-border-dark: #444444;
+  --v-text: #ededed;
+  --v-text-secondary: #a1a1a1;
+  --v-text-tertiary: #666666;
+  --v-accent: #0070f3;
+  --v-accent-hover: #3291ff;
+  --v-accent-light: rgba(0, 112, 243, 0.12);
+  --v-sidebar-bg: #111111;
+  --v-hover: #1a1a1a;
+  --v-shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --v-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* In dark mode, don't override text-white since it's already correct */
+.vercel-theme.v-dark .v-content .text-white {
+  color: #ededed !important;
+}
+
+/* Dark mode button override — white primary on dark */
+.vercel-theme.v-dark .v-content .bg-gradient-to-r {
+  background: #ededed !important;
+  color: #0a0a0a !important;
+}
+
+.vercel-theme.v-dark .v-content .bg-gradient-to-r:hover {
+  background: #ffffff !important;
+}
+
+/* Kill the global noise overlay inside vercel theme */
+.vercel-theme::before {
+  display: none !important;
+}
+
+/* ── Sidebar ─────────────────────── */
+.v-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--v-sidebar-width);
+  background: var(--v-sidebar-bg);
+  border-right: 1px solid var(--v-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 40;
+  transition: width var(--v-transition), transform var(--v-transition);
+  overflow: hidden;
+}
+
+.v-sidebar.collapsed {
+  width: var(--v-sidebar-collapsed);
+}
+
+.v-sidebar-header {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--v-border);
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.v-sidebar-header .v-project-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--v-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v-sidebar-header .v-project-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--v-accent-light);
+  color: var(--v-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* Search bar in sidebar */
+.v-sidebar-search {
+  padding: 12px 12px 8px;
+  flex-shrink: 0;
+}
+
+.v-sidebar-search input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 32px;
+  background: var(--v-surface-secondary);
+  border: 1px solid var(--v-border);
+  border-radius: var(--v-radius);
+  font-size: 13px;
+  color: var(--v-text);
+  outline: none;
+  transition: border-color var(--v-transition), box-shadow var(--v-transition);
+}
+
+.v-sidebar-search input::placeholder {
+  color: var(--v-text-tertiary);
+}
+
+.v-sidebar-search input:focus {
+  border-color: var(--v-accent);
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1);
+}
+
+.v-sidebar-search-wrapper {
+  position: relative;
+}
+
+.v-sidebar-search-wrapper svg {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--v-text-tertiary);
+  pointer-events: none;
+}
+
+.v-sidebar-search .v-shortcut {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--v-text-tertiary);
+  background: var(--v-surface);
+  border: 1px solid var(--v-border);
+  border-radius: 3px;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
+
+/* Navigation */
+.v-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.v-nav-section {
+  margin-bottom: 16px;
+}
+
+.v-nav-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--v-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 4px 8px 6px;
+  user-select: none;
+}
+
+.v-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--v-radius);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--v-text-secondary);
+  cursor: pointer;
+  transition: all var(--v-transition);
+  border: 1px solid transparent;
+  width: 100%;
+  background: none;
+  text-align: left;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.v-nav-item:hover {
+  color: var(--v-text);
+  background: var(--v-hover);
+}
+
+.v-nav-item.active {
+  color: var(--v-text);
+  background: var(--v-surface-secondary);
+  font-weight: 600;
+}
+
+.v-nav-item .v-nav-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: inherit;
+  opacity: 0.7;
+  transition: opacity var(--v-transition);
+}
+
+.v-nav-item:hover .v-nav-icon,
+.v-nav-item.active .v-nav-icon {
+  opacity: 1;
+}
+
+.v-nav-item .v-nav-badge {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  background: var(--v-accent-light);
+  color: var(--v-accent);
+  padding: 0 5px;
+}
+
+/* Sidebar Footer */
+.v-sidebar-footer {
+  border-top: 1px solid var(--v-border);
+  padding: 8px;
+  flex-shrink: 0;
+}
+
+.v-sidebar-footer .v-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--v-radius);
+  cursor: pointer;
+  transition: background var(--v-transition);
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+}
+
+.v-sidebar-footer .v-user-btn:hover {
+  background: var(--v-hover);
+}
+
+.v-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--v-surface-secondary);
+  border: 1.5px solid var(--v-border);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.v-user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.v-user-info {
+  overflow: hidden;
+  flex: 1;
+}
+
+.v-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--v-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v-user-email {
+  font-size: 11px;
+  color: var(--v-text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Top Bar ─────────────────────── */
+.v-topbar {
+  height: var(--v-topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--v-border);
+  background: var(--v-surface);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.v-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.v-breadcrumb-item {
+  color: var(--v-text-tertiary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--v-transition);
+  white-space: nowrap;
+  text-decoration: none;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.v-breadcrumb-item:hover {
+  color: var(--v-text);
+}
+
+.v-breadcrumb-item.active {
+  color: var(--v-text);
+  font-weight: 600;
+  cursor: default;
+}
+
+.v-breadcrumb-sep {
+  color: var(--v-border-dark);
+  font-size: 14px;
+  user-select: none;
+}
+
+.v-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.v-topbar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--v-radius);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--v-text-secondary);
+  border: 1px solid var(--v-border);
+  background: var(--v-surface);
+  cursor: pointer;
+  transition: all var(--v-transition);
+  white-space: nowrap;
+}
+
+.v-topbar-btn:hover {
+  color: var(--v-text);
+  border-color: var(--v-border-dark);
+  background: var(--v-hover);
+}
+
+.v-topbar-link {
+  font-size: 12px;
+  color: var(--v-text-tertiary);
+  text-decoration: none;
+  transition: color var(--v-transition);
+  white-space: nowrap;
+}
+
+.v-topbar-link:hover {
+  color: var(--v-text);
+}
+
+/* ── Main Content ─────────────────────── */
+.v-main {
+  min-height: 100vh;
+  transition: margin-left var(--v-transition);
+}
+
+.v-content {
+  padding: 28px 32px;
+  max-width: 1200px;
+}
+
+/* ── Content Overrides ─────────────────────── */
+/* Override dark theme cards/text within vercel-theme context */
+.vercel-theme .v-content h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--v-text);
+  letter-spacing: -0.3px;
+}
+
+.vercel-theme .v-content p {
+  color: var(--v-text-secondary);
+}
+
+/* Override card backgrounds from sections */
+.vercel-theme .v-content .bg-neutral-900\/50,
+.vercel-theme .v-content .bg-neutral-900\/80,
+.vercel-theme .v-content .bg-neutral-900\/60,
+.vercel-theme .v-content .bg-neutral-900\/30 {
+  background: var(--v-surface) !important;
+}
+
+.vercel-theme .v-content .border-neutral-800,
+.vercel-theme .v-content .border-neutral-800\/50 {
+  border-color: var(--v-border) !important;
+}
+
+.vercel-theme .v-content .bg-neutral-950,
+.vercel-theme .v-content .bg-neutral-950\/80 {
+  background: var(--v-surface) !important;
+}
+
+.vercel-theme .v-content .text-white {
+  color: var(--v-text) !important;
+}
+
+.vercel-theme .v-content .text-neutral-400 {
+  color: var(--v-text-secondary) !important;
+}
+
+.vercel-theme .v-content .text-neutral-500 {
+  color: var(--v-text-secondary) !important;
+}
+
+.vercel-theme .v-content .text-neutral-600 {
+  color: var(--v-text-tertiary) !important;
+}
+
+/* Input overrides */
+.vercel-theme .v-content input,
+.vercel-theme .v-content textarea,
+.vercel-theme .v-content select {
+  background: var(--v-surface) !important;
+  border-color: var(--v-border) !important;
+  color: var(--v-text) !important;
+}
+
+.vercel-theme .v-content input::placeholder,
+.vercel-theme .v-content textarea::placeholder {
+  color: var(--v-text-tertiary) !important;
+}
+
+.vercel-theme .v-content input:focus,
+.vercel-theme .v-content textarea:focus,
+.vercel-theme .v-content select:focus {
+  border-color: var(--v-accent) !important;
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.1) !important;
+}
+
+/* Button overrides — primary CTA buttons */
+.vercel-theme .v-content .bg-gradient-to-r {
+  background: var(--v-text) !important;
+  border-radius: var(--v-radius) !important;
+}
+
+.vercel-theme .v-content .bg-gradient-to-r:hover {
+  background: #333 !important;
+  box-shadow: none !important;
+}
+
+/* Rounded card overrides */
+.vercel-theme .v-content .rounded-xl {
+  border-radius: var(--v-radius-lg) !important;
+}
+
+.vercel-theme .v-content .rounded-2xl {
+  border-radius: var(--v-radius-lg) !important;
+}
+
+/* Hover states on cards and list items */
+.vercel-theme .v-content .hover\:bg-neutral-800\/30:hover,
+.vercel-theme .v-content .hover\:bg-neutral-800\/50:hover {
+  background: var(--v-hover) !important;
+}
+
+.vercel-theme .v-content .hover\:border-neutral-700:hover {
+  border-color: var(--v-border-dark) !important;
+}
+
+/* Accent color overrides — cyan to Vercel blue */
+.vercel-theme .v-content .text-\[\#00bfff\] {
+  color: var(--v-accent) !important;
+}
+
+.vercel-theme .v-content .bg-\[\#00bfff\]\/10 {
+  background: var(--v-accent-light) !important;
+}
+
+.vercel-theme .v-content .border-\[\#00bfff\]\/20 {
+  border-color: rgba(0, 112, 243, 0.2) !important;
+}
+
+/* Table header overrides */
+.vercel-theme .v-content th {
+  background: var(--v-surface-secondary) !important;
+  color: var(--v-text-secondary) !important;
+  border-color: var(--v-border) !important;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.vercel-theme .v-content td {
+  border-color: var(--v-border) !important;
+  color: var(--v-text-secondary) !important;
+}
+
+/* Modal overrides */
+.vercel-theme .v-content .bg-black\/60 {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.vercel-theme .bg-black\/60 {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+.vercel-theme .bg-neutral-900,
+.vercel-theme .bg-neutral-950 {
+  background: var(--v-surface) !important;
+}
+
+/* Scrollbar styling */
+.vercel-theme ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.vercel-theme ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vercel-theme ::-webkit-scrollbar-thumb {
+  background: var(--v-border-dark);
+  border-radius: 3px;
+}
+
+.vercel-theme ::-webkit-scrollbar-thumb:hover {
+  background: var(--v-text-tertiary);
+}
+
+/* ── Theme Toggle Switch ─────────────────────── */
+.v-theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--v-radius);
+  cursor: pointer;
+  transition: background var(--v-transition);
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--v-text-tertiary);
+}
+
+.v-theme-toggle:hover {
+  background: var(--v-hover);
+  color: var(--v-text-secondary);
+}
+
+.v-theme-toggle svg {
+  flex-shrink: 0;
+}
+
+/* ── Impersonation / Act-As Banner ─────────────────────── */
+.vercel-theme .v-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+}
+
+.v-banner-impersonate {
+  background: linear-gradient(90deg, #7928ca, var(--v-accent));
+}
+
+.v-banner-actas {
+  background: linear-gradient(90deg, #f5a623, #ff6b00);
+}
+
+.v-banner button {
+  margin-left: 8px;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: white;
+  background: rgba(255,255,255,0.2);
+  border: none;
+  border-radius: var(--v-radius);
+  cursor: pointer;
+  transition: background var(--v-transition);
+}
+
+.v-banner button:hover {
+  background: rgba(255,255,255,0.35);
+}
+
+/* ── Responsive ─────────────────────── */
+@media (max-width: 768px) {
+  .v-sidebar {
+    transform: translateX(-100%);
+  }
+
+  .v-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .v-main {
+    margin-left: 0 !important;
+  }
+
+  .v-content {
+    padding: 16px;
+  }
+
+  .v-mobile-hamburger {
+    display: flex !important;
+  }
+
+  .v-topbar {
+    padding: 0 12px;
+  }
+}
+
+@media (min-width: 769px) {
+  .v-mobile-hamburger {
+    display: none !important;
+  }
+
+  .v-mobile-overlay {
+    display: none !important;
+  }
+}
+
+/* ── Utility ─────────────────────── */
+.v-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: var(--v-radius);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--v-text-secondary);
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: all var(--v-transition);
+  white-space: nowrap;
+}
+
+.v-action-btn:hover {
+  background: var(--v-hover);
+  color: var(--v-text);
+}
+
+.v-action-btn.danger {
+  color: var(--v-error);
+}
+
+.v-action-btn.danger:hover {
+  background: rgba(238, 0, 0, 0.06);
+}

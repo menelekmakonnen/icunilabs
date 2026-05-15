@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import OnboardingChecklist from './OnboardingChecklist'
 import EcosystemSection from './EcosystemSection'
 import MailSection from './MailSection'
+import VercelAdminShell from './vercel/VercelAdminShell'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -37,7 +38,20 @@ export default function AdminPanel() {
   const [showImpersonate, setShowImpersonate] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [adminTheme, setAdminTheme] = useState(() =>
+    localStorage.getItem('icuni_admin_theme') || 'modern'
+  )
 
+  // ── Modern Theme Routing ──
+  // If Modern theme selected, delegate entirely to VercelAdminShell
+  if (adminTheme === 'modern') {
+    return <VercelAdminShell onSwitchTheme={() => {
+      localStorage.setItem('icuni_admin_theme', 'classic')
+      setAdminTheme('classic')
+    }} />
+  }
+
+  // ── Classic Theme below — entirely unchanged ──
   useEffect(() => { adminActions.validateSession() }, [])
 
   // Not logged in or not admin
@@ -229,6 +243,11 @@ export default function AdminPanel() {
             <button onClick={() => setShowOnboarding(true)}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-600 hover:text-[#ff7a00] hover:bg-[#ff7a00]/5 text-xs transition-all cursor-pointer border border-transparent hover:border-[#ff7a00]/20">
               <BookOpen className="w-4 h-4" />{!collapsed && 'Onboarding'}
+            </button>
+            <button onClick={() => { localStorage.setItem('icuni_admin_theme', 'modern'); setAdminTheme('modern') }}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-600 hover:text-[#00bfff] hover:bg-[#00bfff]/5 text-xs transition-all cursor-pointer border border-transparent hover:border-[#00bfff]/20">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="8" cy="12" r="2" /><path d="M14 10h4M14 14h4" /></svg>
+              {!collapsed && 'Modern View'}
             </button>
             <button onClick={() => { adminActions.logout(); window.location.hash = '' }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-500/60 hover:text-red-400 hover:bg-red-500/5 text-xs transition-all cursor-pointer">

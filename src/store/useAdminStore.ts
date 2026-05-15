@@ -577,6 +577,8 @@ export const adminActions = {
   assignMailbox: async (userEmail: string, mailbox: string) => {
     try {
       await apiPost('assignMailbox', { token: state.token, userEmail, mailbox })
+      // Force-reload aliases so changes appear immediately
+      await adminActions.loadEmailAliases(true)
       return true
     } catch (err: any) {
       setState({ error: err.message })
@@ -587,6 +589,8 @@ export const adminActions = {
   removeMailbox: async (userEmail: string, mailbox: string) => {
     try {
       await apiPost('removeMailbox', { token: state.token, userEmail, mailbox })
+      // Force-reload aliases so changes appear immediately
+      await adminActions.loadEmailAliases(true)
       return true
     } catch (err: any) {
       setState({ error: err.message })
