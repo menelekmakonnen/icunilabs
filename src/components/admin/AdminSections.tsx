@@ -1735,6 +1735,7 @@ export function UsersSection() {
           { key: 'id', label: 'ID', width: '120px' },
           { key: 'name', label: 'Name', render: (v: any) => <span className="text-white font-medium">{v}</span> },
           { key: 'email', label: 'Email' },
+          { key: 'company_email', label: 'Work Email', render: (v: any) => v ? <span className="text-[#00bfff] text-xs font-medium">{v}</span> : <span className="text-neutral-700 text-xs">Not set</span> },
           { key: 'job_title', label: 'Job Title', render: (v: any) => v ? <span className="text-neutral-400 text-xs">{v}</span> : <span className="text-neutral-700 text-xs">—</span> },
           { key: 'role', label: 'Role', render: (v: any) => (
             <span className={`text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full ${roleColor(v)}`}>{v}</span>

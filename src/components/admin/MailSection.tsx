@@ -118,8 +118,8 @@ export default function MailSection() {
 
   const tabs: { id: Tab; label: string; icon: any; access?: boolean }[] = [
     { id: 'inbox', label: 'Inbox', icon: Inbox },
-    { id: 'compose', label: 'Compose', icon: Send, access: !isImpersonating },
-    { id: 'templates', label: 'Templates', icon: FileText, access: !isImpersonating },
+    { id: 'compose', label: 'Compose', icon: Send },
+    { id: 'templates', label: 'Templates', icon: FileText },
     { id: 'mailboxes', label: 'Mailboxes', icon: Sliders, access: canManage },
   ]
 

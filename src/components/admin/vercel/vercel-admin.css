@@ -64,6 +64,52 @@
   color: #ededed !important;
 }
 
+/* ── Login page light-mode overrides ─────────────────────── */
+.vercel-theme .min-h-screen.bg-neutral-950 {
+  background: var(--v-bg) !important;
+}
+
+.vercel-theme .bg-neutral-900\/50.border.border-neutral-800 {
+  background: var(--v-surface) !important;
+  border-color: var(--v-border) !important;
+}
+
+/* Fix all dark background pill/tab selectors in light mode */
+.vercel-theme .bg-neutral-900 {
+  background: var(--v-surface-secondary) !important;
+}
+
+.vercel-theme .bg-neutral-900\/80 {
+  background: var(--v-surface) !important;
+  color: var(--v-text) !important;
+}
+
+/* Fix text color on light backgrounds */
+.vercel-theme .text-white {
+  color: var(--v-text) !important;
+}
+
+.vercel-theme .text-neutral-500 {
+  color: var(--v-text-tertiary) !important;
+}
+
+.vercel-theme .placeholder-neutral-500::placeholder {
+  color: var(--v-text-tertiary) !important;
+}
+
+/* Active tab pill in light mode — use accent color instead of dark bg */
+.vercel-theme .bg-gradient-to-r.from-\[\#00bfff\].to-\[\#0099cc\] {
+  background: var(--v-accent) !important;
+  color: #fff !important;
+}
+
+/* Black pill buttons (e.g., Referrers active tab) */
+.vercel-theme .bg-neutral-950\/90,
+.vercel-theme .bg-neutral-800 {
+  background: var(--v-text) !important;
+  color: var(--v-bg) !important;
+}
+
 /* Dark mode button override — white primary on dark */
 .vercel-theme.v-dark .v-content .bg-gradient-to-r {
   background: #ededed !important;

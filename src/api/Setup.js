@@ -215,6 +215,16 @@ function setupSheetHeaders_(ss, sheetName, headers) {
         sheet.appendRow(headers);
         sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
         sheet.setFrozenRows(1);
+    } else {
+        // ── Schema Migration: append any missing columns to existing sheets ──
+        var existingHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+        for (var i = 0; i < headers.length; i++) {
+            if (existingHeaders.indexOf(headers[i]) === -1) {
+                var newCol = sheet.getLastColumn() + 1;
+                sheet.getRange(1, newCol).setValue(headers[i]).setFontWeight('bold');
+                Logger.log('MIGRATION: Added missing column "' + headers[i] + '" to sheet ' + sheetName);
+            }
+        }
     }
     // Remove default Sheet1 if it exists and is empty
     var def = ss.getSheetByName('Sheet1');

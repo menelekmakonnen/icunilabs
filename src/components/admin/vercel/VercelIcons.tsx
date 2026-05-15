@@ -293,15 +293,13 @@ export function MoonIcon({ className, size = 16 }: IconProps) {
 
 export function ICUNILogo({ className, size = 24 }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" className={className} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="vercel-logo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#0070f3" />
-          <stop offset="100%" stopColor="#00a6ed" />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="8" fill="url(#vercel-logo-grad)" />
-      <text x="16" y="22" textAnchor="middle" fill="white" fontSize="16" fontWeight="800" fontFamily="Inter, system-ui, sans-serif">i</text>
-    </svg>
+    <img
+      src="/icuni-logo.png"
+      alt="ICUNI"
+      width={size}
+      height={size}
+      className={className}
+      style={{ borderRadius: 4, objectFit: 'contain' }}
+    />
   )
 }
