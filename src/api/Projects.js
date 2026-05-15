@@ -74,12 +74,18 @@ function handleAddClient(payload) {
     var clientsFolder = getDriveSubfolder_(DRIVE_FOLDERS.CLIENTS);
     var clientFolder = getOrCreateFolder_(clientsFolder, displayName + ' — ' + clientId);
     
+    var createdAt = now_();
+    // Godmode can backdate client creation
+    if (payload.created_at_override && auth.user.role === ROLES.GODMODE) {
+        createdAt = payload.created_at_override;
+    }
+    
     appendRow_(SHEETS.CLIENTS, [
         clientId, payload.name || '', payload.email || '', payload.phone || '',
         payload.company || '', isProspect ? 'Prospect' : 'Active', payload.referrer_id || '',
-        now_(), payload.notes || '', clientFolder.getUrl(),
+        createdAt, payload.notes || '', clientFolder.getUrl(),
         payload.tags || '', payload.source || '', payload.industry || '',
-        payload.address || '', payload.website || '', now_(),
+        payload.address || '', payload.website || '', createdAt,
         payload.prospect_stage || 'new_lead',
         payload.buyer_profile || '', payload.pain_category || '',
         payload.challenge_statement || '', payload.laugh_factor || '',
@@ -249,6 +255,68 @@ function handleDeleteClient(payload) {
     updateRow_(SHEETS.CLIENTS, client._rowIndex, { status: 'Deleted', last_activity: now_() });
     logAction_(auth.user.user_id, auth.user.name, 'CLIENT_DELETED', client.name);
     return successResponse_(null, 'Client deleted.');
+}
+
+/**
+ * Add a historic project with payment records. Godmode only.
+ * payload: { token, client_id, title, type, estimated_cost, start_date, completion_date,
+ *            payments: [{ amount, method, paid_at }], pending_balance }
+ */
+function handleAddHistoricProject(payload) {
+    var auth = requireGodmode_(payload.token);
+    if (auth.error) return auth.error;
+    if (!payload.client_id || !payload.title || !payload.type) {
+        return errorResponse_('Client, title, and type are required.');
+    }
+    var client = findRow_(SHEETS.CLIENTS, 'client_id', payload.client_id);
+    if (!client) return errorResponse_('Client not found.');
+
+    var cost = Number(payload.estimated_cost || 0);
+    var projectId = generateId_('PRJ');
+    var startDate = payload.start_date || now_();
+    var completionDate = payload.completion_date || '';
+    var totalPaid = 0;
+
+    // Create the project
+    appendRow_(SHEETS.CLIENT_PROJECTS, [
+        projectId, payload.client_id, payload.title, payload.description || '',
+        completionDate ? 'completed' : 'active', completionDate ? '10' : '0', payload.type,
+        cost, 0, cost,
+        startDate, completionDate || '', completionDate || '',
+        '', '', // referrer_id, assigned_staff
+        startDate, startDate // created_at, updated_at
+    ]);
+
+    // Add payment records
+    var payments = payload.payments || [];
+    for (var i = 0; i < payments.length; i++) {
+        var p = payments[i];
+        var payAmt = Number(p.amount || 0);
+        if (payAmt <= 0) continue;
+        var paymentId = generateId_('PAY');
+        appendRow_(SHEETS.PAYMENTS, [
+            paymentId, payload.client_id, projectId, payAmt,
+            p.method || 'MoMo', p.paid_at || startDate, '', // receipt_url
+            auth.user.name, now_()
+        ]);
+        totalPaid += payAmt;
+    }
+
+    // Update project totals
+    var proj = findRow_(SHEETS.CLIENT_PROJECTS, 'project_id', projectId);
+    if (proj) {
+        updateRow_(SHEETS.CLIENT_PROJECTS, proj._rowIndex, {
+            total_paid: totalPaid,
+            balance: cost - totalPaid
+        });
+    }
+
+    // Update client last_activity
+    updateRow_(SHEETS.CLIENTS, client._rowIndex, { last_activity: now_(), status: 'Active' });
+
+    logAction_(auth.user.user_id, auth.user.name, 'HISTORIC_PROJECT_ADDED',
+        projectId + ': ' + payload.title + ' for ' + client.name + ' (GH₵' + cost + ')');
+    return successResponse_({ projectId: projectId }, 'Historic project added with ' + payments.length + ' payment(s).');
 }
 
 // ─── PROJECT LIFECYCLE ───────────────────────────────────

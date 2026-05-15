@@ -19,6 +19,29 @@ function healthStatus(c: any) { if (!c.project_count) return 'inactive'; if (c.o
 
 const TAG_STYLES: Record<string, string> = { priority:'priority', vip:'vip', new:'new', returning:'returning' }
 
+function stageClass(stage: string): string {
+  if (stage === 'prospect') return 'stage-prospect'
+  if (stage === 'won') return 'stage-won'
+  if (stage === 'lost') return 'stage-lost'
+  if (['new_lead','contacted','qualified'].includes(stage)) return 'stage-lead'
+  return ''
+}
+
+/** Procedural person silhouette SVG — unique hue per name */
+function PersonAvatar({ name, size = 80 }: { name: string; size?: number }) {
+  const color = getAvatarColor(name)
+  return (
+    <svg width={size} height={size} viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="40" cy="40" r="40" fill={color} opacity="0.15" />
+      <circle cx="40" cy="40" r="38" stroke={color} strokeWidth="1.5" opacity="0.25" />
+      <circle cx="40" cy="28" r="13" fill={color} opacity="0.7" />
+      <path d="M14 72c0-14.36 11.64-26 26-26s26 11.64 26 26" fill={color} opacity="0.5" />
+      <circle cx="40" cy="28" r="11" fill={color} opacity="0.3" />
+      <text x="40" y="33" textAnchor="middle" fill="white" fontSize="14" fontWeight="700" fontFamily="system-ui">{getInitials(name).charAt(0)}</text>
+    </svg>
+  )
+}
+
 const STAGES = [
   { id: 'prospect', label: 'Prospect', color: '#64748b' },
   { id: 'new_lead', label: 'New Lead', color: '#00bfff' },
@@ -76,6 +99,12 @@ export default function CRMSection() {
   const [busyDelete, setBusyDelete] = useState(false)
   const [busyStage, setBusyStage] = useState(false)
   const [busyOpen, setBusyOpen] = useState<string | null>(null)
+  const [showHistoric, setShowHistoric] = useState(false)
+  const [historicForm, setHistoricForm] = useState({ name:'', email:'', phone:'', company:'', industry:'', created_at_override:'', project_title:'', project_type:'Website', estimated_cost:'', start_date:'', completion_date:'', notes:'' })
+  const [historicPayments, setHistoricPayments] = useState<{amount:string, method:string, paid_at:string}[]>([])
+  const [busyHistoric, setBusyHistoric] = useState(false)
+
+  const isGodmode = user?.role === 'Godmode'
 
   useEffect(() => { adminActions.loadClients() }, [])
 
@@ -652,6 +681,12 @@ export default function CRMSection() {
             className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
             <Plus className="w-4 h-4" />Add Prospect
           </button>
+          {isGodmode && (
+            <button onClick={() => setShowHistoric(true)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 border border-amber-700/40 text-amber-400 rounded-xl text-sm font-bold cursor-pointer hover:border-amber-500/60 hover:bg-amber-500/5 transition-all">
+              <Plus className="w-4 h-4" />Add Historic
+            </button>
+          )}
           <button onClick={() => setShowAdd(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-xl text-sm font-bold cursor-pointer hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all">
             <Plus className="w-4 h-4" />Add Client
@@ -762,61 +797,74 @@ export default function CRMSection() {
       ) : (
         <div className="crm-grid">
           <AnimatePresence>
-            {filtered.map((c: any, i: number) => (
-              <motion.div key={c.client_id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                transition={{ delay: i * 0.03, duration: 0.3 }} onClick={() => openClient(c)} className="crm-card">
-                <div className="flex items-center gap-3 mb-3 relative z-10">
-                  <div className="crm-avatar" style={{ background: `linear-gradient(135deg, ${getAvatarColor(c.name || c.company || '')}, ${getAvatarColor(c.name || c.company || '')}88)` }}>
-                    {getInitials(c.name || c.company || c.email || '?')}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-sm font-bold text-white truncate">{c.name || c.company || c.email || 'Unnamed'}</h3>
-                    <p className="text-[11px] text-neutral-500 truncate">{c.company || c.email}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {c.visibility === 'public' && <Globe className="w-3 h-3 text-emerald-500/50" />}
-                    {c.added_by && c.visibility !== 'public' && <Lock className="w-3 h-3 text-neutral-700" />}
-                    <span className={`crm-health-dot ${healthStatus(c)}`} />
-                  </div>
-                </div>
+            {filtered.map((c: any, i: number) => {
+              const displayName = c.name || c.company || c.email || 'Unnamed'
+              const stage = c.prospect_stage || 'new_lead'
+              const stageInfo = STAGES.find(s => s.id === stage)
+              const addedByName = c.added_by ? c.added_by.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : ''
 
-                {/* Tags */}
-                {c.tags_list?.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3 relative z-10">
-                    {c.tags_list.slice(0, 3).map((tag: string) => (
-                      <span key={tag} className={`crm-tag ${TAG_STYLES[tag.toLowerCase()] || 'default'}`} style={{ fontSize: '10px', padding: '1px 8px' }}>{tag}</span>
-                    ))}
-                    {c.tags_list.length > 3 && <span className="text-[10px] text-neutral-600">+{c.tags_list.length - 3}</span>}
-                  </div>
-                )}
+              return (
+                <motion.div key={c.client_id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  transition={{ delay: Math.min(i * 0.02, 0.4), duration: 0.3 }} onClick={() => openClient(c)}
+                  className={`crm-card ${stageClass(stage)} ${busyOpen === c.client_id ? 'opacity-60 pointer-events-none' : ''}`}>
 
-                {/* Stage Badge */}
-                {c.prospect_stage && c.prospect_stage !== 'new_lead' && (
-                  <div className="mb-2 relative z-10">
-                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
-                      style={{ color: STAGES.find(s => s.id === c.prospect_stage)?.color || '#64748b', background: `${STAGES.find(s => s.id === c.prospect_stage)?.color || '#475569'}15` }}>
-                      {STAGES.find(s => s.id === c.prospect_stage)?.label || c.prospect_stage}
+                  {/* SVG Profile Avatar */}
+                  <div className="crm-profile-avatar">
+                    {busyOpen === c.client_id
+                      ? <svg className="animate-spin w-12 h-12 text-[#00bfff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>
+                      : <PersonAvatar name={displayName} />
+                    }
+                  </div>
+
+                  {/* Name + Company */}
+                  <h3 className="text-sm font-bold text-white truncate w-full relative z-10">{displayName}</h3>
+                  {c.company && c.company !== displayName && (
+                    <p className="text-[11px] text-neutral-500 truncate w-full relative z-10 mt-0.5">{c.company}</p>
+                  )}
+
+                  {/* Stage Badge */}
+                  <div className="mt-2 mb-1 relative z-10">
+                    <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full inline-flex items-center gap-1"
+                      style={{ color: stageInfo?.color || '#64748b', background: `${stageInfo?.color || '#475569'}15` }}>
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ background: stageInfo?.color || '#64748b' }} />
+                      {stageInfo?.label || stage}
                     </span>
                   </div>
-                )}
 
-                {/* Stats */}
-                <div className="flex items-center justify-between text-[11px] text-neutral-600 relative z-10">
-                  <span>{c.project_count || 0} project{c.project_count !== 1 ? 's' : ''}</span>
-                  <span className={c.total_revenue > 0 ? 'text-emerald-500 font-semibold' : ''}>{c.total_revenue > 0 ? fmtMoney(c.total_revenue) : '—'}</span>
-                </div>
-                {c.outstanding > 0 && (
-                  <div className="flex items-center justify-between text-[10px] mt-1 relative z-10">
-                    <span className="text-neutral-700">Outstanding</span>
-                    <span className="text-red-400 font-semibold">{fmtMoney(c.outstanding)}</span>
+                  {/* Revenue */}
+                  {c.total_revenue > 0 && (
+                    <p className="text-[11px] text-emerald-500 font-semibold mt-1 relative z-10">{fmtMoney(c.total_revenue)}</p>
+                  )}
+                  {c.outstanding > 0 && (
+                    <p className="text-[10px] text-red-400/80 mt-0.5 relative z-10">Owes {fmtMoney(c.outstanding)}</p>
+                  )}
+
+                  {/* Tags */}
+                  {c.tags_list?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2 justify-center relative z-10">
+                      {c.tags_list.slice(0, 2).map((tag: string) => (
+                        <span key={tag} className={`crm-tag ${TAG_STYLES[tag.toLowerCase()] || 'default'}`} style={{ fontSize: '9px', padding: '1px 6px' }}>{tag}</span>
+                      ))}
+                      {c.tags_list.length > 2 && <span className="text-[9px] text-neutral-600">+{c.tags_list.length - 2}</span>}
+                    </div>
+                  )}
+
+                  {/* Metadata Footer */}
+                  <div className="crm-meta relative z-10">
+                    <div className="flex items-center justify-center gap-1.5 text-[10px] text-neutral-600">
+                      {c.visibility === 'public' ? <Globe className="w-3 h-3 text-emerald-500/50" /> : c.added_by ? <Lock className="w-3 h-3 text-neutral-700" /> : null}
+                      <span className="truncate">{addedByName ? `Added by ${addedByName}` : 'Legacy'}</span>
+                    </div>
+                    <p className="text-[10px] text-neutral-700 mt-0.5">{fmtDate(c.created_at)}</p>
                   </div>
-                )}
-              </motion.div>
-            ))}
+                </motion.div>
+              )
+            })}
           </AnimatePresence>
         </div>
       )}
       </>)}
+
 
       {/* Add Client Modal */}
       {showAdd && (
@@ -945,6 +993,131 @@ export default function CRMSection() {
                 {busyStage ? 'Working...' : stagePopup.direction === 'advance' ? 'Advance' : 'Regress'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Historic Client Modal (Godmode only) */}
+      {showHistoric && (
+        <div className={modalBg} onClick={() => setShowHistoric(false)}>
+          <div className={`${modalCard} !max-w-2xl max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-amber-400">Add Historic Client</h3>
+                <p className="text-xs text-neutral-500 mt-0.5">Record a past client with their project and payment history.</p>
+              </div>
+              <button onClick={() => setShowHistoric(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              setBusyHistoric(true)
+              try {
+                // Step 1: Create the client
+                const clientOk = await adminActions.createClient({
+                  name: historicForm.name,
+                  email: historicForm.email,
+                  phone: historicForm.phone,
+                  company: historicForm.company,
+                  industry: historicForm.industry,
+                  notes: historicForm.notes,
+                  created_at_override: historicForm.created_at_override,
+                  prospect_stage: 'won',
+                })
+                if (!clientOk) return
+
+                // Step 2: If project info provided, add historic project
+                if (historicForm.project_title.trim()) {
+                  // Find the newly created client
+                  const freshClients = useAdminStore.getState().clients
+                  const newClient = freshClients.find((c: any) => c.email === historicForm.email || c.name === historicForm.name)
+                  if (newClient) {
+                    await adminActions.addHistoricProject({
+                      client_id: newClient.client_id,
+                      title: historicForm.project_title,
+                      type: historicForm.project_type,
+                      estimated_cost: historicForm.estimated_cost,
+                      start_date: historicForm.start_date,
+                      completion_date: historicForm.completion_date,
+                      payments: historicPayments.filter(p => p.amount && Number(p.amount) > 0),
+                    })
+                  }
+                }
+
+                setShowHistoric(false)
+                setHistoricForm({ name:'', email:'', phone:'', company:'', industry:'', created_at_override:'', project_title:'', project_type:'Website', estimated_cost:'', start_date:'', completion_date:'', notes:'' })
+                setHistoricPayments([])
+              } finally { setBusyHistoric(false) }
+            }} className="space-y-4">
+
+              {/* Client Section */}
+              <div className="border border-neutral-800 rounded-xl p-4 space-y-3">
+                <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Client Details</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <input value={historicForm.name} onChange={e => setHistoricForm({...historicForm, name: e.target.value})} className={inputCls} placeholder="Full name *" required />
+                  <input type="email" value={historicForm.email} onChange={e => setHistoricForm({...historicForm, email: e.target.value})} className={inputCls} placeholder="Email *" required />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <input value={historicForm.phone} onChange={e => setHistoricForm({...historicForm, phone: e.target.value})} className={inputCls} placeholder="Phone" />
+                  <input value={historicForm.company} onChange={e => setHistoricForm({...historicForm, company: e.target.value})} className={inputCls} placeholder="Company" />
+                  <input value={historicForm.industry} onChange={e => setHistoricForm({...historicForm, industry: e.target.value})} className={inputCls} placeholder="Industry" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-neutral-600 mb-1 block">Client Since (backdated)</label>
+                    <input type="date" value={historicForm.created_at_override} onChange={e => setHistoricForm({...historicForm, created_at_override: e.target.value})} className={inputCls} />
+                  </div>
+                  <textarea value={historicForm.notes} onChange={e => setHistoricForm({...historicForm, notes: e.target.value})} className={`${inputCls} !min-h-[40px]`} placeholder="Notes" rows={1} />
+                </div>
+              </div>
+
+              {/* Project Section */}
+              <div className="border border-neutral-800 rounded-xl p-4 space-y-3">
+                <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Project (Optional)</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <input value={historicForm.project_title} onChange={e => setHistoricForm({...historicForm, project_title: e.target.value})} className={inputCls} placeholder="Project title" />
+                  <select value={historicForm.project_type} onChange={e => setHistoricForm({...historicForm, project_type: e.target.value})} className={inputCls}>
+                    <option>Website</option><option>Branding</option><option>Design</option><option>Social Media</option><option>Marketing</option><option>Consulting</option><option>Print</option><option>Other</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="text-[10px] text-neutral-600 mb-1 block">Project Cost (GH₵)</label>
+                    <input type="number" value={historicForm.estimated_cost} onChange={e => setHistoricForm({...historicForm, estimated_cost: e.target.value})} className={inputCls} placeholder="0" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-neutral-600 mb-1 block">Start Date</label>
+                    <input type="date" value={historicForm.start_date} onChange={e => setHistoricForm({...historicForm, start_date: e.target.value})} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-neutral-600 mb-1 block">Completion Date</label>
+                    <input type="date" value={historicForm.completion_date} onChange={e => setHistoricForm({...historicForm, completion_date: e.target.value})} className={inputCls} />
+                  </div>
+                </div>
+
+                {/* Payment Records */}
+                <div className="mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Payment Records</h5>
+                    <button type="button" onClick={() => setHistoricPayments([...historicPayments, { amount:'', method:'MoMo', paid_at:'' }])}
+                      className="text-[10px] text-[#00bfff] hover:text-white cursor-pointer transition-colors">+ Add Payment</button>
+                  </div>
+                  {historicPayments.map((p, idx) => (
+                    <div key={idx} className="grid grid-cols-4 gap-2 mb-2">
+                      <input type="number" value={p.amount} onChange={e => { const u = [...historicPayments]; u[idx].amount = e.target.value; setHistoricPayments(u) }} className={inputCls} placeholder="Amount" />
+                      <select value={p.method} onChange={e => { const u = [...historicPayments]; u[idx].method = e.target.value; setHistoricPayments(u) }} className={inputCls}>
+                        <option>MoMo</option><option>Bank Transfer</option><option>Cash</option><option>Cheque</option>
+                      </select>
+                      <input type="date" value={p.paid_at} onChange={e => { const u = [...historicPayments]; u[idx].paid_at = e.target.value; setHistoricPayments(u) }} className={inputCls} />
+                      <button type="button" onClick={() => setHistoricPayments(historicPayments.filter((_, j) => j !== idx))} className="text-red-400 hover:text-red-300 text-xs cursor-pointer">Remove</button>
+                    </div>
+                  ))}
+                  {historicPayments.length === 0 && <p className="text-[10px] text-neutral-700">No payments recorded yet.</p>}
+                </div>
+              </div>
+
+              <FormButton busy={busyHistoric} label="Add Historic Client" busyLabel="Saving..." className="w-full" />
+            </form>
           </div>
         </div>
       )}

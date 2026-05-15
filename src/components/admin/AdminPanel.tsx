@@ -19,13 +19,13 @@ const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'mail', label: 'Mail', icon: Mail },
   { id: 'clients', label: 'Clients', icon: Users },
-  { id: 'projects', label: 'Projects', icon: FolderOpen },
-  { id: 'invoices', label: 'Invoices', icon: FileText },
-  { id: 'careers', label: 'Careers', icon: Briefcase },
   { id: 'referrals', label: 'Referrals', icon: UserCheck },
+  { id: 'invoices', label: 'Invoices', icon: FileText },
   { id: 'sla', label: 'SLA', icon: Clock },
   { id: 'users', label: 'Team', icon: Shield },
   { id: 'ecosystem', label: 'Ecosystem', icon: Globe },
+  { id: 'projects', label: 'Projects', icon: FolderOpen },
+  { id: 'careers', label: 'Careers', icon: Briefcase },
   { id: 'logs', label: 'Logs', icon: Activity },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
@@ -50,19 +50,23 @@ export default function AdminPanel() {
 
   // Department scope mapping (frontend mirror of backend DEPARTMENT_SCOPE)
   const DEPT_SCOPE: Record<string, string[]> = {
-    'Admin':      ['dashboard', 'mail', 'clients', 'projects', 'invoices', 'sla', 'careers', 'referrals', 'logs', 'settings'],
-    'Sales':      ['dashboard', 'mail', 'clients', 'referrals', 'careers'],
-    'Product':    ['dashboard', 'mail', 'projects', 'sla', 'logs']
+    'Admin':      ['dashboard', 'mail', 'clients', 'referrals', 'invoices', 'sla', 'projects', 'settings'],
+    'Sales':      ['dashboard', 'mail', 'clients', 'referrals'],
+    'Product':    ['dashboard', 'mail', 'projects', 'sla']
   }
 
   // Filter nav items based on role + permissions
   const filteredNav = NAV.filter(item => {
-    // Godmode and SuperAdmin see everything
-    if (isElevated) return true
-    // Team section is elevated-only
-    if (item.id === 'users') return false
-    // Ecosystem section is elevated-only
-    if (item.id === 'ecosystem') return false
+    // Godmode sees everything
+    if (role === 'Godmode') return true
+    // Team + Ecosystem are elevated-only
+    if (item.id === 'users') return isElevated
+    if (item.id === 'ecosystem') return isElevated
+    // Careers + Logs are Godmode-only
+    if (item.id === 'careers') return false
+    if (item.id === 'logs') return false
+    // SuperAdmin gets the curated menu
+    if (role === 'SuperAdmin') return true
     // Check department scope first, then permission overrides
     const deptSections = DEPT_SCOPE[role] || []
     const inScope = deptSections.includes(item.id)

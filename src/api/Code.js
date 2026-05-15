@@ -72,6 +72,7 @@ function doPost(e) {
         if (action === 'addClient')         return handleAddClient(payload);
         if (action === 'updateClient')      return handleUpdateClient(payload);
         if (action === 'deleteClient')      return handleDeleteClient(payload);
+        if (action === 'addHistoricProject') return handleAddHistoricProject(payload);
         if (action === 'getClientActivity') return handleGetClientActivity(payload);
         if (action === 'addClientNote')     return handleAddClientNote(payload);
         if (action === 'updateClientTags')  return handleUpdateClientTags(payload);

@@ -2,12 +2,15 @@
    ICUNI Labs CRM — Premium Styles
    ══════════════════════════════════════════════════════════ */
 
-/* ─── Client Cards Grid ───────────────────────────────────── */
+/* ─── Profile Cards Grid ─────────────────────────────────── */
 .crm-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
+@media (min-width: 640px)  { .crm-grid { grid-template-columns: repeat(3, 1fr); gap: 18px; } }
+@media (min-width: 1024px) { .crm-grid { grid-template-columns: repeat(4, 1fr); gap: 20px; } }
+@media (min-width: 1440px) { .crm-grid { grid-template-columns: repeat(5, 1fr); gap: 20px; } }
 
 .crm-card {
   background: rgba(15, 15, 25, 0.6);
@@ -280,3 +283,79 @@
 .crm-health-dot.warning { background: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.4); }
 .crm-health-dot.overdue { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.4); }
 .crm-health-dot.inactive { background: #475569; }
+
+/* ─── Profile Card Layout ─────────────────────────────────── */
+.crm-card {
+  padding: 24px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.crm-card .crm-profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.crm-card .crm-profile-avatar svg {
+  width: 100%;
+  height: 100%;
+}
+
+.crm-card .crm-meta {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  width: 100%;
+  text-align: center;
+}
+
+/* ─── Stage Variant Cards ─────────────────────────────────── */
+.crm-card.stage-prospect {
+  border-style: dashed;
+  border-color: rgba(100, 116, 139, 0.35);
+  background: rgba(15, 15, 25, 0.4);
+}
+.crm-card.stage-prospect:hover {
+  border-color: rgba(100, 116, 139, 0.55);
+}
+.crm-card.stage-prospect::before {
+  background: linear-gradient(135deg, rgba(100,116,139,0.04), transparent 60%);
+}
+
+.crm-card.stage-lead {
+  border-color: rgba(0, 191, 255, 0.15);
+}
+.crm-card.stage-lead:hover {
+  border-color: rgba(0, 191, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(0, 191, 255, 0.06);
+}
+
+.crm-card.stage-won {
+  border-color: rgba(16, 185, 129, 0.15);
+}
+.crm-card.stage-won:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(16, 185, 129, 0.06);
+}
+.crm-card.stage-won::before {
+  background: linear-gradient(135deg, rgba(16,185,129,0.04), transparent 60%);
+}
+
+.crm-card.stage-lost {
+  border-color: rgba(239, 68, 68, 0.1);
+  opacity: 0.7;
+}
+.crm-card.stage-lost:hover {
+  border-color: rgba(239, 68, 68, 0.25);
+  opacity: 1;
+}

@@ -763,6 +763,19 @@ export const adminActions = {
     }
   },
 
+  addHistoricProject: async (data: any) => {
+    setState({ loading: true, error: null })
+    try {
+      const result = await apiPost('addHistoricProject', { token: state.token, ...data })
+      await adminActions.loadClients()
+      setState({ loading: false })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return null
+    }
+  },
+
   createProject: async (data: any) => {
     setState({ loading: true, error: null })
     try {
