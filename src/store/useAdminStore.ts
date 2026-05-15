@@ -1124,8 +1124,18 @@ export const adminActions = {
   updateClientStatus: async (clientId: string, prospectStage: string, note?: string): Promise<boolean> => {
     setState({ loading: true, error: null })
     try {
+      // Optimistic update — move client in pipeline immediately for visual feedback
+      const optimisticClients = state.clients.map((c: any) =>
+        c.client_id === clientId ? { ...c, prospect_stage: prospectStage } : c
+      )
+      setState({ clients: optimisticClients })
+      // Also update activeClient if viewing this client
+      if (state.activeClient && state.activeClient.client_id === clientId) {
+        setState({ activeClient: { ...state.activeClient, prospect_stage: prospectStage } })
+      }
+
       await apiPost('updateClientStatus', { token: state.token, clientId, prospect_stage: prospectStage, note })
-      // Refresh client list (updates pipeline view)
+      // Refresh client list with authoritative data from backend
       await adminActions.loadClients()
       // If viewing a client detail, refresh that too
       if (state.activeClient && state.activeClient.client_id === clientId) {
@@ -1135,6 +1145,8 @@ export const adminActions = {
       setState({ loading: false })
       return true
     } catch (err: any) {
+      // On failure, reload to revert optimistic update
+      await adminActions.loadClients().catch(() => {})
       setState({ error: err.message, loading: false })
       return false
     }

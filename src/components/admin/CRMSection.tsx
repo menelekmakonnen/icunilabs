@@ -12,7 +12,7 @@ const modalCard = 'bg-neutral-950 border border-neutral-800 rounded-2xl p-6 w-fu
 
 const AVATAR_COLORS = ['#00bfff','#8b5cf6','#ff7a00','#10b981','#ef4444','#f59e0b','#ec4899','#06b6d4']
 function getAvatarColor(name: string) { let h = 0; for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h << 5) - h); return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length] }
-function getInitials(name: string) { return (name||'?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) }
+function getInitials(name: string) { const clean = (name || '').replace(/[^a-zA-Z\s]/g, '').trim(); if (!clean) return '\u2022'; return clean.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) }
 function fmtMoney(v: number) { return `GH₵${(v||0).toLocaleString()}` }
 function fmtDate(d: string) { if (!d) return '—'; try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) } catch { return d } }
 function healthStatus(c: any) { if (!c.project_count) return 'inactive'; if (c.outstanding > 0) return 'warning'; if (c.active_projects > 0) return 'healthy'; return 'inactive' }
@@ -253,9 +253,7 @@ export default function CRMSection() {
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur-sm">
           <div className="flex items-center gap-4">
             <button onClick={() => adminActions.clearActiveClient()} className="text-neutral-500 hover:text-white cursor-pointer transition-colors"><ArrowLeft className="w-5 h-5" /></button>
-            <div className="crm-avatar" style={{ background: `linear-gradient(135deg, ${getAvatarColor(c.name)}, ${getAvatarColor(c.name)}88)` }}>
-              {getInitials(c.name)}
-            </div>
+            <PersonAvatar name={c.name || c.company || c.email || ''} size={42} />
             <div>
               <h2 className="text-lg font-bold text-white">{c.name}</h2>
               <div className="flex items-center gap-3 text-xs text-neutral-500">
@@ -447,6 +445,7 @@ export default function CRMSection() {
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Industry:</span>{c.industry || '—'}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Source:</span>{c.source || '—'}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Profile:</span>{c.buyer_profile ? personas.find(p => p.id === c.buyer_profile)?.title || c.buyer_profile : '—'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Added By:</span>{c.added_by ? c.added_by.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : <span className="text-neutral-700 italic">Legacy entry</span>}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Client Since:</span>{fmtDate(c.created_at)}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Last Activity:</span>{fmtDate(c.last_activity)}</p>
                   </div>
@@ -749,6 +748,11 @@ export default function CRMSection() {
                         {c.visibility === 'public' && <Globe className="w-3 h-3 text-emerald-500/50" />}
                         {c.added_by && c.visibility !== 'public' && <Lock className="w-3 h-3 text-neutral-700" />}
                       </div>
+                      {c.added_by && (
+                        <p className="text-[9px] text-neutral-700 mt-1 truncate">
+                          Added by {c.added_by.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                        </p>
+                      )}
                       <div className="mt-2 flex items-center gap-1">
                         {(() => { const curIdx = STAGES.findIndex(s => s.id === stage.id); return curIdx > 0 ? (
                           <button onClick={(e) => { e.stopPropagation(); openStagePopup(c.client_id, STAGES[curIdx - 1].id, 'regress') }}
