@@ -22,7 +22,7 @@ interface ProfileData {
 }
 
 export default function ProfileSection() {
-  const { user } = useAdminStore()
+  const { user, impersonating } = useAdminStore()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -46,11 +46,12 @@ export default function ProfileSection() {
   const [showPinSection, setShowPinSection] = useState(false)
   const [newPin, setNewPin] = useState('')
 
-
+  // Whether we are viewing someone else's profile (read-only mode)
+  const isImpersonating = !!impersonating
 
   useEffect(() => {
     loadProfile()
-  }, [])
+  }, [impersonating?.email])
 
   async function loadProfile() {
     setProfileLoading(true)
@@ -267,6 +268,14 @@ export default function ProfileSection() {
         </div>
       </div>
 
+      {/* Impersonation Notice */}
+      {isImpersonating && (
+        <div className="mb-4 p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center gap-2">
+          <Eye className="w-4 h-4 text-purple-400 shrink-0" />
+          <span className="text-sm text-purple-300">Viewing <strong>{impersonating.name}</strong>'s profile (read-only)</span>
+        </div>
+      )}
+
       {/* Personal Info */}
       <motion.section
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
@@ -278,7 +287,7 @@ export default function ProfileSection() {
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Full Name</label>
-            <input value={name} onChange={e => setName(e.target.value)} className={inp} placeholder="Your name" />
+            <input value={name} onChange={e => setName(e.target.value)} className={`${inp} ${isImpersonating ? 'opacity-50 cursor-not-allowed' : ''}`} placeholder="Your name" disabled={isImpersonating} />
           </div>
           <div>
             <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Login Email</label>
@@ -296,31 +305,34 @@ export default function ProfileSection() {
             <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">
               <Phone className="w-3 h-3 inline mr-1" />Phone Number
             </label>
-            <input value={phone} onChange={e => setPhone(e.target.value)} className={inp} placeholder="+233 xxx xxx xxxx" />
+            <input value={phone} onChange={e => setPhone(e.target.value)} className={`${inp} ${isImpersonating ? 'opacity-50 cursor-not-allowed' : ''}`} placeholder="+233 xxx xxx xxxx" disabled={isImpersonating} />
           </div>
           <div>
             <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">
               <Phone className="w-3 h-3 inline mr-1" />Secondary Phone
             </label>
-            <input value={secondaryPhone} onChange={e => setSecondaryPhone(e.target.value)} className={inp} placeholder="+233 xxx xxx xxxx" />
+            <input value={secondaryPhone} onChange={e => setSecondaryPhone(e.target.value)} className={`${inp} ${isImpersonating ? 'opacity-50 cursor-not-allowed' : ''}`} placeholder="+233 xxx xxx xxxx" disabled={isImpersonating} />
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">
               <Mail className="w-3 h-3 inline mr-1" />Personal Email
             </label>
-            <input type="email" value={personalEmail} onChange={e => setPersonalEmail(e.target.value)} className={inp} placeholder="personal@example.com" />
+            <input type="email" value={personalEmail} onChange={e => setPersonalEmail(e.target.value)} className={`${inp} ${isImpersonating ? 'opacity-50 cursor-not-allowed' : ''}`} placeholder="personal@example.com" disabled={isImpersonating} />
           </div>
         </div>
 
-        <button
-          onClick={handleSaveProfile} disabled={saving}
-          className="mt-6 flex items-center gap-2 bg-gradient-to-r from-[#00bfff] to-[#00e5ff] text-black font-bold py-3 px-6 rounded-lg hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all disabled:opacity-50 cursor-pointer text-sm"
-        >
-          <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Changes'}
-        </button>
+        {!isImpersonating && (
+          <button
+            onClick={handleSaveProfile} disabled={saving}
+            className="mt-6 flex items-center gap-2 bg-gradient-to-r from-[#00bfff] to-[#00e5ff] text-black font-bold py-3 px-6 rounded-lg hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all disabled:opacity-50 cursor-pointer text-sm"
+          >
+            <Save className="w-4 h-4" /> {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        )}
       </motion.section>
 
-      {/* Security */}
+      {/* Security — hidden when impersonating */}
+      {!isImpersonating && (
       <motion.section
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
         className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-6 mb-6"
@@ -391,6 +403,7 @@ export default function ProfileSection() {
           )}
         </div>
       </motion.section>
+      )}
     </div>
   )
 }

@@ -585,7 +585,17 @@ function handleGetUserPermissions(payload) {
 function handleGetProfile(payload) {
     var auth = requireAuth_(payload.token);
     if (auth.error) return auth.error;
-    var user = findRow_(SHEETS.USERS, 'email', auth.user.email);
+
+    // Support impersonation: elevated users can fetch another user's profile
+    var targetEmail = auth.user.email;
+    if (payload.targetEmail) {
+        var elevatedCheck = requireElevated_(payload.token);
+        if (!elevatedCheck.error) {
+            targetEmail = payload.targetEmail;
+        }
+    }
+
+    var user = findRow_(SHEETS.USERS, 'email', targetEmail);
     if (!user) return errorResponse_('User not found.');
     var contactDetails = {};
     try { contactDetails = JSON.parse(user.contact_details || '{}'); } catch(e) {}

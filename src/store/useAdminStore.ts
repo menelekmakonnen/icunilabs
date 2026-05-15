@@ -430,6 +430,11 @@ export const adminActions = {
     setState({ actingAs: null, impersonating: null, impersonationToken: null })
   },
 
+  /** Returns impersonated user when active, otherwise the logged-in user */
+  getEffectiveUser: (): AdminUser | null => {
+    return state.impersonating || state.user
+  },
+
   // ── Server-side Impersonation ──
   impersonateUser: async (targetUserId: string) => {
     try {
@@ -954,9 +959,14 @@ export const adminActions = {
   // ── Profile Management ──
   getProfile: async (): Promise<any> => {
     try {
-      const profile = await apiPost('getProfile', { token: state.token })
-      // Sync store user object with latest profile data
-      if (profile && state.user) {
+      const params: any = { token: state.token }
+      // When impersonating, fetch the impersonated user's profile
+      if (state.impersonating?.email) {
+        params.targetEmail = state.impersonating.email
+      }
+      const profile = await apiPost('getProfile', params)
+      // Only sync store user object when NOT impersonating
+      if (profile && state.user && !state.impersonating) {
         setState({
           user: {
             ...state.user,

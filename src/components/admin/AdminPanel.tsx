@@ -117,8 +117,9 @@ export default function AdminPanel() {
     setMobileOpen(false)
   }
 
-  // Profile picture helper
-  const userPic = user.profile_pic_url || ''
+  // Profile picture helper — show impersonated user when active
+  const effectiveUser = impersonating || user
+  const userPic = effectiveUser?.profile_pic_url || ''
 
   return (
     <div className="min-h-screen bg-neutral-950">
@@ -215,8 +216,8 @@ export default function AdminPanel() {
               </div>
               {!collapsed && (
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs text-white font-medium truncate group-hover:text-[#00bfff] transition-colors">{user.name}</div>
-                  <div className="text-[10px] text-neutral-600 truncate">{user.email}</div>
+                  <div className="text-xs text-white font-medium truncate group-hover:text-[#00bfff] transition-colors">{effectiveUser?.name || user.name}</div>
+                  <div className="text-[10px] text-neutral-600 truncate">{effectiveUser?.email || user.email}</div>
                 </div>
               )}
             </button>
@@ -304,7 +305,7 @@ export default function AdminPanel() {
                 <p className="text-sm text-neutral-600 text-center py-4">Loading users...</p>
               ) : (
                 users.map((u: any) => (
-                  <button key={u.id} onClick={() => { adminActions.setImpersonating(u); setShowImpersonate(false) }}
+                  <button key={u.id} onClick={() => { adminActions.setImpersonating(u); setShowImpersonate(false); adminActions.setSection('profile') }}
                     className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-neutral-800 transition-all cursor-pointer group">
                     <div className="text-left">
                       <p className="text-sm text-white font-medium">{u.name}</p>
