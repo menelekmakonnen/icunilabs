@@ -137,6 +137,8 @@ function updateRow_(sheetName, rowIndex, updates) {
         var colIdx = headers.indexOf(key);
         if (colIdx >= 0) {
             sheet.getRange(rowIndex, colIdx + 1).setValue(updates[key]);
+        } else {
+            Logger.log('updateRow_ WARNING: column "' + key + '" not found in sheet ' + sheetName + '. Headers: ' + headers.join(', '));
         }
     }
 }

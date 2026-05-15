@@ -34,7 +34,8 @@ function setupSpreadsheets() {
         'status', 'password_hash', 'pin_hash',
         'notif_email', 'notif_browser',
         'created_at', 'last_login', 'profile_pic_url', 'must_change_pw',
-        'cover_image_url', 'contact_details', 'permissions_json', 'job_title'
+        'cover_image_url', 'contact_details', 'permissions_json', 'job_title',
+        'company_email'
     ]);
     setupSheetHeaders_(ssMain, SHEETS.SESSIONS, [
         'token', 'user_id', 'email', 'name', 'role', 'created_at', 'expires_at', 'source'
@@ -104,7 +105,8 @@ function setupSpreadsheets() {
         'client_id', 'name', 'email', 'phone', 'company',
         'status', 'referrer_id', 'created_at', 'notes', 'drive_folder_url',
         'tags', 'source', 'industry', 'address', 'website', 'last_activity',
-        'prospect_stage'
+        'prospect_stage', 'buyer_profile', 'pain_category',
+        'challenge_statement', 'laugh_factor', 'first_contact_date'
     ]);
     setupSheetHeaders_(ssClients, SHEETS.CLIENT_NOTES, [
         'note_id', 'client_id', 'content', 'author', 'author_email', 'created_at'

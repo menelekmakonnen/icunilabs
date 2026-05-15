@@ -175,6 +175,7 @@ function handleUpdateClientStatus(payload) {
     if (payload.prospect_stage) updates.prospect_stage = payload.prospect_stage;
     if (payload.status) updates.status = payload.status;
     updateRow_(SHEETS.CLIENTS, client._rowIndex, updates);
+    SpreadsheetApp.flush();  // ensure write is committed before next read
     // Auto-add a note about stage change
     if (payload.prospect_stage) {
         var noteId = generateId_('NTE');
