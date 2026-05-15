@@ -75,6 +75,7 @@ export default function ProfileSection() {
           setProfile({
             name: user.name || '',
             email: user.email || '',
+            company_email: '',
             phone: '',
             role: user.role || '',
             profile_pic_url: '',
