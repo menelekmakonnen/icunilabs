@@ -8,6 +8,7 @@ const inp = "w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 
 interface ProfileData {
   name: string
   email: string
+  company_email: string
   phone: string
   role: string
   profile_pic_url: string
@@ -89,6 +90,7 @@ export default function ProfileSection() {
         setProfile({
           name: user.name || '',
           email: user.email || '',
+          company_email: '',
           phone: '',
           role: user.role || '',
           profile_pic_url: '',
@@ -279,9 +281,16 @@ export default function ProfileSection() {
             <input value={name} onChange={e => setName(e.target.value)} className={inp} placeholder="Your name" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Work Email</label>
+            <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">Login Email</label>
             <input value={profile?.email || ''} disabled className={`${inp} opacity-50 cursor-not-allowed`} />
-            <p className="text-[10px] text-neutral-600 mt-1">Contact an admin to change email</p>
+            <p className="text-[10px] text-neutral-600 mt-1">Primary email used for authentication</p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">
+              <Mail className="w-3 h-3 inline mr-1" />ICUNI Email
+            </label>
+            <input value={profile?.company_email || ''} disabled className={`${inp} opacity-50 cursor-not-allowed`} placeholder="Not assigned" />
+            <p className="text-[10px] text-neutral-600 mt-1">Assigned by admin — contact an admin to change</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-neutral-500 uppercase tracking-wider mb-2">
