@@ -26,6 +26,23 @@ function handleGetClients(payload) {
         // Parse tags
         try { c.tags_list = c.tags ? c.tags.split(',').map(function(t) { return t.trim(); }).filter(Boolean) : []; } catch(e) { c.tags_list = []; }
     });
+
+    // ── Visibility Segregation ──
+    // Godmode sees everything. Others see only their own clients + public clients.
+    // Existing clients with no added_by are treated as public (backward compatibility).
+    if (auth.user.role !== ROLES.GODMODE) {
+        var userEmail = auth.user.email;
+        clients = clients.filter(function(c) {
+            // Public clients visible to all
+            if (c.visibility === 'public') return true;
+            // Clients with no added_by (legacy data) treated as public
+            if (!c.added_by) return true;
+            // Clients the user added themselves
+            if (c.added_by === userEmail) return true;
+            return false;
+        });
+    }
+
     return successResponse_(clients);
 }
 
@@ -66,7 +83,9 @@ function handleAddClient(payload) {
         payload.prospect_stage || 'new_lead',
         payload.buyer_profile || '', payload.pain_category || '',
         payload.challenge_statement || '', payload.laugh_factor || '',
-        payload.first_contact_date || ''
+        payload.first_contact_date || '',
+        auth.user.email,              // added_by (col 22)
+        payload.visibility || 'private'  // visibility (col 23)
     ]);
     
     // Create user account only for full clients (not prospects)
@@ -91,6 +110,14 @@ function handleGetClient(payload) {
     if (auth.error) return auth.error;
     var client = findRow_(SHEETS.CLIENTS, 'client_id', payload.clientId);
     if (!client) return errorResponse_('Client not found.');
+
+    // ── Access check: Godmode sees all, others need ownership or public ──
+    if (auth.user.role !== ROLES.GODMODE) {
+        var isOwner = client.added_by === auth.user.email;
+        var isPublic = client.visibility === 'public' || !client.added_by; // legacy = public
+        if (!isOwner && !isPublic) return errorResponse_('You do not have access to this client.');
+    }
+
     // Enrich with projects, invoices, payments
     client.projects = sheetToObjects_(SHEETS.CLIENT_PROJECTS).filter(function(p) { return p.client_id === client.client_id; });
     client.invoices = sheetToObjects_(SHEETS.INVOICES).filter(function(inv) { return inv.client_id === client.client_id; });
@@ -200,6 +227,15 @@ function handleUpdateClient(payload) {
      'buyer_profile','pain_category','challenge_statement','laugh_factor','first_contact_date'].forEach(function(f) {
         if (payload[f] !== undefined) updates[f] = payload[f];
     });
+
+    // Visibility toggle: only Godmode or the original owner can change
+    if (payload.visibility !== undefined) {
+        var canToggle = auth.user.role === ROLES.GODMODE || client.added_by === auth.user.email;
+        if (canToggle) {
+            updates.visibility = payload.visibility;
+        }
+    }
+
     updateRow_(SHEETS.CLIENTS, client._rowIndex, updates);
     logAction_(auth.user.user_id, auth.user.name, 'CLIENT_UPDATED', 'Updated: ' + (payload.name || client.name));
     return successResponse_(null, 'Client updated.');

@@ -86,7 +86,9 @@ var COL = {
         NOTES: 8, DRIVE_FOLDER_URL: 9,
         TAGS: 10, SOURCE: 11, INDUSTRY: 12,
         ADDRESS: 13, WEBSITE: 14, LAST_ACTIVITY: 15,
-        PROSPECT_STAGE: 16
+        PROSPECT_STAGE: 16,
+        // 17=buyer_profile, 18=pain_category, 19=challenge_statement, 20=laugh_factor, 21=first_contact_date
+        ADDED_BY: 22, VISIBILITY: 23
     },
     CLIENT_PROJECTS: {
         ID: 0, CLIENT_ID: 1, TITLE: 2, DESCRIPTION: 3,

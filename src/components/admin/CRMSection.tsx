@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save, MapPin } from 'lucide-react'
+import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save, MapPin, Globe, Lock } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
 import { FormButton } from './ActionButton'
@@ -45,7 +45,7 @@ const EMAIL_TEMPLATES = [
 ]
 
 export default function CRMSection() {
-  const { clients, loading, error, activeClient, clientActivity } = useAdminStore()
+  const { clients, loading, error, activeClient, clientActivity, user } = useAdminStore()
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showAddProspect, setShowAddProspect] = useState(false)
@@ -248,6 +248,32 @@ export default function CRMSection() {
             <button onClick={() => setShowDeleteConfirm(true)} className="text-neutral-500 hover:text-red-400 cursor-pointer transition-colors" title="Delete client">
               <Trash2 className="w-4 h-4" />
             </button>
+            {/* Visibility Toggle */}
+            {(() => {
+              const isGod = user?.role === 'Godmode'
+              const isOwner = c.added_by === user?.email
+              const canToggle = isGod || isOwner
+              const isPublic = c.visibility === 'public' || !c.added_by // legacy = public
+              return canToggle ? (
+                <button
+                  onClick={async () => {
+                    const newVis = isPublic ? 'private' : 'public'
+                    await adminActions.updateClient(c.client_id, { visibility: newVis })
+                    adminActions.loadClients()
+                  }}
+                  className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border cursor-pointer transition-all ${isPublic ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20' : 'text-neutral-500 bg-neutral-800/50 border-neutral-700/50 hover:bg-neutral-800'}`}
+                  title={isPublic ? 'Visible to all staff — click to make private' : 'Only visible to you — click to make public'}
+                >
+                  {isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                  {isPublic ? 'Public' : 'Private'}
+                </button>
+              ) : (
+                <span className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${isPublic ? 'text-emerald-400/60 bg-emerald-500/5 border-emerald-500/10' : 'text-neutral-600 bg-neutral-800/30 border-neutral-800/30'}`}>
+                  {isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                  {isPublic ? 'Public' : 'Private'}
+                </span>
+              )
+            })()}
             <span className={`crm-health-dot ${healthStatus(c)}`} />
           </div>
         </div>
@@ -683,7 +709,11 @@ export default function CRMSection() {
                         <span className="text-sm text-white font-medium truncate">{c.name || c.company || c.email || 'Unnamed'}</span>
                       </div>
                       <p className="text-[10px] text-neutral-600 truncate">{c.company || c.email}</p>
-                      {c.total_revenue > 0 && <p className="text-[10px] text-emerald-500 font-semibold mt-1">{fmtMoney(c.total_revenue)}</p>}
+                      <div className="flex items-center gap-1.5 mt-1">
+                        {c.total_revenue > 0 && <span className="text-[10px] text-emerald-500 font-semibold">{fmtMoney(c.total_revenue)}</span>}
+                        {c.visibility === 'public' && <Globe className="w-3 h-3 text-emerald-500/50" />}
+                        {c.added_by && c.visibility !== 'public' && <Lock className="w-3 h-3 text-neutral-700" />}
+                      </div>
                       <div className="mt-2 flex items-center gap-1">
                         {(() => { const curIdx = STAGES.findIndex(s => s.id === stage.id); return curIdx > 0 ? (
                           <button onClick={(e) => { e.stopPropagation(); openStagePopup(c.client_id, STAGES[curIdx - 1].id, 'regress') }}
@@ -743,7 +773,11 @@ export default function CRMSection() {
                     <h3 className="text-sm font-bold text-white truncate">{c.name || c.company || c.email || 'Unnamed'}</h3>
                     <p className="text-[11px] text-neutral-500 truncate">{c.company || c.email}</p>
                   </div>
-                  <span className={`crm-health-dot ${healthStatus(c)}`} />
+                  <div className="flex items-center gap-1.5">
+                    {c.visibility === 'public' && <Globe className="w-3 h-3 text-emerald-500/50" />}
+                    {c.added_by && c.visibility !== 'public' && <Lock className="w-3 h-3 text-neutral-700" />}
+                    <span className={`crm-health-dot ${healthStatus(c)}`} />
+                  </div>
                 </div>
 
                 {/* Tags */}
