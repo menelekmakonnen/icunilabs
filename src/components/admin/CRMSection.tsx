@@ -1028,8 +1028,8 @@ export default function CRMSection() {
 
                 // Step 2: If project info provided, add historic project
                 if (historicForm.project_title.trim()) {
-                  // Find the newly created client
-                  const freshClients = useAdminStore.getState().clients
+                  // Find the newly created client from the refreshed store
+                  const freshClients = clients
                   const newClient = freshClients.find((c: any) => c.email === historicForm.email || c.name === historicForm.name)
                   if (newClient) {
                     await adminActions.addHistoricProject({
@@ -1116,7 +1116,9 @@ export default function CRMSection() {
                 </div>
               </div>
 
-              <FormButton busy={busyHistoric} label="Add Historic Client" busyLabel="Saving..." className="w-full" />
+              <FormButton busy={busyHistoric} busyText="Saving..." className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] transition-all">
+                Add Historic Client
+              </FormButton>
             </form>
           </div>
         </div>
