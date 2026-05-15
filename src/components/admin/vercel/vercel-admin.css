@@ -622,10 +622,10 @@
 /* ── Impersonation / Act-As Banner ─────────────────────── */
 .vercel-theme .v-banner {
   position: fixed;
-  top: 0;
-  left: 0;
+  bottom: 0;
+  left: var(--v-sidebar-width);
   right: 0;
-  z-index: 60;
+  z-index: 38;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -634,6 +634,11 @@
   font-size: 13px;
   font-weight: 600;
   color: white;
+}
+
+/* When sidebar is collapsed, shrink left offset */
+.vercel-theme:has(.v-sidebar.collapsed) .v-banner {
+  left: var(--v-sidebar-collapsed);
 }
 
 .v-banner-impersonate {
@@ -685,6 +690,10 @@
 
   .v-topbar {
     padding: 0 12px;
+  }
+
+  .vercel-theme .v-banner {
+    left: 0 !important;
   }
 }
 

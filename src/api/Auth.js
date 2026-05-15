@@ -526,9 +526,15 @@ function handleEditUser(payload) {
     if (payload.company_email !== undefined) updates.company_email = payload.company_email.trim().toLowerCase();
     if (payload.role !== undefined) {
         var allowed = ['SuperAdmin', 'Admin', 'Sales', 'Product'];
-        // Only Godmode can promote to SuperAdmin
+        // Only Godmode can set Godmode or SuperAdmin roles
+        if (auth.user.role === ROLES.GODMODE) {
+            allowed.push('Godmode');
+        }
         if (payload.role === 'SuperAdmin' && auth.user.role !== ROLES.GODMODE) {
             return errorResponse_('Only Godmode can promote users to SuperAdmin.');
+        }
+        if (payload.role === 'Godmode' && auth.user.role !== ROLES.GODMODE) {
+            return errorResponse_('Only Godmode can assign Godmode role.');
         }
         if (allowed.indexOf(payload.role) === -1) return errorResponse_('Invalid role.');
         updates.role = payload.role;

@@ -56,7 +56,9 @@ export default function VercelSidebar({
   const { activeSection, user, impersonating } = useAdminStore()
   const [searchQuery, setSearchQuery] = useState('')
 
-  const role = user?.role || ''
+  // When impersonating, filter sidebar by the IMPERSONATED user's role
+  const effectiveRole = impersonating ? (impersonating.role || '') : (user?.role || '')
+  const role = effectiveRole
   const isElevated = ['Godmode', 'SuperAdmin'].includes(role)
 
   // Department scope mapping
@@ -185,7 +187,7 @@ export default function VercelSidebar({
           {!collapsed && (
             <div className="v-user-info">
               <div className="v-user-name">{effectiveUser?.name || user?.name}</div>
-              <div className="v-user-email">{effectiveUser?.email || user?.email}</div>
+              <div className="v-user-email">{effectiveUser?.company_email || (effectiveUser?.email?.includes('@icuni.org') ? effectiveUser.email : effectiveUser?.email)}</div>
             </div>
           )}
         </button>

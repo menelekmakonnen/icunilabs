@@ -1745,7 +1745,7 @@ export function UsersSection() {
         searchKeys={['name', 'email', 'role', 'job_title']}
         renderRowActions={(row) => (
           <div className="flex gap-3">
-            {isElevated && row.role !== 'Godmode' && (
+            {isElevated && (isGodmode || row.role !== 'Godmode') && (
               <button onClick={() => openEditUser(row)} className="text-xs text-[#00bfff] hover:text-cyan-300 cursor-pointer transition-colors">Edit</button>
             )}
             {isElevated && !['Godmode', 'SuperAdmin'].includes(row.role) && (
@@ -1798,6 +1798,7 @@ export function UsersSection() {
                 <div>
                   <label className="text-xs text-neutral-500 mb-1 block">Role</label>
                   <select value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} className={inputCls}>
+                    {isGodmode && <option value="Godmode">Godmode</option>}
                     {isGodmode && <option value="SuperAdmin">SuperAdmin</option>}
                     <option value="Admin">Admin (Ops)</option>
                     <option value="Sales">Sales (Growth)</option>
