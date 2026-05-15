@@ -205,6 +205,115 @@
   border: 1px solid var(--v-border) !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   CRM LIGHT MODE — Override crm.css hardcoded dark RGBA values
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Cards */
+.vercel-theme:not(.v-dark) .crm-card {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04) !important;
+}
+.vercel-theme:not(.v-dark) .crm-card:hover {
+  border-color: #d1d5db !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06) !important;
+}
+.vercel-theme:not(.v-dark) .crm-card::before {
+  background: linear-gradient(135deg, rgba(0,191,255,0.02), transparent 60%) !important;
+}
+
+/* Stage variant cards */
+.vercel-theme:not(.v-dark) .crm-card.stage-prospect {
+  background: #fafafa !important;
+  border-color: #d1d5db !important;
+  border-style: dashed !important;
+}
+.vercel-theme:not(.v-dark) .crm-card.stage-lead {
+  border-color: rgba(0,191,255,0.3) !important;
+}
+.vercel-theme:not(.v-dark) .crm-card.stage-won {
+  border-color: rgba(16,185,129,0.3) !important;
+  background: rgba(16,185,129,0.02) !important;
+}
+.vercel-theme:not(.v-dark) .crm-card.stage-lost {
+  border-color: rgba(239,68,68,0.15) !important;
+  background: rgba(239,68,68,0.02) !important;
+}
+
+/* Card meta divider */
+.vercel-theme:not(.v-dark) .crm-card .crm-meta {
+  border-top-color: #e5e7eb !important;
+}
+
+/* Metric cards */
+.vercel-theme:not(.v-dark) .crm-metric {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+}
+.vercel-theme:not(.v-dark) .crm-metric:hover {
+  background: #f9fafb !important;
+  border-color: #d1d5db !important;
+}
+
+/* Search bar */
+.vercel-theme:not(.v-dark) .crm-search {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  color: #111827 !important;
+}
+.vercel-theme:not(.v-dark) .crm-search:focus {
+  border-color: #00bfff !important;
+  box-shadow: 0 0 0 3px rgba(0,191,255,0.1) !important;
+}
+
+/* Note input */
+.vercel-theme:not(.v-dark) .crm-note-input {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  color: #111827 !important;
+}
+.vercel-theme:not(.v-dark) .crm-note-input:focus {
+  border-color: rgba(0,191,255,0.5) !important;
+}
+.vercel-theme:not(.v-dark) .crm-note-input::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Action buttons */
+.vercel-theme:not(.v-dark) .crm-action-btn {
+  background: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  color: #4b5563 !important;
+}
+.vercel-theme:not(.v-dark) .crm-action-btn:hover {
+  background: #f3f4f6 !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+.vercel-theme:not(.v-dark) .crm-action-btn.primary {
+  background: rgba(0,191,255,0.08) !important;
+  border-color: rgba(0,191,255,0.25) !important;
+  color: #0099cc !important;
+}
+
+/* Timeline dots */
+.vercel-theme:not(.v-dark) .crm-timeline-item::before {
+  background: #ffffff !important;
+}
+
+/* Tabs */
+.vercel-theme:not(.v-dark) .crm-tab {
+  color: #6b7280 !important;
+}
+.vercel-theme:not(.v-dark) .crm-tab:hover {
+  color: #111827 !important;
+}
+.vercel-theme:not(.v-dark) .crm-tab.active {
+  color: #00bfff !important;
+}
+
+
 /* Dark mode button override — white primary on dark */
 .vercel-theme.v-dark .v-content .bg-gradient-to-r {
   background: #ededed !important;
