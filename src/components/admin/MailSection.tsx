@@ -37,19 +37,46 @@ function aliasKey(a: any): string {
 }
 
 export default function MailSection() {
-  const { inbox, inboxLoading, activeThread, emailAliases, user } = useAdminStore()
+  const { inbox, inboxLoading, activeThread, emailAliases, user, impersonating } = useAdminStore()
   const [tab, setTab] = useState<Tab>('inbox')
   const [activeMailboxes, setActiveMailboxes] = useState<string[]>([])
   const [searchQ, setSearchQ] = useState('')
   const [page, setPage] = useState(0)
+  const [impersonatedBoxes, setImpersonatedBoxes] = useState<string[] | null>(null)
 
-  const isGodmode = user?.role === 'Godmode'
+  // Effective user = impersonated user when active
+  const effectiveUser = impersonating || user
+  const isImpersonating = !!impersonating
+
+  const isGodmode = user?.role === 'Godmode'  // Use REAL user for admin permissions
   const isSuperAdmin = user?.role === 'SuperAdmin'
-  const canManage = isGodmode || isSuperAdmin
-  const aliases = Array.isArray(emailAliases) ? emailAliases : []
+  const canManage = (isGodmode || isSuperAdmin) && !isImpersonating
+  const allAliases = Array.isArray(emailAliases) ? emailAliases : []
 
-  // Default mailbox = user's company email
-  const companyEmail = user?.company_email || ''
+  // Default mailbox = effective user's company email
+  const companyEmail = effectiveUser?.company_email || ''
+
+  // When impersonating, fetch the impersonated user's accessible mailboxes
+  useEffect(() => {
+    if (isImpersonating && impersonating?.email) {
+      (async () => {
+        const assigned = await adminActions.getUserMailboxes(impersonating.email)
+        const assignedAliases = Array.isArray(assigned) ? assigned.map((m: any) => m.alias) : []
+        // Accessible = company_email + assigned mailboxes
+        const accessible = new Set<string>()
+        if (impersonating.company_email) accessible.add(impersonating.company_email)
+        assignedAliases.forEach((a: string) => accessible.add(a))
+        setImpersonatedBoxes(Array.from(accessible))
+      })()
+    } else {
+      setImpersonatedBoxes(null)
+    }
+  }, [impersonating?.email])
+
+  // Filter aliases: when impersonating, only show mailboxes the impersonated user can access
+  const aliases = isImpersonating && impersonatedBoxes
+    ? allAliases.filter((a: any) => impersonatedBoxes.includes(aliasKey(a)))
+    : allAliases
 
   useEffect(() => {
     adminActions.loadEmailAliases()
@@ -64,6 +91,12 @@ export default function MailSection() {
       adminActions.loadInbox(def, 0)
     }
   }, [aliases, companyEmail])
+
+  // Reset active mailboxes when impersonation changes
+  useEffect(() => {
+    setActiveMailboxes([])
+    setPage(0)
+  }, [impersonating?.email])
 
   const toggleMailbox = (alias: string) => {
     setActiveMailboxes(prev => {
@@ -84,8 +117,8 @@ export default function MailSection() {
 
   const tabs: { id: Tab; label: string; icon: any; access?: boolean }[] = [
     { id: 'inbox', label: 'Inbox', icon: Inbox },
-    { id: 'compose', label: 'Compose', icon: Send },
-    { id: 'templates', label: 'Templates', icon: FileText },
+    { id: 'compose', label: 'Compose', icon: Send, access: !isImpersonating },
+    { id: 'templates', label: 'Templates', icon: FileText, access: !isImpersonating },
     { id: 'mailboxes', label: 'Mailboxes', icon: Sliders, access: canManage },
   ]
 
@@ -94,6 +127,14 @@ export default function MailSection() {
 
   return (
     <div className="space-y-6">
+      {/* Impersonation Notice */}
+      {isImpersonating && (
+        <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center gap-2">
+          <Mail className="w-4 h-4 text-purple-400 shrink-0" />
+          <span className="text-sm text-purple-300">Viewing <strong>{impersonating.name}</strong>'s mailbox (read-only)</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
@@ -102,7 +143,7 @@ export default function MailSection() {
           </div>
           <div>
             <h2 className="text-xl font-bold text-white">Mail Hub</h2>
-            <p className="text-xs text-neutral-500">{companyEmail || user?.email}</p>
+            <p className="text-xs text-neutral-500">{companyEmail || effectiveUser?.email}</p>
           </div>
         </div>
         <div className="flex rounded-xl bg-neutral-900/60 border border-neutral-800/50 p-1 gap-0.5">
