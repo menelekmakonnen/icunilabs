@@ -60,7 +60,9 @@
 }
 
 /* In dark mode, don't override text-white since it's already correct */
-.vercel-theme.v-dark .v-content .text-white {\n  color: #ededed !important;\n}
+.vercel-theme.v-dark .v-content .text-white {
+  color: #ededed !important;
+}
 
 /* ═══════════════════════════════════════════════════════════════
    LIGHT MODE OVERRIDES — Vercel Theme

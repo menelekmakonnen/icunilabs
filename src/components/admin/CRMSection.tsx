@@ -661,7 +661,7 @@ export default function CRMSection() {
 
   // ═══ CLIENTS LIST VIEW (CRM Home) ═══
   const totalRevenue = activeClients.reduce((s: number, c: any) => s + Number(c.total_revenue || 0), 0)
-  const activeCount = activeClients.filter((c: any) => c.active_projects > 0).length
+  // activeCount removed — replaced by 'Paying Clients' stat
   const outstandingTotal = activeClients.reduce((s: number, c: any) => s + Number(c.outstanding || 0), 0)
 
   return (

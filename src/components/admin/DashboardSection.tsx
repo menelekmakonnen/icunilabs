@@ -54,7 +54,7 @@ export default function DashboardSection() {
     return streak
   }, [heatmapCells])
   const busiestDay = heatmapCells.reduce((best, c) => c.count > (best?.count || 0) ? c : best, heatmapCells[0])
-  const totalActions = heatmapCells.reduce((s, c) => s + c.count, 0)
+
 
   // Analytics: Project type breakdown
   const projectTypes = useMemo(() => {
