@@ -1697,7 +1697,7 @@ export function UsersSection() {
   }
 
   const [editUser, setEditUser] = useState<any>(null)
-  const [editForm, setEditForm] = useState({ name: '', phone: '', job_title: '', role: '', status: '' })
+  const [editForm, setEditForm] = useState({ name: '', phone: '', job_title: '', role: '', status: '', company_email: '' })
   const [busyEdit, setBusyEdit] = useState(false)
 
   const openEditUser = (u: any) => {
@@ -1708,6 +1708,7 @@ export function UsersSection() {
       job_title: u.job_title || '',
       role: u.role || 'Staff',
       status: u.status || 'Active',
+      company_email: u.company_email || '',
     })
   }
 
@@ -1778,6 +1779,10 @@ export function UsersSection() {
               <div>
                 <label className="text-xs text-neutral-500 mb-1 block">Full Name</label>
                 <input value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className={inputCls} placeholder="Full name" />
+              </div>
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Work Email</label>
+                <input type="email" value={editForm.company_email} onChange={e => setEditForm({...editForm, company_email: e.target.value})} className={inputCls} placeholder="name@icuni.org" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

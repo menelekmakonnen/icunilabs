@@ -338,6 +338,7 @@ function handleGetUsers(payload) {
     if (auth.error) return auth.error;
     var users = sheetToObjects_(SHEETS.USERS).map(function(u) {
         return { id: u.id, name: u.name, email: u.email, phone: u.phone,
+                 company_email: u.company_email || '', job_title: u.job_title || '',
                  role: u.role, status: u.status, created_at: u.created_at,
                  last_login: u.last_login, profile_pic_url: u.profile_pic_url };
     });
