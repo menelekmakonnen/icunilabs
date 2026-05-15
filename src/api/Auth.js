@@ -297,6 +297,12 @@ function enforceDeviceLimit_(email) {
 function handleValidateSession(payload) {
     var user = validateSession_(payload.token || payload.sessionToken);
     if (!user) return errorResponse_('Session expired. Please log in again.');
+    
+    // Auto-run schema migration for Godmode users to ensure all columns exist
+    if (user.role === ROLES.GODMODE) {
+        try { setupSpreadsheets(); } catch(e) { Logger.log('Auto-migration error: ' + e.message); }
+    }
+    
     return successResponse_({ user: user });
 }
 

@@ -60,54 +60,147 @@
 }
 
 /* In dark mode, don't override text-white since it's already correct */
-.vercel-theme.v-dark .v-content .text-white {
-  color: #ededed !important;
-}
+.vercel-theme.v-dark .v-content .text-white {\n  color: #ededed !important;\n}
 
-/* ── Login page light-mode overrides ─────────────────────── */
-.vercel-theme .min-h-screen.bg-neutral-950 {
+/* ═══════════════════════════════════════════════════════════════
+   LIGHT MODE OVERRIDES — Vercel Theme
+   Convert all cyberpunk-dark elements to clean light surfaces.
+   All rules scoped under .vercel-theme (NOT .v-dark).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Full-page dark backgrounds ── */
+.vercel-theme:not(.v-dark) .min-h-screen.bg-neutral-950,
+.vercel-theme:not(.v-dark) .min-h-screen.bg-black {
   background: var(--v-bg) !important;
 }
 
-.vercel-theme .bg-neutral-900\/50.border.border-neutral-800 {
+/* ── Cards, panels, and container surfaces ── */
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-900\/50,
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-900\/60,
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-900\/80,
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-900\/30,
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-900,
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-950,
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-950\/80,
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-950\/50,
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-800\/50,
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-800\/30,
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-800 {
   background: var(--v-surface) !important;
-  border-color: var(--v-border) !important;
 }
 
-/* Fix all dark background pill/tab selectors in light mode */
-.vercel-theme .bg-neutral-900 {
+/* Login card special treatment */
+.vercel-theme:not(.v-dark) .bg-neutral-900\/50.border.border-neutral-800 {
+  background: var(--v-surface) !important;
+  border-color: var(--v-border) !important;
+  box-shadow: var(--v-shadow) !important;
+}
+
+/* Tab bar backgrounds */
+.vercel-theme:not(.v-dark) .bg-neutral-900\/60 {
   background: var(--v-surface-secondary) !important;
 }
 
-.vercel-theme .bg-neutral-900\/80 {
+/* ── Borders ── */
+.vercel-theme:not(.v-dark) .v-content .border-neutral-800,
+.vercel-theme:not(.v-dark) .v-content .border-neutral-800\/50,
+.vercel-theme:not(.v-dark) .v-content .border-neutral-800\/30,
+.vercel-theme:not(.v-dark) .v-content .border-neutral-700,
+.vercel-theme:not(.v-dark) .v-content .border-neutral-700\/50,
+.vercel-theme:not(.v-dark) .v-content .border-neutral-700\/30 {
+  border-color: var(--v-border) !important;
+}
+
+/* ── Text colors ── */
+.vercel-theme:not(.v-dark) .v-content .text-white {
+  color: var(--v-text) !important;
+}
+
+.vercel-theme:not(.v-dark) .v-content .text-neutral-400 {
+  color: var(--v-text-secondary) !important;
+}
+
+.vercel-theme:not(.v-dark) .v-content .text-neutral-500 {
+  color: var(--v-text-tertiary) !important;
+}
+
+.vercel-theme:not(.v-dark) .v-content .text-neutral-600 {
+  color: var(--v-text-tertiary) !important;
+}
+
+.vercel-theme:not(.v-dark) .v-content .text-neutral-700 {
+  color: #bbb !important;
+}
+
+/* Login page text */
+.vercel-theme:not(.v-dark) .text-white {
+  color: var(--v-text) !important;
+}
+
+.vercel-theme:not(.v-dark) .text-neutral-500 {
+  color: var(--v-text-tertiary) !important;
+}
+
+.vercel-theme:not(.v-dark) .placeholder-neutral-500::placeholder {
+  color: var(--v-text-tertiary) !important;
+}
+
+/* ── Inputs and form elements ── */
+.vercel-theme:not(.v-dark) .v-content .bg-neutral-900\/80,
+.vercel-theme:not(.v-dark) .bg-neutral-900\/80 {
   background: var(--v-surface) !important;
+  border-color: var(--v-border) !important;
   color: var(--v-text) !important;
 }
 
-/* Fix text color on light backgrounds */
-.vercel-theme .text-white {
-  color: var(--v-text) !important;
+/* ── Hover states ── */
+.vercel-theme:not(.v-dark) .v-content .hover\:bg-neutral-800\/30:hover,
+.vercel-theme:not(.v-dark) .v-content .hover\:bg-neutral-800\/50:hover,
+.vercel-theme:not(.v-dark) .v-content .hover\:bg-neutral-800:hover {
+  background: var(--v-hover) !important;
 }
 
-.vercel-theme .text-neutral-500 {
-  color: var(--v-text-tertiary) !important;
+.vercel-theme:not(.v-dark) .v-content .hover\:border-neutral-700:hover {
+  border-color: var(--v-border-dark) !important;
 }
 
-.vercel-theme .placeholder-neutral-500::placeholder {
-  color: var(--v-text-tertiary) !important;
-}
-
-/* Active tab pill in light mode — use accent color instead of dark bg */
-.vercel-theme .bg-gradient-to-r.from-\[\#00bfff\].to-\[\#0099cc\] {
+/* ── Active tab pills — use accent instead of dark bg ── */
+.vercel-theme:not(.v-dark) .bg-gradient-to-r.from-\[\#00bfff\].to-\[\#0099cc\] {
   background: var(--v-accent) !important;
   color: #fff !important;
 }
 
-/* Black pill buttons (e.g., Referrers active tab) */
-.vercel-theme .bg-neutral-950\/90,
-.vercel-theme .bg-neutral-800 {
+/* ── CTA / Primary action buttons ── */
+.vercel-theme:not(.v-dark) .v-content .bg-gradient-to-r {
   background: var(--v-text) !important;
-  color: var(--v-bg) !important;
+  border-radius: var(--v-radius) !important;
+}
+
+.vercel-theme:not(.v-dark) .v-content .bg-gradient-to-r:hover {
+  opacity: 0.85 !important;
+}
+
+/* ── Modals ── */
+.vercel-theme:not(.v-dark) .bg-black\/60 {
+  background: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.vercel-theme:not(.v-dark) .bg-neutral-900,
+.vercel-theme:not(.v-dark) .bg-neutral-950 {
+  background: var(--v-surface) !important;
+}
+
+/* ── Stat cards (CRM top row) — subtle border instead of dark bg ── */
+.vercel-theme:not(.v-dark) .v-content [class*="bg-neutral-900"] {
+  background: var(--v-surface) !important;
+  border: 1px solid var(--v-border) !important;
+}
+
+/* ── CRM profile grid cards — clean white with subtle shadow ── */
+.vercel-theme:not(.v-dark) .v-content [class*="bg-neutral-800"] {
+  background: var(--v-surface) !important;
+  border: 1px solid var(--v-border) !important;
 }
 
 /* Dark mode button override — white primary on dark */

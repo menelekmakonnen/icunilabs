@@ -697,8 +697,8 @@ export default function CRMSection() {
       {/* Quick Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Total Clients', value: activeClients.length, color: '#00bfff' },
-          { label: 'Active Projects', value: activeCount, color: '#8b5cf6' },
+          { label: 'Total Contacts', value: activeClients.length, color: '#00bfff' },
+          { label: 'Paying Clients', value: activeClients.filter((c: any) => ['won', 'client'].includes((c.prospect_stage || '').toLowerCase())).length, color: '#10b981' },
           { label: 'Revenue', value: fmtMoney(totalRevenue), color: '#10b981' },
           { label: 'Outstanding', value: fmtMoney(outstandingTotal), color: outstandingTotal > 0 ? '#ef4444' : '#10b981' },
         ].map((s, i) => (

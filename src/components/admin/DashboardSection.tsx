@@ -112,13 +112,18 @@ export default function DashboardSection() {
     won: '#10b981', lost: '#475569'
   }
 
+  // Client = someone who has paid (prospect_stage=won or client). Everything else is a prospect/lead.
+  const allContacts = s.clients.filter((c: any) => (c.status || '').toLowerCase() !== 'deleted')
+  const payingClients = allContacts.filter((c: any) => ['won', 'client'].includes((c.prospect_stage || '').toLowerCase())).length
+  const pipelineCount = allContacts.length - payingClients
+
   const stats = [
-    { label: 'Active Clients', value: s.clients.filter((c: any) => (c.status || '').toLowerCase() !== 'deleted').length, icon: Users, color: '#00bfff' },
+    { label: 'Paying Clients', value: payingClients, icon: Users, color: '#10b981' },
+    { label: 'In Pipeline', value: pipelineCount, icon: TrendingUp, color: '#00bfff' },
     { label: 'Active Projects', value: activeProjects, icon: FolderOpen, color: '#ff7a00' },
     { label: 'Pending Invoices', value: pendingInvoices, icon: FileText, color: '#d97706' },
     { label: 'Total Revenue', value: `GH\u20B5${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: '#10b981' },
     { label: 'SLA Breaches', value: breached, icon: AlertTriangle, color: breached > 0 ? '#ef4444' : '#22c55e' },
-    { label: 'Total Actions', value: totalActions, icon: Clock, color: '#8b5cf6' },
   ]
 
   return (
