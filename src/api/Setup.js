@@ -332,3 +332,17 @@ function setupTriggers() {
 
     Logger.log('Triggers installed: SLA (hourly), Archive (daily 3AM), Backup (Sunday 2AM)');
 }
+
+/**
+ * API handler: run schema migration (Godmode only).
+ * Re-runs setupSpreadsheets to add any missing columns to existing sheets.
+ */
+function handleRunMigration(payload) {
+    var auth = validateToken_(payload.token);
+    if (!auth.valid) return errorResponse_('Unauthorized');
+    if (auth.user.role !== ROLES.GODMODE) return errorResponse_('Only Godmode can run migrations.');
+    
+    setupSpreadsheets();
+    
+    return successResponse_({ migrated: true, message: 'Schema migration completed. Missing columns have been added.' });
+}

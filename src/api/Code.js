@@ -37,6 +37,7 @@ function doPost(e) {
         if (action === 'editUser')          return handleEditUser(payload);
         if (action === 'updateUserPermissions') return handleUpdateUserPermissions(payload);
         if (action === 'getUserPermissions')    return handleGetUserPermissions(payload);
+        if (action === 'runMigration')          return handleRunMigration(payload);
 
         // ── Impersonation ──
         if (action === 'impersonateUser')    return handleImpersonateUser(payload);
