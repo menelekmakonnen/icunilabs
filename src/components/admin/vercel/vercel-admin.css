@@ -174,12 +174,34 @@
 
 /* ── CTA / Primary action buttons ── */
 .vercel-theme:not(.v-dark) .v-content .bg-gradient-to-r {
-  background: var(--v-text) !important;
+  background: #111 !important;
+  color: #fff !important;
   border-radius: var(--v-radius) !important;
 }
 
 .vercel-theme:not(.v-dark) .v-content .bg-gradient-to-r:hover {
-  opacity: 0.85 !important;
+  background: #333 !important;
+}
+
+/* Ensure ALL dark-bg buttons get white text in light mode */
+.vercel-theme:not(.v-dark) .v-content button[class*="bg-neutral-950"],
+.vercel-theme:not(.v-dark) .v-content button[class*="bg-neutral-900"],
+.vercel-theme:not(.v-dark) .v-content button.bg-neutral-800 {
+  background: #111 !important;
+  color: #fff !important;
+}
+
+/* Login page active method tab — needs light bg + dark text, not dark bg */
+.vercel-theme:not(.v-dark) button.bg-neutral-800.text-white {
+  background: var(--v-surface-secondary) !important;
+  color: var(--v-text) !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06) !important;
+}
+
+/* Login page "Send OTP" / CTA gradient button — proper contrast */
+.vercel-theme:not(.v-dark) button.bg-gradient-to-r {
+  background: #0070f3 !important;
+  color: #fff !important;
 }
 
 /* ── Modals ── */

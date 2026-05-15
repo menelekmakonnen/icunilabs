@@ -1,37 +1,9 @@
 import { useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { Users, FolderOpen, FileText, AlertTriangle, TrendingUp, Clock, Flame, Trophy, Star } from 'lucide-react'
+import { Users, FolderOpen, FileText, AlertTriangle, TrendingUp, Flame } from 'lucide-react'
 
 const card = 'bg-neutral-900/50 border border-neutral-800 rounded-xl p-5'
-
-// ── Heatmap helpers ──
-function buildHeatmap(logs: any[], days: number) {
-  const map = new Map<string, number>()
-  logs.forEach((l: any) => {
-    if (!l.timestamp) return
-    const d = new Date(l.timestamp).toISOString().split('T')[0]
-    map.set(d, (map.get(d) || 0) + 1)
-  })
-  const cells: { date: string; count: number; level: number }[] = []
-  const today = new Date()
-  for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today); d.setDate(d.getDate() - i)
-    const ds = d.toISOString().split('T')[0]
-    const count = map.get(ds) || 0
-    const level = count === 0 ? 0 : count <= 2 ? 1 : count <= 5 ? 2 : count <= 10 ? 3 : 4
-    cells.push({ date: ds, count, level })
-  }
-  return cells
-}
-
-function buildWeeks(cells: { date: string; count: number; level: number }[]) {
-  const w: typeof cells[] = []
-  for (let i = 0; i < cells.length; i += 7) w.push(cells.slice(i, i + 7))
-  return w
-}
-
-const LEVEL_COLORS = ['rgba(255,255,255,0.03)', 'rgba(0,191,255,0.2)', 'rgba(0,191,255,0.4)', 'rgba(0,191,255,0.6)', 'rgba(0,191,255,0.85)']
 
 export default function DashboardSection() {
   const s = useAdminStore()
@@ -41,19 +13,6 @@ export default function DashboardSection() {
   const pendingInvoices = s.invoices.filter((i: any) => i.status === 'pending' || i.status === 'partial').length
   const totalRevenue = s.invoices.filter((i: any) => i.status === 'paid').reduce((sum: number, i: any) => sum + Number(i.total || 0), 0)
   const breached = s.slaStatuses.filter((st: any) => st.breached).length
-
-  // Heatmap from activity logs
-  const heatmapCells = useMemo(() => buildHeatmap(s.logs, 365), [s.logs])
-  const weeks = useMemo(() => buildWeeks(heatmapCells), [heatmapCells])
-  const activeDays = heatmapCells.filter(c => c.count > 0).length
-  const currentStreak = useMemo(() => {
-    let streak = 0
-    for (let i = heatmapCells.length - 1; i >= 0; i--) {
-      if (heatmapCells[i].count > 0) streak++; else break
-    }
-    return streak
-  }, [heatmapCells])
-  const busiestDay = heatmapCells.reduce((best, c) => c.count > (best?.count || 0) ? c : best, heatmapCells[0])
 
 
   // Analytics: Project type breakdown
@@ -73,22 +32,6 @@ export default function DashboardSection() {
     const pct = item.count / typeTotal; const dash = pct * 251.2; const gap = 251.2 - dash; const offset = arcOffset; arcOffset += dash
     return { ...item, dash, gap, offset, color: TYPE_COLORS[i % TYPE_COLORS.length] }
   })
-
-  // Revenue by month (last 6 months)
-  const monthlyRevenue = useMemo(() => {
-    const months: { label: string; amount: number }[] = []
-    const now = new Date()
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      const label = d.toLocaleDateString('en-GB', { month: 'short' })
-      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      const amount = s.invoices.filter((inv: any) => inv.status === 'paid' && (inv.paid_date || inv.created_at || '').startsWith(ym))
-        .reduce((sum: number, inv: any) => sum + Number(inv.total || 0), 0)
-      months.push({ label, amount })
-    }
-    return months
-  }, [s.invoices])
-  const maxRevMonth = Math.max(...monthlyRevenue.map(m => m.amount), 1)
 
   // CRM Feed: recent prospect updates
   const recentProspects = useMemo(() => {
@@ -151,67 +94,11 @@ export default function DashboardSection() {
         ))}
       </div>
 
-      {/* ═══ STREAK BAR ═══ */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className={`${card} flex items-center gap-8 flex-wrap`}>
-        <div className="flex items-center gap-3">
-          <Flame className="w-6 h-6" style={{ color: currentStreak > 0 ? '#ff7a00' : '#475569' }} />
-          <div>
-            <div className="text-2xl font-black" style={{ color: currentStreak > 0 ? '#ff7a00' : '#64748b' }}>{currentStreak}</div>
-            <div className="text-[10px] text-neutral-600 font-semibold uppercase tracking-wider">Day Streak</div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Trophy className="w-5 h-5 text-[#00bfff]" />
-          <div>
-            <div className="text-lg font-bold text-white">{activeDays}</div>
-            <div className="text-[10px] text-neutral-600 font-semibold uppercase tracking-wider">Active Days (Year)</div>
-          </div>
-        </div>
-        {busiestDay && busiestDay.count > 0 && (
-          <div className="flex items-center gap-3">
-            <Star className="w-5 h-5 text-amber-400" />
-            <div>
-              <div className="text-lg font-bold text-white">{busiestDay.count} actions</div>
-              <div className="text-[10px] text-neutral-600 font-semibold uppercase tracking-wider">Best Day ({busiestDay.date})</div>
-            </div>
-          </div>
-        )}
-      </motion.div>
-
-      {/* ═══ BUILDING HEATMAP ═══ */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
-        className={card}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
-            <Clock className="w-4 h-4" /> Building Heatmap — {activeDays} active days
-          </h3>
-          <div className="flex items-center gap-1 text-[10px] text-neutral-600">
-            <span>Less</span>
-            {LEVEL_COLORS.map((c, i) => (
-              <div key={i} className="w-3 h-3 rounded-sm" style={{ background: c }} />
-            ))}
-            <span>More</span>
-          </div>
-        </div>
-        <div className="flex gap-[3px] overflow-x-auto justify-center py-1">
-          {weeks.map((week, wi) => (
-            <div key={wi} className="flex flex-col gap-[3px]">
-              {week.map((cell, ci) => (
-                <div key={ci} className="w-3 h-3 rounded-sm transition-all hover:outline hover:outline-1 hover:outline-neutral-600 hover:outline-offset-1"
-                  style={{ background: LEVEL_COLORS[cell.level], cursor: cell.count > 0 ? 'pointer' : 'default' }}
-                  title={`${cell.date}: ${cell.count} actions`} />
-              ))}
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
       {/* ═══ ANALYTICS ROW ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Project Type Ring */}
         {typeArcs.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
             className={card}>
             <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4">Project Types</h3>
             <div className="flex items-center gap-6">
@@ -236,26 +123,6 @@ export default function DashboardSection() {
             </div>
           </motion.div>
         )}
-
-        {/* Revenue Trend */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55 }}
-          className={card}>
-          <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4">Revenue Trend (6 Months)</h3>
-          <div className="flex items-end gap-3 h-32">
-            {monthlyRevenue.map((m, i) => {
-              const pct = Math.max((m.amount / maxRevMonth) * 100, 4)
-              return (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[10px] text-neutral-500 font-semibold">{m.amount > 0 ? `${(m.amount / 1000).toFixed(0)}k` : ''}</span>
-                  <motion.div initial={{ height: 0 }} animate={{ height: `${pct}%` }} transition={{ delay: 0.6 + i * 0.08, duration: 0.5 }}
-                    className="w-full rounded-t-md" style={{ background: `linear-gradient(180deg, #00bfff, ${m.amount > 0 ? '#0099cc' : 'rgba(255,255,255,0.03)'})`, minHeight: 4 }}
-                    title={`GH\u20B5${m.amount.toLocaleString()}`} />
-                  <span className="text-[10px] text-neutral-600">{m.label}</span>
-                </div>
-              )
-            })}
-          </div>
-        </motion.div>
       </div>
 
       {/* ═══ OPS PIPELINE + CHALLENGE HIT RATE ═══ */}
