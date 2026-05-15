@@ -150,6 +150,9 @@ function handleGetInbox(payload) {
             });
         }
 
+        // Ensure newest-first ordering
+        summaries.sort(function(a, b) { return new Date(b.date).getTime() - new Date(a.date).getTime(); });
+
         return successResponse_({
             threads: summaries,
             page: page,

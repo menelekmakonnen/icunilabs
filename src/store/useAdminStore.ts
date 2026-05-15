@@ -947,14 +947,17 @@ export const adminActions = {
     setState({ loading: true, error: null })
     try {
       await apiPost('updateProfile', { token: state.token, ...data })
-      // Sync local user object immediately
-      if (state.user) {
+      // Sync local user object immediately with ALL provided fields
+      const cur = state.user  // use current state reference
+      if (cur) {
         setState({
           user: {
-            ...state.user,
-            name: data.name || state.user.name,
-            profile_pic_url: data.profile_pic_url || state.user.profile_pic_url || '',
-            cover_image_url: data.cover_image_url || state.user.cover_image_url || '',
+            ...cur,
+            ...(data.name !== undefined ? { name: data.name } : {}),
+            ...(data.profile_pic_url !== undefined ? { profile_pic_url: data.profile_pic_url } : {}),
+            ...(data.cover_image_url !== undefined ? { cover_image_url: data.cover_image_url } : {}),
+            ...(data.phone !== undefined ? { phone: data.phone } : {}),
+            ...(data.contact_details !== undefined ? { contact_details: data.contact_details } : {}),
           },
           loading: false,
         })
