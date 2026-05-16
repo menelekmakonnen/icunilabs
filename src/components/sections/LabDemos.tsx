@@ -1,8 +1,24 @@
-
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Activity, Users, Clock, CheckCircle2, LayoutDashboard, GanttChartSquare } from 'lucide-react';
 
+/** Deterministic hash to generate stable "random-looking" values from a string */
+function stablePercent(seed: string, min: number, max: number): number {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = seed.charCodeAt(i) + ((h << 5) - h);
+  return min + (Math.abs(h) % (max - min + 1));
+}
+
 export default function LabDemos() {
+    // Memoize region values so they're stable across re-renders
+    const regionData = useMemo(() =>
+      ['UK / EU', 'North America', 'Ghana'].map(region => ({
+        region,
+        label: `${stablePercent(region + 'label', 15, 45)}%`,
+        bar: `${stablePercent(region + 'bar', 30, 80)}%`,
+      })), []
+    );
+
     return (
         <section id="demo" className="py-24 md:py-32 border-t border-neutral-900 overflow-hidden relative bg-transparent">
 
@@ -74,17 +90,17 @@ export default function LabDemos() {
                         <div className="space-y-4">
                             <p className="text-sm text-neutral-500 font-medium">Conversion by Region</p>
                             <div className="space-y-3">
-                                {['UK / EU', 'North America', 'Ghana'].map((region, i) => (
-                                    <div key={region}>
+                                {regionData.map((rd, i) => (
+                                    <div key={rd.region}>
                                         <div className="flex justify-between text-xs text-neutral-400 mb-1">
-                                            <span>{region}</span>
-                                            <span>{Math.floor(Math.random() * (45 - 15) + 15)}%</span>
+                                            <span>{rd.region}</span>
+                                            <span>{rd.label}</span>
                                         </div>
                                         <div className="h-1.5 w-full bg-neutral-900 rounded-full overflow-hidden">
                                             <motion.div
                                                 className="h-full bg-blue-500"
                                                 initial={{ width: 0 }}
-                                                whileInView={{ width: `${Math.floor(Math.random() * (80 - 30) + 30)}%` }}
+                                                whileInView={{ width: rd.bar }}
                                                 viewport={{ once: true }}
                                                 transition={{ duration: 1, delay: 0.5 + (i * 0.2) }}
                                             />

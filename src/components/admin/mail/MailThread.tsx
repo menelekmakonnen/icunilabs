@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { adminActions } from '../../../store/useAdminStore'
 import { ChevronLeft, Reply, Send, Paperclip, Clock } from 'lucide-react'
+import SafeHtml from '../../shared/SafeHtml'
 
 const cls = "w-full bg-neutral-900/80 border border-neutral-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:border-[#00bfff]/40 focus:ring-1 focus:ring-[#00bfff]/20 focus:outline-none transition-all backdrop-blur-sm"
 
@@ -88,7 +89,7 @@ export default function MailThread({ thread, aliases, onClose }: { thread: any; 
               </div>
               {/* Body */}
               <div className={`px-5 py-4 text-sm text-neutral-300 leading-relaxed ${isLast ? '' : 'max-h-48 overflow-hidden relative'}`}>
-                <div dangerouslySetInnerHTML={{ __html: msg.body }} className="mail-body [&_img]:max-w-full [&_img]:rounded-lg [&_a]:text-[#00bfff] [&_a]:underline" />
+                <SafeHtml html={msg.body} className="mail-body [&_img]:max-w-full [&_img]:rounded-lg [&_a]:text-[#00bfff] [&_a]:underline" />
                 {!isLast && <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-neutral-900/80 to-transparent" />}
               </div>
               {/* Attachments */}

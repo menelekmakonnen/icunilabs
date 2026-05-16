@@ -26,25 +26,37 @@ export default function Contact() {
                 const scriptUrl = import.meta.env.VITE_APPS_SCRIPT_URL;
 
                 if (scriptUrl) {
-                    // Submit to Apps Script using no-cors mode.
-                    // GAS web apps redirect through googleusercontent.com which
-                    // makes the response opaque — we can't read it, but the
-                    // request still reaches the server and is processed.
-                    await fetch(scriptUrl, {
+                    // Submit to Apps Script — GAS web apps deployed as "anyone"
+                    // support CORS via redirect. We follow the redirect and parse
+                    // the JSON response to confirm success.
+                    const res = await fetch(scriptUrl, {
                         method: 'POST',
                         body: JSON.stringify(formData),
-                        mode: 'no-cors',
                         redirect: 'follow',
                     });
+
+                    // GAS may return text/html or application/json
+                    const text = await res.text();
+                    let ok = res.ok;
+                    try {
+                        const json = JSON.parse(text);
+                        ok = json.status === 'ok' || json.success === true || res.ok;
+                    } catch {
+                        // If parsing fails, rely on HTTP status
+                    }
+
+                    if (!ok) {
+                        throw new Error('Server returned an error. Please try again.');
+                    }
                 } else {
                     // Simulated submission for the demo if URL isn't set yet
                     await new Promise(resolve => setTimeout(resolve, 1500));
                 }
 
                 setStep(3);
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Submission failed", error);
-                alert("System error. Please try again or email us directly.");
+                alert(error?.message || "System error. Please try again or email us at labs@icuni.org.");
             } finally {
                 setIsSubmitting(false);
             }

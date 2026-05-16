@@ -42,6 +42,9 @@ export default function AdminPanel() {
     localStorage.getItem('icuni_admin_theme') || 'modern'
   )
 
+  // ── Session validation — must be called before any early returns (React hook rules) ──
+  useEffect(() => { adminActions.validateSession() }, [])
+
   // ── Modern Theme Routing ──
   // If Modern theme selected, delegate entirely to VercelAdminShell
   if (adminTheme === 'modern') {
@@ -52,7 +55,6 @@ export default function AdminPanel() {
   }
 
   // ── Classic Theme below — entirely unchanged ──
-  useEffect(() => { adminActions.validateSession() }, [])
 
   // Not logged in or not admin
   if (!token || !user) return <AdminLogin />

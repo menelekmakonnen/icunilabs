@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { MapPin, ChevronRight, Monitor, Smartphone } from 'lucide-react'
+import SafeHtml from '../shared/SafeHtml'
 
 // ─── TYPES ──────────────────────────────────────────────
 interface JobPreviewData {
@@ -95,7 +96,7 @@ function JobPreview({ data }: { data: JobPreviewData }) {
               About This Role
             </h2>
             {isHtml(desc) ? (
-              <div className="prose-preview text-xs text-neutral-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: desc }} />
+              <SafeHtml className="prose-preview text-xs text-neutral-300 leading-relaxed" html={desc} />
             ) : (
               <div className="rounded-xl border border-neutral-800 bg-neutral-900/30 p-2 space-y-1">
                 {paragraphs.map((msg, i) => (
@@ -118,7 +119,7 @@ function JobPreview({ data }: { data: JobPreviewData }) {
               What We Need From You
             </h2>
             {isHtml(data.requirements) ? (
-              <div className="prose-preview text-xs text-neutral-300" dangerouslySetInnerHTML={{ __html: data.requirements }} />
+              <SafeHtml className="prose-preview text-xs text-neutral-300" html={data.requirements} />
             ) : (
               <div className="space-y-1">
                 {reqs.map((r, i) => (
@@ -140,7 +141,7 @@ function JobPreview({ data }: { data: JobPreviewData }) {
               What You Get
             </h2>
             {isHtml(data.benefits) ? (
-              <div className="prose-preview text-xs text-neutral-300" dangerouslySetInnerHTML={{ __html: data.benefits }} />
+              <SafeHtml className="prose-preview text-xs text-neutral-300" html={data.benefits} />
             ) : (
               <div className="space-y-1">
                 {bens.map((b, i) => (
@@ -187,7 +188,7 @@ function ProjectPreview({ data }: { data: ProjectPreviewData }) {
           {title}
         </h3>
         {isHtml(content) ? (
-          <div className="prose-preview text-[10px] text-neutral-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: content }} />
+          <SafeHtml className="prose-preview text-[10px] text-neutral-400 leading-relaxed" html={content} />
         ) : (
           <p className="text-[10px] text-neutral-400 leading-relaxed">{content}</p>
         )}
@@ -239,7 +240,7 @@ function ProjectPreview({ data }: { data: ProjectPreviewData }) {
         {data.description && (
           <div>
             {isHtml(data.description) ? (
-              <div className="prose-preview text-[10px] text-neutral-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: data.description }} />
+              <SafeHtml className="prose-preview text-[10px] text-neutral-300 leading-relaxed" html={data.description} />
             ) : (
               <p className="text-[10px] text-neutral-300 leading-relaxed">{data.description}</p>
             )}

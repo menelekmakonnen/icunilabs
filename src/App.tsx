@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import MainLayout from './components/layout/MainLayout';
 import Navbar from './components/layout/Navbar';
 import Hero from './components/sections/Hero';
@@ -12,22 +12,36 @@ import PortfolioProof from './components/sections/PortfolioProof';
 import Method from './components/sections/Method';
 import Authority from './components/sections/Authority';
 import Contact from './components/sections/Contact';
-import ClientPortal from './components/portal/ClientPortal';
-import ReferralPortal from './components/portal/ReferralPortal';
-import AnimationShowcase from './components/sections/AnimationShowcase';
-import JobsPage from './components/sections/JobsPage';
-import Portfolio from './components/sections/Portfolio';
-import ProjectDetail from './components/sections/ProjectDetail';
-import AdminPanel from './components/admin/AdminPanel';
-import DemosPage from './components/sections/DemosPage';
-import DemoDetailPage from './components/sections/DemoDetailPage';
-import PersonaPage from './components/sections/PersonaPage';
-import WhoWeHelpPage from './components/sections/WhoWeHelpPage';
 import PersonaDrawer from './components/layout/PersonaDrawer';
 import { portfolioProjects } from './data/portfolioData';
 import { getPersonaBySlug } from './data/personaData';
 
+// ── Lazy-loaded routes ──
+// Admin, portals, and heavy pages are code-split to reduce the public bundle.
+// Only the homepage sections are eagerly loaded (critical rendering path).
+const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
+const ClientPortal = lazy(() => import('./components/portal/ClientPortal'));
+const ReferralPortal = lazy(() => import('./components/portal/ReferralPortal'));
+const AnimationShowcase = lazy(() => import('./components/sections/AnimationShowcase'));
+const JobsPage = lazy(() => import('./components/sections/JobsPage'));
+const Portfolio = lazy(() => import('./components/sections/Portfolio'));
+const ProjectDetail = lazy(() => import('./components/sections/ProjectDetail'));
+const DemosPage = lazy(() => import('./components/sections/DemosPage'));
+const DemoDetailPage = lazy(() => import('./components/sections/DemoDetailPage'));
+const PersonaPage = lazy(() => import('./components/sections/PersonaPage'));
+const WhoWeHelpPage = lazy(() => import('./components/sections/WhoWeHelpPage'));
+
 const personaSlugs = ['founders', 'operations', 'product-systems', 'creative-ops', 'ai-adoption', 'remote-owner', 'financial-ops'];
+
+/** Minimal loading fallback for lazy-loaded routes */
+const LazyFallback = () => (
+  <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <svg className="animate-spin w-8 h-8 text-[#00bfff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>
+      <span className="text-xs text-neutral-600 font-medium tracking-wider uppercase">Loading</span>
+    </div>
+  </div>
+);
 
 function App() {
   const [currentHash, setCurrentHash] = useState(window.location.hash);
@@ -42,43 +56,45 @@ function App() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // ── Lazy-loaded routes (wrapped in Suspense) ──
+
   if (currentHash === '#_ops' || currentHash.startsWith('#_ops/')) {
-    return <AdminPanel />;
+    return <Suspense fallback={<LazyFallback />}><AdminPanel /></Suspense>;
   }
 
   if (currentHash === '#referral') {
-    return <ReferralPortal />;
+    return <Suspense fallback={<LazyFallback />}><ReferralPortal /></Suspense>;
   }
 
   if (currentHash === '#showcase') {
-    return <AnimationShowcase />;
+    return <Suspense fallback={<LazyFallback />}><AnimationShowcase /></Suspense>;
   }
 
   if (currentHash === '#demos') {
     return (
-      <>
+      <Suspense fallback={<LazyFallback />}>
         <Navbar />
         <DemosPage />
-      </>
+      </Suspense>
     );
   }
 
   if (currentHash.startsWith('#demo/')) {
     const demoId = currentHash.replace('#demo/', '');
     return (
-      <>
+      <Suspense fallback={<LazyFallback />}>
         <Navbar />
         <DemoDetailPage demoId={demoId} />
-      </>
+      </Suspense>
     );
   }
 
   if (currentHash === '#jobs' || currentHash.startsWith('#job/') || currentHash.startsWith('#apply/')) {
     return (
-      <>
+      <Suspense fallback={<LazyFallback />}>
         <Navbar />
         <JobsPage />
-      </>
+      </Suspense>
     );
   }
 
@@ -95,40 +111,41 @@ function App() {
 
   if (currentHash === '#portal') {
     return (
-      <>
+      <Suspense fallback={<LazyFallback />}>
         <Navbar />
         <ClientPortal />
-      </>
+      </Suspense>
     );
   }
 
   if (currentHash === '#portfolio' || currentHash.startsWith('#portfolio?')) {
-    return <Portfolio />;
+    return <Suspense fallback={<LazyFallback />}><Portfolio /></Suspense>;
   }
 
   if (currentHash.startsWith('#project/')) {
     const projectId = currentHash.replace('#project/', '');
     const project = portfolioProjects.find(p => p.id === projectId);
     if (project) {
-      return <ProjectDetail project={project} />;
+      return <Suspense fallback={<LazyFallback />}><ProjectDetail project={project} /></Suspense>;
     }
-    return <Portfolio />;
+    return <Suspense fallback={<LazyFallback />}><Portfolio /></Suspense>;
   }
 
   // Persona pages
   const cleanHash = currentHash.replace('#', '');
 
   if (cleanHash === 'who-we-help') {
-    return <WhoWeHelpPage />;
+    return <Suspense fallback={<LazyFallback />}><WhoWeHelpPage /></Suspense>;
   }
 
   if (personaSlugs.includes(cleanHash)) {
     const persona = getPersonaBySlug(cleanHash);
     if (persona) {
-      return <PersonaPage persona={persona} />;
+      return <Suspense fallback={<LazyFallback />}><PersonaPage persona={persona} /></Suspense>;
     }
   }
 
+  // ── Homepage (eagerly loaded — critical path) ──
   return (
     <MainLayout>
       <Hero />

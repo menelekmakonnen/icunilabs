@@ -3,6 +3,7 @@ import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import DataTable from './DataTable'
 import RichEditor from './RichEditor'
 import LivePreview from './LivePreview'
+import SafeHtml from '../shared/SafeHtml'
 import { UserPlus, X, Send, ArrowLeft } from 'lucide-react'
 import { personas } from '../../data/personaData'
 import { portfolioProjects } from '../../data/portfolioData'
@@ -374,8 +375,9 @@ export function InvoicesSection() {
           )}
           {activeInvoiceHTML && (
             <div className={modalBg} onClick={() => adminActions.setError(null)}>
-              <div className="bg-white rounded-xl p-4 max-w-3xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}
-                dangerouslySetInnerHTML={{ __html: activeInvoiceHTML }} />
+              <div className="bg-white rounded-xl p-4 max-w-3xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <SafeHtml html={activeInvoiceHTML} />
+              </div>
             </div>
           )}
         </>
