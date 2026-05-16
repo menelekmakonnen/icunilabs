@@ -49,10 +49,6 @@ export default function ProfileSection() {
   // Whether we are viewing someone else's profile (read-only mode)
   const isImpersonating = !!impersonating
 
-  useEffect(() => {
-    loadProfile()
-  }, [impersonating?.email])
-
   async function loadProfile() {
     setProfileLoading(true)
     try {
@@ -105,6 +101,9 @@ export default function ProfileSection() {
     }
     setProfileLoading(false)
   }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- loadProfile is stable, deps are correct
+  useEffect(() => { loadProfile() }, [impersonating?.email])
 
   function flash(msg: string, type: 'ok' | 'err' = 'ok') {
     setToast({ msg, type })

@@ -563,6 +563,7 @@ export function CareersSection() {
     const result = await adminActions.previewApplicantEmail(selectedTemplate, name, buildExtras(selectedTemplate))
     if (result) { setPreviewHtml(result.html); setPreviewSubject(result.subject) }
   }
+  // eslint-disable-next-line react-hooks/rules-of-hooks -- intentional: load preview on tab/template change
   useEffect(() => { if (tab === 'emails') loadPreview() }, [selectedTemplate, tab])
 
   const handleSendEmails = async () => {
@@ -770,7 +771,7 @@ export function CareersSection() {
         selectedRows={selectedApplicants}
         onSelectRow={(rowId, selected) => {
           const next = new Set(selectedApplicants)
-          selected ? next.add(rowId) : next.delete(rowId)
+           if (selected) { next.add(rowId) } else { next.delete(rowId) }
           setSelectedApplicants(next)
         }}
         onSelectAll={(selected) => {

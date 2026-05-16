@@ -29,7 +29,7 @@ interface VercelTopbarProps {
   showImpersonate: boolean
 }
 
-export default function VercelTopbar({ onShowActAs, onShowImpersonate, showActAs, showImpersonate: _showImpersonate }: VercelTopbarProps) {
+export default function VercelTopbar({ onShowActAs, onShowImpersonate, showActAs }: VercelTopbarProps) {
   const { activeSection, user } = useAdminStore()
   const role = user?.role || ''
   const isElevated = ['Godmode', 'SuperAdmin'].includes(role)

@@ -20,6 +20,7 @@ export interface Demo {
   fullDemo: boolean
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- data export alongside component is intentional
 export const DEMOS: Demo[] = [
   {
     id: 'printshop',

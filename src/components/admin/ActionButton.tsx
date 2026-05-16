@@ -118,6 +118,7 @@ export function FormButton({
  * Hook for wrapping any async action with loading state.
  * Returns [handler, isBusy] tuple.
  */
+// eslint-disable-next-line react-refresh/only-export-components -- hook export alongside components is intentional
 export function useAsyncAction<T extends (...args: any[]) => Promise<any>>(
   action: T
 ): [(...args: Parameters<T>) => Promise<ReturnType<T>>, boolean] {

@@ -511,6 +511,24 @@ function AppForm({job}:{job:typeof jobs[0]}){
   const MAX_AUDIO_SEC = 120;
 
   const mr=useRef<MediaRecorder|null>(null);const ch=useRef<Blob[]>([]);const ti=useRef<number|null>(null);
+
+  const fmt=(s:number)=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+
+  function validateUploadedAudio(f:File){
+    setAudioErr('');setAudioFile(null);setAudioBlob(null);
+    const audio=new Audio();
+    audio.preload='metadata';
+    audio.onloadedmetadata=()=>{
+      URL.revokeObjectURL(audio.src);
+      const dur=Math.round(audio.duration);
+      if(dur<MIN_AUDIO_SEC){setAudioErr(`Audio is too short (${dur}s) — minimum is ${MIN_AUDIO_SEC} seconds.`);return;}
+      if(dur>MAX_AUDIO_SEC){setAudioErr(`Audio is too long (${fmt(dur)}) — maximum is ${MAX_AUDIO_SEC/60} minutes.`);return;}
+      setAudioFile(f);
+    };
+    audio.onerror=()=>{setAudioFile(f);}; // Can't validate, let it through
+    audio.src=URL.createObjectURL(f);
+  }
+
   const cvDrop=useDrop(f=>setCvFile(f),['.pdf','.doc','.docx','.txt','.rtf','.odt']);
   const audioDrop=useDrop(f=>{validateUploadedAudio(f);},['audio/']);
   const vidDrop=useDrop(f=>{setVidErr('');if(f.size>300*1024*1024){setVidErr('Max 300 MB.');return;}setVideoFile(f);},['video/']);
@@ -535,7 +553,7 @@ function AppForm({job}:{job:typeof jobs[0]}){
       // Auto-stop at max duration
       if(next>=MAX_AUDIO_SEC){mr.current?.stop();setRec(false);if(ti.current)clearInterval(ti.current);}
       return next;
-    }),1000);}catch{}
+    }),1000);}catch{ /* mic permission denied — silently handle */ }
   }
   function stopRec(){
     const duration=recTime;
@@ -547,27 +565,11 @@ function AppForm({job}:{job:typeof jobs[0]}){
   }
   useEffect(()=>()=>{if(ti.current)clearInterval(ti.current);},[]);
 
-  function validateUploadedAudio(f:File){
-    setAudioErr('');setAudioFile(null);setAudioBlob(null);
-    const audio=new Audio();
-    audio.preload='metadata';
-    audio.onloadedmetadata=()=>{
-      URL.revokeObjectURL(audio.src);
-      const dur=Math.round(audio.duration);
-      if(dur<MIN_AUDIO_SEC){setAudioErr(`Audio is too short (${dur}s) — minimum is ${MIN_AUDIO_SEC} seconds.`);return;}
-      if(dur>MAX_AUDIO_SEC){setAudioErr(`Audio is too long (${fmt(dur)}) — maximum is ${MAX_AUDIO_SEC/60} minutes.`);return;}
-      setAudioFile(f);
-    };
-    audio.onerror=()=>{setAudioFile(f);}; // Can't validate, let it through
-    audio.src=URL.createObjectURL(f);
-  }
-
   function b64(f:File|Blob):Promise<string>{return new Promise(r=>{const rd=new FileReader();rd.onloadend=()=>r((rd.result as string).split(',')[1]);rd.readAsDataURL(f);});}
 
   const isReferral = job.type === 'Commission';
   const audioOk=audioBlob||audioFile;
   const ok=!busy&&(isReferral||audioOk)&&!audioErr;
-  const fmt=(s:number)=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
   const dropCls=(active:boolean,has:boolean)=>active?'border-[#00bfff] bg-[#00bfff]/10':has?'border-[#00bfff]/50 bg-[#00bfff]/5':'border-neutral-800 hover:border-neutral-700';
 
   // Recording progress bar percentage
@@ -582,7 +584,7 @@ function AppForm({job}:{job:typeof jobs[0]}){
       const a=audioBlob||audioFile;if(a){p.audioBase64=await b64(a);p.audioName=audioFile?audioFile.name:'voice-intro.webm';}
       if(videoFile){p.videoBase64=await b64(videoFile);p.videoName=videoFile.name;}
       if(API)await fetch(API,{method:'POST',body:JSON.stringify(p),redirect:'follow'});
-    }catch{}
+    }catch{ /* submission error — silently handled, form shows done state */ }
     setBusy(false);setDone(true);
   }
 
