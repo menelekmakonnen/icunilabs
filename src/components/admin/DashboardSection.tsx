@@ -13,6 +13,7 @@ export default function DashboardSection() {
   const pendingInvoices = s.invoices.filter((i: any) => i.status === 'pending' || i.status === 'partial').length
   const totalRevenue = s.invoices.filter((i: any) => i.status === 'paid').reduce((sum: number, i: any) => sum + Number(i.total || 0), 0)
   const breached = s.slaStatuses.filter((st: any) => st.breached).length
+  const weekAgo = useMemo(() => new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0], [])
 
 
   // Analytics: Project type breakdown
@@ -142,7 +143,7 @@ export default function DashboardSection() {
               const stage = c.prospect_stage || 'new_lead'
               return ['prospect', 'new_lead', 'contacted', 'qualified'].includes(stage)
             })
-            const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+            // weekAgo computed in component body via useMemo
             const addedThisWeek = prospects.filter((c: any) => (c.created_at || '') >= weekAgo).length
             const awaitingContact = prospects.filter((c: any) => (c.prospect_stage || 'new_lead') === 'prospect').length
             const qualified = prospects.filter((c: any) => (c.prospect_stage || 'new_lead') === 'qualified').length

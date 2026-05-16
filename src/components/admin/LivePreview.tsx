@@ -167,17 +167,8 @@ function JobPreview({ data }: { data: JobPreviewData }) {
   )
 }
 
-// ─── PROJECT PREVIEW ────────────────────────────────────
-function ProjectPreview({ data }: { data: ProjectPreviewData }) {
-  const tags = data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : []
-  const tierColors: Record<string, string> = {
-    flagship: 'bg-[#ff7a00]/15 text-[#ff7a00] border-[#ff7a00]/30',
-    production: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
-    active: 'bg-[#00bfff]/15 text-[#00bfff] border-[#00bfff]/30',
-    spec: 'bg-neutral-500/15 text-neutral-400 border-neutral-500/30',
-  }
-
-  const Section = ({ title, content, color = '#00bfff' }: { title: string; content: string; color?: string }) => {
+/** Reusable section block for project preview — hoisted to module level */
+function PreviewSection({ title, content, color = '#00bfff' }: { title: string; content: string; color?: string }) {
     if (!content) return null
     return (
       <div className="space-y-2">
@@ -194,6 +185,16 @@ function ProjectPreview({ data }: { data: ProjectPreviewData }) {
         )}
       </div>
     )
+  }
+
+// ─── PROJECT PREVIEW ────────────────────────────────────
+function ProjectPreview({ data }: { data: ProjectPreviewData }) {
+  const tags = data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : []
+  const tierColors: Record<string, string> = {
+    flagship: 'bg-[#ff7a00]/15 text-[#ff7a00] border-[#ff7a00]/30',
+    production: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    active: 'bg-[#00bfff]/15 text-[#00bfff] border-[#00bfff]/30',
+    spec: 'bg-neutral-500/15 text-neutral-400 border-neutral-500/30',
   }
 
   return (
@@ -248,10 +249,10 @@ function ProjectPreview({ data }: { data: ProjectPreviewData }) {
         )}
 
         {/* Content sections */}
-        <Section title="The Problem" content={data.clientProblem} color="#ff7a00" />
-        <Section title="Our Solution" content={data.solution} color="#00bfff" />
-        <Section title="Business Impact" content={data.businessImpact} color="#10b981" />
-        <Section title="Expert Deep Dive" content={data.expertDeepDive} color="#a855f7" />
+        <PreviewSection title="The Problem" content={data.clientProblem} color="#ff7a00" />
+        <PreviewSection title="Our Solution" content={data.solution} color="#00bfff" />
+        <PreviewSection title="Business Impact" content={data.businessImpact} color="#10b981" />
+        <PreviewSection title="Expert Deep Dive" content={data.expertDeepDive} color="#a855f7" />
 
         {/* Links */}
         {(data.projectUrl || data.githubUrl) && (
