@@ -317,7 +317,7 @@ export default function ClientPortal({ demoMode }: { demoMode?: boolean } = {}) 
               <div>
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
                   <div className="flex items-center gap-3 mb-6">
-                    <img src="/icuni_logo.png" alt="ICUNI Labs" className="w-10 h-10 rounded-lg" />
+                    <img src="/icuni_logo.webp" alt="ICUNI Labs" className="w-10 h-10 rounded-lg" />
                     <div>
                       <div className="text-sm font-bold text-[#ff7a00]">ICUNI Labs</div>
                       <div className="text-[10px] text-neutral-600 tracking-widest">CLIENT PORTAL</div>

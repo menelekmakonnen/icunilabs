@@ -206,7 +206,7 @@ export default function InvoiceBuilder() {
             <div className="inv-h">
               <div className="inv-h__top">
                 <div className="inv-h__brand">
-                  <img src="/icuni-logo.png" className="inv-h__logo" alt="" />
+                  <img src="/icuni-logo.webp" className="inv-h__logo" alt="" />
                   <div><div className="inv-h__co">{d.fromCompany}</div><div className="inv-h__sub">{d.companyTagline}</div></div>
                 </div>
                 <div className="inv-h__title">INVOICE</div>

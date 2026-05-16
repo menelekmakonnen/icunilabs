@@ -7,6 +7,122 @@
  */
 
 // ═══════════════════════════════════════════════════════════
+// ACTION → HANDLER MAP  (grouped by domain)
+// ═══════════════════════════════════════════════════════════
+
+var ACTION_MAP = {
+    // ── Auth ──
+    sendOTP: handleSendOTP, verifyOTP: handleVerifyOTP,
+    passwordLogin: handlePasswordLogin, pinLogin: handlePinLogin,
+    validateSession: handleValidateSession, validateDevice: handleValidateDevice,
+    logout: handleLogout, setPassword: handleSetPassword, setPin: handleSetPin,
+    getProfile: handleGetProfile, updateProfile: handleUpdateProfile,
+    uploadProfileImage: handleUploadProfileImage,
+
+    // ── User Management ──
+    getUsers: handleGetUsers, addUser: handleAddUser,
+    deactivateUser: handleDeactivateUser, createAdmin: handleCreateAdmin,
+    editUser: handleEditUser, updateUserPermissions: handleUpdateUserPermissions,
+    getUserPermissions: handleGetUserPermissions, runMigration: handleRunMigration,
+
+    // ── Impersonation ──
+    impersonateUser: handleImpersonateUser, endImpersonation: handleEndImpersonation,
+
+    // ── ICUNI Project Registry ──
+    getProjectRegistry: handleGetProjectRegistry, updateProjectFeature: handleUpdateProjectFeature,
+    addProject: handleAddProject, removeProject: handleRemoveProject,
+
+    // ── Email Hub ──
+    getInbox: handleGetInbox, getThread: handleGetThread,
+    replyToThread: handleReplyToThread, sendBrandedEmail: handleSendBrandedEmail,
+    getEmailAliases: handleGetEmailAliases, updateEmailAlias: handleUpdateEmailAlias,
+    deleteEmailAlias: handleDeleteEmailAlias, getEmailTemplates: handleGetEmailTemplates,
+    saveEmailTemplate: handleSaveEmailTemplate, previewBrandedEmail: handlePreviewBrandedEmail,
+    assignMailbox: handleAssignMailbox, removeMailbox: handleRemoveMailbox,
+    getUserMailboxes: handleGetUserMailboxes,
+
+    // ── Dashboard ──
+    getDashboard: handleGetDashboard,
+
+    // ── Clients ──
+    getClients: handleGetClients, getClient: handleGetClient,
+    addClient: handleAddClient, updateClient: handleUpdateClient,
+    deleteClient: handleDeleteClient, addHistoricProject: handleAddHistoricProject,
+    getClientActivity: handleGetClientActivity, addClientNote: handleAddClientNote,
+    updateClientTags: handleUpdateClientTags, updateClientStatus: handleUpdateClientStatus,
+    sendClientEmail: handleSendClientEmail, previewClientEmail: handlePreviewClientEmail,
+
+    // ── Projects ──
+    createProject: handleCreateProject, getProjects: handleGetProjects,
+    getProject: handleGetProject, advanceStep: handleAdvanceProjectStep,
+    requestBuild: handleClientRequestBuild,
+
+    // ── Invoices ──
+    getInvoices: handleGetInvoices, getInvoiceHTML: handleGetInvoiceHTML,
+    recordPayment: handleRecordPayment,
+
+    // ── CMS ──
+    getPages: handleGetPages, createPage: handleCreatePage, updatePage: handleUpdatePage,
+    getMenus: handleGetMenus, updateMenu: handleUpdateMenu,
+    getSettings: handleGetSettings, updateSettings: handleUpdateSettings,
+
+    // ── Blog ──
+    getBlogPosts: handleGetBlogPosts, createBlogPost: handleCreateBlogPost,
+    updateBlogPost: handleUpdateBlogPost, deleteBlogPost: handleDeleteBlogPost,
+    getBlogCategories: handleGetBlogCategories,
+
+    // ── Job Listings ──
+    getJobListings: handleGetJobListings, createJobListing: handleCreateJobListing,
+    updateJobListing: handleUpdateJobListing,
+
+    // ── Portfolio ──
+    getPortfolio: handleGetPortfolio, createPortfolio: handleCreatePortfolioProject,
+    updatePortfolio: handleUpdatePortfolioProject,
+
+    // ── Testimonials ──
+    getTestimonials: handleGetTestimonials, createTestimonial: handleCreateTestimonial,
+
+    // ── SLA ──
+    getSlaStatus: handleGetSlaStatus, snoozeSla: handleSnoozeSla,
+    getSlaCosts: handleGetSlaCosts,
+
+    // ── Logs ──
+    getLogs: handleGetLogs, getArchives: handleGetArchives,
+
+    // ── Referrals (legacy aliases + new names) ──
+    submit_referral: handleSubmitReferral, submitReferral: handleSubmitReferral,
+    referrer_signup: handleRegisterReferrer, registerReferrer: handleRegisterReferrer,
+    referrer_login: handleLoginReferrer, loginReferrer: handleLoginReferrer,
+    referrer_verify_otp: handleVerifyReferrerOtp, verifyReferrerOtp: handleVerifyReferrerOtp,
+    get_dashboard: handleGetReferrerDashboard, getDashboardData: handleGetReferrerDashboard,
+    updateReferralStatus: handleUpdateReferralStatus,
+
+    // ── Job Applications (legacy + admin) ──
+    job_application: handleJobApplicationLegacy, submitJobApplication: handleJobApplicationLegacy,
+    job_qualification: handleJobQualificationLegacy,
+    getJobApplications: handleGetJobApplications, getJobQualifications: handleGetJobQualifications,
+    sendApplicantEmail: handleSendApplicantEmail, previewApplicantEmail: handlePreviewApplicantEmail,
+    deleteApplication: handleDeleteApplication, createApplication: handleCreateApplication,
+
+    // ── Referrals (admin) ──
+    getReferrers: handleGetReferrers, getReferrals: handleGetReferrals,
+    sendReferrerEmail: handleSendReferrerEmail, previewReferrerEmail: handlePreviewReferrerEmail,
+
+    // ── Bug Reports ──
+    report_bug: handleBugReport, reportBug: handleBugReport,
+
+    // ── Orbit Interconnection ──
+    syncOrbitData: handleSyncOrbitData, getOrbitStatus: handleGetOrbitStatus,
+
+    // ── Telemetry ──
+    telemetryReport: handleTelemetryReport, telemetryGet: handleTelemetryGet,
+
+    // ── Staff/Invoice/Deployment API (Orbit Pull) ──
+    staffList: handleStaffList, invoicesList: handleInvoicesList,
+    deploymentsList: handleDeploymentsList, staffSync: handleStaffSync,
+};
+
+// ═══════════════════════════════════════════════════════════
 // HTTP HANDLERS
 // ═══════════════════════════════════════════════════════════
 
@@ -14,172 +130,10 @@ function doPost(e) {
     try {
         var payload = JSON.parse(e.postData.contents);
         var action = payload.action;
+        var handler = ACTION_MAP[action];
 
-        // ── Auth ──
-        if (action === 'sendOTP')           return handleSendOTP(payload);
-        if (action === 'verifyOTP')         return handleVerifyOTP(payload);
-        if (action === 'passwordLogin')     return handlePasswordLogin(payload);
-        if (action === 'pinLogin')          return handlePinLogin(payload);
-        if (action === 'validateSession')   return handleValidateSession(payload);
-        if (action === 'validateDevice')    return handleValidateDevice(payload);
-        if (action === 'logout')            return handleLogout(payload);
-        if (action === 'setPassword')       return handleSetPassword(payload);
-        if (action === 'setPin')            return handleSetPin(payload);
-        if (action === 'getProfile')        return handleGetProfile(payload);
-        if (action === 'updateProfile')     return handleUpdateProfile(payload);
-        if (action === 'uploadProfileImage') return handleUploadProfileImage(payload);
-
-        // ── User Management ──
-        if (action === 'getUsers')          return handleGetUsers(payload);
-        if (action === 'addUser')           return handleAddUser(payload);
-        if (action === 'deactivateUser')    return handleDeactivateUser(payload);
-        if (action === 'createAdmin')       return handleCreateAdmin(payload);
-        if (action === 'editUser')          return handleEditUser(payload);
-        if (action === 'updateUserPermissions') return handleUpdateUserPermissions(payload);
-        if (action === 'getUserPermissions')    return handleGetUserPermissions(payload);
-        if (action === 'runMigration')          return handleRunMigration(payload);
-
-        // ── Impersonation ──
-        if (action === 'impersonateUser')    return handleImpersonateUser(payload);
-        if (action === 'endImpersonation')   return handleEndImpersonation(payload);
-
-        // ── ICUNI Project Registry ──
-        if (action === 'getProjectRegistry')     return handleGetProjectRegistry(payload);
-        if (action === 'updateProjectFeature')   return handleUpdateProjectFeature(payload);
-        if (action === 'addProject')             return handleAddProject(payload);
-        if (action === 'removeProject')          return handleRemoveProject(payload);
-
-        // ── Email Hub ──
-        if (action === 'getInbox')              return handleGetInbox(payload);
-        if (action === 'getThread')             return handleGetThread(payload);
-        if (action === 'replyToThread')         return handleReplyToThread(payload);
-        if (action === 'sendBrandedEmail')      return handleSendBrandedEmail(payload);
-        if (action === 'getEmailAliases')       return handleGetEmailAliases(payload);
-        if (action === 'updateEmailAlias')      return handleUpdateEmailAlias(payload);
-        if (action === 'deleteEmailAlias')      return handleDeleteEmailAlias(payload);
-        if (action === 'getEmailTemplates')     return handleGetEmailTemplates(payload);
-        if (action === 'saveEmailTemplate')     return handleSaveEmailTemplate(payload);
-        if (action === 'previewBrandedEmail')   return handlePreviewBrandedEmail(payload);
-        if (action === 'assignMailbox')         return handleAssignMailbox(payload);
-        if (action === 'removeMailbox')         return handleRemoveMailbox(payload);
-        if (action === 'getUserMailboxes')      return handleGetUserMailboxes(payload);
-
-        // ── Dashboard ──
-        if (action === 'getDashboard')      return handleGetDashboard(payload);
-
-        // ── Clients ──
-        if (action === 'getClients')        return handleGetClients(payload);
-        if (action === 'getClient')         return handleGetClient(payload);
-        if (action === 'addClient')         return handleAddClient(payload);
-        if (action === 'updateClient')      return handleUpdateClient(payload);
-        if (action === 'deleteClient')      return handleDeleteClient(payload);
-        if (action === 'addHistoricProject') return handleAddHistoricProject(payload);
-        if (action === 'getClientActivity') return handleGetClientActivity(payload);
-        if (action === 'addClientNote')     return handleAddClientNote(payload);
-        if (action === 'updateClientTags')  return handleUpdateClientTags(payload);
-        if (action === 'updateClientStatus') return handleUpdateClientStatus(payload);
-        if (action === 'sendClientEmail')   return handleSendClientEmail(payload);
-        if (action === 'previewClientEmail') return handlePreviewClientEmail(payload);
-
-        // ── Projects ──
-        if (action === 'createProject')     return handleCreateProject(payload);
-        if (action === 'getProjects')       return handleGetProjects(payload);
-        if (action === 'getProject')        return handleGetProject(payload);
-        if (action === 'advanceStep')       return handleAdvanceProjectStep(payload);
-        if (action === 'requestBuild')      return handleClientRequestBuild(payload);
-
-        // ── Invoices ──
-        if (action === 'getInvoices')       return handleGetInvoices(payload);
-        if (action === 'getInvoiceHTML')    return handleGetInvoiceHTML(payload);
-        if (action === 'recordPayment')     return handleRecordPayment(payload);
-
-        // ── CMS: Pages ──
-        if (action === 'getPages')          return handleGetPages(payload);
-        if (action === 'createPage')        return handleCreatePage(payload);
-        if (action === 'updatePage')        return handleUpdatePage(payload);
-
-        // ── CMS: Menus ──
-        if (action === 'getMenus')          return handleGetMenus(payload);
-        if (action === 'updateMenu')        return handleUpdateMenu(payload);
-
-        // ── CMS: Settings ──
-        if (action === 'getSettings')       return handleGetSettings(payload);
-        if (action === 'updateSettings')    return handleUpdateSettings(payload);
-
-        // ── Blog ──
-        if (action === 'getBlogPosts')      return handleGetBlogPosts(payload);
-        if (action === 'createBlogPost')    return handleCreateBlogPost(payload);
-        if (action === 'updateBlogPost')    return handleUpdateBlogPost(payload);
-        if (action === 'deleteBlogPost')    return handleDeleteBlogPost(payload);
-        if (action === 'getBlogCategories') return handleGetBlogCategories(payload);
-
-        // ── Job Listings ──
-        if (action === 'getJobListings')    return handleGetJobListings(payload);
-        if (action === 'createJobListing')  return handleCreateJobListing(payload);
-        if (action === 'updateJobListing')  return handleUpdateJobListing(payload);
-
-        // ── Portfolio ──
-        if (action === 'getPortfolio')      return handleGetPortfolio(payload);
-        if (action === 'createPortfolio')   return handleCreatePortfolioProject(payload);
-        if (action === 'updatePortfolio')   return handleUpdatePortfolioProject(payload);
-
-        // ── Testimonials ──
-        if (action === 'getTestimonials')   return handleGetTestimonials(payload);
-        if (action === 'createTestimonial') return handleCreateTestimonial(payload);
-
-        // ── SLA ──
-        if (action === 'getSlaStatus')      return handleGetSlaStatus(payload);
-        if (action === 'snoozeSla')         return handleSnoozeSla(payload);
-        if (action === 'getSlaCosts')       return handleGetSlaCosts(payload);
-
-        // ── Logs ──
-        if (action === 'getLogs')           return handleGetLogs(payload);
-        if (action === 'getArchives')       return handleGetArchives(payload);
-
-        // ── Referrals (legacy — matches frontend action names) ──
-        if (action === 'submit_referral' || action === 'submitReferral')    return handleSubmitReferral(payload);
-        if (action === 'referrer_signup' || action === 'registerReferrer')  return handleRegisterReferrer(payload);
-        if (action === 'referrer_login' || action === 'loginReferrer')     return handleLoginReferrer(payload);
-        if (action === 'referrer_verify_otp' || action === 'verifyReferrerOtp') return handleVerifyReferrerOtp(payload);
-        if (action === 'get_dashboard' || action === 'getDashboardData')   return handleGetReferrerDashboard(payload);
-        if (action === 'updateReferralStatus') return handleUpdateReferralStatus(payload);
-
-        // ── Job Applications (legacy — matches frontend action names) ──
-        if (action === 'job_application' || action === 'submitJobApplication') return handleJobApplicationLegacy(payload);
-        if (action === 'job_qualification') return handleJobQualificationLegacy(payload);
-
-        // ── Job Applications (admin read + email) ──
-        if (action === 'getJobApplications') return handleGetJobApplications(payload);
-        if (action === 'getJobQualifications') return handleGetJobQualifications(payload);
-        if (action === 'sendApplicantEmail') return handleSendApplicantEmail(payload);
-        if (action === 'previewApplicantEmail') return handlePreviewApplicantEmail(payload);
-        if (action === 'deleteApplication') return handleDeleteApplication(payload);
-        if (action === 'createApplication') return handleCreateApplication(payload);
-
-        // ── Referrals (admin read + email) ──
-        if (action === 'getReferrers') return handleGetReferrers(payload);
-        if (action === 'getReferrals') return handleGetReferrals(payload);
-        if (action === 'sendReferrerEmail') return handleSendReferrerEmail(payload);
-        if (action === 'previewReferrerEmail') return handlePreviewReferrerEmail(payload);
-
-        // ── Bug Reports ──
-        if (action === 'report_bug' || action === 'reportBug') return handleBugReport(payload);
-
-        // ── Orbit Interconnection (Desktop Hub ↔ Cloud Hub) ──
-        if (action === 'syncOrbitData')     return handleSyncOrbitData(payload);
-        if (action === 'getOrbitStatus')    return handleGetOrbitStatus(payload);
-
-        // ── Telemetry (Client Apps → Labs) ──
-        if (action === 'telemetryReport')   return handleTelemetryReport(payload);
-        if (action === 'telemetryGet')      return handleTelemetryGet(payload);
-
-        // ── Staff/Invoice/Deployment API (Labs → Orbit Pull) ──
-        if (action === 'staffList')         return handleStaffList(payload);
-        if (action === 'invoicesList')      return handleInvoicesList(payload);
-        if (action === 'deploymentsList')   return handleDeploymentsList(payload);
-        if (action === 'staffSync')         return handleStaffSync(payload);
-
-        return errorResponse_('Unknown action: ' + action, 400);
+        if (!handler) return errorResponse_('Unknown action: ' + action, 400);
+        return handler(payload);
 
     } catch (err) {
         Logger.log('doPost ERROR: ' + err.message + '\n' + (err.stack || ''));

@@ -102,7 +102,7 @@ export default function Portfolio() {
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                     <a href="/" className="flex items-center gap-3 text-neutral-400 hover:text-white transition-colors group">
                         <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                        <img src="/icuni_logo.png" alt="ICUNI Labs" className="w-6 h-6 rounded object-contain" />
+                        <img src="/icuni_logo.webp" alt="ICUNI Labs" className="w-6 h-6 rounded object-contain" />
                         <span className="font-bold text-sm tracking-tight hidden sm:inline-block">ICUNI Labs</span>
                     </a>
 

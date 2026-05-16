@@ -416,8 +416,8 @@ const STATIC_JOBS = [{
   requirements: 'Follows up without being reminded, persistent and proactive\nStrong written and verbal communication in English\nComfortable making cold and warm calls to business owners\nHighly organized, tracks tasks in systems not from memory\nFamiliar with Google Workspace (Sheets, Docs, Gmail, Calendar)\nBased in Accra, Ghana\nAvailable to start ASAP',
   benefits: 'GH\u20B52,500 \u2013 GH\u20B52,950 monthly base (Level 1 Compensation)\nCommission on every paid project the company delivers\nUp to 10% commission on deals you directly bring in\nDirect mentorship from the founder\nReal experience inside a growing tech company\nClear growth path as the company scales',
   perks: 'Commission on every project\nReal tech industry experience\nGrowth trajectory',
-  hero_image: '/ops-assistant-hero.png',
-  flyer_image: '/ops-assistant-flyer.jpg',
+  hero_image: '/ops-assistant-hero.webp',
+  flyer_image: '/ops-assistant-flyer.webp',
   apply_email: 'jobs@icuni.org',
   status: 'active',
   deadline: '2026-05-18',
@@ -705,7 +705,7 @@ export function CareersSection() {
               <div className="space-y-4">
                 <div>
                   <label className="text-xs text-neutral-500 mb-1 block">Hero Image</label>
-                  <input value={listingForm.hero_image} onChange={e => setListingForm({...listingForm, hero_image: e.target.value})} className={inputCls} placeholder="/ops-assistant-hero.png" />
+                  <input value={listingForm.hero_image} onChange={e => setListingForm({...listingForm, hero_image: e.target.value})} className={inputCls} placeholder="/ops-assistant-hero.webp" />
                   {listingForm.hero_image && (
                     <div className="mt-2 rounded-lg overflow-hidden border border-neutral-800 max-h-40">
                       <img src={listingForm.hero_image} alt="Hero" className="w-full h-40 object-cover" onError={e => (e.currentTarget.style.display = 'none')} />
@@ -714,7 +714,7 @@ export function CareersSection() {
                 </div>
                 <div>
                   <label className="text-xs text-neutral-500 mb-1 block">Flyer Image</label>
-                  <input value={listingForm.flyer_image} onChange={e => setListingForm({...listingForm, flyer_image: e.target.value})} className={inputCls} placeholder="/ops-assistant-flyer.jpg" />
+                  <input value={listingForm.flyer_image} onChange={e => setListingForm({...listingForm, flyer_image: e.target.value})} className={inputCls} placeholder="/ops-assistant-flyer.webp" />
                   {listingForm.flyer_image && (
                     <div className="mt-2 rounded-lg overflow-hidden border border-neutral-800 max-h-40">
                       <img src={listingForm.flyer_image} alt="Flyer" className="w-full h-40 object-cover" onError={e => (e.currentTarget.style.display = 'none')} />

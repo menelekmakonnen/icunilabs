@@ -170,7 +170,7 @@ export default function AdminPanel() {
         <div className="flex flex-col flex-1 min-w-0">
           {/* Logo */}
           <div className="h-16 flex items-center gap-3 px-4 border-b border-neutral-800 shrink-0">
-            <img src="/icuni_logo.png" alt="ICUNI" className="w-8 h-8 rounded-md object-contain shrink-0" />
+            <img src="/icuni_logo.webp" alt="ICUNI" className="w-8 h-8 rounded-md object-contain shrink-0" />
             {!collapsed && <span className="font-bold text-sm text-white tracking-tight">Ops Console</span>}
           </div>
 

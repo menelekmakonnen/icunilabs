@@ -41,7 +41,7 @@ export default function Navbar() {
 
                 {/* Logo */}
                 <a href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
-                    <img src="/icuni_logo.png" alt="ICUNI Labs Logo" className="w-8 h-8 rounded-md object-contain" />
+                    <img src="/icuni_logo.webp" alt="ICUNI Labs Logo" className="w-8 h-8 rounded-md object-contain" />
                     <span className="font-bold text-lg tracking-tight">ICUNI Labs</span>
                 </a>
 

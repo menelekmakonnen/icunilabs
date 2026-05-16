@@ -57,7 +57,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                         </div>
 
                         <div className="flex items-center gap-3 opacity-80 cursor-default border-l border-neutral-800 pl-4">
-                            <img src="/icuni_logo.png" alt="ICUNI Labs Logo" className="w-5 h-5 rounded object-contain hidden sm:block" />
+                            <img src="/icuni_logo.webp" alt="ICUNI Labs Logo" className="w-5 h-5 rounded object-contain hidden sm:block" />
                             <span className="font-bold text-[10px] tracking-[0.2em] uppercase text-neutral-500">Case Study</span>
                         </div>
                     </div>

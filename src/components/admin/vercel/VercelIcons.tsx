@@ -294,7 +294,7 @@ export function MoonIcon({ className, size = 16 }: IconProps) {
 export function ICUNILogo({ className, size = 24 }: IconProps) {
   return (
     <img
-      src="/icuni-logo.png"
+      src="/icuni-logo.webp"
       alt="ICUNI"
       width={size}
       height={size}

@@ -32,9 +32,9 @@ const benIcons = [
 
 const jobs = [{
   id:'ops-assistant-001', title:'Operations Assistant', type:'Full-Time', location:'Accra, Ghana',
-  salary:'GH\u20B52,500 \u2013 2,950/mo + commission', heroImage:'/ops-assistant-hero.png',
+  salary:'GH\u20B52,500 \u2013 2,950/mo + commission', heroImage:'/ops-assistant-hero.webp',
   shortDesc:'Keep our client pipeline moving, coordinate referral partners, and grow with a tech company building real systems for real businesses.',
-  flyerImage:'/ops-assistant-flyer.jpg',
+  flyerImage:'/ops-assistant-flyer.webp',
   deadline: '2026-05-18T00:00:00', // Sunday 17 May end-of-day
   perks:['Commission on every project','Real tech industry experience','Growth trajectory'],
   fullDescription:[
@@ -67,7 +67,7 @@ const jobs = [{
   applyEmail:'jobs@icuni.org',
 },{
   id:'referral-partner-001', title:'Referral Partner', type:'Commission', location:'Anywhere (Remote)',
-  salary:'GH\u20B51,000+ per deal (or 10%)', heroImage:'/referral-hero.png',
+  salary:'GH\u20B51,000+ per deal (or 10%)', heroImage:'/referral-hero.webp',
   shortDesc:'Know a business decision maker? Introduce them to ICUNI Labs. We close the deal, you earn GH\u20B51,000+ commission. No selling required.',
   deadline: '', // No deadline — always open
   perks:['GH\u20B51,000+ per referral','Zero selling required','Paid on first cut'],
@@ -288,7 +288,7 @@ function Detail({job}:{job:typeof jobs[0]}){
                   /* ── CHAT INTERFACE for standard jobs ── */
                   <div className="rounded-2xl border border-neutral-800 bg-neutral-900/30 overflow-hidden">
                     <div className="flex items-center gap-3 px-5 py-3 bg-neutral-900/80 border-b border-neutral-800">
-                      <img src="/icuni_logo.png" alt="ICUNI Labs" className="w-9 h-9 rounded-full bg-neutral-800 p-1 object-contain"/>
+                      <img src="/icuni_logo.webp" alt="ICUNI Labs" className="w-9 h-9 rounded-full bg-neutral-800 p-1 object-contain"/>
                       <div>
                         <p className="text-sm font-semibold text-white">ICUNI Labs</p>
                         <p className="text-[10px] text-[#10b981] flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-[#10b981] inline-block"/>Online now</p>
