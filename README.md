@@ -1,73 +1,153 @@
-# React + TypeScript + Vite
+# ICUNI Labs — labs.icuni.org
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The public face, admin console, and operational backend for ICUNI Labs — the software engineering arm of ICUNI Group.
 
-Currently, two official plugins are available:
+## Architecture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This is a hybrid application serving multiple surfaces from a single Vite + React 19 SPA:
 
-## React Compiler
+| Surface | Route | Description |
+|---------|-------|-------------|
+| **Marketing Site** | `/` (root) | Homepage with persona-driven conversion flow |
+| **Portfolio** | `#portfolio`, `#project/:id` | Project gallery with detailed case studies |
+| **Demos** | `#demos`, `#demo/:id` | Interactive system demonstrations |
+| **Jobs** | `#jobs`, `#job/:id`, `#apply/:id` | Career listings with rich preview editor |
+| **Contact** | `#contact` | Multi-step lead capture form |
+| **Personas** | `#founders`, `#operations`, etc. | Targeted landing pages per buyer persona |
+| **Client Portal** | `#portal` | Client-facing project status + invoices |
+| **Referral Portal** | `#referral` | Partner referral tracking + payouts |
+| **Admin Console** | `#_ops` | Internal CRM, mail hub, invoices, team management |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+All non-homepage routes are **lazy-loaded** via `React.lazy()` + `Suspense` to keep the public bundle small (~152 KB gzipped).
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Frontend:** React 19, TypeScript, Vite 7, Zustand (state), Framer Motion (animation)
+- **Styling:** Tailwind CSS + custom CSS modules (admin themes)
+- **Backend:** Google Apps Script (REST API via `doPost`/`doGet`)
+- **Database:** Google Sheets (structured multi-sheet schema)
+- **Storage:** Google Drive (file attachments, images)
+- **Deployment:** Vercel (auto-deploy on push to `main`)
+- **Sanitization:** DOMPurify (centralized via `SafeHtml` component)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Getting Started
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Prerequisites
+- Node.js 20+
+- npm 10+
+- [clasp](https://developers.google.com/apps-script/guides/clasp) (for Apps Script deployment)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Development
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The dev server starts at `http://localhost:5173`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Production Build
+```bash
+npm run build
 ```
+
+Output goes to `dist/`. Vercel picks this up automatically on push.
+
+### Lint
+```bash
+npm run lint
+```
+
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `VITE_APPS_SCRIPT_URL` | Google Apps Script web app URL (v40+) | Yes |
+
+Set in `.env` locally or in Vercel project settings for production.
+
+## Apps Script Backend
+
+The backend lives in `src/api/Code.js` and is deployed as a Google Apps Script web app.
+
+### Deployment
+```bash
+cd src/api
+clasp login          # Authenticate with Google
+clasp push           # Push code to Apps Script
+clasp deploy         # Create a new deployment version
+```
+
+### Action Router
+
+The backend uses a single `doPost` endpoint that routes by `action` parameter:
+
+| Domain | Actions |
+|--------|---------|
+| **Auth** | `login`, `verifyOTP`, `verifyPIN`, `validateSession`, `logout` |
+| **Users** | `loadUsers`, `addUser`, `updateUser`, `deleteUser`, `impersonate` |
+| **Clients** | `loadClients`, `getClientDetail`, `addClient`, `updateClient`, `deleteClient`, `updateClientStatus` |
+| **Projects** | `loadProjects`, `addProject`, `updateProject` |
+| **Invoices** | `loadInvoices`, `createInvoice`, `recordPayment` |
+| **Referrals** | `loadReferrals`, `submitReferral`, `updateReferral` |
+| **Jobs** | `loadJobs`, `addJob`, `updateJob`, `deleteJob` |
+| **Mail** | `loadMailboxes`, `loadThreads`, `getThread`, `sendEmail`, `replyToThread` |
+| **SLA** | `loadSLA`, `updateSLA` |
+| **Telemetry** | `logEvent`, `loadLogs` |
+
+### Sheets Structure
+
+Each domain maps to a named sheet in the backing Google Spreadsheet:
+- `Users`, `Clients`, `Projects`, `Invoices`, `Referrals`, `Jobs`, `SLA`, `MailConfig`, `Logs`
+
+## Auth & Roles
+
+| Role | Access |
+|------|--------|
+| **Godmode** | Full system access, can impersonate, manage all users and settings |
+| **SuperAdmin** | Team management, CRM, mail, projects, invoices |
+| **Admin** | CRM, mail, projects (scoped to department) |
+| **User** | Portal access only |
+
+Auth flow: Email → OTP (or PIN/Password) → Session token stored in `localStorage`.
+
+Sessions are validated server-side on every admin page load.
+
+## Security
+
+- **HTML Sanitization:** All user/external HTML rendered through `<SafeHtml>` component (DOMPurify). Direct `dangerouslySetInnerHTML` is banned.
+- **Auth:** OTP rate limiting, session expiry, PIN lockout, role-based route guards
+- **Tokens:** Stored in `localStorage` — XSS protection via DOMPurify is critical
+- **Impersonation:** Logged server-side with original admin identity
+
+## Admin Themes
+
+The admin console supports two themes:
+- **Modern** (default): Vercel-inspired, supports light/dark mode toggle
+- **Classic**: Cyberpunk aesthetic (legacy, maintained for compatibility)
+
+Theme selection persisted in `localStorage` as `icuni_admin_theme`.
+
+## Project Structure
+
+```
+src/
+├── api/              # Google Apps Script backend (Code.js)
+├── components/
+│   ├── admin/        # Admin console (CRM, Mail, Invoices, Team, etc.)
+│   │   ├── mail/     # Mail hub components
+│   │   └── vercel/   # Modern theme shell + CSS
+│   ├── layout/       # Navbar, Footer, MainLayout, PersonaDrawer
+│   ├── portal/       # Client + Referral portals
+│   ├── sections/     # Homepage sections + standalone pages
+│   └── shared/       # SafeHtml, reusable components
+├── data/             # Static data (personas, portfolio, showroom)
+├── store/            # Zustand stores (useAdminStore, usePortalStore)
+└── App.tsx           # Hash router + lazy loading entry point
+```
+
+## Release Process
+
+1. Make changes on `main` branch
+2. Run `npm run build` to verify
+3. `git push` — Vercel auto-deploys to `labs.icuni.org`
+4. For backend changes: `clasp push` then `clasp deploy` in `src/api/`
