@@ -406,6 +406,23 @@ const emptyListing = { title: '', type: 'Full-Time', location: '', salary_range:
 
 // Static job listings matching the hardcoded public data in JobsPage.tsx
 const STATIC_JOBS = [{
+  job_id: 'growth-associate-001',
+  title: 'Growth Associate',
+  type: 'Full-Time',
+  location: 'Accra, Ghana',
+  salary_range: 'GH\u20B53,000 \u2013 4,000/mo + commission',
+  short_description: 'Find businesses that need what we build, get past the gatekeeper, identify the pain point, and book the meeting. Commission on every deal closed.',
+  full_description: 'ICUNI Labs builds custom business operations systems for companies across Ghana.\nWe replace spreadsheets, WhatsApp chains, and manual processes with software built specifically for how businesses work.\nWe\u2019re growing fast and we need someone who can get us in the room.\nThis is a growth role \u2014 your job is to find businesses that need what we build, get past the gatekeeper, identify the pain point, and book a meeting for our director to close.\nIf the deal closes, you earn commission on top of your base.\nThis is not a sit-at-your-desk-and-send-emails role. You\u2019ll be making cold calls, showing up in person, having real conversations with business owners and managers, and following up until something happens.\nIf you\u2019ve sold before \u2014 internet, insurance, real estate, anything \u2014 you know what this takes.',
+  requirements: 'Someone who picks up the phone before sending an email\nSales or business development experience in any industry\nConfidence speaking to business owners and senior managers\nPersistence \u2014 you follow up five times without being asked\nBased in Accra and willing to show up in person when needed\nProspect and research target businesses in Accra\nTrack everything in our internal CRM',
+  benefits: 'GH\u20B53,000 \u2013 GH\u20B54,000 monthly base\nCommission on every deal closed \u2014 GH\u20B51,000 or 10%, whichever is higher\nReal growth path as the company scales\nDirect exposure to client acquisition and deal flow\nBuild with a tech company that delivers real results\nWork directly with the director on strategy and execution',
+  perks: 'Commission on every deal\nGH\u20B53,000\u20134,000/mo base\nReal growth path',
+  hero_image: '/growth-associate-hero.webp',
+  flyer_image: '',
+  apply_email: 'jobs@icuni.org',
+  status: 'active',
+  deadline: '',
+  _source: 'static',
+},{
   job_id: 'ops-assistant-001',
   title: 'Operations Assistant',
   type: 'Full-Time',

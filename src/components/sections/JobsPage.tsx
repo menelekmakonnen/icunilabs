@@ -31,6 +31,40 @@ const benIcons = [
 ];
 
 const jobs = [{
+  id:'growth-associate-001', title:'Growth Associate', type:'Full-Time', location:'Accra, Ghana',
+  salary:'GH\u20B53,000 \u2013 4,000/mo + commission', heroImage:'/growth-associate-hero.webp',
+  shortDesc:'Find businesses that need what we build, get past the gatekeeper, identify the pain point, and book the meeting. Commission on every deal closed.',
+  flyerImage:'',
+  deadline: '', // No deadline — actively hiring
+  perks:['Commission on every deal','GH\u20B53,000\u20134,000/mo base','Real growth path'],
+  fullDescription:[
+    "ICUNI Labs builds custom business operations systems for companies across Ghana.",
+    "We replace spreadsheets, WhatsApp chains, and manual processes with software built specifically for how businesses work.",
+    "We\u2019re growing fast and we need someone who can get us in the room.",
+    "This is a growth role \u2014 your job is to find businesses that need what we build, get past the gatekeeper, identify the pain point, and book a meeting for our director to close.",
+    "If the deal closes, you earn commission on top of your base.",
+    "This is not a sit-at-your-desk-and-send-emails role. You\u2019ll be making cold calls, showing up in person, having real conversations with business owners and managers, and following up until something happens.",
+    "If you\u2019ve sold before \u2014 internet, insurance, real estate, anything \u2014 you know what this takes.",
+  ],
+  requirements:[
+    'Someone who picks up the phone before sending an email',
+    'Sales or business development experience in any industry',
+    'Confidence speaking to business owners and senior managers',
+    'Persistence \u2014 you follow up five times without being asked',
+    'Based in Accra and willing to show up in person when needed',
+    'Prospect and research target businesses in Accra',
+    'Track everything in our internal CRM',
+  ],
+  benefits:[
+    'GH\u20B53,000 \u2013 GH\u20B54,000 monthly base',
+    'Commission on every deal closed \u2014 GH\u20B51,000 or 10%, whichever is higher',
+    'Real growth path as the company scales',
+    'Direct exposure to client acquisition and deal flow',
+    'Build with a tech company that delivers real results',
+    'Work directly with the director on strategy and execution',
+  ],
+  applyEmail:'jobs@icuni.org',
+},{
   id:'ops-assistant-001', title:'Operations Assistant', type:'Full-Time', location:'Accra, Ghana',
   salary:'GH\u20B52,500 \u2013 2,950/mo + commission', heroImage:'/ops-assistant-hero.webp',
   shortDesc:'Keep our client pipeline moving, coordinate referral partners, and grow with a tech company building real systems for real businesses.',
