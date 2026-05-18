@@ -420,7 +420,7 @@ const STATIC_JOBS = [{
   flyer_image: '',
   apply_email: 'jobs@icuni.org',
   status: 'active',
-  deadline: '',
+  deadline: '2026-05-24',
   _source: 'static',
 },{
   job_id: 'ops-assistant-001',

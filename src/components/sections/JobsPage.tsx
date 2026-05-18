@@ -35,7 +35,8 @@ const jobs = [{
   salary:'GH\u20B53,000 \u2013 4,000/mo + commission', heroImage:'/growth-associate-hero.webp',
   shortDesc:'Find businesses that need what we build, get past the gatekeeper, identify the pain point, and book the meeting. Commission on every deal closed.',
   flyerImage:'',
-  deadline: '', // No deadline — actively hiring
+  deadline: '2026-05-24T23:59:59',
+  compLevel: 2,
   perks:['Commission on every deal','GH\u20B53,000\u20134,000/mo base','Real growth path'],
   fullDescription:[
     "ICUNI Labs builds custom business operations systems for companies across Ghana.",
@@ -66,6 +67,7 @@ const jobs = [{
   applyEmail:'jobs@icuni.org',
 },{
   id:'ops-assistant-001', title:'Operations Assistant', type:'Full-Time', location:'Accra, Ghana',
+  compLevel: 1,
   salary:'GH\u20B52,500 \u2013 2,950/mo + commission', heroImage:'/ops-assistant-hero.webp',
   shortDesc:'Keep our client pipeline moving, coordinate referral partners, and grow with a tech company building real systems for real businesses.',
   flyerImage:'/ops-assistant-flyer.webp',
@@ -263,7 +265,7 @@ function Detail({job}:{job:typeof jobs[0]}){
             <div className="flex flex-wrap items-center gap-4 mb-6">
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${job.type === 'Commission' ? 'bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00]' : 'bg-white/10 backdrop-blur'}`}>{job.type}</span>
               {job.type !== 'Commission' && <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur text-sm font-medium">Hybrid</span>}
-              <span className="px-3 py-1 rounded-full bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00] text-xs font-bold tracking-wider">{job.type === 'Commission' ? 'REFERRAL COMMISSION' : 'LEVEL 1 COMPENSATION'}</span>
+              <span className="px-3 py-1 rounded-full bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00] text-xs font-bold tracking-wider">{job.type === 'Commission' ? 'REFERRAL COMMISSION' : `LEVEL ${(job as any).compLevel || 1} COMPENSATION`}</span>
               <span className="flex items-center gap-1 text-sm text-neutral-300"><MapPin className="w-3.5 h-3.5"/>{job.location}</span>
               <button onClick={()=>setShowSalary(!showSalary)} className="flex items-center gap-1.5 text-[#ff7a00] hover:text-[#ff9533] transition-colors cursor-pointer text-sm font-medium">
                 <span className="text-base font-bold leading-none">₵</span>
