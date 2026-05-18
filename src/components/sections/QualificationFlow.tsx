@@ -23,24 +23,36 @@ interface Step { intro: string; questions: Question[]; }
 
 /* Human-readable labels for the review page */
 const LABELS: Record<string, string> = {
-  salaryOk:        'Salary Range Acceptance (GH₵2,500 – GH₵2,950)',
+  // ── Shared ──
+  salaryOk:        'Salary Range Acceptance',
   fullTimeOk:      'Full-Time Availability (Mon–Fri)',
   asapOk:          'Available to Start ASAP',
-  selfView:        'How Others See You',
-  deadlines:       'How You Handle Tight Deadlines',
-  googleSuite:     'Google Workspace Experience',
-  coldCalling:     'Cold Calling Confidence',
+  phoneNumber:     'Phone Number',
+  whatsappOk:      'WhatsApp on This Number',
   hasLaptop:       'Has a Working Laptop',
   phoneSpecs:      'Smartphone Model',
-  secureWorkspace: 'Secure, Distraction-Free Workspace',
-  fieldSalesOk:    'Happy to Join Founder for Sales & Events',
   accraArea:       'General Area in Accra',
   otherCommitments:'Other Commitments',
   currentJob:      'Current Employment Status',
   paymentMethod:   'Preferred Payment Method',
+  // ── Ops Assistant ──
+  selfView:        'How Others See You',
+  deadlines:       'How You Handle Tight Deadlines',
+  googleSuite:     'Google Workspace Experience',
+  coldCalling:     'Cold Calling Confidence',
+  secureWorkspace: 'Secure, Distraction-Free Workspace',
+  fieldSalesOk:    'Happy to Join Founder for Sales & Events',
+  // ── Growth Associate ──
+  salesExp:        'Previous Sales Experience',
+  firstMove:       'First Move to Reach a Decision-Maker',
+  gatekeeperPlay:  'Receptionist Says "Call Back Later"',
+  followUpCount:   'Follow-Up Persistence on Warm Leads',
+  walkInComfort:   'Walk-In Cold Visit Confidence',
+  phonePitch:      'Phone Pitch Confidence',
+  hasTransport:    'Has Reliable Transportation in Accra',
 };
 
-function getSteps(firstName: string): Step[] {
+function getOpsSteps(firstName: string): Step[] {
   return [
     {
       intro: `Your profile is interesting, ${firstName}! Please confirm the following:`,
@@ -82,6 +94,8 @@ function getSteps(firstName: string): Step[] {
     {
       intro: 'Almost there! A few more about your availability:',
       questions: [
+        { id: 'phoneNumber', label: 'Best phone number to reach you on', type: 'text', placeholder: 'e.g. 024 123 4567' },
+        { id: 'whatsappOk', label: 'Is this number on WhatsApp?', type: 'yesno' },
         { id: 'otherCommitments', label: 'Will you be doing this job alongside any other responsibilities? Select all that apply.', type: 'multi', options: ['No Other Commitments', 'Family / Caregiving Duties', 'University or School', 'Personal Business / Entrepreneurship', 'Another Paid Job', 'Freelance or Contract Work', 'Volunteering / Community Service'] },
         { id: 'currentJob', label: 'Do you currently work a job that needs a notice period?', type: 'choice', options: ['Yes, with notice period', 'Yes, but can leave immediately', 'No, currently available'] },
       ]
@@ -95,9 +109,72 @@ function getSteps(firstName: string): Step[] {
   ];
 }
 
+function getGrowthSteps(firstName: string): Step[] {
+  return [
+    {
+      intro: `Good to meet you, ${firstName}. Let's see if this is the right fit:`,
+      questions: [
+        { id: 'salaryOk', label: 'This is a Level 2 Compensation role: GH\u20B53,000 \u2013 GH\u20B54,000/month + commission (GH\u20B51,000 or 10% per deal, whichever is higher). Are you happy to continue?', type: 'yesno' },
+        { id: 'fullTimeOk', label: 'Full-time, Monday to Friday?', type: 'yesno' },
+        { id: 'asapOk', label: 'Available to start ASAP?', type: 'yesno' },
+      ]
+    },
+    {
+      intro: 'Tell us about your sales background:',
+      questions: [
+        { id: 'salesExp', label: 'Have you done any of the following before? Select all that apply.', type: 'multi', options: ['Cold calling', 'Door-to-door sales', 'B2B sales', 'Insurance sales', 'Real estate sales', 'Telecoms / internet sales', 'Freelance client acquisition', 'None of these'] },
+        { id: 'firstMove', label: 'When you need to reach a decision-maker, what do you do first?', type: 'choice', options: ['Call them directly', 'Send an email or message', 'Show up in person', 'Ask someone for an introduction'] },
+      ]
+    },
+    {
+      intro: 'Let\u2019s talk persistence:',
+      questions: [
+        { id: 'gatekeeperPlay', label: 'A receptionist says \u201CHe\u2019s in a meeting, call back later.\u201D What do you do?', type: 'choice', options: ['Call back once the next day', 'Call back 3 times that week', 'Ask for a specific callback time and follow up until I get through', 'Move on to the next prospect'] },
+        { id: 'followUpCount', label: 'How many times will you follow up on a warm lead before giving up?', type: 'choice', options: ['1\u20132 times', '3\u20134 times', '5+ times \u2014 until I get an answer', 'I don\u2019t give up'] },
+      ]
+    },
+    {
+      intro: 'How comfortable are you with these:',
+      questions: [
+        { id: 'walkInComfort', label: 'Walking into a business you\u2019ve never visited and asking to speak to the owner', type: 'scale', min: 1, max: 5, labels: ['Very uncomfortable', 'Second nature'] },
+        { id: 'phonePitch', label: 'Pitching a service to a senior manager or business owner over the phone', type: 'scale', min: 1, max: 5, labels: ['Very nervous', 'Very confident'] },
+      ]
+    },
+    {
+      intro: 'Tell me about your setup:',
+      questions: [
+        { id: 'hasLaptop', label: 'Do you have a working laptop?', type: 'yesno' },
+        { id: 'phoneSpecs', label: 'Smartphone model', type: 'text', placeholder: 'e.g. iPhone 14, Samsung S25' },
+        { id: 'hasTransport', label: 'Do you have reliable transportation to move around Accra for client visits?', type: 'yesno' },
+      ]
+    },
+    {
+      intro: 'Almost there! Tell us about your availability:',
+      questions: [
+        { id: 'accraArea', label: 'Which general area in Accra do you live in?', type: 'text', placeholder: 'e.g. East Legon, Spintex, Tema, Achimota' },
+        { id: 'phoneNumber', label: 'Best phone number to reach you on', type: 'text', placeholder: 'e.g. 024 123 4567' },
+        { id: 'whatsappOk', label: 'Is this number on WhatsApp?', type: 'yesno' },
+        { id: 'otherCommitments', label: 'Will you be doing this job alongside any other responsibilities? Select all that apply.', type: 'multi', options: ['No Other Commitments', 'Family / Caregiving Duties', 'University or School', 'Personal Business / Entrepreneurship', 'Another Paid Job', 'Freelance or Contract Work', 'Volunteering / Community Service'] },
+        { id: 'currentJob', label: 'Do you currently work a job that needs a notice period?', type: 'choice', options: ['Yes, with notice period', 'Yes, but can leave immediately', 'No, currently available'] },
+      ]
+    },
+    {
+      intro: 'And finally:',
+      questions: [
+        { id: 'paymentMethod', label: 'Preferred payment method', type: 'choice', options: ['Mobile Money', 'Bank Transfer'] },
+      ]
+    },
+  ];
+}
+
+function getSteps(firstName: string, jobId: string): Step[] {
+  if (jobId.startsWith('growth-associate')) return getGrowthSteps(firstName);
+  return getOpsSteps(firstName);
+}
+
 export default function QualificationFlow({ name, email, jobId, jobTitle }: QProps) {
   const firstName = name.split(' ')[0] || name;
-  const [steps] = useState(() => getSteps(firstName));
+  const [steps] = useState(() => getSteps(firstName, jobId));
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
@@ -213,10 +290,11 @@ export default function QualificationFlow({ name, email, jobId, jobTitle }: QPro
             const label = LABELS[q.id] || q.id;
             let val = answers[q.id] || '—';
             if (val.includes('|||')) val = val.split('|||').join(', ');
-            // Scale values
-            if ((q.id === 'googleSuite' || q.id === 'coldCalling') && !isNaN(Number(val))) {
+            // Scale values — render any scale question with dot visualization
+            if (q.type === 'scale' && !isNaN(Number(val))) {
               const n = Number(val);
-              val = '⬤'.repeat(n) + '○'.repeat(5 - n) + ` (${n}/5)`;
+              const mx = (q as ScaleQ).max || 5;
+              val = '⬤'.repeat(n) + '○'.repeat(mx - n) + ` (${n}/${mx})`;
             }
             return (
               <div key={q.id} className="flex justify-between items-start gap-4 py-2.5 px-3 rounded-lg bg-neutral-900/40 border border-neutral-800/50">

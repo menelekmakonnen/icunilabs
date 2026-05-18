@@ -280,21 +280,33 @@ function handleJobQualificationLegacy(payload) {
         
         // Human-readable label mapping
         var LABELS = {
-            salaryOk:        'Salary Range Acceptance (GH\u20B52,500 \u2013 GH\u20B52,950)',
+            // Shared
+            salaryOk:        'Salary Range Acceptance',
             fullTimeOk:      'Full-Time Availability (Mon\u2013Fri)',
             asapOk:          'Available to Start ASAP',
+            phoneNumber:     'Phone Number',
+            whatsappOk:      'WhatsApp on This Number',
+            hasLaptop:       'Has a Working Laptop',
+            phoneSpecs:      'Smartphone Model',
+            accraArea:       'General Area in Accra',
+            otherCommitments:'Other Commitments Alongside Role',
+            currentJob:      'Current Employment Status',
+            paymentMethod:   'Preferred Payment Method',
+            // Ops Assistant
             selfView:        'How Others See You',
             deadlines:       'How You Handle Tight Deadlines',
             googleSuite:     'Google Workspace Experience (1\u20135)',
             coldCalling:     'Cold Calling Confidence (1\u20135)',
-            hasLaptop:       'Has a Working Laptop',
-            phoneSpecs:      'Smartphone Model',
             secureWorkspace: 'Has a Secure, Distraction-Free Workspace',
             fieldSalesOk:    'Happy to Join Founder for Sales & Events',
-            accraArea:       'General Area in Accra',
-            otherCommitments:'Other Commitments Alongside Role',
-            currentJob:      'Current Employment Status',
-            paymentMethod:   'Preferred Payment Method'
+            // Growth Associate
+            salesExp:        'Previous Sales Experience',
+            firstMove:       'First Move to Reach a Decision-Maker',
+            gatekeeperPlay:  'Receptionist Says "Call Back Later"',
+            followUpCount:   'Follow-Up Persistence on Warm Leads',
+            walkInComfort:   'Walk-In Cold Visit Confidence (1\u20135)',
+            phonePitch:      'Phone Pitch Confidence (1\u20135)',
+            hasTransport:    'Has Reliable Transportation in Accra',
         };
         
         // Build formatted summary rows
@@ -302,7 +314,8 @@ function handleJobQualificationLegacy(payload) {
             var label = LABELS[k] || k.replace(/([A-Z])/g, ' $1').replace(/^./, function(c) { return c.toUpperCase(); });
             var val = answers[k];
             // Scale values get a visual bar
-            if ((k === 'googleSuite' || k === 'coldCalling') && !isNaN(Number(val))) {
+            var scaleKeys = ['googleSuite', 'coldCalling', 'walkInComfort', 'phonePitch'];
+            if (scaleKeys.indexOf(k) >= 0 && !isNaN(Number(val))) {
                 var n = Number(val);
                 var filled = '';
                 var empty = '';
