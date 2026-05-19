@@ -138,6 +138,19 @@ function setupSpreadsheets() {
         'payment_id', 'invoice_id', 'project_id', 'client_id',
         'amount', 'method', 'reference', 'status', 'paid_at', 'notes'
     ]);
+    setupSheetHeaders_(ssClients, SHEETS.CALL_LOGS, [
+        'call_id', 'client_id', 'caller_email', 'caller_name',
+        'environment_type', 'persona_type', 'path_loaded', 'path_switched_to',
+        'call_start', 'call_end', 'duration_seconds',
+        'talking_points_checked', 'talking_points_skipped', 'talking_points_total',
+        'data_capture_json', 'outcome', 'outcome_details_json',
+        'next_action', 'next_action_date', 'next_action_notes',
+        'call_notes', 'pipeline_auto_advanced', 'created_at'
+    ]);
+    setupSheetHeaders_(ssClients, SHEETS.COMPETITOR_INTEL, [
+        'intel_id', 'client_id', 'call_id', 'system_name', 'developer_name',
+        'industry', 'is_custom', 'cost_estimate', 'notes', 'created_at'
+    ]);
 
     // ── 5. Referrals ──
     var ssReferrals = createOrGetSS('ICUNI Labs — Referrals');

@@ -59,6 +59,11 @@ interface AdminState {
   activeClient: any | null
   clientActivity: any[]
 
+  // Call Logs
+  callLogs: any[]
+  callAnalytics: any | null
+  competitorIntel: any[]
+
   // ICUNI Ecosystem
   projectRegistry: any[]
   impersonationToken: string | null
@@ -116,6 +121,9 @@ let state: AdminState = {
   activeInvoice: null,
   activeClient: null,
   clientActivity: [],
+  callLogs: [],
+  callAnalytics: null,
+  competitorIntel: [],
   projectRegistry: [],
   impersonationToken: null,
   inbox: [],
@@ -1036,6 +1044,43 @@ export const adminActions = {
       console.error('Upload failed:', err.message)
       return null
     }
+  },
+
+  // ── Call Log Actions ──
+  saveCallLog: async (data: Record<string, any>): Promise<any> => {
+    setState({ loading: true, error: null })
+    try {
+      const result = await apiPost('saveCallLog', { token: state.token, ...data })
+      // Refresh clients to reflect any pipeline auto-advance
+      await adminActions.loadClients()
+      setState({ loading: false })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return null
+    }
+  },
+
+  loadCallLogs: async (filters?: Record<string, any>) => {
+    try {
+      const result = await apiPost('getCallLogs', { token: state.token, ...(filters || {}) })
+      setState({ callLogs: result?.logs || [] })
+      return result
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  loadCallAnalytics: async () => {
+    try {
+      const analytics = await apiPost('getCallAnalytics', { token: state.token })
+      setState({ callAnalytics: analytics || null })
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  loadCompetitorIntel: async () => {
+    try {
+      const intel = await apiPost('getCompetitorIntel', { token: state.token })
+      setState({ competitorIntel: intel?.aggregated || [] })
+    } catch (err: any) { setState({ error: err.message }) }
   },
 
   // ── CRM Actions ──

@@ -62,7 +62,7 @@ function getSheetByName_(sheetName) {
     }
     // Clients
     else if ([SHEETS.CLIENTS, SHEETS.CLIENT_PROJECTS, SHEETS.CLIENT_NOTES, SHEETS.INVOICES,
-              SHEETS.INVOICE_ITEMS, SHEETS.PAYMENTS].indexOf(sheetName) >= 0) {
+              SHEETS.INVOICE_ITEMS, SHEETS.PAYMENTS, SHEETS.CALL_LOGS, SHEETS.COMPETITOR_INTEL].indexOf(sheetName) >= 0) {
         ssGetter = getClientsSS_;
     }
     // Referrals

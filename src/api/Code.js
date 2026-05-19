@@ -52,6 +52,10 @@ var ACTION_MAP = {
     updateClientTags: handleUpdateClientTags, updateClientStatus: handleUpdateClientStatus,
     sendClientEmail: handleSendClientEmail, previewClientEmail: handlePreviewClientEmail,
 
+    // ── Call Logs ──
+    saveCallLog: handleSaveCallLog, getCallLogs: handleGetCallLogs,
+    getCallAnalytics: handleGetCallAnalytics, getCompetitorIntel: handleGetCompetitorIntel,
+
     // ── Projects ──
     createProject: handleCreateProject, getProjects: handleGetProjects,
     getProject: handleGetProject, advanceStep: handleAdvanceProjectStep,

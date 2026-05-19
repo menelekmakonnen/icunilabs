@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save, MapPin, Globe, Lock } from 'lucide-react'
+import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
 import { FormButton } from './ActionButton'
+import CallGuide from './CallGuide'
+import CallDashboard from './CallDashboard'
 import './crm.css'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
@@ -80,7 +82,8 @@ export default function CRMSection() {
   const [detailTab, setDetailTab] = useState<'overview'|'projects'|'invoices'|'notes'|'activity'|'email'>('overview')
   const [noteText, setNoteText] = useState('')
   const [tagInput, setTagInput] = useState('')
-  const [viewMode, setViewMode] = useState<'contacts'|'pipeline'>('contacts')
+  const [viewMode, setViewMode] = useState<'contacts'|'pipeline'|'calls'>('contacts')
+  const [callGuideClient, setCallGuideClient] = useState<any>(null)
   const [emailTpl, setEmailTpl] = useState('')
   const [emailPreview, setEmailPreview] = useState('')
   const [emailSubject, setEmailSubject] = useState('')
@@ -264,6 +267,10 @@ export default function CRMSection() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Start Call */}
+            <button onClick={() => setCallGuideClient(c)} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold cursor-pointer hover:bg-emerald-500/20 transition-all" title="Start call guide">
+              <Phone className="w-3.5 h-3.5" /> Call
+            </button>
             {/* Stage Selector */}
             <select value={c.prospect_stage || 'new_lead'} onChange={e => handleAdvanceStage(c.client_id, e.target.value)}
               className="text-xs bg-neutral-900 border border-neutral-700 text-white rounded-lg px-2 py-1 cursor-pointer">
@@ -675,6 +682,7 @@ export default function CRMSection() {
           <div className="flex bg-neutral-900 rounded-lg p-0.5 border border-neutral-800">
             <button onClick={() => setViewMode('contacts')} className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all ${viewMode === 'contacts' ? 'bg-[#00bfff]/15 text-[#00bfff]' : 'text-neutral-500 hover:text-white'}`}>Contacts</button>
             <button onClick={() => setViewMode('pipeline')} className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all ${viewMode === 'pipeline' ? 'bg-[#00bfff]/15 text-[#00bfff]' : 'text-neutral-500 hover:text-white'}`}>Pipeline</button>
+            <button onClick={() => setViewMode('calls')} className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all ${viewMode === 'calls' ? 'bg-[#00bfff]/15 text-[#00bfff]' : 'text-neutral-500 hover:text-white'}`}><Phone className="w-3 h-3 inline mr-1" />Calls</button>
           </div>
           <button onClick={() => setShowAddProspect(true)}
             className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
@@ -754,6 +762,10 @@ export default function CRMSection() {
                         </p>
                       )}
                       <div className="mt-2 flex items-center gap-1">
+                        <button onClick={(e) => { e.stopPropagation(); setCallGuideClient(c) }}
+                          className="text-[10px] text-emerald-500/60 hover:text-emerald-400 flex items-center justify-center gap-0.5 cursor-pointer transition-colors px-1" title="Start Call">
+                          <Phone className="w-3 h-3" />
+                        </button>
                         {(() => { const curIdx = STAGES.findIndex(s => s.id === stage.id); return curIdx > 0 ? (
                           <button onClick={(e) => { e.stopPropagation(); openStagePopup(c.client_id, STAGES[curIdx - 1].id, 'regress') }}
                             className="flex-1 text-[10px] text-neutral-600 hover:text-[#ef4444] flex items-center justify-center gap-0.5 cursor-pointer transition-colors">
@@ -777,6 +789,9 @@ export default function CRMSection() {
           })}
         </div>
       )}
+
+      {/* ═══ CALLS VIEW ═══ */}
+      {viewMode === 'calls' && <CallDashboard />}
 
       {viewMode === 'contacts' && (<>
 
@@ -1136,6 +1151,10 @@ export default function CRMSection() {
             <button onClick={() => adminActions.clearError()} className="text-red-500 hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
           </div>
         </div>
+      )}
+      {/* Call Guide Overlay */}
+      {callGuideClient && (
+        <CallGuide client={callGuideClient} onClose={() => setCallGuideClient(null)} />
       )}
     </div>
   )
