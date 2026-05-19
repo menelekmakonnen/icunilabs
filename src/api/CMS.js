@@ -992,6 +992,212 @@ function buildReferrerTemplate_(name, template, extras) {
 }
 
 // ═══════════════════════════════════════════════════════════
+// ADMIN — REFERRAL PIPELINE MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+
+function handleAdvanceReferralStage(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var referral = findRow_(SHEETS.REFERRALS, 'referral_id', payload.referralId);
+    if (!referral) return errorResponse_('Referral not found.');
+    var newStage = Number(payload.newStage) || 0;
+    updateRow_(SHEETS.REFERRALS, referral._rowIndex, {
+        stage: newStage,
+        updated_at: now_()
+    });
+    logAction_(auth.user.user_id, auth.user.name, 'REFERRAL_STAGE_ADVANCED',
+        referral.client_name + ' → Stage ' + newStage);
+    return successResponse_({ stage: newStage }, 'Referral advanced to stage ' + newStage + '.');
+}
+
+function handleCloseReferral(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var referral = findRow_(SHEETS.REFERRALS, 'referral_id', payload.referralId);
+    if (!referral) return errorResponse_('Referral not found.');
+    var outcome = payload.outcome; // 'won' or 'lost'
+    if (outcome !== 'won' && outcome !== 'lost') return errorResponse_('Outcome must be "won" or "lost".');
+    var updates = {
+        status: outcome === 'won' ? 'Closed Won' : 'Closed Lost',
+        updated_at: now_()
+    };
+    if (outcome === 'won' && payload.dealValue) {
+        var commissionRate = 0.10; // 10% of deal
+        var commission = Math.max(Number(payload.dealValue) * commissionRate, 1000); // Min GH₵1,000
+        updates.payout_amount = commission;
+        updates.payout_status = 'pending';
+    }
+    updateRow_(SHEETS.REFERRALS, referral._rowIndex, updates);
+    logAction_(auth.user.user_id, auth.user.name, 'REFERRAL_CLOSED',
+        referral.client_name + ' → ' + updates.status);
+    return successResponse_(null, 'Referral closed as ' + updates.status + '.');
+}
+
+function handleConfirmReferralPayout(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var referral = findRow_(SHEETS.REFERRALS, 'referral_id', payload.referralId);
+    if (!referral) return errorResponse_('Referral not found.');
+    updateRow_(SHEETS.REFERRALS, referral._rowIndex, {
+        payout_status: 'confirmed',
+        updated_at: now_()
+    });
+    // Update referrer total earned
+    if (referral.referrer_id) {
+        var referrer = findRow_(SHEETS.REFERRERS, 'referrer_id', referral.referrer_id);
+        if (referrer) {
+            var newTotal = Number(referrer.total_earned || 0) + Number(referral.payout_amount || 0);
+            updateRow_(SHEETS.REFERRERS, referrer._rowIndex, {
+                total_earned: newTotal,
+                updated_at: now_()
+            });
+        }
+    }
+    logAction_(auth.user.user_id, auth.user.name, 'PAYOUT_CONFIRMED',
+        referral.client_name + ' — GH₵' + (referral.payout_amount || 0));
+    return successResponse_(null, 'Payout confirmed.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN — REFERRER MATERIALS CRUD
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Materials are stored in the REFERRERS spreadsheet on a 'Materials' sheet.
+ * Columns: material_id, title, type, description, url, status, created_at, updated_at
+ */
+var SHEETS_MATERIALS = 'Materials';
+
+function handleGetReferrerMaterials(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    try {
+        return successResponse_(sheetToObjects_(SHEETS_MATERIALS));
+    } catch(e) {
+        // Materials sheet may not exist yet — return empty
+        return successResponse_([]);
+    }
+}
+
+function handleCreateReferrerMaterial(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var matId = generateId_('MAT');
+    var nowStr = now_();
+    try {
+        appendRow_(SHEETS_MATERIALS, [
+            matId,
+            payload.title || 'Untitled',
+            payload.type || 'document',
+            payload.description || '',
+            payload.url || '',
+            'active',
+            nowStr,
+            nowStr
+        ]);
+    } catch(e) {
+        // Auto-create sheet if missing
+        var ssId = PropertiesService.getScriptProperties().getProperty(PROP_KEYS.SS_REFERRALS);
+        if (ssId) {
+            var ss = SpreadsheetApp.openById(ssId);
+            var sheet = ss.insertSheet(SHEETS_MATERIALS);
+            sheet.appendRow(['material_id', 'title', 'type', 'description', 'url', 'status', 'created_at', 'updated_at']);
+            sheet.getRange(1, 1, 1, 8).setFontWeight('bold');
+            sheet.setFrozenRows(1);
+            sheet.appendRow([matId, payload.title || 'Untitled', payload.type || 'document',
+                payload.description || '', payload.url || '', 'active', nowStr, nowStr]);
+        } else {
+            return errorResponse_('Referrals spreadsheet not set up.');
+        }
+    }
+    logAction_(auth.user.user_id, auth.user.name, 'MATERIAL_CREATED', payload.title || matId);
+    return successResponse_({ materialId: matId }, 'Material created.');
+}
+
+function handleUpdateReferrerMaterial(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var mat = findRow_(SHEETS_MATERIALS, 'material_id', payload.materialId || payload.material_id);
+    if (!mat) return errorResponse_('Material not found.');
+    var updates = { updated_at: now_() };
+    if (payload.title !== undefined) updates.title = payload.title;
+    if (payload.type !== undefined) updates.type = payload.type;
+    if (payload.description !== undefined) updates.description = payload.description;
+    if (payload.url !== undefined) updates.url = payload.url;
+    if (payload.status !== undefined) updates.status = payload.status;
+    updateRow_(SHEETS_MATERIALS, mat._rowIndex, updates);
+    logAction_(auth.user.user_id, auth.user.name, 'MATERIAL_UPDATED', payload.title || mat.title);
+    return successResponse_(null, 'Material updated.');
+}
+
+function handleDeleteReferrerMaterial(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var mat = findRow_(SHEETS_MATERIALS, 'material_id', payload.materialId || payload.material_id);
+    if (!mat) return errorResponse_('Material not found.');
+    updateRow_(SHEETS_MATERIALS, mat._rowIndex, { status: 'deleted', updated_at: now_() });
+    logAction_(auth.user.user_id, auth.user.name, 'MATERIAL_DELETED', mat.title || mat.material_id);
+    return successResponse_(null, 'Material deleted.');
+}
+
+// ═══════════════════════════════════════════════════════════
+// ADMIN — REFERRER NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Notifications are stored in REFERRERS spreadsheet on a 'Notifications' sheet.
+ * Columns: notif_id, referrer_id, referral_id, type, message, read, created_at
+ */
+var SHEETS_NOTIFICATIONS = 'Notifications';
+
+function handleSendReferrerNotification(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    var notifId = generateId_('NTF');
+    var nowStr = now_();
+    try {
+        appendRow_(SHEETS_NOTIFICATIONS, [
+            notifId,
+            payload.referrerId || '',
+            payload.referralId || '',
+            payload.type || 'general',
+            payload.message || '',
+            false,
+            nowStr
+        ]);
+    } catch(e) {
+        // Auto-create sheet if missing
+        var ssId = PropertiesService.getScriptProperties().getProperty(PROP_KEYS.SS_REFERRALS);
+        if (ssId) {
+            var ss = SpreadsheetApp.openById(ssId);
+            var sheet = ss.insertSheet(SHEETS_NOTIFICATIONS);
+            sheet.appendRow(['notif_id', 'referrer_id', 'referral_id', 'type', 'message', 'read', 'created_at']);
+            sheet.getRange(1, 1, 1, 7).setFontWeight('bold');
+            sheet.setFrozenRows(1);
+            sheet.appendRow([notifId, payload.referrerId || '', payload.referralId || '',
+                payload.type || 'general', payload.message || '', false, nowStr]);
+        } else {
+            return errorResponse_('Referrals spreadsheet not set up.');
+        }
+    }
+    logAction_(auth.user.user_id, auth.user.name, 'REFERRER_NOTIFIED',
+        payload.type + ' — ' + (payload.referrerId || 'all'));
+    return successResponse_({ notifId: notifId }, 'Notification sent.');
+}
+
+function handleGetReferrerNotifications(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    try {
+        var notifs = sheetToObjects_(SHEETS_NOTIFICATIONS);
+        notifs.sort(function(a, b) { return new Date(b.created_at || 0) - new Date(a.created_at || 0); });
+        return successResponse_(notifs);
+    } catch(e) {
+        return successResponse_([]);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
 // CLIENT EMAIL SYSTEM
 // ═══════════════════════════════════════════════════════════
 

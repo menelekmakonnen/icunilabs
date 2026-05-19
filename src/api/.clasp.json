@@ -18,8 +18,12 @@
     "Auth.js",
     "Projects.js",
     "Invoices.js",
+    "Email.js",
     "CMS.js",
     "SLA.js",
+    "CallLog.js",
+    "Interconnect.js",
+    "ProjectRegistry.js",
     "Setup.js",
     "Code.js"
   ],

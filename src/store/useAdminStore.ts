@@ -1167,7 +1167,7 @@ export const adminActions = {
   },
 
   updateClientStatus: async (clientId: string, prospectStage: string, note?: string): Promise<boolean> => {
-    setState({ loading: true, error: null })
+    setState({ error: null })
     try {
       // Optimistic update — move client in pipeline immediately for visual feedback
       const optimisticClients = state.clients.map((c: any) =>
@@ -1182,25 +1182,32 @@ export const adminActions = {
       await apiPost('updateClientStatus', { token: state.token, clientId, prospect_stage: prospectStage, note })
       // Refresh client list with authoritative data from backend
       await adminActions.loadClients()
-      // Force-apply the stage in case backend read returned stale data
-      const freshClients = state.clients.map((c: any) =>
-        c.client_id === clientId ? { ...c, prospect_stage: prospectStage } : c
-      )
-      setState({ clients: freshClients })
+      // Force-apply the stage in case GAS Sheets cache returned stale data
+      // Read the CURRENT state (module-level) which loadClients just updated
+      const currentClients = state.clients
+      const needsFix = currentClients.find((c: any) => c.client_id === clientId && c.prospect_stage !== prospectStage)
+      if (needsFix) {
+        setState({
+          clients: currentClients.map((c: any) =>
+            c.client_id === clientId ? { ...c, prospect_stage: prospectStage } : c
+          )
+        })
+      }
       // If viewing a client detail, refresh that too
       if (state.activeClient && state.activeClient.client_id === clientId) {
-        const client = await apiPost('getClient', { token: state.token, clientId })
-        if (client) {
-          client.prospect_stage = prospectStage // ensure stage is correct
-          setState({ activeClient: client })
-        }
+        try {
+          const client = await apiPost('getClient', { token: state.token, clientId })
+          if (client) {
+            client.prospect_stage = prospectStage // ensure stage is correct
+            setState({ activeClient: client })
+          }
+        } catch { /* non-critical */ }
       }
-      setState({ loading: false })
       return true
     } catch (err: any) {
       // On failure, reload to revert optimistic update
       await adminActions.loadClients().catch(() => {})
-      setState({ error: err.message, loading: false })
+      setState({ error: err.message })
       return false
     }
   },

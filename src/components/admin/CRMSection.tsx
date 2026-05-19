@@ -364,9 +364,8 @@ export default function CRMSection() {
               ) : (
               <>
               {/* Metrics */}
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: 'Total Revenue', value: fmtMoney(c.total_revenue), color: '#10b981' },
                   { label: 'Total Invoiced', value: fmtMoney(c.total_invoiced), color: '#00bfff' },
                   { label: 'Outstanding', value: fmtMoney(c.outstanding), color: c.outstanding > 0 ? '#ef4444' : '#10b981' },
                   { label: 'Active Projects', value: c.active_projects || 0, color: '#8b5cf6' },
@@ -666,8 +665,6 @@ export default function CRMSection() {
   }
 
   // ═══ CLIENTS LIST VIEW (CRM Home) ═══
-  const totalRevenue = activeClients.reduce((s: number, c: any) => s + Number(c.total_revenue || 0), 0)
-  // activeCount removed — replaced by 'Paying Clients' stat
   const outstandingTotal = activeClients.reduce((s: number, c: any) => s + Number(c.outstanding || 0), 0)
 
   return (
@@ -676,7 +673,7 @@ export default function CRMSection() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight">Client CRM</h1>
-          <p className="text-sm text-neutral-500 mt-0.5">{activeClients.length} clients — {fmtMoney(totalRevenue)} total revenue</p>
+          <p className="text-sm text-neutral-500 mt-0.5">{activeClients.length} contacts in pipeline</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex bg-neutral-900 rounded-lg p-0.5 border border-neutral-800">
@@ -701,12 +698,29 @@ export default function CRMSection() {
         </div>
       </div>
 
+      {/* Big Call Button */}
+      <div className="mb-6">
+        <button
+          onClick={() => {
+            // Open a picker to select a prospect/client to call
+            const prospect = activeClients.find((c: any) => !callGuideClient && ['prospect', 'new_lead', 'contacted', 'qualified', 'meeting_scheduled'].includes(c.prospect_stage || 'new_lead'))
+            if (prospect) setCallGuideClient(prospect)
+            else if (activeClients.length > 0) setCallGuideClient(activeClients[0])
+          }}
+          className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-emerald-600/20 to-emerald-500/10 border-2 border-dashed border-emerald-500/30 rounded-2xl text-emerald-400 font-bold text-lg cursor-pointer hover:border-emerald-400/50 hover:bg-emerald-500/15 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all group"
+        >
+          <Phone className="w-6 h-6 group-hover:animate-pulse" />
+          Start a Call
+          <span className="text-xs text-emerald-500/60 font-normal">— select a prospect below or click to start</span>
+        </button>
+      </div>
+
       {/* Quick Stats */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Total Contacts', value: activeClients.length, color: '#00bfff' },
           { label: 'Paying Clients', value: activeClients.filter((c: any) => ['won', 'client'].includes((c.prospect_stage || '').toLowerCase())).length, color: '#10b981' },
-          { label: 'Revenue', value: fmtMoney(totalRevenue), color: '#10b981' },
+          { label: 'In Pipeline', value: activeClients.filter((c: any) => !['won', 'lost'].includes(c.prospect_stage || '')).length, color: '#f59e0b' },
           { label: 'Outstanding', value: fmtMoney(outstandingTotal), color: outstandingTotal > 0 ? '#ef4444' : '#10b981' },
         ].map((s, i) => (
           <div key={i} className="crm-metric">
@@ -752,7 +766,6 @@ export default function CRMSection() {
                       </div>
                       <p className="text-[10px] text-neutral-600 truncate">{c.company || c.email}</p>
                       <div className="flex items-center gap-1.5 mt-1">
-                        {c.total_revenue > 0 && <span className="text-[10px] text-emerald-500 font-semibold">{fmtMoney(c.total_revenue)}</span>}
                         {c.visibility === 'public' && <Globe className="w-3 h-3 text-emerald-500/50" />}
                         {c.added_by && c.visibility !== 'public' && <Lock className="w-3 h-3 text-neutral-700" />}
                       </div>
@@ -850,12 +863,9 @@ export default function CRMSection() {
                     </span>
                   </div>
 
-                  {/* Revenue */}
-                  {c.total_revenue > 0 && (
-                    <p className="text-[11px] text-emerald-500 font-semibold mt-1 relative z-10">{fmtMoney(c.total_revenue)}</p>
-                  )}
+                  {/* Outstanding */}
                   {c.outstanding > 0 && (
-                    <p className="text-[10px] text-red-400/80 mt-0.5 relative z-10">Owes {fmtMoney(c.outstanding)}</p>
+                    <p className="text-[10px] text-red-400/80 mt-1 relative z-10">Owes {fmtMoney(c.outstanding)}</p>
                   )}
 
                   {/* Tags */}

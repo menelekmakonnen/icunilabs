@@ -111,6 +111,15 @@ var ACTION_MAP = {
     // ── Referrals (admin) ──
     getReferrers: handleGetReferrers, getReferrals: handleGetReferrals,
     sendReferrerEmail: handleSendReferrerEmail, previewReferrerEmail: handlePreviewReferrerEmail,
+    advanceReferralStage: handleAdvanceReferralStage, closeReferral: handleCloseReferral,
+    confirmReferralPayout: handleConfirmReferralPayout,
+
+    // ── Referrer Materials ──
+    getReferrerMaterials: handleGetReferrerMaterials, createReferrerMaterial: handleCreateReferrerMaterial,
+    updateReferrerMaterial: handleUpdateReferrerMaterial, deleteReferrerMaterial: handleDeleteReferrerMaterial,
+
+    // ── Referrer Notifications ──
+    sendReferrerNotification: handleSendReferrerNotification, getReferrerNotifications: handleGetReferrerNotifications,
 
     // ── Bug Reports ──
     report_bug: handleBugReport, reportBug: handleBugReport,
