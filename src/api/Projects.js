@@ -209,6 +209,8 @@ function handleUpdateClientStatus(payload) {
     if (payload.status) updates.status = payload.status;
     updateRow_(SHEETS.CLIENTS, client._rowIndex, updates);
     SpreadsheetApp.flush();  // ensure write is committed before next read
+    // Invalidate cache so getClients returns fresh data
+    invalidateSheetCache_(SHEETS.CLIENTS);
     // Auto-add a note about stage change
     if (payload.prospect_stage) {
         var noteId = generateId_('NTE');
@@ -220,7 +222,9 @@ function handleUpdateClientStatus(payload) {
     }
     logAction_(auth.user.user_id, auth.user.name, 'CLIENT_STAGE',
         client.name + ' → ' + (payload.prospect_stage || payload.status));
-    return successResponse_(null, 'Client status updated.');
+    return successResponse_({
+        prospect_stage: payload.prospect_stage || client.prospect_stage
+    }, 'Client status updated.');
 }
 
 function handleUpdateClient(payload) {

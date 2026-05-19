@@ -106,7 +106,8 @@ function setupSpreadsheets() {
         'status', 'referrer_id', 'created_at', 'notes', 'drive_folder_url',
         'tags', 'source', 'industry', 'address', 'website', 'last_activity',
         'prospect_stage', 'buyer_profile', 'pain_category',
-        'challenge_statement', 'laugh_factor', 'first_contact_date'
+        'challenge_statement', 'laugh_factor', 'first_contact_date',
+        'added_by', 'visibility'
     ]);
     setupSheetHeaders_(ssClients, SHEETS.CLIENT_NOTES, [
         'note_id', 'client_id', 'content', 'author', 'author_email', 'created_at'

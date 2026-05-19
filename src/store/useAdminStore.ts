@@ -1137,10 +1137,18 @@ export const adminActions = {
       await apiPost('updateClientStatus', { token: state.token, clientId, prospect_stage: prospectStage, note })
       // Refresh client list with authoritative data from backend
       await adminActions.loadClients()
+      // Force-apply the stage in case backend read returned stale data
+      const freshClients = state.clients.map((c: any) =>
+        c.client_id === clientId ? { ...c, prospect_stage: prospectStage } : c
+      )
+      setState({ clients: freshClients })
       // If viewing a client detail, refresh that too
       if (state.activeClient && state.activeClient.client_id === clientId) {
         const client = await apiPost('getClient', { token: state.token, clientId })
-        setState({ activeClient: client || null })
+        if (client) {
+          client.prospect_stage = prospectStage // ensure stage is correct
+          setState({ activeClient: client })
+        }
       }
       setState({ loading: false })
       return true
