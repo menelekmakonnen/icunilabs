@@ -90,6 +90,42 @@ async function apiPost(action: string, payload: Record<string, any> = {}): Promi
   return data.data
 }
 
+// ─── STAGE PERSISTENCE (localStorage fallback) ───────────────
+// When GAS Sheets cache returns stale data on refresh, these overrides
+// ensure the pipeline shows the correct stage. Overrides expire after 24h.
+const STAGE_KEY = 'icuni_stage_overrides'
+function getStageOverrides(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(STAGE_KEY)
+    if (!raw) return {}
+    const data = JSON.parse(raw)
+    const now = Date.now()
+    const clean: Record<string, string> = {}
+    for (const [k, v] of Object.entries(data)) {
+      const entry = v as { stage: string; ts: number }
+      if (now - entry.ts < 86400000) clean[k] = entry.stage // 24h TTL
+    }
+    return clean
+  } catch { return {} }
+}
+function saveStageOverride(clientId: string, stage: string) {
+  try {
+    const raw = localStorage.getItem(STAGE_KEY)
+    const data = raw ? JSON.parse(raw) : {}
+    data[clientId] = { stage, ts: Date.now() }
+    localStorage.setItem(STAGE_KEY, JSON.stringify(data))
+  } catch { /* non-critical */ }
+}
+function removeStageOverride(clientId: string) {
+  try {
+    const raw = localStorage.getItem(STAGE_KEY)
+    if (!raw) return
+    const data = JSON.parse(raw)
+    delete data[clientId]
+    localStorage.setItem(STAGE_KEY, JSON.stringify(data))
+  } catch { /* non-critical */ }
+}
+
 // Singleton store
 let state: AdminState = {
   token: localStorage.getItem('icuni_admin_token'),
@@ -275,7 +311,15 @@ export const adminActions = {
   loadClients: async () => {
     try {
       const clients = await apiPost('getClients', { token: state.token })
-      setState({ clients: clients || [] })
+      // Merge any locally-persisted stage overrides (resilience against GAS cache staleness)
+      const overrides = getStageOverrides()
+      const merged = (clients || []).map((c: any) => {
+        if (overrides[c.client_id]) {
+          return { ...c, prospect_stage: overrides[c.client_id] }
+        }
+        return c
+      })
+      setState({ clients: merged })
     } catch (err: any) { setState({ error: err.message }) }
   },
 
@@ -1096,6 +1140,10 @@ export const adminActions = {
     }
   },
 
+  setActiveClientOptimistic: (client: any) => {
+    setState({ activeClient: client, loading: false })
+  },
+
   clearActiveClient: () => setState({ activeClient: null, clientActivity: [] }),
   clearError: () => setState({ error: null }),
 
@@ -1169,43 +1217,26 @@ export const adminActions = {
   updateClientStatus: async (clientId: string, prospectStage: string, note?: string): Promise<boolean> => {
     setState({ error: null })
     try {
-      // Optimistic update — move client in pipeline immediately for visual feedback
+      // Optimistic update — move client in pipeline immediately
       const optimisticClients = state.clients.map((c: any) =>
         c.client_id === clientId ? { ...c, prospect_stage: prospectStage } : c
       )
       setState({ clients: optimisticClients })
-      // Also update activeClient if viewing this client
       if (state.activeClient && state.activeClient.client_id === clientId) {
         setState({ activeClient: { ...state.activeClient, prospect_stage: prospectStage } })
       }
+      // Persist to localStorage as fallback against GAS cache staleness
+      saveStageOverride(clientId, prospectStage)
 
+      // Fire API call (don't block on loadClients afterward)
       await apiPost('updateClientStatus', { token: state.token, clientId, prospect_stage: prospectStage, note })
-      // Refresh client list with authoritative data from backend
-      await adminActions.loadClients()
-      // Force-apply the stage in case GAS Sheets cache returned stale data
-      // Read the CURRENT state (module-level) which loadClients just updated
-      const currentClients = state.clients
-      const needsFix = currentClients.find((c: any) => c.client_id === clientId && c.prospect_stage !== prospectStage)
-      if (needsFix) {
-        setState({
-          clients: currentClients.map((c: any) =>
-            c.client_id === clientId ? { ...c, prospect_stage: prospectStage } : c
-          )
-        })
-      }
-      // If viewing a client detail, refresh that too
-      if (state.activeClient && state.activeClient.client_id === clientId) {
-        try {
-          const client = await apiPost('getClient', { token: state.token, clientId })
-          if (client) {
-            client.prospect_stage = prospectStage // ensure stage is correct
-            setState({ activeClient: client })
-          }
-        } catch { /* non-critical */ }
-      }
+
+      // Background refresh — non-blocking. We trust the optimistic + localStorage path.
+      adminActions.loadClients().catch(() => {})
       return true
     } catch (err: any) {
       // On failure, reload to revert optimistic update
+      removeStageOverride(clientId)
       await adminActions.loadClients().catch(() => {})
       setState({ error: err.message })
       return false

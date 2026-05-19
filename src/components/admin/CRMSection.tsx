@@ -123,13 +123,15 @@ export default function CRMSection() {
   const openClient = async (c: any) => {
     setDetailTab('overview')
     setEditing(false)
+    // Show the client immediately from local data (optimistic)
+    adminActions.setActiveClientOptimistic(c)
     setBusyOpen(c.client_id)
     try {
-      await adminActions.getClient(c.client_id)
+      // Fetch fresh data in background
+      adminActions.getClient(c.client_id).then(() => setBusyOpen(null))
       adminActions.getClientActivity(c.client_id)
     } catch (err) {
       console.error('Failed to open client:', err)
-    } finally {
       setBusyOpen(null)
     }
   }
@@ -174,22 +176,18 @@ export default function CRMSection() {
     } finally { setBusyNote(false) }
   }
 
-  const handleAdvanceStage = async (clientId: string, stage: string) => {
+  const handleAdvanceStage = async (clientId: string, stage: string, note?: string) => {
     setBusyStage(true)
     try {
-      if (stageNote.trim()) {
-        await adminActions.updateClientStatus(clientId, stage, stageNote.trim())
-      } else {
-        await adminActions.updateClientStatus(clientId, stage)
-      }
+      await adminActions.updateClientStatus(clientId, stage, note || `Stage changed to ${stage}`)
       setStagePopup(null)
       setStageNote('')
     } finally { setBusyStage(false) }
   }
 
-  const openStagePopup = (clientId: string, stage: string, direction: 'advance'|'regress') => {
-    setStagePopup({ clientId, stage, direction })
-    setStageNote('')
+  const openStagePopup = (clientId: string, stage: string, _direction: 'advance'|'regress') => {
+    // Instant stage change — no popup required
+    handleAdvanceStage(clientId, stage)
   }
 
   const loadEmailPreview = async (tpl: string) => {
