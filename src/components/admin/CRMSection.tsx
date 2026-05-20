@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { ArrowLeft, Plus, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone } from 'lucide-react'
+import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
 import { FormButton } from './ActionButton'
@@ -668,30 +668,62 @@ export default function CRMSection() {
   return (
     <div className="crm-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Client CRM</h1>
-          <p className="text-sm text-neutral-500 mt-0.5">{activeClients.length} contacts in pipeline</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex bg-neutral-900 rounded-lg p-0.5 border border-neutral-800">
-            <button onClick={() => setViewMode('contacts')} className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all ${viewMode === 'contacts' ? 'bg-[#00bfff]/15 text-[#00bfff]' : 'text-neutral-500 hover:text-white'}`}>Contacts</button>
-            <button onClick={() => setViewMode('pipeline')} className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all ${viewMode === 'pipeline' ? 'bg-[#00bfff]/15 text-[#00bfff]' : 'text-neutral-500 hover:text-white'}`}>Pipeline</button>
-            <button onClick={() => setViewMode('calls')} className={`px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all ${viewMode === 'calls' ? 'bg-[#00bfff]/15 text-[#00bfff]' : 'text-neutral-500 hover:text-white'}`}><Phone className="w-3 h-3 inline mr-1" />Calls</button>
+      <div className="mb-2">
+        {/* Top Row: Title + Action Buttons */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Client CRM</h1>
+            <p className="text-sm text-neutral-500 mt-0.5">{activeClients.length} contacts in pipeline</p>
           </div>
-          <button onClick={() => setShowAddProspect(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
-            <Plus className="w-4 h-4" />Add Prospect
-          </button>
-          {isGodmode && (
-            <button onClick={() => setShowHistoric(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 border border-amber-700/40 text-amber-400 rounded-xl text-sm font-bold cursor-pointer hover:border-amber-500/60 hover:bg-amber-500/5 transition-all">
-              <Plus className="w-4 h-4" />Add Historic
+          <div className="flex items-center gap-3">
+            <button onClick={() => setShowAddProspect(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" />
+              </svg>
+              Prospect
             </button>
-          )}
-          <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-xl text-sm font-bold cursor-pointer hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all">
-            <Plus className="w-4 h-4" />Add Client
+            {isGodmode && (
+              <button onClick={() => setShowHistoric(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 border border-amber-700/40 text-amber-400 rounded-xl text-sm font-bold cursor-pointer hover:border-amber-500/60 hover:bg-amber-500/5 transition-all">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><path d="M8 14h.01" /><path d="M12 14h.01" /><path d="M16 14h.01" /><path d="M8 18h.01" /><path d="M12 18h.01" />
+                </svg>
+                Historic
+              </button>
+            )}
+            <button onClick={() => setShowAdd(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-xl text-sm font-bold cursor-pointer hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M20 8v6" /><path d="M23 11h-6" />
+              </svg>
+              Client
+            </button>
+          </div>
+        </div>
+
+        {/* View Mode Tabs */}
+        <div className="flex border-b border-neutral-800">
+          <button onClick={() => setViewMode('contacts')}
+            className={`crm-view-tab ${viewMode === 'contacts' ? 'active' : ''}`}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            Contacts
+          </button>
+          <button onClick={() => setViewMode('pipeline')}
+            className={`crm-view-tab ${viewMode === 'pipeline' ? 'active' : ''}`}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="3" width="6" height="18" rx="1" /><rect x="9" y="8" width="6" height="13" rx="1" /><rect x="17" y="5" width="6" height="16" rx="1" />
+            </svg>
+            Pipeline
+          </button>
+          <button onClick={() => setViewMode('calls')}
+            className={`crm-view-tab ${viewMode === 'calls' ? 'active' : ''}`}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+            </svg>
+            Calls
           </button>
         </div>
       </div>

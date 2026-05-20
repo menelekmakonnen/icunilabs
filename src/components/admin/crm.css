@@ -175,6 +175,39 @@
   border-bottom-color: #00bfff;
 }
 
+/* ─── View Mode Tabs (Contacts / Pipeline / Calls) ────────── */
+.crm-view-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  position: relative;
+}
+
+.crm-view-tab:hover {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.crm-view-tab.active {
+  color: #00bfff;
+  border-bottom-color: #00bfff;
+  background: rgba(0, 191, 255, 0.04);
+}
+
+.crm-view-tab.active svg {
+  filter: drop-shadow(0 0 4px rgba(0, 191, 255, 0.4));
+}
+
 /* ─── Note Input ──────────────────────────────────────────── */
 .crm-note-input {
   background: rgba(15, 15, 25, 0.8);

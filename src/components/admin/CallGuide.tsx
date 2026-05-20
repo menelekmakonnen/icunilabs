@@ -118,6 +118,7 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
   const [callNotes, setCallNotes] = useState('')
   const [nextActionNotes, setNextActionNotes] = useState('')
   const [contactName, setContactName] = useState(client?.name || '')
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [contactPhone, setContactPhone] = useState(client?.phone || '')
   const [contactRole, setContactRole] = useState('')
   const [saving, setSaving] = useState(false)
@@ -266,6 +267,16 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
               <option key={p.pathId} value={p.pathId}>{p.label}</option>
             ))}
           </select>
+          {/* Pause — exit without losing state */}
+          <button onClick={onClose} className="cg-pause-btn" title="Pause — return to CRM (call stays open)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
+            Pause
+          </button>
+          {/* Discard — end without saving */}
+          <button onClick={() => setShowDiscardConfirm(true)} className="cg-discard-btn" title="End call without saving">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            Discard
+          </button>
           <button onClick={handleSave} disabled={saving || !outcome} className="cg-end-btn">
             {saving ? 'Saving…' : 'End Call & Save'}
           </button>
@@ -397,11 +408,39 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
           </div>
         )}
 
-        {/* Save Button (bottom) */}
-        <button onClick={handleSave} disabled={saving || !outcome}
-          className="w-full py-4 rounded-xl font-bold text-sm bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all mb-8 flex items-center justify-center gap-2">
-          {saving ? (<><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>Saving Call…</>) : 'End Call & Save'}
-        </button>
+        {/* Bottom Action Buttons */}
+        <div className="flex gap-3 mb-8">
+          <button onClick={onClose}
+            className="flex-1 py-3.5 rounded-xl font-bold text-sm bg-neutral-800 border border-neutral-700 text-neutral-400 cursor-pointer hover:bg-neutral-700 hover:text-white transition-all flex items-center justify-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
+            Pause Call
+          </button>
+          <button onClick={() => setShowDiscardConfirm(true)}
+            className="flex-1 py-3.5 rounded-xl font-bold text-sm bg-neutral-900 border border-red-500/20 text-red-400 cursor-pointer hover:bg-red-500/10 hover:border-red-500/40 transition-all flex items-center justify-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+            Discard
+          </button>
+          <button onClick={handleSave} disabled={saving || !outcome}
+            className="flex-[2] py-3.5 rounded-xl font-bold text-sm bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all flex items-center justify-center gap-2">
+            {saving ? (<><svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>Saving…</>) : 'End Call & Save'}
+          </button>
+        </div>
+
+        {/* Discard Confirmation */}
+        {showDiscardConfirm && (
+          <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowDiscardConfirm(false)}>
+            <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-white mb-2">Discard this call?</h3>
+              <p className="text-sm text-neutral-400 mb-5">All progress, notes, and data captured during this call will be lost. This cannot be undone.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowDiscardConfirm(false)}
+                  className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-neutral-800 text-neutral-300 cursor-pointer hover:bg-neutral-700 transition-all">Keep Going</button>
+                <button onClick={onClose}
+                  className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-red-500/15 border border-red-500/30 text-red-400 cursor-pointer hover:bg-red-500/25 transition-all">Discard Call</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
