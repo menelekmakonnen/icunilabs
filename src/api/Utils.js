@@ -102,6 +102,21 @@ function sheetToObjects_(sheetName) {
     if (_sheetDataCache[sheetName]) return _sheetDataCache[sheetName];
     var sheet = getSheetByName_(sheetName);
     if (!sheet || sheet.getLastRow() <= 1) return [];
+
+    // ── Self-healing: ensure expected headers exist ──
+    // Handles the case where new columns were added to the schema
+    // after the sheet was already populated with data.
+    if (sheetName === SHEETS.CLIENTS) {
+        ensureHeaders_(sheet, [
+            'client_id', 'name', 'email', 'phone', 'company',
+            'status', 'referrer_id', 'created_at', 'notes', 'drive_folder_url',
+            'tags', 'source', 'industry', 'address', 'website', 'last_activity',
+            'prospect_stage', 'buyer_profile', 'pain_category',
+            'challenge_statement', 'laugh_factor', 'first_contact_date',
+            'added_by', 'visibility'
+        ]);
+    }
+
     var data = sheet.getDataRange().getValues();
     var headers = data[0];
     var results = [];
@@ -114,6 +129,34 @@ function sheetToObjects_(sheetName) {
     }
     _sheetDataCache[sheetName] = results;
     return results;
+}
+
+/**
+ * Self-healing header migration.
+ * Writes each expected header into its correct column position (1-indexed).
+ * Only writes if the cell in row 1 at that position is empty or doesn't
+ * match the expected header. This ensures headers align with data that
+ * appendRow_ already wrote positionally.
+ */
+function ensureHeaders_(sheet, expectedHeaders) {
+    var lastCol = Math.max(sheet.getLastColumn(), expectedHeaders.length);
+    var currentHeaders = lastCol > 0
+        ? sheet.getRange(1, 1, 1, lastCol).getValues()[0]
+        : [];
+    var fixed = 0;
+    for (var i = 0; i < expectedHeaders.length; i++) {
+        var expected = expectedHeaders[i];
+        var actual = (currentHeaders[i] || '').toString().trim();
+        if (actual !== expected) {
+            // Write the correct header at the expected position
+            sheet.getRange(1, i + 1).setValue(expected).setFontWeight('bold');
+            fixed++;
+        }
+    }
+    if (fixed > 0) {
+        Logger.log('ensureHeaders_: Fixed ' + fixed + ' headers in ' + sheet.getName());
+        SpreadsheetApp.flush();
+    }
 }
 
 /**

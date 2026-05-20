@@ -79,19 +79,35 @@ export default function MailSection() {
     ? allAliases.filter((a: any) => impersonatedBoxes.includes(aliasKey(a)))
     : allAliases
 
+  // Load all mail data in parallel on mount (no waterfall)
+  const [initialLoaded, setInitialLoaded] = useState(false)
   useEffect(() => {
-    adminActions.loadEmailAliases()
-    adminActions.loadEmailTemplates()
+    (async () => {
+      // Fire all three requests simultaneously
+      const [aliases] = await Promise.all([
+        adminActions.loadEmailAliases().catch(() => null),
+        adminActions.loadEmailTemplates().catch(() => null),
+      ])
+      // Once aliases are known, immediately load inbox with default mailbox
+      const aliasList = Array.isArray(aliases) ? aliases : []
+      const def = companyEmail || (aliasList.length > 0 ? aliasKey(aliasList[0]) : '')
+      if (def) {
+        setActiveMailboxes([def])
+        adminActions.loadInbox(def, 0)
+      }
+      setInitialLoaded(true)
+    })()
   }, [])
 
-  // Set default active mailbox to company email once aliases load
+  // Reset active mailboxes when impersonation changes
   useEffect(() => {
-    if (activeMailboxes.length === 0 && aliases.length > 0) {
+    if (!initialLoaded) return
+    if (aliases.length > 0 && activeMailboxes.length === 0) {
       const def = companyEmail || aliasKey(aliases[0])
       setActiveMailboxes([def])
       adminActions.loadInbox(def, 0)
     }
-  }, [aliases, companyEmail])
+  }, [aliases.length, companyEmail, initialLoaded])
 
   // Reset active mailboxes when impersonation changes
   useEffect(() => {
