@@ -91,8 +91,8 @@ async function apiPost(action: string, payload: Record<string, any> = {}): Promi
 }
 
 // ─── STAGE PERSISTENCE (localStorage fallback) ───────────────
-// When GAS Sheets cache returns stale data on refresh, these overrides
-// ensure the pipeline shows the correct stage. Overrides expire after 24h.
+// Short-lived overrides (30s) to bridge the gap between an optimistic
+// UI update and the next server fetch. Never fights the server long-term.
 const STAGE_KEY = 'icuni_stage_overrides'
 function getStageOverrides(): Record<string, string> {
   try {
@@ -103,7 +103,7 @@ function getStageOverrides(): Record<string, string> {
     const clean: Record<string, string> = {}
     for (const [k, v] of Object.entries(data)) {
       const entry = v as { stage: string; ts: number }
-      if (now - entry.ts < 86400000) clean[k] = entry.stage // 24h TTL
+      if (now - entry.ts < 30000) clean[k] = entry.stage // 30s TTL
     }
     return clean
   } catch { return {} }
@@ -311,14 +311,25 @@ export const adminActions = {
   loadClients: async () => {
     try {
       const clients = await apiPost('getClients', { token: state.token })
-      // Merge any locally-persisted stage overrides (resilience against GAS cache staleness)
+      const raw = clients || []
+
+      // Debug: log prospect_stage values from server
+      if (raw.length > 0) {
+        const stageSample = raw.slice(0, 8).map((c: any) => `${(c.name||'?').substring(0,12)}=${c.prospect_stage || '(empty)'}`)
+        console.log('[CRM] Server stages:', stageSample.join(', '))
+      }
+
+      // Apply very recent (<30s) localStorage overrides to bridge optimistic gap.
+      // After 30s, server data is always trusted as ground truth.
       const overrides = getStageOverrides()
-      const merged = (clients || []).map((c: any) => {
-        if (overrides[c.client_id]) {
-          return { ...c, prospect_stage: overrides[c.client_id] }
-        }
-        return c
-      })
+      const overrideCount = Object.keys(overrides).length
+      const merged = overrideCount > 0
+        ? raw.map((c: any) => overrides[c.client_id]
+            ? { ...c, prospect_stage: overrides[c.client_id] }
+            : c)
+        : raw
+      if (overrideCount > 0) console.log('[CRM] Applied', overrideCount, 'recent overrides')
+
       setState({ clients: merged })
     } catch (err: any) { setState({ error: err.message }) }
   },
