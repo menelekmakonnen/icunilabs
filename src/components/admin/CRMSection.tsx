@@ -736,7 +736,7 @@ export default function CRMSection() {
 
       {/* ═══ PIPELINE VIEW ═══ */}
       {viewMode === 'pipeline' && (
-        <div className="flex gap-3 overflow-x-auto pb-4" style={{ minHeight: 400 }}>
+        <div className="flex gap-3 overflow-x-auto overflow-y-auto pb-4" style={{ maxHeight: 'calc(100vh - 320px)', minHeight: 300 }}>
           {STAGES.filter(s => s.id !== 'lost').map((stage) => {
             const stageClients = filtered.filter((c: any) => (c.prospect_stage || 'new_lead') === stage.id)
             const showBoundary = stage.id === 'meeting_scheduled'
