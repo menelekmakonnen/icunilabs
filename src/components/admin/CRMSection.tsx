@@ -106,6 +106,9 @@ export default function CRMSection() {
   const [historicForm, setHistoricForm] = useState({ name:'', email:'', phone:'', company:'', industry:'', created_at_override:'', project_title:'', project_type:'Website', estimated_cost:'', start_date:'', completion_date:'', notes:'' })
   const [historicPayments, setHistoricPayments] = useState<{amount:string, method:string, paid_at:string}[]>([])
   const [busyHistoric, setBusyHistoric] = useState(false)
+  const [showAddProject, setShowAddProject] = useState(false)
+  const [projectForm, setProjectForm] = useState({ title:'', type:'Website', estimated_cost:'', description:'', est_completion:'' })
+  const [busyProject, setBusyProject] = useState(false)
 
   const isGodmode = user?.role === 'Godmode'
 
@@ -508,8 +511,15 @@ export default function CRMSection() {
 
           {detailTab === 'projects' && (
             <div className="crm-fade-in space-y-3">
+              {/* Add Project Button */}
+              <button onClick={() => setShowAddProject(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-neutral-900 border border-dashed border-neutral-700 rounded-xl text-sm font-bold text-neutral-400 cursor-pointer hover:border-[#00bfff]/40 hover:text-[#00bfff] transition-all">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /><line x1="12" y1="7" x2="12" y2="13" /><line x1="9" y1="10" x2="15" y2="10" /></svg>
+                Add Project
+              </button>
+
               {(c.projects || []).length === 0 ? (
-                <p className="text-neutral-600 text-sm text-center py-12">No projects yet</p>
+                <p className="text-neutral-600 text-sm text-center py-8">No projects yet — add one above</p>
               ) : (c.projects || []).map((p: any) => {
                 const stepPct = Math.min(((parseFloat(p.step) || 0) / 10) * 100, 100)
                 return (
@@ -530,6 +540,60 @@ export default function CRMSection() {
                   </div>
                 )
               })}
+
+              {/* Add Project Modal */}
+              {showAddProject && (
+                <div className={modalBg} onClick={() => setShowAddProject(false)}>
+                  <div className={modalCard} onClick={e => e.stopPropagation()}>
+                    <h3 className="text-lg font-bold text-white mb-1">Add Project</h3>
+                    <p className="text-xs text-neutral-500 mb-4">Create a new project for {c.name}</p>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault()
+                      setBusyProject(true)
+                      try {
+                        const ok = await adminActions.createProject({
+                          client_id: c.client_id,
+                          title: projectForm.title,
+                          type: projectForm.type,
+                          estimated_cost: parseFloat(projectForm.estimated_cost) || 0,
+                          description: projectForm.description || undefined,
+                          est_completion: projectForm.est_completion || undefined,
+                        })
+                        if (ok) {
+                          setShowAddProject(false)
+                          setProjectForm({ title:'', type:'Website', estimated_cost:'', description:'', est_completion:'' })
+                          // Refresh client data to show new project
+                          adminActions.getClient(c.client_id)
+                        }
+                      } finally { setBusyProject(false) }
+                    }} className="space-y-3">
+                      <input value={projectForm.title} onChange={e => setProjectForm({...projectForm, title: e.target.value})}
+                        className={inputCls} placeholder="Project title *" required />
+                      <div className="grid grid-cols-2 gap-3">
+                        <select value={projectForm.type} onChange={e => setProjectForm({...projectForm, type: e.target.value})}
+                          className={inputCls}>
+                          <option value="Website">Website</option>
+                          <option value="Web App">Web App</option>
+                          <option value="Mobile App">Mobile App</option>
+                          <option value="Branding">Branding</option>
+                          <option value="Consulting">Consulting</option>
+                          <option value="Training">Training</option>
+                          <option value="Other">Other</option>
+                        </select>
+                        <input value={projectForm.estimated_cost} onChange={e => setProjectForm({...projectForm, estimated_cost: e.target.value})}
+                          className={inputCls} placeholder="Est. cost (GH₵) *" type="number" step="0.01" required />
+                      </div>
+                      <input value={projectForm.est_completion} onChange={e => setProjectForm({...projectForm, est_completion: e.target.value})}
+                        className={inputCls} placeholder="Est. completion date" type="date" />
+                      <textarea value={projectForm.description} onChange={e => setProjectForm({...projectForm, description: e.target.value})}
+                        className={inputCls + ' min-h-[60px]'} placeholder="Description (optional)" rows={2} />
+                      <FormButton busy={busyProject} className="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white">
+                        Create Project
+                      </FormButton>
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -668,42 +732,17 @@ export default function CRMSection() {
   return (
     <div className="crm-fade-in">
       {/* Header */}
-      <div className="mb-2">
-        {/* Top Row: Title + Action Buttons */}
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-4">
+        {/* Title */}
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Client CRM</h1>
             <p className="text-sm text-neutral-500 mt-0.5">{activeClients.length} contacts in pipeline</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setShowAddProspect(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" />
-              </svg>
-              Prospect
-            </button>
-            {isGodmode && (
-              <button onClick={() => setShowHistoric(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 border border-amber-700/40 text-amber-400 rounded-xl text-sm font-bold cursor-pointer hover:border-amber-500/60 hover:bg-amber-500/5 transition-all">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><path d="M8 14h.01" /><path d="M12 14h.01" /><path d="M16 14h.01" /><path d="M8 18h.01" /><path d="M12 18h.01" />
-                </svg>
-                Historic
-              </button>
-            )}
-            <button onClick={() => setShowAdd(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-xl text-sm font-bold cursor-pointer hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M20 8v6" /><path d="M23 11h-6" />
-              </svg>
-              Client
-            </button>
-          </div>
         </div>
 
         {/* View Mode Tabs */}
-        <div className="flex border-b border-neutral-800">
+        <div className="flex border-b border-neutral-800 mb-4">
           <button onClick={() => setViewMode('contacts')}
             className={`crm-view-tab ${viewMode === 'contacts' ? 'active' : ''}`}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -726,23 +765,45 @@ export default function CRMSection() {
             Calls
           </button>
         </div>
-      </div>
 
-      {/* Big Call Button */}
-      <div className="mb-6">
-        <button
-          onClick={() => {
-            // Open a picker to select a prospect/client to call
-            const prospect = activeClients.find((c: any) => !callGuideClient && ['prospect', 'new_lead', 'contacted', 'qualified', 'meeting_scheduled'].includes(c.prospect_stage || 'new_lead'))
-            if (prospect) setCallGuideClient(prospect)
-            else if (activeClients.length > 0) setCallGuideClient(activeClients[0])
-          }}
-          className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-emerald-600/20 to-emerald-500/10 border-2 border-dashed border-emerald-500/30 rounded-2xl text-emerald-400 font-bold text-lg cursor-pointer hover:border-emerald-400/50 hover:bg-emerald-500/15 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)] transition-all group"
-        >
-          <Phone className="w-6 h-6 group-hover:animate-pulse" />
-          Start a Call
-          <span className="text-xs text-emerald-500/60 font-normal">— select a prospect below or click to start</span>
-        </button>
+        {/* Action Row: Start Call + Add buttons */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              const prospect = activeClients.find((c: any) => !callGuideClient && ['prospect', 'new_lead', 'contacted', 'qualified', 'meeting_scheduled'].includes(c.prospect_stage || 'new_lead'))
+              if (prospect) setCallGuideClient(prospect)
+              else if (activeClients.length > 0) setCallGuideClient(activeClients[0])
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-xl text-sm font-bold cursor-pointer hover:bg-emerald-500/15 hover:border-emerald-400/40 transition-all"
+          >
+            <Phone className="w-4 h-4" />
+            Start Call
+          </button>
+          <div className="w-px h-6 bg-neutral-800" />
+          <button onClick={() => setShowAddProspect(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" />
+            </svg>
+            Prospect
+          </button>
+          {isGodmode && (
+            <button onClick={() => setShowHistoric(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 border border-amber-700/40 text-amber-400 rounded-xl text-sm font-bold cursor-pointer hover:border-amber-500/60 hover:bg-amber-500/5 transition-all">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><path d="M8 14h.01" /><path d="M12 14h.01" /><path d="M16 14h.01" /><path d="M8 18h.01" /><path d="M12 18h.01" />
+              </svg>
+              Historic
+            </button>
+          )}
+          <button onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-xl text-sm font-bold cursor-pointer hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M20 8v6" /><path d="M23 11h-6" />
+            </svg>
+            Client
+          </button>
+        </div>
       </div>
 
       {/* Quick Stats */}

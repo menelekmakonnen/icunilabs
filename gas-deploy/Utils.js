@@ -114,6 +114,17 @@ function sheetToObjects_(sheetName) {
         ];
         ensureHeaders_(sheet, expectedCols);
     }
+    if (sheetName === SHEETS.USERS) {
+        expectedCols = [
+            'id', 'name', 'email', 'phone', 'role',
+            'status', 'password_hash', 'pin_hash',
+            'notif_email', 'notif_browser',
+            'created_at', 'last_login', 'profile_pic_url', 'must_change_pw',
+            'cover_image_url', 'contact_details', 'permissions_json', 'job_title',
+            'company_email'
+        ];
+        ensureHeaders_(sheet, expectedCols);
+    }
     var data = sheet.getDataRange().getValues();
     var headers = data[0];
     // If we know the expected column count, only read that many columns.
