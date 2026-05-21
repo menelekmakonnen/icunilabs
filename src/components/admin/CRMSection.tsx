@@ -734,6 +734,10 @@ export default function CRMSection() {
             </div>
           </div>
         )}
+        {/* Call Guide Overlay (inside detail view) */}
+        {callGuideClient && (
+          <CallGuide client={callGuideClient} onClose={() => setCallGuideClient(null)} />
+        )}
       </div>
     )
   }
