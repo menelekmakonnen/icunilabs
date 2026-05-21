@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone } from 'lucide-react'
+import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, ChevronDown, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
 import { FormButton } from './ActionButton'
@@ -84,6 +84,8 @@ export default function CRMSection() {
   const [tagInput, setTagInput] = useState('')
   const [viewMode, setViewMode] = useState<'contacts'|'pipeline'|'calls'>('contacts')
   const [callGuideClient, setCallGuideClient] = useState<any>(null)
+  const [showCallPicker, setShowCallPicker] = useState(false)
+  const callPickerRef = useRef<HTMLDivElement>(null)
   const [emailTpl, setEmailTpl] = useState('')
   const [emailPreview, setEmailPreview] = useState('')
   const [emailSubject, setEmailSubject] = useState('')
@@ -113,6 +115,16 @@ export default function CRMSection() {
   const isGodmode = user?.role === 'Godmode'
 
   useEffect(() => { adminActions.loadClients() }, [])
+
+  // Close call picker on click outside
+  useEffect(() => {
+    if (!showCallPicker) return
+    const handler = (e: MouseEvent) => {
+      if (callPickerRef.current && !callPickerRef.current.contains(e.target as Node)) setShowCallPicker(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [showCallPicker])
 
 
   const activeClients = clients.filter((c: any) => (c.status || '').toLowerCase() !== 'deleted')
@@ -768,17 +780,43 @@ export default function CRMSection() {
 
         {/* Action Row: Start Call + Add buttons */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              const prospect = activeClients.find((c: any) => !callGuideClient && ['prospect', 'new_lead', 'contacted', 'qualified', 'meeting_scheduled'].includes(c.prospect_stage || 'new_lead'))
-              if (prospect) setCallGuideClient(prospect)
-              else if (activeClients.length > 0) setCallGuideClient(activeClients[0])
-            }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-xl text-sm font-bold cursor-pointer hover:bg-emerald-500/15 hover:border-emerald-400/40 transition-all"
-          >
-            <Phone className="w-4 h-4" />
-            Start Call
-          </button>
+          <div className="relative" ref={callPickerRef}>
+            <button
+              onClick={() => setShowCallPicker(!showCallPicker)}
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-xl text-sm font-bold cursor-pointer hover:bg-emerald-500/15 hover:border-emerald-400/40 transition-all"
+            >
+              <Phone className="w-4 h-4" />
+              Start Call
+              <ChevronDown className="w-3.5 h-3.5 ml-0.5 opacity-60" />
+            </button>
+            {showCallPicker && (
+              <div className="absolute top-full left-0 mt-2 w-80 max-h-72 overflow-y-auto bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl z-50 py-1"
+                style={{ scrollbarWidth: 'thin' }}>
+                <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold text-neutral-600 uppercase tracking-wider">Select a contact</p>
+                {activeClients.length === 0 && (
+                  <p className="px-3 py-4 text-xs text-neutral-500 text-center">No contacts yet</p>
+                )}
+                {activeClients.map((cl: any) => (
+                  <button key={cl.client_id}
+                    onClick={() => { setCallGuideClient(cl); setShowCallPicker(false) }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left cursor-pointer hover:bg-neutral-800/70 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-neutral-700 to-neutral-800 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                      {(cl.name || '?')[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white font-semibold truncate">{cl.name || 'Unnamed'}</p>
+                      <p className="text-[10px] text-neutral-500 truncate">{cl.company || 'No company'} · {cl.phone || 'No phone'}</p>
+                    </div>
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0" style={{
+                      color: cl.prospect_stage === 'client' ? '#10b981' : cl.prospect_stage === 'qualified' ? '#00bfff' : '#64748b',
+                      borderColor: cl.prospect_stage === 'client' ? '#10b98140' : cl.prospect_stage === 'qualified' ? '#00bfff40' : '#64748b30',
+                      background: cl.prospect_stage === 'client' ? '#10b98110' : cl.prospect_stage === 'qualified' ? '#00bfff10' : '#64748b08',
+                    }}>{(cl.prospect_stage || 'new_lead').replace(/_/g, ' ')}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="w-px h-6 bg-neutral-800" />
           <button onClick={() => setShowAddProspect(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
