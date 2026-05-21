@@ -157,20 +157,73 @@
   border-radius: 10px;
 }
 
+/* ─── Talking Point Wrapper ────────────────────────────── */
+.cg-tp-wrapper {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  padding-bottom: 2px;
+}
+.cg-tp-wrapper:last-child {
+  border-bottom: none;
+}
+
 /* ─── Talking Point Checkboxes ────────────────────────────── */
 .cg-tp {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  gap: 12px;
+  padding: 12px 0 8px;
   cursor: pointer;
   transition: background 0.15s;
   -webkit-tap-highlight-color: transparent;
 }
 
-.cg-tp:last-child {
-  border-bottom: none;
+.cg-tp-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.cg-tp-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cg-tp-step {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.05);
+  color: #64748b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.is-checked .cg-tp-step {
+  background: rgba(0, 191, 255, 0.1);
+  color: #00bfff;
+  border-color: rgba(0, 191, 255, 0.2);
+}
+
+.cg-script-toggle {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  color: #475569;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+.cg-script-toggle.expanded {
+  color: #00bfff;
+  background: rgba(0, 191, 255, 0.08);
 }
 
 .cg-tp:active {
@@ -517,5 +570,187 @@
   .cg-persona-btn {
     padding: 16px 18px;
     font-size: 15px;
+  }
+}
+
+/* ─── Script Panels ───────────────────────────────────────── */
+.cg-script-panel {
+  margin: 0 0 8px 42px;
+  padding: 14px 16px;
+  background: rgba(0, 100, 200, 0.04);
+  border: 1px solid rgba(0, 191, 255, 0.08);
+  border-left: 3px solid rgba(0, 191, 255, 0.25);
+  border-radius: 0 12px 12px 0;
+  animation: cg-script-in 0.2s ease-out;
+}
+
+@keyframes cg-script-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.cg-script-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #e2e8f0;
+  margin-bottom: 8px;
+}
+.cg-script-text:last-child {
+  margin-bottom: 0;
+}
+
+.cg-script-you {
+  font-weight: 800;
+  color: #00bfff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 4px;
+}
+
+.cg-script-note {
+  font-size: 12px;
+  color: #94a3b8;
+  font-style: italic;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* ─── Response Branches ───────────────────────────────────── */
+.cg-responses {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cg-response-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.cg-response-tab {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #8b95a8;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.cg-response-tab:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #cbd5e1;
+}
+.cg-response-tab.active {
+  border-color: rgba(0, 191, 255, 0.3);
+  background: rgba(0, 191, 255, 0.08);
+  color: #00bfff;
+}
+
+.cg-response-body {
+  padding: 10px 14px;
+  background: rgba(0, 191, 255, 0.03);
+  border: 1px solid rgba(0, 191, 255, 0.06);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #cbd5e1;
+  animation: cg-script-in 0.15s ease-out;
+}
+
+/* ─── Quick Reference ─────────────────────────────────────── */
+.cg-ref-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.cg-ref-stat {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #00bfff;
+  min-width: 120px;
+}
+
+.cg-ref-use {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* ─── Objection Handlers ──────────────────────────────────── */
+.cg-objection {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.cg-objection-q {
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #f59e0b;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cg-objection-q::before {
+  content: '▸';
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+.cg-objection[open] .cg-objection-q::before {
+  transform: rotate(90deg);
+}
+.cg-objection-q::-webkit-details-marker {
+  display: none;
+}
+
+.cg-objection-a {
+  padding: 0 14px 12px;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ─── Mobile Responsive (script additions) ────────────────── */
+@media (max-width: 768px) {
+  .cg-script-panel {
+    margin-left: 0;
+    border-left: 3px solid rgba(0, 191, 255, 0.2);
+    border-radius: 0 10px 10px 0;
+  }
+
+  .cg-response-tabs {
+    gap: 4px;
+  }
+
+  .cg-response-tab {
+    font-size: 10px;
+    padding: 4px 10px;
+  }
+
+  .cg-ref-row {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .cg-ref-stat {
+    min-width: unset;
   }
 }

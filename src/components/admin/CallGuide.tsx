@@ -1,68 +1,265 @@
 import { useState, useEffect, useRef } from 'react'
-import { adminActions } from '../../store/useAdminStore'
-import { X, Check, ChevronDown, ChevronUp, Phone, ArrowRight } from 'lucide-react'
+import { adminActions, useAdminStore } from '../../store/useAdminStore'
+import { X, Check, ChevronDown, ChevronUp, Phone, ArrowRight, BookOpen } from 'lucide-react'
 import './call-guide.css'
 
-// ═══ PATH DEFINITIONS ═══
-const PATHS: Record<string, { label: string; color: string; points: { id: string; label: string; dataFields?: DataField[] }[] }> = {
+// ═══ TYPES ═══
+interface DataField { id: string; label: string; type: 'text' | 'number' | 'textarea' | 'select' | 'datetime-local'; options?: string[] }
+
+interface ScriptResponse { label: string; text: string }
+
+interface TalkingPoint {
+  id: string
+  label: string
+  script?: string
+  scriptNote?: string // italic instruction/guidance note
+  responses?: ScriptResponse[]
+  dataFields?: DataField[]
+}
+
+interface PathDef {
+  label: string
+  color: string
+  points: TalkingPoint[]
+}
+
+// ═══ PATH DEFINITIONS WITH FULL SCRIPTS ═══
+const PATHS: Record<string, PathDef> = {
   wc_receptionist: {
     label: 'WC Receptionist', color: '#8b5cf6',
     points: [
-      { id: 'intro', label: 'Introduced with senior title' },
-      { id: 'got_name', label: 'Got receptionist\'s name', dataFields: [{ id: 'receptionist_name', label: 'Receptionist Name', type: 'text' }] },
-      { id: 'stated_research', label: 'Stated research project — two minutes — specific manager type' },
-      { id: 'unavailable', label: 'If unavailable: got callback time & confirmed it', dataFields: [{ id: 'callback_datetime', label: 'Callback Date/Time', type: 'datetime-local' }] },
-      { id: 'refused_email', label: 'If refused: offered to email first — got manager\'s email', dataFields: [{ id: 'manager_email', label: 'Manager Email', type: 'text' }] },
-      { id: 'receptionist_answered', label: 'If receptionist wants to answer: engaged then escalated question complexity' },
+      {
+        id: 'intro', label: 'Introduce with senior title',
+        script: 'Good {{time_of_day}}. My name is {{user_name}}, and I\'m the {{user_title}} at ICUNI Labs. Can I take your name again please?',
+      },
+      {
+        id: 'got_name', label: 'Got receptionist\'s name',
+        script: 'Hello {{receptionist_name}}, we\'re running a research project on the finance and operations systems that {{industry}} companies like yours use. We would like to include your company.',
+        dataFields: [{ id: 'receptionist_name', label: 'Receptionist Name', type: 'text' }],
+      },
+      {
+        id: 'stated_research', label: 'Stated research — two minutes — specific manager type',
+        script: 'I\'d love to speak to your operations manager for just two minutes to ask a couple of questions. Are they available?',
+      },
+      {
+        id: 'unavailable', label: 'If unavailable: got callback time & confirmed it',
+        script: 'No worries at all. When would be a good time to reach them?',
+        responses: [
+          { label: '✅ They say yes', text: 'Thank them by name if they gave it. Ask who you\'ll be speaking to. Get transferred.' },
+          { label: '⏰ Manager unavailable', text: 'If I call back at that time, would they be available? … Great. My name is {{user_name}} from ICUNI Labs. Thank you so much for your help, {{receptionist_name}}.' },
+        ],
+        scriptNote: 'Log the callback time. Set your SLA timer. Call back at exactly that time.',
+        dataFields: [{ id: 'callback_datetime', label: 'Callback Date/Time', type: 'datetime-local' }],
+      },
+      {
+        id: 'refused_email', label: 'If refused: offered to email first — got manager\'s email',
+        script: 'I completely understand. It\'s a two-minute research call and we\'re genuinely gathering useful data on how companies in your industry manage their operations. If it helps, I\'m happy to send a brief email first so they know to expect the call. What email address should I use?',
+        scriptNote: 'This gives you a direct email to the manager, which is often more valuable than the phone transfer.',
+        dataFields: [{ id: 'manager_email', label: 'Manager Email', type: 'text' }],
+      },
+      {
+        id: 'receptionist_answered', label: 'If receptionist wants to answer: engaged then escalated',
+        script: 'Do you use a system for operations? Is it off the shelf or custom-built?',
+        responses: [
+          { label: '🗣️ They answer', text: 'Ask: "How much time does your manager spend on reporting or reconciliation each month, even with that system in place?"' },
+          { label: '↗️ Escalate to manager', text: 'I really appreciate you helping, but I wouldn\'t want to put you on the spot answering for the manager\'s department — these are really questions only they can answer properly. Would you mind connecting me?' },
+        ],
+        scriptNote: 'This is not aggressive. It is protective of the receptionist while making the case for transfer.',
+      },
     ]
   },
+
   wc_decision_maker: {
     label: 'WC Decision-Maker', color: '#00bfff',
     points: [
-      { id: 'positioned_expert', label: 'Positioned them as the expert — "You\'re the best person to ask"' },
-      { id: 'asked_system', label: 'Asked about current system — custom or off-the-shelf', dataFields: [{ id: 'system_name', label: 'System Name', type: 'text' }, { id: 'system_type', label: 'System Type', type: 'select', options: ['custom', 'off_shelf', 'none'] }] },
-      { id: 'asked_problem', label: 'Asked most expensive problem', dataFields: [{ id: 'problem_description', label: 'Problem Description', type: 'textarea' }] },
-      { id: 'put_number', label: 'Put a number on it — cedis or time', dataFields: [{ id: 'cost_amount', label: 'Amount (GHS)', type: 'number' }, { id: 'time_estimate', label: 'Time Estimate', type: 'text' }] },
-      { id: 'current_system_helps', label: 'Asked if current system helps with that problem' },
-      { id: 'snap_fingers', label: 'Snap-your-fingers question — dream system', dataFields: [{ id: 'dream_system', label: 'Dream System Description', type: 'textarea' }] },
-      { id: 'read_energy', label: 'Read their energy — rushed vs relaxed' },
-      { id: 'transitioned_challenge', label: 'Transitioned to Challenge — "We have a problem…"' },
-      { id: 'pushed_meeting', label: 'After 3 yeses: pushed for meeting with specific day/time' },
+      {
+        id: 'positioned_expert', label: 'Positioned them as the expert',
+        script: 'Thank you so much for taking my call, {{name}}. I really appreciate it. I believe you\'re the best person for me to speak to about this — you know your industry and your role better than anyone else I could ask.',
+      },
+      {
+        id: 'asked_system', label: 'Asked about current system',
+        script: 'Do you use an operations system for your department, and is it custom-built for you or off the shelf?',
+        dataFields: [
+          { id: 'system_name', label: 'System Name', type: 'text' },
+          { id: 'system_type', label: 'System Type', type: 'select', options: ['custom', 'off_shelf', 'none'] },
+        ],
+      },
+      {
+        id: 'asked_problem', label: 'Asked most expensive problem',
+        script: 'What would you say is the most expensive problem, or the most time-consuming workflow, that your company has to deal with?',
+        dataFields: [{ id: 'problem_description', label: 'Problem Description', type: 'textarea' }],
+      },
+      {
+        id: 'put_number', label: 'Put a number on it — cedis or time',
+        script: 'Roughly how much does that cost you per month in money or time?',
+        dataFields: [
+          { id: 'cost_amount', label: 'Amount (GHS)', type: 'number' },
+          { id: 'time_estimate', label: 'Time Estimate', type: 'text' },
+        ],
+      },
+      {
+        id: 'current_system_helps', label: 'Asked if current system helps with that problem',
+        script: 'Does your current system help you deal with that problem?',
+      },
+      {
+        id: 'snap_fingers', label: 'Snap-your-fingers question — dream system',
+        script: 'If you could snap your fingers and get a system that makes your job easier — or saves your company a lot of money and time — what would that system do?',
+        dataFields: [{ id: 'dream_system', label: 'Dream System Description', type: 'textarea' }],
+      },
+      {
+        id: 'read_energy', label: 'Read their energy — rushed vs relaxed',
+        scriptNote: 'After 3-4 questions, read their tone. Are they engaged and talkative, or giving short answers?',
+        responses: [
+          { label: '⏱️ They\'re rushed', text: 'Thank you so much for your time — this has been incredibly helpful. Would it be alright if I shared the results of our research once it\'s complete? And if I have a couple of follow-up questions, could I call you back tomorrow at a specific time for just two more minutes?' },
+          { label: '💬 They have time', text: 'Great — transition to the Challenge (next talking point).' },
+        ],
+      },
+      {
+        id: 'transitioned_challenge', label: 'Transitioned to Challenge — "We have a problem…"',
+        script: 'I have one last question for you… but before that, {{name}}, we have a bit of a problem.',
+        responses: [
+          { label: '❓ "What problem?"', text: 'We have notoriously built many business operations systems, and we have hit a wall.' },
+          { label: '🧱 After "hit a wall"', text: 'We have not met a business problem that we could not solve with one of our systems.' },
+          { label: '🎯 The Challenge', text: 'So I would like you to throw us a challenge. What if I told you we could solve your most expensive problem using one of our operations systems?' },
+        ],
+        scriptNote: 'Stay serious, stay warm, stay confident. Whatever their reaction — laughter, skepticism, curiosity — hold your ground.',
+      },
+      {
+        id: 'pushed_meeting', label: 'After 3 yeses: pushed for meeting with specific day/time',
+        script: 'I really think you should see it — I know you\'d find it useful. Would you be available for us to come in on {{day}} at {{time}}? It\'s just a 15-minute demo, zero commitment. If you like it, great. If not, at least you know we\'re here.',
+        scriptNote: 'Meeting availability: Monday to Friday, 11:00 AM to 3:00 PM. Have 2-3 time options ready.',
+      },
     ]
   },
+
   bc_front_desk: {
     label: 'BC Front Desk', color: '#f59e0b',
     points: [
-      { id: 'got_boss_avail', label: 'Got boss availability — when & how to reach', dataFields: [{ id: 'boss_available', label: 'Boss Available When', type: 'text' }, { id: 'contact_method', label: 'Preferred Method', type: 'select', options: ['phone', 'in_person'] }] },
-      { id: 'asked_floor_mgr', label: 'Asked to speak to floor manager while on the line' },
-      { id: 'connected_owner', label: 'If connected to owner — pivoted to owner script' },
+      {
+        id: 'got_boss_avail', label: 'Got boss availability — when & how to reach',
+        script: 'Good {{time_of_day}}. I\'m {{user_name}} from ICUNI Labs. When is the owner usually in? Is it better to call or come in person?',
+        scriptNote: 'The front desk will almost always connect you to the floor manager but resist connecting to the owner. Accept this.',
+        dataFields: [
+          { id: 'boss_available', label: 'Boss Available When', type: 'text' },
+          { id: 'contact_method', label: 'Preferred Method', type: 'select', options: ['phone', 'in_person'] },
+        ],
+      },
+      {
+        id: 'asked_floor_mgr', label: 'Asked to speak to floor manager while on the line',
+        script: 'In the meantime, could I speak to the manager on duty for just two minutes?',
+        scriptNote: 'You now have a scheduled attempt for the boss AND immediate access to Mr Cooper.',
+      },
+      {
+        id: 'connected_owner', label: 'If connected to owner — pivot to owner script',
+        scriptNote: 'Switch your path to "BC Owner" using the escalation dropdown in the header. The Tema Harbour hook begins.',
+      },
     ]
   },
+
   bc_mr_cooper: {
     label: 'BC Mr Cooper', color: '#ff7a00',
     points: [
-      { id: 'most_time', label: 'Asked what takes the most time in their day', dataFields: [{ id: 'time_sink', label: 'Biggest Time Sink', type: 'text' }] },
-      { id: 'most_frustrating', label: 'Asked most frustrating part of their workflow', dataFields: [{ id: 'frustration', label: 'Key Frustration', type: 'text' }] },
-      { id: 'system_usage', label: 'Asked about system usage for orders/stock/deliveries' },
-      { id: 'challenge_easier', label: 'Presented the challenge — "What if we could make your job easier?"' },
-      { id: 'demo_together', label: 'Offered to demo to Mr Cooper AND the boss together' },
+      {
+        id: 'most_time', label: 'Asked what takes the most time in their day',
+        script: 'Hi {{name}}, thanks for taking my call. I\'m {{user_name}} from ICUNI Labs — we build business operations systems. I just have a couple of quick questions about how things run at your {{company}}. What takes the most time in your day?',
+        scriptNote: 'With Mr Cooper, frame everything around making THEIR job easier. Never mention theft, lost money, or accountability.',
+        dataFields: [{ id: 'time_sink', label: 'Biggest Time Sink', type: 'text' }],
+      },
+      {
+        id: 'most_frustrating', label: 'Asked most frustrating part of workflow',
+        script: 'What\'s the most frustrating part of your workflow?',
+        dataFields: [{ id: 'frustration', label: 'Key Frustration', type: 'text' }],
+      },
+      {
+        id: 'system_usage', label: 'Asked about system usage for orders/stock/deliveries',
+        script: 'Do you use any system to manage orders, stock, deliveries, or client follow-ups?',
+      },
+      {
+        id: 'challenge_easier', label: 'Presented the challenge — "What if we could make your job easier?"',
+        script: 'We\'ve built systems for businesses just like yours that handle order tracking, client follow-ups, delivery coordination, employee scheduling. What if I told you we could build something that makes your job significantly easier?',
+      },
+      {
+        id: 'demo_together', label: 'Offered to demo to Mr Cooper AND the boss together',
+        script: 'I\'d love to show you what we\'ve got. Would it be possible for us to come in when the boss is available and show both of you together? That way you can see it first-hand and decide together.',
+        scriptNote: 'This makes Mr Cooper the hero who brought the solution. The owner trusts Mr Cooper\'s judgment — make Mr Cooper the advocate, not the target.',
+      },
     ]
   },
+
   bc_owner: {
     label: 'BC Owner', color: '#ef4444',
     points: [
-      { id: 'tema_hook', label: 'Tema Harbour hook delivered — "Have you heard about the AI?"' },
-      { id: 'key_number', label: 'Key number: two million dollars recovered every day' },
-      { id: 'connected_back', label: 'Connected it back — "Just like Tema Harbour, we can help you"' },
-      { id: 'phone_access', label: 'Emphasized phone access — "See everything from your phone"' },
-      { id: 'pushed_meeting_bc', label: 'Pushed for specific meeting day and time' },
-      { id: 'no_interest_competitor', label: 'If no interest: asked what system they use & who built it', dataFields: [{ id: 'competitor_system', label: 'Competitor System Name', type: 'text' }, { id: 'competitor_developer', label: 'Competitor Developer', type: 'text' }] },
+      {
+        id: 'tema_hook', label: 'Tema Harbour hook — "Have you heard about the AI?"',
+        script: 'Good {{time_of_day}}, {{name}}. I\'m {{user_name}} from ICUNI Labs. Can I ask — have you heard about what happened at Tema Harbour with the AI?',
+        scriptNote: 'Let them respond. They might say yes, no, or ask what happened. All reactions are good — it hooks them in.',
+      },
+      {
+        id: 'key_number', label: 'Key number: GH₵1.2 billion recovered in two weeks',
+        script: 'They introduced an AI system for customs — a process that used to take officers two hours per declaration now takes five minutes. And in the first two weeks, they recovered an extra GH₵1.2 billion that was going missing. One point two billion cedis. In two weeks.',
+        scriptNote: 'Pause. Let them react. They might laugh, vent about their own staff, express shock, or be indifferent. Acknowledge it naturally.',
+      },
+      {
+        id: 'connected_back', label: 'Connected it back — "Just like Tema Harbour, we can help you"',
+        script: 'It\'s really something, isn\'t it? Here\'s why I\'m calling you. We build business operations systems — with AI capabilities — and just like the system at Tema Harbour, we can help you recover your lost time and money. We\'ve built systems for {{industry}} businesses that track everything from stock to sales to finances.',
+      },
+      {
+        id: 'phone_access', label: 'Emphasized phone access — "See everything from your phone"',
+        script: 'And the best part is you can see it all from your phone anywhere you are. You don\'t have to be at the shop to know what\'s happening.',
+      },
+      {
+        id: 'pushed_meeting_bc', label: 'Pushed for specific meeting day and time',
+        script: 'I really think you should see what we\'ve built. Would you be available on {{day}} around {{time}} for us to come and show you a quick 15-minute demo? No commitment at all — if you like it, great. If not, at least you know we\'re here.',
+        responses: [
+          { label: '💬 They\'re chatty', text: 'Push for the meeting with a specific day and time.' },
+          { label: '👥 Want to discuss with staff', text: 'I can come in and show you and your staff a demo and take questions from everyone. No commitments. If you like it, it will be built specifically for them.' },
+          { label: '🖥️ Already have a system', text: 'That\'s great. Can I ask — what system do you use, and who built it for you? Does it handle everything you need? What if I told you we could connect everything to your phone for you?' },
+          { label: '🚫 Not interested', text: 'That\'s great to hear — honestly, it\'s refreshing to speak to a business that has things running smoothly. If anything changes in the future, you\'ve got my number. Thanks for your time.' },
+        ],
+      },
+      {
+        id: 'no_interest_competitor', label: 'If no interest: asked what system they use & who built it',
+        script: 'Can I ask quickly — what system do you use and who built it?',
+        scriptNote: 'Log the competitor information into the CRM. This builds competitive intelligence over time.',
+        dataFields: [
+          { id: 'competitor_system', label: 'Competitor System Name', type: 'text' },
+          { id: 'competitor_developer', label: 'Competitor Developer', type: 'text' },
+        ],
+      },
     ]
   },
 }
 
-interface DataField { id: string; label: string; type: 'text' | 'number' | 'textarea' | 'select' | 'datetime-local'; options?: string[] }
+// ═══ REFERENCE DATA ═══
+const KEY_DATA_POINTS = [
+  { stat: '63% of businesses run manually', use: 'When prospect says "we\'re fine without a system"' },
+  { stat: 'GH₵1.2 billion recovered in 2 weeks', use: 'Blue-collar owner opener (Tema Harbour hook)' },
+  { stat: '2 hours → 5 minutes review time', use: 'Anyone asks how a system saves time' },
+  { stat: '23% margin increase in 4 months', use: 'Prospect asks "what results have you seen?"' },
+  { stat: 'Stock loss reduced within 60 days', use: 'Prospect\'s pain is shrinkage / stock variance' },
+  { stat: '4–12 months ROI for basic systems', use: 'Prospect asks "how long before this pays off?"' },
+  { stat: 'GH₵14,364 renting vs owning (3 yr)', use: 'Prospect mentions paying monthly for current system' },
+]
 
+const OBJECTION_HANDLERS: Record<string, string> = {
+  'We already have a system': 'Great. Ask: What is it called? Who built it? Does it handle [specific pain point]? Use the ownership argument: "How much are you paying per month? Multiply by 3 years. That\'s what you spend to rent something you\'ll never own. We build it once, you own it forever."',
+  'Send me an email': 'Take the email address. Ask for the manager\'s name. Send a brief professional email with a demo link. Call back 2 days later referencing the email.',
+  'How much does it cost?': 'It depends on what your business needs — we build custom systems, so pricing is based on what we\'re building for you. That\'s exactly why I\'d love to set up a quick meeting — once we understand your setup, we can give you an honest quote. No commitment.',
+  'I\'m not interested': 'Completely understand. Thanks for your time. If anything changes down the road, you\'ve got my number. Short. Gracious. No begging. Log and move on.',
+  'What do you even do?': 'We build operations systems that help companies like yours track stock, orders, finances, and employees all in one place. But I\'m actually calling to learn how you do things, not to pitch you.',
+  'Why should I trust you?': 'A Kumasi retailer saw 23% margin improvement in 4 months. A pharmacy reduced stock loss within 60 days. And the Tema Harbour AI recovered GH₵1.2 billion in 2 weeks on the same principle. We\'re happy to show you a free demo so you can judge for yourself.',
+}
+
+const COMPETITORS = [
+  { name: 'JFSyncPOS', gap: 'No deep custom workflows', cost: 'GH₵99–499/mo' },
+  { name: 'CliqPOS', gap: 'No delivery orchestration or custom automation', cost: 'GH₵199–799/mo' },
+  { name: 'Odoo', gap: 'Implementations often stall; unused modules', cost: 'GH₵284–559/mo' },
+  { name: 'ERPNext', gap: 'Needs technical partner for setup', cost: 'GH₵160–1,233/mo' },
+  { name: 'Zoho Inventory', gap: 'Custom flows need partner work', cost: 'GH₵331–2,843/mo' },
+  { name: 'Business Central', gap: 'Expensive; needs existing discipline', cost: 'GH₵913/user/mo' },
+]
+
+// ═══ UTILITIES ═══
 const OUTCOMES = [
   { id: 'meeting_booked', label: 'Meeting Booked', desc: 'Date/time confirmed', hasDatetime: true },
   { id: 'callback_scheduled', label: 'Callback Scheduled', desc: 'Call back at agreed time', hasDatetime: true },
@@ -96,12 +293,31 @@ function formatDuration(seconds: number) {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
+function getTimeOfDay() {
+  const h = new Date().getHours()
+  if (h < 12) return 'morning'
+  if (h < 17) return 'afternoon'
+  return 'evening'
+}
+
+function resolveScript(template: string, vars: Record<string, string>): string {
+  return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
+    const val = vars[key]
+    if (val) return val
+    // Return a highlighted placeholder if no value
+    return `⟨${key.replace(/_/g, ' ')}⟩`
+  })
+}
+
+// ═══ COMPONENT ═══
 interface CallGuideProps {
   client: any
   onClose: () => void
 }
 
 export default function CallGuide({ client, onClose }: CallGuideProps) {
+  const { user } = useAdminStore()
+
   // Classification state
   const [phase, setPhase] = useState<'classify' | 'guide'>('classify')
   const [envType, setEnvType] = useState<string>('')
@@ -123,6 +339,8 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
   const [contactRole, setContactRole] = useState('')
   const [saving, setSaving] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const [expandedScripts, setExpandedScripts] = useState<Set<string>>(new Set())
+  const [activeResponse, setActiveResponse] = useState<Record<string, number>>({})
   const [callStart] = useState(new Date().toISOString())
   const [elapsed, setElapsed] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined)
@@ -135,6 +353,19 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
   const currentPath = PATHS[pathId]
   const availablePersonas = envType ? PERSONAS[envType] || [] : []
 
+  // Template variables for script resolution
+  const scriptVars: Record<string, string> = {
+    name: contactName || client?.name || '',
+    company: client?.company || '',
+    industry: client?.industry || 'your',
+    time_of_day: getTimeOfDay(),
+    user_name: user?.name || 'your name',
+    user_title: 'Research Lead',
+    receptionist_name: dataCapture.receptionist_name || '',
+    day: outcomeDate || '',
+    time: outcomeTime || '',
+  }
+
   const startGuide = () => {
     if (!envType || !personaType || !pathId) return
     setPhase('guide')
@@ -142,6 +373,10 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
 
   const toggleCheck = (id: string) => {
     setChecked(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+  }
+
+  const toggleScript = (id: string) => {
+    setExpandedScripts(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
   const updateData = (key: string, value: string) => {
@@ -306,10 +541,10 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
           )}
         </div>
 
-        {/* Section 2+3: Talking Points + Contextual Data */}
+        {/* Section 2: Talking Points + Scripts */}
         <div className="cg-section">
           <div className="cg-section-header" onClick={() => toggleSection('talking')}>
-            <h3>Talking Points</h3>
+            <h3>Script & Talking Points</h3>
             <div className="flex items-center gap-2">
               <span className="cg-section-count">{checkedCount}/{points.length}</span>
               {collapsed.talking ? <ChevronDown className="w-4 h-4 text-neutral-600" /> : <ChevronUp className="w-4 h-4 text-neutral-600" />}
@@ -317,37 +552,139 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
           </div>
           {!collapsed.talking && (
             <div className="cg-section-body">
-              {points.map(p => (
-                <div key={p.id}>
-                  <div className={`cg-tp ${checked.has(p.id) ? 'is-checked' : ''}`} onClick={() => toggleCheck(p.id)}>
-                    <div className={`cg-tp-check ${checked.has(p.id) ? 'checked' : ''}`}>
-                      <Check />
-                    </div>
-                    <span className="cg-tp-label">{p.label}</span>
-                  </div>
-                  {/* Contextual data fields */}
-                  {checked.has(p.id) && p.dataFields && (
-                    <div className="cg-data-field">
-                      {p.dataFields.map(f => (
-                        <div key={f.id} className="mb-2 last:mb-0">
-                          <label>{f.label}</label>
-                          {f.type === 'textarea' ? (
-                            <textarea value={dataCapture[f.id] || ''} onChange={e => updateData(f.id, e.target.value)} rows={2} />
-                          ) : f.type === 'select' ? (
-                            <select value={dataCapture[f.id] || ''} onChange={e => updateData(f.id, e.target.value)}>
-                              <option value="">Select…</option>
-                              {f.options?.map(o => <option key={o} value={o}>{o.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>)}
-                            </select>
-                          ) : (
-                            <input type={f.type === 'number' ? 'text' : f.type} inputMode={f.type === 'number' ? 'numeric' : undefined}
-                              value={dataCapture[f.id] || ''} onChange={e => updateData(f.id, e.target.value)} />
+              {points.map((p, idx) => {
+                const hasScript = !!(p.script || p.scriptNote || p.responses)
+                const isExpanded = expandedScripts.has(p.id)
+                const isChecked = checked.has(p.id)
+
+                return (
+                  <div key={p.id} className="cg-tp-wrapper">
+                    {/* Step number + Talking point */}
+                    <div className={`cg-tp ${isChecked ? 'is-checked' : ''}`}>
+                      <div className={`cg-tp-check ${isChecked ? 'checked' : ''}`} onClick={(e) => { e.stopPropagation(); toggleCheck(p.id) }}>
+                        <Check />
+                      </div>
+                      <div className="cg-tp-content" onClick={() => hasScript && toggleScript(p.id)}>
+                        <div className="cg-tp-top">
+                          <span className="cg-tp-step">{idx + 1}</span>
+                          <span className="cg-tp-label">{p.label}</span>
+                          {hasScript && (
+                            <span className={`cg-script-toggle ${isExpanded ? 'expanded' : ''}`}>
+                              <BookOpen className="w-3.5 h-3.5" />
+                            </span>
                           )}
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  )}
+
+                    {/* Script Panel */}
+                    {hasScript && isExpanded && (
+                      <div className="cg-script-panel">
+                        {p.script && (
+                          <div className="cg-script-text">
+                            <span className="cg-script-you">You:</span> {resolveScript(p.script, scriptVars)}
+                          </div>
+                        )}
+                        {p.scriptNote && (
+                          <div className="cg-script-note">
+                            💡 {p.scriptNote}
+                          </div>
+                        )}
+                        {p.responses && p.responses.length > 0 && (
+                          <div className="cg-responses">
+                            <div className="cg-response-tabs">
+                              {p.responses.map((r, ri) => (
+                                <button key={ri}
+                                  className={`cg-response-tab ${(activeResponse[p.id] ?? -1) === ri ? 'active' : ''}`}
+                                  onClick={() => setActiveResponse(prev => ({ ...prev, [p.id]: prev[p.id] === ri ? -1 : ri }))}>
+                                  {r.label}
+                                </button>
+                              ))}
+                            </div>
+                            {(activeResponse[p.id] ?? -1) >= 0 && p.responses[activeResponse[p.id]] && (
+                              <div className="cg-response-body">
+                                <span className="cg-script-you">You:</span> {resolveScript(p.responses[activeResponse[p.id]].text, scriptVars)}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Contextual data fields */}
+                    {isChecked && p.dataFields && (
+                      <div className="cg-data-field">
+                        {p.dataFields.map(f => (
+                          <div key={f.id} className="mb-2 last:mb-0">
+                            <label>{f.label}</label>
+                            {f.type === 'textarea' ? (
+                              <textarea value={dataCapture[f.id] || ''} onChange={e => updateData(f.id, e.target.value)} rows={2} />
+                            ) : f.type === 'select' ? (
+                              <select value={dataCapture[f.id] || ''} onChange={e => updateData(f.id, e.target.value)}>
+                                <option value="">Select…</option>
+                                {f.options?.map(o => <option key={o} value={o}>{o.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</option>)}
+                              </select>
+                            ) : (
+                              <input type={f.type === 'number' ? 'text' : f.type} inputMode={f.type === 'number' ? 'numeric' : undefined}
+                                value={dataCapture[f.id] || ''} onChange={e => updateData(f.id, e.target.value)} />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Section 3: Quick Reference */}
+        <div className="cg-section">
+          <div className="cg-section-header" onClick={() => toggleSection('reference')}>
+            <h3>Quick Reference</h3>
+            {collapsed.reference ? <ChevronDown className="w-4 h-4 text-neutral-600" /> : <ChevronUp className="w-4 h-4 text-neutral-600" />}
+          </div>
+          {!collapsed.reference && (
+            <div className="cg-section-body">
+              {/* Key Data Points */}
+              <div className="mb-4">
+                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Key Data Points</p>
+                <div className="space-y-1.5">
+                  {KEY_DATA_POINTS.map((dp, i) => (
+                    <div key={i} className="cg-ref-row">
+                      <span className="cg-ref-stat">{dp.stat}</span>
+                      <span className="cg-ref-use">{dp.use}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              {/* Competitor Table */}
+              <div className="mb-4">
+                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Competitor Gaps</p>
+                <div className="space-y-1.5">
+                  {COMPETITORS.map((c, i) => (
+                    <div key={i} className="cg-ref-row">
+                      <span className="cg-ref-stat">{c.name} <span className="text-neutral-600 text-[10px]">{c.cost}</span></span>
+                      <span className="cg-ref-use">{c.gap}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Objection Handlers */}
+              <div>
+                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Objection Handlers</p>
+                <div className="space-y-2">
+                  {Object.entries(OBJECTION_HANDLERS).map(([objection, response], i) => (
+                    <details key={i} className="cg-objection">
+                      <summary className="cg-objection-q">"{objection}"</summary>
+                      <p className="cg-objection-a">{response}</p>
+                    </details>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
