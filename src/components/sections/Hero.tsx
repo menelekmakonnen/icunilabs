@@ -16,7 +16,7 @@ const allSubheadlines: Subheadline[] = [
     [{ text: "From print shops to swim schools — " }, { text: "if it runs on data, we build it.", color: "#00bfff" }],
     [{ text: "AI-powered systems " }, { text: "that run your business while you sleep.", color: "#ff7a00" }],
     [{ text: "No subscriptions. No vendor lock-in. " }, { text: "Just your system, forever.", color: "#00bfff" }],
-    [{ text: "60+ systems built. Zero we couldn't solve. " }, { text: "Your move.", color: "#ff7a00" }],
+    [{ text: "80+ systems built. Zero we couldn't solve. " }, { text: "Your move.", color: "#ff7a00" }],
     [{ text: "Your data stays yours. " }, { text: "Privacy-first. Always encrypted.", color: "#10b981" }],
     [{ text: "We protect your business data " }, { text: "like it's our own.", color: "#10b981" }],
 ];

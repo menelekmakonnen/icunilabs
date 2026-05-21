@@ -27,11 +27,11 @@ export interface ProjectData {
 }
 
 // ─────────────────────────────────────────────────
-// Total portfolio: 56 projects across 4 workspaces
+// Total portfolio: 80+ projects across 4 workspaces
 // Curated selection below: 20 showcase projects
 // ─────────────────────────────────────────────────
 
-export const TOTAL_PROJECT_COUNT = 56;
+export const TOTAL_PROJECT_COUNT = 80;
 export const TOTAL_WORKSPACE_COUNT = 4;
 export const PRODUCTION_PROJECT_COUNT = 8;
 export const ACTIVE_REVENUE_COUNT = 8;
@@ -71,7 +71,7 @@ export const portfolioProjects: ProjectData[] = [
         imageUrl: '/images/covers/orbit.webp',
         status: 'Active Development',
         tier: 'flagship',
-        clientProblem: 'Managing a portfolio of 50+ codebases creates an impossibly fragmented view of project health. Dependency drift, architectural inconsistency, and siloed project knowledge mean that critical technical debt accumulates invisibly until catastrophic failure. No existing tool provides a unified control surface for multi-project architectural oversight.',
+        clientProblem: 'Managing a portfolio of 80+ codebases creates an impossibly fragmented view of project health. Dependency drift, architectural inconsistency, and siloed project knowledge mean that critical technical debt accumulates invisibly until catastrophic failure. No existing tool provides a unified control surface for multi-project architectural oversight.',
         solution: 'Designed and built Orbit from a 110KB product specification — one of the most thoroughly designed systems in the portfolio. The application serves as a CTO\'s control room: a single desktop dashboard for monitoring health, dependencies, and architectural standards across every project in a portfolio, with D3.js-powered visualizations and real-time comparisons.',
         businessImpact: 'Transforms portfolio management from scattered mental models into a single source of truth. Catches architectural drift before it becomes debt, enables real-time cross-project searching with Fuse.js fuzzy matching, and enforces coding standards consistently. Scales a solo developer\'s oversight capability to agency-level without scaling the team.',
         expertDeepDive: 'Built with electron-vite (not plain Vite+Electron), demonstrating awareness of modern tooling best practices. The stack includes React 19, D3.js for portfolio-wide data visualization, better-sqlite3 for persistent project metadata, Zustand for state management, Framer Motion for transitions, Fuse.js for instant cross-project search, marked + DOMPurify for safe document rendering, the `diff` package for code comparison, and Shiki for syntax-highlighted code views. Uses Tailwind CSS 4 via `@tailwindcss/vite` — cutting-edge adoption. Proper project structure with `src/main`, `src/renderer` separation, brand system components (`AestheticDirectives.tsx`), and lifecycle management (`LifecycleManager.tsx`).',
