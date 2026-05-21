@@ -11,6 +11,7 @@ import WhoWeHelp from './components/sections/WhoWeHelp';
 import PortfolioProof from './components/sections/PortfolioProof';
 import Method from './components/sections/Method';
 import Authority from './components/sections/Authority';
+import PrivacyTrust from './components/sections/PrivacyTrust';
 import Contact from './components/sections/Contact';
 import PersonaDrawer from './components/layout/PersonaDrawer';
 import { portfolioProjects } from './data/portfolioData';
@@ -157,6 +158,7 @@ function App() {
       <PortfolioProof />
       <Method />
       <Authority />
+      <PrivacyTrust />
 
       {/* Floating 'Who We Help' trigger */}
       <button

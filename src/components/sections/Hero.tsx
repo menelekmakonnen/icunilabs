@@ -17,6 +17,8 @@ const allSubheadlines: Subheadline[] = [
     [{ text: "AI-powered systems " }, { text: "that run your business while you sleep.", color: "#ff7a00" }],
     [{ text: "No subscriptions. No vendor lock-in. " }, { text: "Just your system, forever.", color: "#00bfff" }],
     [{ text: "60+ systems built. Zero we couldn't solve. " }, { text: "Your move.", color: "#ff7a00" }],
+    [{ text: "Your data stays yours. " }, { text: "Privacy-first. Always encrypted.", color: "#10b981" }],
+    [{ text: "We protect your business data " }, { text: "like it's our own.", color: "#10b981" }],
 ];
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -205,6 +207,16 @@ export default function Hero() {
                 >
                     We don't pitch. We build. Tell us what can't be solved — we'll show you it can.
                 </motion.p>
+
+                <motion.div
+                    className="flex items-center gap-3 mt-3"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.5 }}
+                    transition={{ duration: 0.8, delay: 0.7 }}
+                >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                    <span className="text-xs text-neutral-500">Your data is encrypted, private, and never shared with third parties.</span>
+                </motion.div>
 
             </div>
 
