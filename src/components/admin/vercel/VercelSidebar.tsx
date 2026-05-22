@@ -25,8 +25,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, section: 'Overview' },
   // Operations
   { id: 'mail', label: 'Mail Hub', icon: MailIcon, section: 'Operations' },
-  { id: 'clients', label: 'Clients', icon: ClientsIcon },
   { id: 'calls', label: 'Calls', icon: PhoneIcon },
+  { id: 'clients', label: 'Clients', icon: ClientsIcon },
   { id: 'referrals', label: 'Referrals', icon: ReferralsIcon },
   { id: 'invoices', label: 'Invoices', icon: InvoicesIcon },
   { id: 'sla', label: 'SLA Tracker', icon: SLAIcon },

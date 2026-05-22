@@ -21,8 +21,8 @@ import VercelAdminShell from './vercel/VercelAdminShell'
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'mail', label: 'Mail', icon: Mail },
-  { id: 'clients', label: 'Clients', icon: Users },
   { id: 'calls', label: 'Calls', icon: Phone },
+  { id: 'clients', label: 'Clients', icon: Users },
   { id: 'referrals', label: 'Referrals', icon: UserCheck },
   { id: 'invoices', label: 'Invoices', icon: FileText },
   { id: 'sla', label: 'SLA', icon: Clock },

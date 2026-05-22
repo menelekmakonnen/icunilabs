@@ -15,6 +15,7 @@ import './vercel-admin.css'
 import AdminLogin from '../AdminLogin'
 import DashboardSection from '../DashboardSection'
 import MailSection from '../MailSection'
+import CallSection from '../CallSection'
 import CRMSection from '../CRMSection'
 import { ProjectsSection, InvoicesSection, CareersSection, ReferralsSection, UsersSection, LogsSection, SLASection } from '../AdminSections'
 import ProfileSection from '../ProfileSection'
@@ -97,6 +98,7 @@ export default function VercelAdminShell({ onSwitchTheme }: VercelAdminShellProp
     switch (activeSection) {
       case 'dashboard': return <DashboardSection />
       case 'mail': return <MailSection />
+      case 'calls': return <CallSection />
       case 'clients': return <CRMSection />
       case 'projects': return <ProjectsSection />
       case 'invoices': return <InvoicesSection />
