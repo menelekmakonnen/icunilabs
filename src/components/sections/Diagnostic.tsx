@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, RotateCcw } from 'lucide-react';
+import { handleLinkClick } from '../../router';
 import { personas } from '../../data/personaData';
 
 interface DiagnosticOption {
@@ -285,7 +286,8 @@ export default function Diagnostic() {
                                         <ArrowRight className="w-4 h-4" />
                                     </a>
                                     <a
-                                        href="#contact"
+                                        href="/contact"
+                                        onClick={handleLinkClick}
                                         className="inline-flex items-center justify-center gap-2 px-6 py-3 font-bold rounded border border-neutral-700 text-white hover:bg-neutral-800 transition-all"
                                     >
                                         Book a Diagnostic Call

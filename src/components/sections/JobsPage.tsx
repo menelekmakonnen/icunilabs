@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Clock, DollarSign, Send, ChevronRight, Briefcase, Mic, Square, Upload, FileText, Eye, EyeOff, Video } from 'lucide-react';
 import { AboutSVG, RequirementsSVG, BenefitsSVG, TabToggle } from './JobsSVG';
 import QualificationFlow from './QualificationFlow';
+import { handleLinkClick } from '../../router';
 
 const API = import.meta.env.VITE_APPS_SCRIPT_URL;
 const inp = "w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00bfff] focus:ring-1 focus:ring-[#00bfff] transition-all placeholder:text-neutral-600";
@@ -133,13 +134,13 @@ const jobs = [{
     'MoMo or cash payout \u2014 your choice',
   ],
   applyEmail:'jobs@icuni.org',
-  applyLink:'#referral', // Hybrid: redirects to referral portal instead of standard apply
+  applyLink:'/referral', // Hybrid: redirects to referral portal instead of standard apply
 }].filter(j => !j.deadline || new Date(j.deadline) > new Date());
 
 export default function JobsPage(){
-  const h = window.location.hash;
-  const applyMatch = h.match(/^#apply\/(.+)$/);
-  const jobMatch = h.match(/^#job\/(.+)$/);
+  const h = window.location.pathname;
+  const applyMatch = h.match(/^\/apply\/(.+)$/);
+  const jobMatch = h.match(/^\/job\/(.+)$/);
   if (applyMatch) {
     const j = jobs.find(x=>x.id===applyMatch[1]);
     if (j) return <ApplyModal job={j}/>;
@@ -178,7 +179,7 @@ function Listing(){
           /* ── GRID VIEW ── */
           <div className="grid md:grid-cols-2 gap-5">
             {jobs.map((j,i)=>(
-              <motion.a key={j.id} href={`#job/${j.id}`}
+              <motion.a key={j.id} href={`/job/${j.id}`} onClick={handleLinkClick}
                 className="block rounded-xl relative overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all group cursor-pointer shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex flex-col"
                 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1+i*0.1}}>
                 {/* Hero image top */}
@@ -208,7 +209,7 @@ function Listing(){
           /* ── ROW VIEW ── */
           <div className="space-y-4">
             {jobs.map((j,i)=>(
-              <motion.a key={j.id} href={`#job/${j.id}`}
+              <motion.a key={j.id} href={`/job/${j.id}`} onClick={handleLinkClick}
                 className="block rounded-xl relative overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all group cursor-pointer shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
                 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1+i*0.1}}>
                 <img src={j.heroImage} alt={`${j.title} — ICUNI Labs career opportunity`} className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity duration-500"/>
@@ -242,7 +243,7 @@ function Listing(){
 }
 
 const ApplyBtn = ({jobId, applyLink, label}:{jobId:string; applyLink?:string; label?:string})=>(
-  <a href={applyLink || `#apply/${jobId}`} className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer">
+  <a href={applyLink || `/apply/${jobId}`} onClick={handleLinkClick} className="inline-flex items-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_25px_rgba(255,102,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer">
     <Send className="w-4 h-4"/> {label || 'Apply Now'}
   </a>
 );
@@ -260,7 +261,7 @@ function Detail({job}:{job:typeof jobs[0]}){
         <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/60 to-transparent"/>
         <div className="absolute bottom-0 left-0 right-0 px-6 pb-8">
           <div className="max-w-4xl mx-auto">
-            <a href="#jobs" className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors mb-4"><ArrowLeft className="w-4 h-4"/> All positions</a>
+            <a href="/jobs" onClick={handleLinkClick} className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors mb-4"><ArrowLeft className="w-4 h-4"/> All positions</a>
             <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">{job.title}</h1>
             <div className="flex flex-wrap items-center gap-4 mb-6">
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${job.type === 'Commission' ? 'bg-[#ff7a00]/15 border border-[#ff7a00]/30 text-[#ff7a00]' : 'bg-white/10 backdrop-blur'}`}>{job.type}</span>
@@ -466,14 +467,14 @@ function Detail({job}:{job:typeof jobs[0]}){
                 </div>
                 <div className="border-t border-neutral-800 mt-4 pt-4">
                   <p className="text-xs text-neutral-500 mb-4">{job.shortDesc}</p>
-                  <a href={(job as any).applyLink || `#apply/${job.id}`} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 rounded-lg hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer text-sm">
+                  <a href={(job as any).applyLink || `/apply/${job.id}`} onClick={handleLinkClick} className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 rounded-lg hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] hover:-translate-y-[1px] transition-all cursor-pointer text-sm">
                     <Send className="w-4 h-4"/> {(job as any).applyLink ? 'Join Program' : 'Apply Now'}
                   </a>
                 </div>
               </div>
 
               {/* Refer & Earn card */}
-              <a href="#referral" className={`${card} p-5 block group hover:border-[#ff7a00]/30 transition-all`}>
+              <a href="/referral" onClick={handleLinkClick} className={`${card} p-5 block group hover:border-[#ff7a00]/30 transition-all`}>
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-lg bg-[#ff7a00]/10 flex items-center justify-center">
                     <svg className="w-4 h-4 text-[#ff7a00]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
@@ -506,7 +507,7 @@ function ApplyModal({job}:{job:typeof jobs[0]}){
   return(
     <div className="min-h-screen bg-neutral-950 text-neutral-50 pt-24 pb-20">
       <div className="max-w-lg mx-auto px-6">
-        <a href={`#job/${job.id}`} className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors mb-8">
+        <a href={`/job/${job.id}`} onClick={handleLinkClick} className="inline-flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition-colors mb-8">
           <ArrowLeft className="w-4 h-4"/> Back to {job.title}
         </a>
         <AppForm job={job}/>

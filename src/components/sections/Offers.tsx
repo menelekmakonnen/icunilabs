@@ -1,6 +1,7 @@
 
 import { motion } from 'framer-motion';
 import { ShieldCheck, Zap, Bot, ArrowRight } from 'lucide-react';
+import { handleLinkClick } from '../../router';
 
 const offers = [
     {
@@ -75,7 +76,8 @@ export default function Offers() {
                                 <p className="text-neutral-400 mb-8 flex-grow">{offer.desc}</p>
 
                                 <a
-                                    href="#contact"
+                                    href="/contact"
+                                    onClick={handleLinkClick}
                                     className={`inline-flex items-center gap-2 font-medium transition-colors ${offer.featured ? 'text-[#ff7a00] hover:text-[#ff8533]' : 'text-[#00bfff] hover:text-[#33ccff]'
                                         }`}
                                 >
@@ -101,7 +103,7 @@ export default function Offers() {
                             <h3 className="text-xl font-bold text-white mb-2">ICUNI Ops Partner</h3>
                             <p className="text-neutral-400">Ongoing systems support and continuous iteration for scaling teams.</p>
                         </div>
-                        <a href="#contact" className="border border-neutral-700 px-6 py-2 rounded hover:bg-neutral-800 text-white font-medium transition-all whitespace-nowrap">
+                        <a href="/contact" onClick={handleLinkClick} className="border border-neutral-700 px-6 py-2 rounded hover:bg-neutral-800 text-white font-medium transition-all whitespace-nowrap">
                             Inquire
                         </a>
                     </div>

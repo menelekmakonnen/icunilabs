@@ -1,6 +1,7 @@
 
 import { Settings } from 'lucide-react';
 import { personas } from '../../data/personaData';
+import { handleLinkClick } from '../../router';
 
 export default function Footer() {
     return (
@@ -24,10 +25,10 @@ export default function Footer() {
                     <div>
                         <h4 className="text-neutral-50 font-medium mb-4 text-sm">Framework</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><a href="#problem" className="hover:text-neutral-50 transition-colors">The Problem</a></li>
-                            <li><a href="#method" className="hover:text-neutral-50 transition-colors">The Method</a></li>
-                            <li><a href="#demo" className="hover:text-neutral-50 transition-colors">Systems Lab</a></li>
-                            <li><a href="#diagnostic" className="hover:text-neutral-50 transition-colors">Diagnostic</a></li>
+                            <li><a href="/#problem" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">The Problem</a></li>
+                            <li><a href="/#method" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">The Method</a></li>
+                            <li><a href="/#demo" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">Systems Lab</a></li>
+                            <li><a href="/#diagnostic" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">Diagnostic</a></li>
                         </ul>
                     </div>
 
@@ -36,7 +37,7 @@ export default function Footer() {
                         <ul className="space-y-2 text-sm">
                             {personas.map((p) => (
                                 <li key={p.id}>
-                                    <a href={`#${p.slug}`} className="hover:text-neutral-50 transition-colors">
+                                    <a href={`/#${p.slug}`} onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">
                                         {p.title}
                                     </a>
                                 </li>
@@ -47,10 +48,10 @@ export default function Footer() {
                     <div>
                         <h4 className="text-neutral-50 font-medium mb-4 text-sm">Engage</h4>
                         <ul className="space-y-2 text-sm">
-                            <li><a href="#contact" className="hover:text-neutral-50 transition-colors">Systems Audit</a></li>
-                            <li><a href="#contact" className="hover:text-neutral-50 transition-colors">Build Sprint</a></li>
-                            <li><a href="#portfolio" className="hover:text-neutral-50 transition-colors">Portfolio</a></li>
-                            <li><a href="#portal" className="hover:text-neutral-50 transition-colors">Client Login</a></li>
+                            <li><a href="/contact" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">Systems Audit</a></li>
+                            <li><a href="/contact" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">Build Sprint</a></li>
+                            <li><a href="/portfolio" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">Portfolio</a></li>
+                            <li><a href="/portal" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">Client Login</a></li>
                         </ul>
                     </div>
 

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { personas } from '../../data/personaData';
+import { handleLinkClick } from '../../router';
 
 export default function Navbar() {
     const [whoDropdownOpen, setWhoDropdownOpen] = useState(false);
@@ -20,11 +21,11 @@ export default function Navbar() {
         return () => document.removeEventListener('mousedown', close);
     }, []);
 
-    // Close mobile menu on hash change
+    // Close mobile menu on navigation
     useEffect(() => {
-        const onHash = () => setMobileOpen(false);
-        window.addEventListener('hashchange', onHash);
-        return () => window.removeEventListener('hashchange', onHash);
+        const onNav = () => setMobileOpen(false);
+        window.addEventListener('popstate', onNav);
+        return () => window.removeEventListener('popstate', onNav);
     }, []);
 
     const handleWhoEnter = () => {
@@ -49,7 +50,7 @@ export default function Navbar() {
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-400">
 
                     {/* The Systems — simple link */}
-                    <a href="#hero" className="hover:text-neutral-50 transition-colors text-white font-semibold">The Systems</a>
+                    <a href="/" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors text-white font-semibold">The Systems</a>
 
                     {/* Who We Help dropdown */}
                     <div
@@ -59,9 +60,9 @@ export default function Navbar() {
                         onMouseLeave={handleWhoLeave}
                     >
                         <a
-                            href="#who-we-help"
+                            href="/who-we-help"
                             className="flex items-center gap-1 hover:text-neutral-50 transition-colors cursor-pointer"
-                            onClick={(e) => { if (whoDropdownOpen) { e.preventDefault(); } setWhoDropdownOpen(!whoDropdownOpen); }}
+                            onClick={(e) => { handleLinkClick(e); if (whoDropdownOpen) { e.preventDefault(); } setWhoDropdownOpen(!whoDropdownOpen); }}
                         >
                             Who We Help
                             <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${whoDropdownOpen ? 'rotate-180' : ''}`} />
@@ -75,18 +76,18 @@ export default function Navbar() {
                                 {personas.map((p) => (
                                     <a
                                         key={p.id}
-                                        href={`#${p.slug}`}
+                                        href={`/${p.slug}`}
                                         className="flex items-center gap-3 px-4 py-2.5 text-neutral-400 hover:text-white hover:bg-neutral-900/70 transition-colors"
-                                        onClick={() => setWhoDropdownOpen(false)}
+                                        onClick={(e) => { handleLinkClick(e); setWhoDropdownOpen(false); }}
                                     >
                                         <p.icon className="w-4 h-4" style={{ color: p.accentColor }} />
                                         <span className="text-sm">{p.title}</span>
                                     </a>
                                 ))}
                                 <a
-                                    href="#who-we-help"
+                                    href="/who-we-help"
                                     className="flex items-center gap-2 px-4 py-2.5 text-[#00bfff] hover:text-white hover:bg-neutral-900/70 transition-colors border-t border-neutral-800/50 mt-1 text-xs font-bold uppercase tracking-widest"
-                                    onClick={() => setWhoDropdownOpen(false)}
+                                    onClick={(e) => { handleLinkClick(e); setWhoDropdownOpen(false); }}
                                 >
                                     View All →
                                 </a>
@@ -94,18 +95,19 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    <a href="#portfolio" className="hover:text-neutral-50 transition-colors">Portfolio</a>
-                    <a href="#demos" className="hover:text-neutral-50 transition-colors">Demos</a>
-                    <a href="#jobs" className="hover:text-neutral-50 transition-colors">Careers</a>
+                    <a href="/portfolio" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">Portfolio</a>
+                    <a href="/demos" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">Demos</a>
+                    <a href="/jobs" onClick={handleLinkClick} className="hover:text-neutral-50 transition-colors">Careers</a>
                 </nav>
 
                 {/* CTA + Mobile Toggle */}
                 <div className="flex items-center gap-4">
-                    <a href="#portal" className="hidden md:block text-sm font-medium text-neutral-400 hover:text-white transition-colors">
+                    <a href="/portal" onClick={handleLinkClick} className="hidden md:block text-sm font-medium text-neutral-400 hover:text-white transition-colors">
                         Client Login
                     </a>
                     <a
-                        href="#referral"
+                        href="/referral"
+                        onClick={handleLinkClick}
                         className="hidden md:block text-sm font-semibold px-4 py-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white rounded hover:shadow-[0_0_15px_rgba(255,102,0,0.3)] transition-all"
                     >
                         Refer & Earn
@@ -128,7 +130,7 @@ export default function Navbar() {
                 className={`md:hidden border-t border-neutral-900 bg-neutral-950/95 backdrop-blur-xl overflow-y-auto transition-all duration-300 ${mobileOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'}`}
             >
                 <nav className="flex flex-col px-6 py-4 gap-1 text-sm font-medium text-neutral-400">
-                    <a href="#hero" className="py-3 hover:text-white transition-colors border-b border-neutral-900 text-white font-semibold" onClick={() => setMobileOpen(false)}>The Systems</a>
+                    <a href="/" className="py-3 hover:text-white transition-colors border-b border-neutral-900 text-white font-semibold" onClick={(e) => { handleLinkClick(e); setMobileOpen(false); }}>The Systems</a>
 
                     {/* Who We Help sub-section */}
                     <div className="py-3 border-b border-neutral-900">
@@ -137,9 +139,9 @@ export default function Navbar() {
                             {personas.map((p) => (
                                 <a
                                     key={p.id}
-                                    href={`#${p.slug}`}
+                                    href={`/${p.slug}`}
                                     className="flex items-center gap-2 py-2 text-neutral-400 hover:text-white transition-colors"
-                                    onClick={() => setMobileOpen(false)}
+                                    onClick={(e) => { handleLinkClick(e); setMobileOpen(false); }}
                                 >
                                     <p.icon className="w-4 h-4" style={{ color: p.accentColor }} />
                                     {p.title}
@@ -148,16 +150,16 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    <a href="#portfolio" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Portfolio</a>
-                    <a href="#demos" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Demos</a>
-                    <a href="#jobs" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Careers</a>
-                    <a href="#referral" className="py-3 hover:text-white transition-colors border-b border-neutral-900 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] bg-clip-text text-transparent font-semibold" onClick={() => setMobileOpen(false)}>Refer & Earn</a>
-                    <a href="#portal" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={() => setMobileOpen(false)}>Client Login</a>
+                    <a href="/portfolio" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={(e) => { handleLinkClick(e); setMobileOpen(false); }}>Portfolio</a>
+                    <a href="/demos" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={(e) => { handleLinkClick(e); setMobileOpen(false); }}>Demos</a>
+                    <a href="/jobs" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={(e) => { handleLinkClick(e); setMobileOpen(false); }}>Careers</a>
+                    <a href="/referral" className="py-3 hover:text-white transition-colors border-b border-neutral-900 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] bg-clip-text text-transparent font-semibold" onClick={(e) => { handleLinkClick(e); setMobileOpen(false); }}>Refer & Earn</a>
+                    <a href="/portal" className="py-3 hover:text-white transition-colors border-b border-neutral-900" onClick={(e) => { handleLinkClick(e); setMobileOpen(false); }}>Client Login</a>
 
                     <a
-                        href="#contact"
+                        href="/contact"
                         className="mt-3 text-center py-3 bg-neutral-50 text-neutral-950 rounded font-bold hover:bg-neutral-200 transition-colors"
-                        onClick={() => setMobileOpen(false)}
+                        onClick={(e) => { handleLinkClick(e); setMobileOpen(false); }}
                     >
                         Audit First
                     </a>

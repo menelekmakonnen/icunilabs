@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, ExternalLink, Github, Target, CheckCircle2, Tren
 import type { ProjectData } from '../../data/portfolioData';
 import { portfolioProjects } from '../../data/portfolioData';
 import ScrollNavigation from '../layout/ScrollNavigation';
+import { handleLinkClick } from '../../router';
 
 interface ProjectDetailProps {
     project: ProjectData;
@@ -31,7 +32,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
             {/* Navigation Bar */}
             <header className="fixed top-0 w-full z-40 border-b border-neutral-900/50 bg-neutral-950/80 backdrop-blur-md">
                 <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <a href="#portfolio" className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors group">
+                    <a href="/portfolio" onClick={handleLinkClick} className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors group">
                         <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
                         <span className="font-medium text-sm tracking-tight">Back to Portfolio</span>
                     </a>
@@ -40,7 +41,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                         {/* Prev/Next in header */}
                         <div className="flex items-center gap-1">
                             {prevProject ? (
-                                <a href={`#project/${prevProject.id}`} className="p-2 text-neutral-500 hover:text-white transition-colors" title={prevProject.title}>
+                                <a href={`/project/${prevProject.id}`} onClick={handleLinkClick} className="p-2 text-neutral-500 hover:text-white transition-colors" title={prevProject.title}>
                                     <ChevronLeft size={18} />
                                 </a>
                             ) : (
@@ -48,7 +49,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                             )}
                             <span className="text-xs text-neutral-600 font-medium">{currentIndex + 1} / {portfolioProjects.length}</span>
                             {nextProject ? (
-                                <a href={`#project/${nextProject.id}`} className="p-2 text-neutral-500 hover:text-white transition-colors" title={nextProject.title}>
+                                <a href={`/project/${nextProject.id}`} onClick={handleLinkClick} className="p-2 text-neutral-500 hover:text-white transition-colors" title={nextProject.title}>
                                     <ChevronRight size={18} />
                                 </a>
                             ) : (
@@ -91,7 +92,8 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                         {project.tags.map(tag => (
                             <a
                                 key={tag}
-                                href={`#portfolio?filter=${encodeURIComponent(tag)}`}
+                                href={`/portfolio?filter=${encodeURIComponent(tag)}`}
+                                onClick={handleLinkClick}
                                 className="px-3 py-1.5 text-xs font-bold bg-neutral-900/40 backdrop-blur-md text-neutral-300 rounded border border-neutral-800 shadow-sm hover:border-neutral-600 hover:text-white transition-colors"
                             >
                                 {tag}
@@ -221,7 +223,8 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                 <div className="mt-20 border-t border-neutral-800/80 pt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
                     {prevProject ? (
                         <a
-                            href={`#project/${prevProject.id}`}
+                            href={`/project/${prevProject.id}`}
+                            onClick={handleLinkClick}
                             className="group flex items-center gap-4 p-6 rounded-xl border border-neutral-800/60 bg-neutral-900/30 hover:bg-neutral-900/60 hover:border-neutral-700 transition-all"
                         >
                             <ChevronLeft size={20} className="text-neutral-500 group-hover:text-white group-hover:-translate-x-1 transition-all shrink-0" />
@@ -233,7 +236,8 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                     ) : <div />}
                     {nextProject ? (
                         <a
-                            href={`#project/${nextProject.id}`}
+                            href={`/project/${nextProject.id}`}
+                            onClick={handleLinkClick}
                             className="group flex items-center justify-end gap-4 p-6 rounded-xl border border-neutral-800/60 bg-neutral-900/30 hover:bg-neutral-900/60 hover:border-neutral-700 transition-all text-right"
                         >
                             <div className="min-w-0">
@@ -256,6 +260,7 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
                         </p>
                         <a
                             href="/#contact"
+                            onClick={handleLinkClick}
                             className="group inline-flex items-center gap-2 px-8 py-4 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] transition-all"
                         >
                             Let's Fix the Chaos

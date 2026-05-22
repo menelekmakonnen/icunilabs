@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ExternalLink, Monitor, X, ChevronRight, Zap, Shield, Clock, DollarSign } from 'lucide-react'
 import { DEMOS, CategoryIcon } from './demoData'
+import { handleLinkClick } from '../../router'
 
 export default function DemoDetailPage({ demoId }: { demoId: string }) {
   const demo = DEMOS.find(d => d.id === demoId)
@@ -11,7 +12,7 @@ export default function DemoDetailPage({ demoId }: { demoId: string }) {
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center">
       <div className="text-center">
         <p className="text-neutral-400 mb-4">Demo not found.</p>
-        <a href="#demos" className="text-[#00bfff] font-bold hover:underline">Back to Demos</a>
+        <a href="/demos" onClick={handleLinkClick} className="text-[#00bfff] font-bold hover:underline">Back to Demos</a>
       </div>
     </div>
   )
@@ -25,7 +26,7 @@ export default function DemoDetailPage({ demoId }: { demoId: string }) {
           <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/60 via-neutral-950/90 to-neutral-950" />
         </div>
         <div className="relative z-10 max-w-5xl mx-auto px-6 pt-28 pb-16">
-          <a href="#demos" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors mb-8 group">
+          <a href="/demos" onClick={handleLinkClick} className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors mb-8 group">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> All Demos
           </a>
           <div className="flex items-center gap-2 mb-4">
@@ -44,7 +45,7 @@ export default function DemoDetailPage({ demoId }: { demoId: string }) {
             <button onClick={() => setShowPreview(true)} className="flex items-center gap-2 bg-white/5 border border-neutral-700 text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-white/10 transition-all cursor-pointer">
               <Monitor className="w-4 h-4" /> Preview Here
             </button>
-            <a href="#contact" className="flex items-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-6 rounded-lg text-sm hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] transition-all cursor-pointer">
+            <a href="/contact" onClick={handleLinkClick} className="flex items-center gap-2 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-6 rounded-lg text-sm hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] transition-all cursor-pointer">
               Get This For Your Business <ChevronRight className="w-4 h-4" />
             </a>
           </motion.div>
@@ -121,7 +122,7 @@ export default function DemoDetailPage({ demoId }: { demoId: string }) {
               <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-2">Need something like this?</h2>
               <p className="text-neutral-400 text-sm max-w-md">Challenge us with your hardest operational problem. We'll build a working demo before you commit to anything.</p>
             </div>
-            <a href="#contact" className="shrink-0 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] transition-all text-sm cursor-pointer">Challenge Us</a>
+            <a href="/contact" onClick={handleLinkClick} className="shrink-0 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] transition-all text-sm cursor-pointer">Challenge Us</a>
           </div>
         </motion.div>
       </section>

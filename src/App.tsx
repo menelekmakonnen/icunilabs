@@ -45,33 +45,33 @@ const LazyFallback = () => (
 );
 
 function App() {
-  const [currentHash, setCurrentHash] = useState(window.location.hash);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
   const [personaDrawerOpen, setPersonaDrawerOpen] = useState(false);
 
   useEffect(() => {
-    const handleHashChange = () => {
-      setCurrentHash(window.location.hash);
+    const handleNavigation = () => {
+      setCurrentPath(window.location.pathname);
       window.scrollTo(0, 0);
     };
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleNavigation);
+    return () => window.removeEventListener('popstate', handleNavigation);
   }, []);
 
-  // ── Lazy-loaded routes (wrapped in Suspense) ──
+  // ── Route matching ──
 
-  if (currentHash === '#_ops' || currentHash.startsWith('#_ops/')) {
+  if (currentPath === '/_ops' || currentPath.startsWith('/_ops/')) {
     return <Suspense fallback={<LazyFallback />}><AdminPanel /></Suspense>;
   }
 
-  if (currentHash === '#referral') {
+  if (currentPath === '/referral') {
     return <Suspense fallback={<LazyFallback />}><ReferralPortal /></Suspense>;
   }
 
-  if (currentHash === '#showcase') {
+  if (currentPath === '/showcase') {
     return <Suspense fallback={<LazyFallback />}><AnimationShowcase /></Suspense>;
   }
 
-  if (currentHash === '#demos') {
+  if (currentPath === '/demos') {
     return (
       <Suspense fallback={<LazyFallback />}>
         <Navbar />
@@ -80,8 +80,8 @@ function App() {
     );
   }
 
-  if (currentHash.startsWith('#demo/')) {
-    const demoId = currentHash.replace('#demo/', '');
+  if (currentPath.startsWith('/demo/')) {
+    const demoId = currentPath.replace('/demo/', '');
     return (
       <Suspense fallback={<LazyFallback />}>
         <Navbar />
@@ -90,7 +90,7 @@ function App() {
     );
   }
 
-  if (currentHash === '#jobs' || currentHash.startsWith('#job/') || currentHash.startsWith('#apply/')) {
+  if (currentPath === '/jobs' || currentPath.startsWith('/job/') || currentPath.startsWith('/apply/')) {
     return (
       <Suspense fallback={<LazyFallback />}>
         <Navbar />
@@ -99,7 +99,7 @@ function App() {
     );
   }
 
-  if (currentHash === '#contact') {
+  if (currentPath === '/contact') {
     return (
       <>
         <Navbar />
@@ -110,7 +110,7 @@ function App() {
     );
   }
 
-  if (currentHash === '#portal') {
+  if (currentPath === '/portal') {
     return (
       <Suspense fallback={<LazyFallback />}>
         <Navbar />
@@ -119,12 +119,12 @@ function App() {
     );
   }
 
-  if (currentHash === '#portfolio' || currentHash.startsWith('#portfolio?')) {
+  if (currentPath === '/portfolio' || currentPath.startsWith('/portfolio?')) {
     return <Suspense fallback={<LazyFallback />}><Portfolio /></Suspense>;
   }
 
-  if (currentHash.startsWith('#project/')) {
-    const projectId = currentHash.replace('#project/', '');
+  if (currentPath.startsWith('/project/')) {
+    const projectId = currentPath.replace('/project/', '');
     const project = portfolioProjects.find(p => p.id === projectId);
     if (project) {
       return <Suspense fallback={<LazyFallback />}><ProjectDetail project={project} /></Suspense>;
@@ -133,14 +133,14 @@ function App() {
   }
 
   // Persona pages
-  const cleanHash = currentHash.replace('#', '');
+  const cleanPath = currentPath.replace(/^\//, '');
 
-  if (cleanHash === 'who-we-help') {
+  if (cleanPath === 'who-we-help') {
     return <Suspense fallback={<LazyFallback />}><WhoWeHelpPage /></Suspense>;
   }
 
-  if (personaSlugs.includes(cleanHash)) {
-    const persona = getPersonaBySlug(cleanHash);
+  if (personaSlugs.includes(cleanPath)) {
+    const persona = getPersonaBySlug(cleanPath);
     if (persona) {
       return <Suspense fallback={<LazyFallback />}><PersonaPage persona={persona} /></Suspense>;
     }

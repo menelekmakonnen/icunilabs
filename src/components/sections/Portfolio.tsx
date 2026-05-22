@@ -5,6 +5,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { portfolioProjects, TOTAL_PROJECT_COUNT } from '../../data/portfolioData';
 import FilterDrawer from '../layout/FilterDrawer';
 import ScrollNavigation from '../layout/ScrollNavigation';
+import { handleLinkClick } from '../../router';
 
 export default function Portfolio() {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -19,9 +20,9 @@ export default function Portfolio() {
     });
     const [selectedTag, setSelectedTag] = useState<string | null>(() => {
         try {
-            const hash = window.location.hash;
-            if (hash.includes('?filter=')) {
-                const filter = new URLSearchParams(hash.split('?')[1]).get('filter');
+            const search = window.location.search;
+            if (search.includes('filter=')) {
+                const filter = new URLSearchParams(search).get('filter');
                 return filter ? decodeURIComponent(filter) : null;
             }
         } catch {
@@ -64,7 +65,7 @@ export default function Portfolio() {
 
     const handleSelectTag = (tag: string | null) => {
         setSelectedTag(tag);
-        window.location.hash = tag ? `#portfolio?filter=${encodeURIComponent(tag)}` : `#portfolio`;
+        window.history.replaceState({}, '', tag ? `/portfolio?filter=${encodeURIComponent(tag)}` : '/portfolio');
     };
 
     // Featured projects for the carousel (first 5)
@@ -195,7 +196,8 @@ export default function Portfolio() {
 
                                         <div className="flex gap-3 items-center">
                                             <a
-                                                href={`#project/${currentFeatured.id}`}
+                                                href={`/project/${currentFeatured.id}`}
+                                                onClick={handleLinkClick}
                                                 className="group inline-flex items-center gap-2 px-6 py-3 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] transition-all text-sm"
                                             >
                                                 Read Case Study
@@ -274,7 +276,8 @@ export default function Portfolio() {
 
                                 return (
                                     <a
-                                        href={`#project/${project.id}`}
+                                        href={`/project/${project.id}`}
+                                        onClick={handleLinkClick}
                                         key={project.id}
                                         id={`card-${project.id}`}
                                         className="block h-full scroll-mt-32"
@@ -363,6 +366,7 @@ export default function Portfolio() {
                         </p>
                         <a
                             href="/#contact"
+                            onClick={handleLinkClick}
                             className="group inline-flex items-center gap-2 px-8 py-4 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] transition-all"
                         >
                             Let's Fix the Chaos

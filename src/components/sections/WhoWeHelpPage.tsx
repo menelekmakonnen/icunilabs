@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { handleLinkClick } from '../../router';
 import { personas } from '../../data/personaData';
 import MainLayout from '../layout/MainLayout';
 import WhoWeHelpHeroSVG from '../animations/WhoWeHelpHeroSVG';
@@ -118,7 +119,8 @@ export default function WhoWeHelpPage() {
                         Tell us what's slowing the team down. We'll figure out where we can help.
                     </motion.p>
                     <a
-                        href="#contact"
+                        href="/contact"
+                        onClick={handleLinkClick}
                         className="group inline-flex items-center gap-2 px-8 py-4 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] transition-all"
                     >
                         Let's Fix the Chaos

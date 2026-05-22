@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ExternalLink, Play, Monitor, ChevronRight, X } from 'lucide-react'
 import { DEMOS, CategoryIcon } from './demoData'
+import { navigateTo, handleLinkClick } from '../../router'
 
 function DemoBgSVG() {
   return (
@@ -58,7 +59,7 @@ export default function DemosPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 + 0.3, duration: 0.5 }}
               className="group relative bg-neutral-900/40 border border-neutral-800 rounded-2xl overflow-hidden hover:border-neutral-700 transition-all duration-300 cursor-pointer"
-              onClick={() => { window.location.hash = `demo/${demo.id}` }}
+              onClick={() => { navigateTo(`/demo/${demo.id}`) }}
             >
               {/* Cover */}
               <div className="relative h-48 overflow-hidden">
@@ -123,7 +124,7 @@ export default function DemosPage() {
               <h2 className="text-2xl md:text-3xl font-black tracking-tight mb-2">Need something like this?</h2>
               <p className="text-neutral-400 text-sm max-w-md">We build custom business operations systems — tailored to how your business actually works. No software subscriptions from us. Just your system.</p>
             </div>
-            <a href="#contact" className="shrink-0 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] transition-all text-sm cursor-pointer">Challenge Us</a>
+            <a href="/contact" onClick={handleLinkClick} className="shrink-0 bg-gradient-to-r from-[#ff7a00] to-[#ff9533] text-white font-bold py-3 px-8 rounded-lg hover:shadow-[0_0_20px_rgba(255,122,0,0.3)] transition-all text-sm cursor-pointer">Challenge Us</a>
           </div>
         </motion.div>
       </section>

@@ -165,6 +165,6 @@ export const portalActions = {
     if (token) apiPost('logout', { token }).catch(() => {})
     setState({ token: null, user: null, projects: [], activeProject: null, otpSent: false })
     localStorage.removeItem('icuni_portal_token')
-    window.location.hash = ''
+    window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate'));
   },
 }

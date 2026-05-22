@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { handleLinkClick } from '../../router';
 
 interface SubheadlineSegment {
     text: string;
@@ -185,14 +186,16 @@ export default function Hero() {
                     transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
                 >
                     <a
-                        href="#contact"
+                        href="/contact"
+                        onClick={handleLinkClick}
                         className="group flex items-center justify-center gap-2 px-8 py-4 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] transition-all"
                     >
                         Let's Fix the Chaos!
                         <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </a>
                     <a
-                        href="#demos"
+                        href="/demos"
+                        onClick={handleLinkClick}
                         className="flex items-center justify-center px-8 py-4 bg-transparent border border-[#ff7a00]/50 text-[#ff7a00] font-bold rounded hover:bg-[#ff7a00]/10 hover:border-[#ff7a00] transition-all shadow-[inset_0_0_10px_rgba(255,102,0,0.05)]"
                     >
                         See Live Demos

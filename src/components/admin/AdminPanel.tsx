@@ -251,7 +251,7 @@ export default function AdminPanel() {
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="8" cy="12" r="2" /><path d="M14 10h4M14 14h4" /></svg>
               {!collapsed && 'Modern View'}
             </button>
-            <button onClick={() => { adminActions.logout(); window.location.hash = '' }}
+            <button onClick={() => { adminActions.logout(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-red-500/60 hover:text-red-400 hover:bg-red-500/5 text-xs transition-all cursor-pointer">
               <LogOut className="w-4 h-4" />{!collapsed && 'Logout'}
             </button>

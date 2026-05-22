@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, Plus, X, Users, TrendingUp, Clock, DollarSign, ChevronRight, ArrowLeft, FolderOpen, Wallet, Copy, ExternalLink, Calendar } from 'lucide-react';
 import ReferralProcessSVG from './ReferralProcessSVG';
 import { personas } from '../../data/personaData';
+import { handleLinkClick } from '../../router';
 
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
@@ -270,7 +271,7 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
       <section className="relative pt-28 pb-20 px-6 overflow-hidden">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#ff7a00]/5 blur-[120px] rounded-full pointer-events-none" />
         <div className="max-w-6xl mx-auto relative z-10">
-          <a href="#" className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors mb-8">
+          <a href="/" onClick={handleLinkClick} className="inline-flex items-center gap-2 text-sm text-neutral-500 hover:text-white transition-colors mb-8">
             <ArrowLeft className="w-4 h-4" /> Back to site
           </a>
           <div className="flex flex-col lg:flex-row lg:items-start lg:gap-12">
@@ -349,7 +350,7 @@ function AuthView({ onLogin }: { onLogin: (s: ReferrerSession) => void }) {
                   We build custom systems that replace spreadsheets, manual tracking, and WhatsApp chaos with real software built for how your business actually works.
                 </p>
               </div>
-              <a href="#contact" className="inline-flex items-center gap-2 px-6 py-3 bg-[#00bfff]/10 border border-[#00bfff]/30 text-[#00bfff] font-bold rounded-lg hover:bg-[#00bfff]/20 hover:shadow-[0_0_20px_rgba(0,191,255,0.15)] transition-all whitespace-nowrap flex-shrink-0">
+              <a href="/contact" onClick={handleLinkClick} className="inline-flex items-center gap-2 px-6 py-3 bg-[#00bfff]/10 border border-[#00bfff]/30 text-[#00bfff] font-bold rounded-lg hover:bg-[#00bfff]/20 hover:shadow-[0_0_20px_rgba(0,191,255,0.15)] transition-all whitespace-nowrap flex-shrink-0">
                 Book a Free Audit <ChevronRight className="w-4 h-4" />
               </a>
             </div>
@@ -495,7 +496,7 @@ function DashboardView({ session, dashboard, loading, onLogout, onRefresh, showS
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 border-b border-neutral-900 pb-8">
           <div>
-            <a href="#" className="inline-flex items-center gap-2 text-xs text-neutral-600 hover:text-neutral-400 transition-colors mb-4">
+            <a href="/" onClick={handleLinkClick} className="inline-flex items-center gap-2 text-xs text-neutral-600 hover:text-neutral-400 transition-colors mb-4">
               <ArrowLeft className="w-3 h-3" /> Back to site
             </a>
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-1">Welcome, {session.name.split(' ')[0]}</h1>

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, Users } from 'lucide-react';
 import { useEffect } from 'react';
 import { personas } from '../../data/personaData';
+import { navigateTo } from '../../router';
 
 interface PersonaDrawerProps {
     isOpen: boolean;
@@ -78,8 +79,8 @@ export default function PersonaDrawer({ isOpen, onClose }: PersonaDrawerProps) {
                                 {personas.map(persona => (
                                     <a
                                         key={persona.id}
-                                        href={`#${persona.slug}`}
-                                        onClick={onClose}
+                                        href={`/${persona.slug}`}
+                                        onClick={(e) => { e.preventDefault(); onClose(); navigateTo(`/${persona.slug}`); }}
                                         className="group flex items-start gap-4 p-4 rounded-xl bg-neutral-800/20 hover:bg-neutral-800/50 border border-transparent hover:border-neutral-700/50 transition-all duration-300"
                                     >
                                         <div
@@ -101,8 +102,8 @@ export default function PersonaDrawer({ isOpen, onClose }: PersonaDrawerProps) {
                         {/* Footer */}
                         <div className="p-6 border-t border-neutral-800/60 bg-neutral-900/80">
                             <a
-                                href="#who-we-help"
-                                onClick={onClose}
+                                href="/who-we-help"
+                                onClick={(e) => { e.preventDefault(); onClose(); navigateTo('/who-we-help'); }}
                                 className="block w-full py-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-xl font-semibold text-center transition-colors text-sm"
                             >
                                 View All Profiles

@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, ExternalLink, Layers, Rocket, Globe2, Cpu } from 'lucide-react';
+import { handleLinkClick } from '../../router';
 
 import { portfolioProjects, TOTAL_PROJECT_COUNT, PRODUCTION_PROJECT_COUNT, ACTIVE_REVENUE_COUNT } from '../../data/portfolioData';
 
@@ -82,7 +83,8 @@ export default function PortfolioProof() {
                         </div>
 
                         <a
-                            href="#portfolio"
+                            href="/portfolio"
+                            onClick={handleLinkClick}
                             className="group inline-flex items-center gap-2 px-8 py-4 bg-transparent border border-[#00bfff]/50 text-[#00bfff] shadow-[inset_0_0_10px_rgba(0,191,255,0.05)] font-bold rounded hover:bg-[#00bfff]/10 hover:shadow-[0_0_15px_rgba(0,191,255,0.2)] transition-all shrink-0"
                         >
                             Explore the Portfolio

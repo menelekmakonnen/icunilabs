@@ -212,7 +212,7 @@ export default function VercelSidebar({
 
         {/* Logout */}
         <button
-          onClick={() => { adminActions.logout(); window.location.hash = '' }}
+          onClick={() => { adminActions.logout(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate')); }}
           className="v-action-btn danger"
           style={{ width: '100%' }}
         >

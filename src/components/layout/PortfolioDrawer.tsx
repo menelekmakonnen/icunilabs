@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ArrowRight, ExternalLink } from 'lucide-react';
 import { portfolioProjects } from '../../data/portfolioData';
+import { navigateTo } from '../../router';
 
 export default function PortfolioDrawer() {
     const [open, setOpen] = useState(false);
@@ -60,8 +61,8 @@ export default function PortfolioDrawer() {
 
                         {/* View Full Portfolio link */}
                         <a
-                            href="#portfolio"
-                            onClick={() => setOpen(false)}
+                            href="/portfolio"
+                            onClick={(e) => { e.preventDefault(); setOpen(false); navigateTo('/portfolio'); }}
                             className="mx-6 mt-4 mb-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff]/10 to-[#0080ff]/10 border border-[#00bfff]/20 rounded-lg text-[#00bfff] text-sm font-semibold hover:bg-[#00bfff]/15 hover:border-[#00bfff]/40 transition-all"
                         >
                             View Full Portfolio
@@ -73,8 +74,8 @@ export default function PortfolioDrawer() {
                             {portfolioProjects.map((project, index) => (
                                 <motion.a
                                     key={project.id}
-                                    href={`#project/${project.id}`}
-                                    onClick={() => setOpen(false)}
+                                    href={`/project/${project.id}`}
+                                    onClick={(e) => { e.preventDefault(); setOpen(false); navigateTo(`/project/${project.id}`); }}
                                     className="group flex items-start gap-3 p-3 rounded-lg border border-transparent hover:border-neutral-800 hover:bg-neutral-900/60 transition-all cursor-pointer"
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
