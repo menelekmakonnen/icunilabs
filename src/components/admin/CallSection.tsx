@@ -1,6 +1,7 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { Phone, TrendingUp, Users, Clock, Target, BarChart3, ChevronDown, Download, Calendar, Filter, FileText } from 'lucide-react'
+import { Phone, TrendingUp, Users, Clock, Target, BarChart3, ChevronDown, Download, Calendar, Filter, FileText, Pencil, ArrowRight } from 'lucide-react'
+import CallGuide from './CallGuide'
 
 const PATH_LABELS: Record<string, string> = {
   wc_receptionist: 'WC Receptionist',
@@ -32,17 +33,45 @@ function fmtDate(d: string) {
 type DateFilter = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'this_year' | 'all' | 'custom'
 
 export default function CallSection() {
-  const { callLogs, competitorIntel } = useAdminStore()
+  const { callLogs, competitorIntel, clients } = useAdminStore()
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'competitor'>('overview')
   const [dateFilter, setDateFilter] = useState<DateFilter>('this_week')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
   const [expandedLog, setExpandedLog] = useState<string | null>(null)
+  
+  // Call Picker State
+  const [showCallPicker, setShowCallPicker] = useState(false)
+  const [callGuideClient, setCallGuideClient] = useState<any>(null)
+  const callPickerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     adminActions.loadCallLogs()
     adminActions.loadCompetitorIntel()
+    adminActions.loadClients()
   }, [])
+
+  // Close picker on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (callPickerRef.current && !callPickerRef.current.contains(e.target as Node)) {
+        setShowCallPicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const handleEditClient = (clientId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation()
+    const client = clients?.find((c: any) => c.client_id === clientId)
+    if (client) {
+      // @ts-ignore
+      if (adminActions.setActiveClientOptimistic) adminActions.setActiveClientOptimistic(client)
+      // @ts-ignore
+      if (adminActions.setSection) adminActions.setSection('clients')
+    }
+  }
 
   // ── Date Filtering Logic ──
   const filteredLogs = useMemo(() => {
@@ -235,6 +264,39 @@ export default function CallSection() {
           <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium rounded-lg transition-colors border border-neutral-700">
             <Download className="w-4 h-4" /> Export
           </button>
+          
+          <div className="relative border-l border-neutral-800 pl-4 ml-1" ref={callPickerRef}>
+            <button
+              onClick={() => setShowCallPicker(!showCallPicker)}
+              className="flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-lg text-sm font-bold cursor-pointer hover:bg-emerald-500/15 hover:border-emerald-400/40 transition-all"
+            >
+              <Phone className="w-4 h-4" />
+              Start Call
+              <ChevronDown className="w-3.5 h-3.5 ml-0.5 opacity-60" />
+            </button>
+            {showCallPicker && (
+              <div className="absolute top-full right-0 mt-2 w-80 max-h-72 overflow-y-auto bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl z-50 py-1"
+                style={{ scrollbarWidth: 'thin' }}>
+                <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold text-neutral-600 uppercase tracking-wider">Select a contact</p>
+                {(!clients || clients.length === 0) && (
+                  <p className="px-3 py-4 text-xs text-neutral-500 text-center">No contacts yet</p>
+                )}
+                {(clients || []).map((cl: any) => (
+                  <button key={cl.client_id}
+                    onClick={() => { setCallGuideClient(cl); setShowCallPicker(false) }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left cursor-pointer hover:bg-neutral-800/70 transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-neutral-700 to-neutral-800 flex items-center justify-center text-xs font-bold text-white flex-shrink-0">
+                      {(cl.name || cl.company || '?')[0].toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white font-semibold truncate">{cl.name || cl.company || 'Unnamed'}</p>
+                      <p className="text-[10px] text-neutral-500 truncate">{cl.company || 'No company'} • {cl.phone || 'No phone'}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -364,8 +426,15 @@ export default function CallSection() {
                             <Phone className="w-4 h-4 text-neutral-400" />
                           </div>
                           <div>
-                            <span className="text-sm text-white font-medium block">{log.client_name || 'Unknown Prospect'}</span>
-                            <span className="text-[10px] text-neutral-500">{log.caller_name || log.caller_email} • {fmtDate(log.call_start)}</span>
+                            <span 
+                              className="text-sm text-white font-medium block hover:text-[#00bfff] transition-colors truncate max-w-[200px] sm:max-w-xs" 
+                              onClick={(e) => {
+                                if (log.client_id) handleEditClient(log.client_id, e)
+                              }}
+                            >
+                              {log.client_name || 'Unknown Prospect'}
+                            </span>
+                            <span className="text-[10px] text-neutral-500">{log.contact_name || log.caller_name || log.caller_email} {log.contact_phone ? `• ${log.contact_phone}` : ''} • {fmtDate(log.call_start)}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-4 text-xs">
@@ -386,6 +455,17 @@ export default function CallSection() {
                               <p className="bg-neutral-900/50 p-3 rounded border border-neutral-800 text-white whitespace-pre-wrap">{log.call_notes || <span className="italic text-neutral-600">No notes recorded</span>}</p>
                             </div>
                             <div className="space-y-3">
+                              {log.next_action && (
+                                <div className="bg-emerald-500/5 border border-emerald-500/10 p-3 rounded">
+                                  <p className="text-[10px] text-emerald-500/80 uppercase tracking-wider font-bold flex items-center gap-1.5 mb-1">
+                                    <ArrowRight className="w-3 h-3" /> Next Action
+                                  </p>
+                                  <p className="text-white text-sm font-medium">{log.next_action.replace(/_/g, ' ')}</p>
+                                  {log.next_action_date && <p className="text-xs text-neutral-400 mt-0.5">Date: {fmtDate(log.next_action_date)}</p>}
+                                  {log.next_action_notes && <p className="text-xs text-neutral-500 mt-1 italic">"{log.next_action_notes}"</p>}
+                                </div>
+                              )}
+                              
                               <div>
                                 <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">Talking Points Coverage</p>
                                 <div className="flex items-center gap-3">
@@ -403,6 +483,14 @@ export default function CallSection() {
                                   </p>
                                 </div>
                               )}
+
+                              <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/50 mt-2">
+                                {log.client_id && (
+                                  <button onClick={(e) => handleEditClient(log.client_id, e)} className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-[#00bfff] transition-colors py-1 px-2 rounded hover:bg-neutral-800">
+                                    <Pencil className="w-3.5 h-3.5" /> Edit Client
+                                  </button>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -461,6 +549,11 @@ export default function CallSection() {
           </div>
         )}
       </div>
+      
+      {/* Call Guide Overlay */}
+      {callGuideClient && (
+        <CallGuide client={callGuideClient} onClose={() => setCallGuideClient(null)} />
+      )}
     </div>
   )
 }
