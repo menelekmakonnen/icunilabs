@@ -1,0 +1,7 @@
+# ICUNI Labs — robots.txt
+User-agent: *
+Allow: /
+Disallow: /_ops
+Disallow: /api/
+
+Sitemap: https://labs.icuni.org/sitemap.xml

@@ -183,7 +183,7 @@ function Listing(){
                 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1+i*0.1}}>
                 {/* Hero image top */}
                 <div className="relative h-44 overflow-hidden flex-shrink-0">
-                  <img src={j.heroImage} alt="" className="w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-500"/>
+                  <img src={j.heroImage} alt={`${j.title} — ICUNI Labs career opportunity`} className="w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-500"/>
                   <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/40 to-transparent"/>
                   <div className="absolute top-3 left-3 flex items-center gap-2">
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider backdrop-blur-sm ${j.type==='Commission'?'bg-[#ff7a00]/20 border border-[#ff7a00]/30 text-[#ff7a00]':'bg-white/10 border border-white/10 text-white'}`}>{j.type}</span>
@@ -211,7 +211,7 @@ function Listing(){
               <motion.a key={j.id} href={`#job/${j.id}`}
                 className="block rounded-xl relative overflow-hidden border border-neutral-800 hover:border-neutral-700 transition-all group cursor-pointer shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
                 initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:0.1+i*0.1}}>
-                <img src={j.heroImage} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity duration-500"/>
+                <img src={j.heroImage} alt={`${j.title} — ICUNI Labs career opportunity`} className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:opacity-40 transition-opacity duration-500"/>
                 <div className="absolute inset-0 bg-gradient-to-r from-neutral-950/95 via-neutral-950/80 to-neutral-950/60"/>
                 <div className="relative p-6 md:p-8 flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">

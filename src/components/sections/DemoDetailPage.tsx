@@ -21,7 +21,7 @@ export default function DemoDetailPage({ demoId }: { demoId: string }) {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">
-          <img src={demo.coverImage} alt="" className="w-full h-full object-cover opacity-30" />
+          <img src={demo.coverImage} alt={`${demo.title} — ICUNI Labs demo`} className="w-full h-full object-cover opacity-30" />
           <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/60 via-neutral-950/90 to-neutral-950" />
         </div>
         <div className="relative z-10 max-w-5xl mx-auto px-6 pt-28 pb-16">

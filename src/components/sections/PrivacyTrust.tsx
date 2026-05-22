@@ -44,7 +44,7 @@ export default function PrivacyTrust() {
     return (
         <section className="py-24 md:py-32 border-t border-neutral-800 px-6 relative overflow-hidden">
             {/* Subtle green ambient glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-[#10b981]/5 to-transparent blur-[120px] rounded-full pointer-events-none z-0" />
+            <div aria-hidden="true" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-r from-[#10b981]/5 to-transparent blur-[120px] rounded-full pointer-events-none z-0" />
 
             <div className="max-w-5xl mx-auto relative z-10">
                 {/* Badge */}

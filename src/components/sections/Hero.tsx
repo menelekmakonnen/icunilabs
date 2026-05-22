@@ -113,12 +113,12 @@ export default function Hero() {
         <section id="hero" className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20">
 
             {/* Dot grid */}
-            <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none"
+            <div aria-hidden="true" className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none"
                 style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }}
             />
 
             {/* Ambient glow */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-[#00bfff]/10 to-[#ff7a00]/5 blur-[120px] rounded-full pointer-events-none z-0" />
+            <div aria-hidden="true" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-[#00bfff]/10 to-[#ff7a00]/5 blur-[120px] rounded-full pointer-events-none z-0" />
 
             <div className="max-w-4xl mx-auto px-6 relative z-10 text-center flex flex-col items-center">
 
