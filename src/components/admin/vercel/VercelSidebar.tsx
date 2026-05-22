@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useAdminStore, adminActions } from '../../../store/useAdminStore'
 import {
   DashboardIcon, MailIcon, ClientsIcon, ReferralsIcon, InvoicesIcon,
-  SLAIcon, TeamIcon, EcosystemIcon, ProjectsIcon, CareersIcon,
+  SLAIcon, TeamIcon, EcosystemIcon, StarterclassIcon, ProjectsIcon, CareersIcon,
   LogsIcon, SettingsIcon, SearchIcon, LogoutIcon,
   SidebarCollapseIcon, SidebarExpandIcon, ThemeIcon,
   OnboardingIcon, ICUNILogo, SunIcon, MoonIcon,
@@ -31,6 +31,7 @@ const NAV_ITEMS: NavItem[] = [
   // Management
   { id: 'users', label: 'Team', icon: TeamIcon, section: 'Management' },
   { id: 'ecosystem', label: 'Ecosystem', icon: EcosystemIcon },
+  { id: 'starterclass', label: 'Starterclass', icon: StarterclassIcon },
   { id: 'projects', label: 'Projects', icon: ProjectsIcon },
   // Admin
   { id: 'careers', label: 'Careers', icon: CareersIcon, section: 'Admin' },
@@ -75,6 +76,7 @@ export default function VercelSidebar({
     if (role === 'Godmode') return true
     if (item.id === 'users') return isElevated
     if (item.id === 'ecosystem') return isElevated
+    if (item.id === 'starterclass') return isElevated
     if (item.id === 'careers') return false
     if (item.id === 'logs') return false
     if (role === 'SuperAdmin') return true

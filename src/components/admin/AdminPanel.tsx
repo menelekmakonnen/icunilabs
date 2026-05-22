@@ -8,12 +8,13 @@ import CRMSection from './CRMSection'
 import ProfileSection from './ProfileSection'
 import ReferralPortal from '../portal/ReferralPortal'
 import ClientPortal from '../portal/ClientPortal'
-import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe, Mail } from 'lucide-react'
+import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe, Mail, GraduationCap } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import OnboardingChecklist from './OnboardingChecklist'
 import EcosystemSection from './EcosystemSection'
 import MailSection from './MailSection'
+import StarterclassSection from './StarterclassSection'
 import VercelAdminShell from './vercel/VercelAdminShell'
 
 const NAV = [
@@ -25,6 +26,7 @@ const NAV = [
   { id: 'sla', label: 'SLA', icon: Clock },
   { id: 'users', label: 'Team', icon: Shield },
   { id: 'ecosystem', label: 'Ecosystem', icon: Globe },
+  { id: 'starterclass', label: 'Starterclass', icon: GraduationCap },
   { id: 'projects', label: 'Projects', icon: FolderOpen },
   { id: 'careers', label: 'Careers', icon: Briefcase },
   { id: 'logs', label: 'Logs', icon: Activity },
@@ -78,6 +80,7 @@ export default function AdminPanel() {
     // Team + Ecosystem are elevated-only
     if (item.id === 'users') return isElevated
     if (item.id === 'ecosystem') return isElevated
+    if (item.id === 'starterclass') return isElevated
     // Careers + Logs are Godmode-only
     if (item.id === 'careers') return false
     if (item.id === 'logs') return false
@@ -126,6 +129,7 @@ export default function AdminPanel() {
       case 'settings': return <SettingsSection />
       case 'profile': return <ProfileSection />
       case 'ecosystem': return <EcosystemSection />
+      case 'starterclass': return <StarterclassSection />
       default: return <DashboardSection />
     }
   }

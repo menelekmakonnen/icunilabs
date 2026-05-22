@@ -291,7 +291,17 @@ export function MoonIcon({ className, size = 16 }: IconProps) {
   )
 }
 
+export function StarterclassIcon({ className, size = 18 }: IconProps) {
+  return (
+    <svg {...d(size)} className={className} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+      <path d="M6 12v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5" />
+    </svg>
+  )
+}
+
 export function ICUNILogo({ className, size = 24 }: IconProps) {
+
   return (
     <img
       src="/icuni-logo.webp"

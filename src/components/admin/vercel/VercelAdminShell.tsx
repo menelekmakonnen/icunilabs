@@ -20,6 +20,7 @@ import { ProjectsSection, InvoicesSection, CareersSection, ReferralsSection, Use
 import ProfileSection from '../ProfileSection'
 import SettingsSection from '../SettingsSection'
 import EcosystemSection from '../EcosystemSection'
+import StarterclassSection from '../StarterclassSection'
 import OnboardingChecklist from '../OnboardingChecklist'
 import ReferralPortal from '../../portal/ReferralPortal'
 import ClientPortal from '../../portal/ClientPortal'
@@ -107,6 +108,7 @@ export default function VercelAdminShell({ onSwitchTheme }: VercelAdminShellProp
       case 'settings': return <SettingsSection />
       case 'profile': return <ProfileSection />
       case 'ecosystem': return <EcosystemSection />
+      case 'starterclass': return <StarterclassSection />
       default: return <DashboardSection />
     }
   }
