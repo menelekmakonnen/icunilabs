@@ -8,19 +8,21 @@ import CRMSection from './CRMSection'
 import ProfileSection from './ProfileSection'
 import ReferralPortal from '../portal/ReferralPortal'
 import ClientPortal from '../portal/ClientPortal'
-import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe, Mail, GraduationCap } from 'lucide-react'
+import { LayoutDashboard, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe, Mail, GraduationCap, Phone } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import OnboardingChecklist from './OnboardingChecklist'
 import EcosystemSection from './EcosystemSection'
 import MailSection from './MailSection'
 import StarterclassSection from './StarterclassSection'
+import CallSection from './CallSection'
 import VercelAdminShell from './vercel/VercelAdminShell'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'mail', label: 'Mail', icon: Mail },
   { id: 'clients', label: 'Clients', icon: Users },
+  { id: 'calls', label: 'Calls', icon: Phone },
   { id: 'referrals', label: 'Referrals', icon: UserCheck },
   { id: 'invoices', label: 'Invoices', icon: FileText },
   { id: 'sla', label: 'SLA', icon: Clock },
@@ -130,6 +132,7 @@ export default function AdminPanel() {
       case 'profile': return <ProfileSection />
       case 'ecosystem': return <EcosystemSection />
       case 'starterclass': return <StarterclassSection />
+      case 'calls': return <CallSection />
       default: return <DashboardSection />
     }
   }

@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
 import { FormButton } from './ActionButton'
 import CallGuide from './CallGuide'
-import CallDashboard from './CallDashboard'
 import './crm.css'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
@@ -82,7 +81,7 @@ export default function CRMSection() {
   const [detailTab, setDetailTab] = useState<'overview'|'projects'|'invoices'|'notes'|'activity'|'email'>('overview')
   const [noteText, setNoteText] = useState('')
   const [tagInput, setTagInput] = useState('')
-  const [viewMode, setViewMode] = useState<'contacts'|'pipeline'|'calls'>('contacts')
+  const [viewMode, setViewMode] = useState<'contacts'|'pipeline'>('contacts')
   const [callGuideClient, setCallGuideClient] = useState<any>(null)
   const [showCallPicker, setShowCallPicker] = useState(false)
   const callPickerRef = useRef<HTMLDivElement>(null)
@@ -734,10 +733,6 @@ export default function CRMSection() {
             </div>
           </div>
         )}
-        {/* Call Guide Overlay (inside detail view) */}
-        {callGuideClient && (
-          <CallGuide client={callGuideClient} onClose={() => setCallGuideClient(null)} />
-        )}
       </div>
     )
   }
@@ -772,13 +767,6 @@ export default function CRMSection() {
               <rect x="1" y="3" width="6" height="18" rx="1" /><rect x="9" y="8" width="6" height="13" rx="1" /><rect x="17" y="5" width="6" height="16" rx="1" />
             </svg>
             Pipeline
-          </button>
-          <button onClick={() => setViewMode('calls')}
-            className={`crm-view-tab ${viewMode === 'calls' ? 'active' : ''}`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
-            </svg>
-            Calls
           </button>
         </div>
 
@@ -935,9 +923,6 @@ export default function CRMSection() {
           })}
         </div>
       )}
-
-      {/* ═══ CALLS VIEW ═══ */}
-      {viewMode === 'calls' && <CallDashboard />}
 
       {viewMode === 'contacts' && (<>
 

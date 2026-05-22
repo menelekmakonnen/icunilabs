@@ -10,6 +10,7 @@ import {
   LogsIcon, SettingsIcon, SearchIcon, LogoutIcon,
   SidebarCollapseIcon, SidebarExpandIcon, ThemeIcon,
   OnboardingIcon, ICUNILogo, SunIcon, MoonIcon,
+  PhoneIcon,
 } from './VercelIcons'
 
 interface NavItem {
@@ -25,6 +26,7 @@ const NAV_ITEMS: NavItem[] = [
   // Operations
   { id: 'mail', label: 'Mail Hub', icon: MailIcon, section: 'Operations' },
   { id: 'clients', label: 'Clients', icon: ClientsIcon },
+  { id: 'calls', label: 'Calls', icon: PhoneIcon },
   { id: 'referrals', label: 'Referrals', icon: ReferralsIcon },
   { id: 'invoices', label: 'Invoices', icon: InvoicesIcon },
   { id: 'sla', label: 'SLA Tracker', icon: SLAIcon },
@@ -64,8 +66,8 @@ export default function VercelSidebar({
 
   // Department scope mapping
   const DEPT_SCOPE: Record<string, string[]> = {
-    'Admin': ['dashboard', 'mail', 'clients', 'referrals', 'invoices', 'sla', 'projects', 'settings'],
-    'Sales': ['dashboard', 'mail', 'clients', 'referrals'],
+    'Admin': ['dashboard', 'mail', 'clients', 'calls', 'referrals', 'invoices', 'sla', 'projects', 'settings'],
+    'Sales': ['dashboard', 'mail', 'clients', 'calls', 'referrals'],
     'Product': ['dashboard', 'mail', 'projects', 'sla'],
   }
 

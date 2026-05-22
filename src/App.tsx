@@ -49,12 +49,30 @@ function App() {
   const [personaDrawerOpen, setPersonaDrawerOpen] = useState(false);
 
   useEffect(() => {
+    // Handle legacy hash routing for bookmarks (e.g., /#_ops -> /_ops) on mount
+    if (window.location.hash && window.location.hash.startsWith('#_')) {
+      const cleanPath = '/' + window.location.hash.substring(1);
+      window.history.replaceState({}, '', cleanPath);
+      setCurrentPath(cleanPath);
+    }
+
     const handleNavigation = () => {
-      setCurrentPath(window.location.pathname);
+      // Also catch it if they manually type the hash while the app is already running
+      if (window.location.hash && window.location.hash.startsWith('#_')) {
+        const cleanPath = '/' + window.location.hash.substring(1);
+        window.history.replaceState({}, '', cleanPath);
+        setCurrentPath(cleanPath);
+      } else {
+        setCurrentPath(window.location.pathname);
+      }
       window.scrollTo(0, 0);
     };
     window.addEventListener('popstate', handleNavigation);
-    return () => window.removeEventListener('popstate', handleNavigation);
+    window.addEventListener('hashchange', handleNavigation); // Add hashchange to be safe
+    return () => {
+      window.removeEventListener('popstate', handleNavigation);
+      window.removeEventListener('hashchange', handleNavigation);
+    };
   }, []);
 
   // ── Route matching ──
