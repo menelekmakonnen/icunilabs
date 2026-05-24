@@ -1,10 +1,11 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, ChevronDown, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone } from 'lucide-react'
+import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, ChevronDown, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone, ArrowUp, ArrowDown } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
 import { FormButton } from './ActionButton'
 import CallGuide from './CallGuide'
+import LinkExtractor from './LinkExtractor'
 import './crm.css'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
@@ -82,6 +83,8 @@ export default function CRMSection() {
   const [noteText, setNoteText] = useState('')
   const [tagInput, setTagInput] = useState('')
   const [viewMode, setViewMode] = useState<'contacts'|'pipeline'>('contacts')
+  const [metricFilter, setMetricFilter] = useState<'all' | 'paying' | 'pipeline' | 'outstanding'>('all')
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'date_added', direction: 'desc' })
   const [callGuideClient, setCallGuideClient] = useState<any>(null)
   const [showCallPicker, setShowCallPicker] = useState(false)
   const callPickerRef = useRef<HTMLDivElement>(null)
@@ -110,6 +113,7 @@ export default function CRMSection() {
   const [showAddProject, setShowAddProject] = useState(false)
   const [projectForm, setProjectForm] = useState({ title:'', type:'Website', estimated_cost:'', description:'', est_completion:'' })
   const [busyProject, setBusyProject] = useState(false)
+  const [showLinkExtractor, setShowLinkExtractor] = useState(false)
 
   const isGodmode = user?.role === 'Godmode'
 
@@ -129,10 +133,42 @@ export default function CRMSection() {
   const activeClients = clients.filter((c: any) => (c.status || '').toLowerCase() !== 'deleted')
 
   const filtered = activeClients.filter((c: any) => {
-    if (!search) return true
-    const q = search.toLowerCase()
-    return (c.name||'').toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q) || (c.company||'').toLowerCase().includes(q)
+    // Metric filter logic
+    if (metricFilter === 'paying' && !['won', 'client'].includes((c.prospect_stage || '').toLowerCase())) return false
+    if (metricFilter === 'pipeline' && ['won', 'lost'].includes((c.prospect_stage || '').toLowerCase())) return false
+    if (metricFilter === 'outstanding' && Number(c.outstanding || 0) <= 0) return false
+
+    // Search logic
+    if (search) {
+      const q = search.toLowerCase()
+      if (!(c.name||'').toLowerCase().includes(q) && !(c.email||'').toLowerCase().includes(q) && !(c.company||'').toLowerCase().includes(q)) return false
+    }
+    return true
   })
+
+  const sortedFiltered = useMemo(() => {
+    return [...filtered].sort((a: any, b: any) => {
+      let aVal, bVal
+      if (sortConfig.key === 'name') {
+        aVal = (a.name || a.company || a.email || '').toLowerCase()
+        bVal = (b.name || b.company || b.email || '').toLowerCase()
+      } else if (sortConfig.key === 'added_by') {
+        aVal = (a.added_by || '').toLowerCase()
+        bVal = (b.added_by || '').toLowerCase()
+      } else if (sortConfig.key === 'pipeline_stage') {
+        const stageOrder = STAGES.map(s => s.id)
+        aVal = stageOrder.indexOf(a.prospect_stage || 'new_lead')
+        bVal = stageOrder.indexOf(b.prospect_stage || 'new_lead')
+      } else {
+        aVal = new Date(a.created_at || 0).getTime()
+        bVal = new Date(b.created_at || 0).getTime()
+      }
+      
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [filtered, sortConfig])
 
   const openClient = async (c: any) => {
     setDetailTab('overview')
@@ -748,26 +784,33 @@ export default function CRMSection() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="text-2xl font-bold text-white tracking-tight">Client CRM</h1>
-            <p className="text-sm text-neutral-500 mt-0.5">{activeClients.length} contacts in pipeline</p>
+            <p className="text-sm text-neutral-500 mt-0.5">{sortedFiltered.length} contacts matching filters</p>
           </div>
         </div>
 
-        {/* View Mode Tabs */}
-        <div className="flex border-b border-neutral-800 mb-4">
-          <button onClick={() => setViewMode('contacts')}
-            className={`crm-view-tab ${viewMode === 'contacts' ? 'active' : ''}`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            Contacts
-          </button>
-          <button onClick={() => setViewMode('pipeline')}
-            className={`crm-view-tab ${viewMode === 'pipeline' ? 'active' : ''}`}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="1" y="3" width="6" height="18" rx="1" /><rect x="9" y="8" width="6" height="13" rx="1" /><rect x="17" y="5" width="6" height="16" rx="1" />
-            </svg>
-            Pipeline
-          </button>
+        {/* View Mode Tabs & Search Row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-neutral-800 mb-4 pb-0 gap-3">
+          <div className="flex">
+            <button onClick={() => setViewMode('contacts')}
+              className={`crm-view-tab ${viewMode === 'contacts' ? 'active' : ''}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+              Contacts
+            </button>
+            <button onClick={() => setViewMode('pipeline')}
+              className={`crm-view-tab ${viewMode === 'pipeline' ? 'active' : ''}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="1" y="3" width="6" height="18" rx="1" /><rect x="9" y="8" width="6" height="13" rx="1" /><rect x="17" y="5" width="6" height="16" rx="1" />
+              </svg>
+              Pipeline
+            </button>
+          </div>
+          
+          <div className="relative w-full sm:w-72 mb-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
+            <input value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-3 py-1.5 bg-neutral-900/50 border border-neutral-800 rounded-lg text-white placeholder-neutral-600 focus:outline-none focus:border-[#00bfff] focus:bg-neutral-900 transition-all text-sm" placeholder="Search clients..." />
+          </div>
         </div>
 
         {/* Action Row: Start Call + Add buttons */}
@@ -810,6 +853,13 @@ export default function CRMSection() {
             )}
           </div>
           <div className="w-px h-6 bg-neutral-800" />
+          <button onClick={() => setShowLinkExtractor(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#8b5cf6]/10 to-[#00bfff]/10 border border-[#8b5cf6]/25 text-[#8b5cf6] rounded-xl text-sm font-bold cursor-pointer hover:border-[#8b5cf6]/50 hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-all">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><path d="M11 8v6" /><path d="M8 11h6" />
+            </svg>
+            Search and Add
+          </button>
           <button onClick={() => setShowAddProspect(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -836,26 +886,28 @@ export default function CRMSection() {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {[
-          { label: 'Total Contacts', value: activeClients.length, color: '#00bfff' },
-          { label: 'Paying Clients', value: activeClients.filter((c: any) => ['won', 'client'].includes((c.prospect_stage || '').toLowerCase())).length, color: '#10b981' },
-          { label: 'In Pipeline', value: activeClients.filter((c: any) => !['won', 'lost'].includes(c.prospect_stage || '')).length, color: '#f59e0b' },
-          { label: 'Outstanding', value: fmtMoney(outstandingTotal), color: outstandingTotal > 0 ? '#ef4444' : '#10b981' },
-        ].map((s, i) => (
-          <div key={i} className="crm-metric">
-            <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">{s.label}</p>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Search */}
-      <div className="relative mb-5">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
-        <input value={search} onChange={e => setSearch(e.target.value)} className="crm-search" placeholder="Search clients by name, email, or company..." />
-      </div>
+      {/* Quick Stats (Interactive Filters in Contacts Mode) */}
+      {viewMode === 'contacts' && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[
+            { id: 'all', label: 'Total Contacts', value: activeClients.length, color: '#00bfff' },
+            { id: 'paying', label: 'Paying Clients', value: activeClients.filter((c: any) => ['won', 'client'].includes((c.prospect_stage || '').toLowerCase())).length, color: '#10b981' },
+            { id: 'pipeline', label: 'In Pipeline', value: activeClients.filter((c: any) => !['won', 'lost'].includes(c.prospect_stage || '')).length, color: '#f59e0b' },
+            { id: 'outstanding', label: 'Outstanding', value: fmtMoney(outstandingTotal), color: outstandingTotal > 0 ? '#ef4444' : '#10b981' },
+          ].map((s, i) => (
+            <button 
+              key={i} 
+              onClick={() => setMetricFilter(metricFilter === s.id ? 'all' : s.id as any)}
+              className={`text-left rounded-xl p-4 transition-all duration-300 relative overflow-hidden group ${metricFilter === s.id ? 'bg-neutral-900 border border-neutral-700 shadow-lg' : 'bg-neutral-900/40 border border-neutral-800 hover:bg-neutral-900/80 cursor-pointer'}`}
+            >
+              <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity" style={{ background: `linear-gradient(135deg, ${s.color} 0%, transparent 100%)` }} />
+              <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1 font-bold">{s.label}</p>
+              <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+              {metricFilter === s.id && <div className="absolute bottom-0 left-0 h-1 w-full" style={{ backgroundColor: s.color }} />}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ═══ PIPELINE VIEW ═══ */}
       {viewMode === 'pipeline' && (
@@ -926,6 +978,28 @@ export default function CRMSection() {
 
       {viewMode === 'contacts' && (<>
 
+      {/* Sorting Bar */}
+      <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-neutral-900/30 rounded-lg border border-neutral-800 w-max">
+        <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold mr-2">Sort by:</span>
+        {[
+          { key: 'date_added', label: 'Date Added' },
+          { key: 'name', label: 'Name' },
+          { key: 'pipeline_stage', label: 'Stage' },
+          { key: 'added_by', label: 'Added By' }
+        ].map(col => (
+          <button 
+            key={col.key}
+            onClick={() => setSortConfig({ key: col.key, direction: sortConfig.key === col.key && sortConfig.direction === 'desc' ? 'asc' : 'desc' })}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${sortConfig.key === col.key ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/50 cursor-pointer'}`}
+          >
+            {col.label}
+            {sortConfig.key === col.key && (
+              sortConfig.direction === 'asc' ? <ArrowUp className="w-3 h-3 text-[#00bfff]" /> : <ArrowDown className="w-3 h-3 text-[#00bfff]" />
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Client Cards Grid */}
       {loading && clients.length === 0 ? (
         <div className="grid grid-cols-3 gap-4">
@@ -940,14 +1014,14 @@ export default function CRMSection() {
             </div>
           ))}
         </div>
-      ) : filtered.length === 0 ? (
+      ) : sortedFiltered.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-neutral-600 text-sm">{search ? 'No clients match your search' : 'No clients yet'}</p>
+          <p className="text-neutral-600 text-sm">{search ? 'No clients match your filters' : 'No clients yet'}</p>
         </div>
       ) : (
         <div className="crm-grid">
           <AnimatePresence>
-            {filtered.map((c: any, i: number) => {
+            {sortedFiltered.map((c: any, i: number) => {
               const displayName = c.name || c.company || c.email || 'Unnamed'
               const stage = c.prospect_stage || 'new_lead'
               const stageInfo = STAGES.find(s => s.id === stage)
@@ -997,12 +1071,23 @@ export default function CRMSection() {
                   )}
 
                   {/* Metadata Footer */}
-                  <div className="crm-meta relative z-10">
-                    <div className="flex items-center justify-center gap-1.5 text-[10px] text-neutral-600">
-                      {c.visibility === 'public' ? <Globe className="w-3 h-3 text-emerald-500/50" /> : c.added_by ? <Lock className="w-3 h-3 text-neutral-700" /> : null}
-                      <span className="truncate">{addedByName ? `Added by ${addedByName}` : 'Legacy'}</span>
+                  <div className="crm-meta relative z-10 flex justify-between items-end mt-2">
+                    <div>
+                      <div className="flex items-center gap-1.5 text-[10px] text-neutral-600 mb-0.5">
+                        {c.visibility === 'public' ? <Globe className="w-3 h-3 text-emerald-500/50" /> : c.added_by ? <Lock className="w-3 h-3 text-neutral-700" /> : null}
+                        <span className="truncate">{addedByName ? `Added by ${addedByName}` : 'Legacy'}</span>
+                      </div>
+                      <p className="text-[10px] text-neutral-700">{fmtDate(c.created_at)}</p>
                     </div>
-                    <p className="text-[10px] text-neutral-700 mt-0.5">{fmtDate(c.created_at)}</p>
+                    
+                    {/* Call Button Attached to Contact Card */}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setCallGuideClient(c) }}
+                      className="w-8 h-8 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center transition-all cursor-pointer group/call"
+                      title="Start Call"
+                    >
+                      <Phone className="w-4 h-4 text-emerald-500 group-hover/call:scale-110 transition-transform" />
+                    </button>
                   </div>
                 </motion.div>
               )
@@ -1283,6 +1368,17 @@ export default function CRMSection() {
       {/* Call Guide Overlay */}
       {callGuideClient && (
         <CallGuide client={callGuideClient} onClose={() => setCallGuideClient(null)} />
+      )}
+      {/* Link Extractor Modal */}
+      {showLinkExtractor && (
+        <LinkExtractor
+          onClose={() => setShowLinkExtractor(false)}
+          onOpenClient={(clientId) => {
+            setShowLinkExtractor(false)
+            const c = clients.find((cl: any) => cl.client_id === clientId)
+            if (c) openClient(c)
+          }}
+        />
       )}
     </div>
   )

@@ -136,7 +136,17 @@ export default function DashboardSection() {
               <Users className="w-4 h-4 text-[#ff7a00]" />
               Ops Pipeline
             </h3>
-            <button onClick={() => adminActions.setSection('clients')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Open CRM</button>
+            <div className="flex items-center gap-3">
+              <button onClick={() => { adminActions.setSection('clients'); /* LinkExtractor will be opened from CRM */ }}
+                className="flex items-center gap-1.5 text-xs text-[#8b5cf6] hover:text-white cursor-pointer transition-colors font-semibold">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><path d="M11 8v6" /><path d="M8 11h6" />
+                </svg>
+                Search and Add
+              </button>
+              <div className="w-px h-3 bg-neutral-700" />
+              <button onClick={() => adminActions.setSection('clients')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Open CRM</button>
+            </div>
           </div>
           {(() => {
             const prospects = s.clients.filter((c: any) => {

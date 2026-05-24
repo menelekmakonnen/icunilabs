@@ -1275,4 +1275,33 @@ export const adminActions = {
       return false
     }
   },
+
+  // ── Link Extraction ──
+  extractFromUrl: async (url: string): Promise<any> => {
+    try {
+      const result = await apiPost('extractFromUrl', { token: state.token, url })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  checkDuplicate: async (data: { phone?: string; name?: string; company?: string }): Promise<any> => {
+    try {
+      return await apiPost('checkDuplicate', { token: state.token, ...data })
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  bulkSearch: async (query: string): Promise<any> => {
+    try {
+      return await apiPost('bulkSearch', { token: state.token, query })
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
 }

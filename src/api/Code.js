@@ -52,6 +52,10 @@ var ACTION_MAP = {
     updateClientTags: handleUpdateClientTags, updateClientStatus: handleUpdateClientStatus,
     sendClientEmail: handleSendClientEmail, previewClientEmail: handlePreviewClientEmail,
 
+    // ── Link Extraction ──
+    extractFromUrl: handleExtractFromUrl, checkDuplicate: handleCheckDuplicate,
+    bulkSearch: handleBulkSearch,
+
     // ── Call Logs ──
     saveCallLog: handleSaveCallLog, getCallLogs: handleGetCallLogs,
     getCallAnalytics: handleGetCallAnalytics, getCompetitorIntel: handleGetCompetitorIntel,
