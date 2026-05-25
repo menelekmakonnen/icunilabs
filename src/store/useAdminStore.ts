@@ -74,6 +74,8 @@ interface AdminState {
   activeThread: any | null
   emailAliases: any[]
   emailTemplates: any[]
+  // Floating Call Bubble
+  floatingCall: { client: any; callStartTime: number; paused: boolean; callGuideState?: any } | null
   // Cache timestamps (ms)
   _cache: Record<string, number>
 }
@@ -167,6 +169,7 @@ let state: AdminState = {
   activeThread: null,
   emailAliases: [],
   emailTemplates: [],
+  floatingCall: null,
   _cache: {},
 }
 
@@ -193,6 +196,17 @@ export const adminActions = {
   setError: (error: string | null) => setState({ error }),
   setSection: (section: string) => setState({ activeSection: section, error: null }),
   setLoginMethod: (method: 'otp' | 'password' | 'pin') => setState({ loginMethod: method }),
+
+  // ── Floating Call Bubble ──
+  minimiseCall: (client: any, callStartTime: number, callGuideState?: any) =>
+    setState({ floatingCall: { client, callStartTime, paused: false, callGuideState } }),
+  pauseCall: () => {
+    if (state.floatingCall) setState({ floatingCall: { ...state.floatingCall, paused: true } })
+  },
+  resumeCall: () => {
+    if (state.floatingCall) setState({ floatingCall: { ...state.floatingCall, paused: false } })
+  },
+  endCall: () => setState({ floatingCall: null }),
 
   // ── Auth ──
   sendOTP: async (email: string) => {

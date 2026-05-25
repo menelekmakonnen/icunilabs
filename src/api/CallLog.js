@@ -108,7 +108,9 @@ function handleSaveCallLog(payload) {
         JSON.stringify(tpChecked), JSON.stringify(tpSkipped), tpTotal,
         dataCaptureJson, outcome, outcomeDetailsJson,
         payload.next_action || '', payload.next_action_date || '', payload.next_action_notes || '',
-        payload.call_notes || '', autoAdvanced, nowStr
+        payload.call_notes || '', autoAdvanced, nowStr,
+        payload.self_image_initial || '', payload.self_image_confirmed || '',
+        payload.self_image_pivoted ? 'Yes' : ''
     ]);
 
     // ── Extract competitor intel ──

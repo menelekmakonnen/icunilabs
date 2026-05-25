@@ -259,6 +259,35 @@ const COMPETITORS = [
   { name: 'Business Central', gap: 'Expensive; needs existing discipline', cost: 'GH₵913/user/mo' },
 ]
 
+const SELF_IMAGE_SIGNALS = {
+  before: [
+    { signal: 'Website', professional: 'Polished, About section, team photos', trader: 'No website or basic Facebook page' },
+    { signal: 'Branding', professional: 'Consistent across locations', trader: 'Hand-painted signage' },
+    { signal: 'Social Media', professional: 'Branded, curated content', trader: "Owner's name in WhatsApp listings" },
+    { signal: 'Titles', professional: 'CEO, Director, Founder', trader: 'Owner, business = owner name' },
+    { signal: 'Branches', professional: 'Multiple with consistent branding', trader: 'Single location, no listed email' },
+  ],
+  during: [
+    { signal: 'Phone answer', professional: 'Hello, this is [Name], how can I help?', trader: 'Hello? or Yes?' },
+    { signal: 'Role description', professional: 'I am the CEO / operations manager', trader: 'I am the owner / I run the shop' },
+    { signal: 'First 10 seconds', professional: 'Warm, yes how can I help?', trader: 'Sharp, what is this about?' },
+  ],
+}
+
+const PIVOT_SCRIPTS = {
+  professional_to_trader: "Sorry, let me get to the point \u2014 have you heard about what happened at Tema Harbour with the AI?",
+  trader_to_professional: "That's a good question. I'm actually trying to understand how businesses in your space manage their operations \u2014 would you mind if I asked a few quick questions?",
+}
+
+function computeSelfImage(presence: string, titles: string, envType: string): 'professional' | 'trader' | 'unsure' {
+  if (presence === 'yes' && titles === 'yes') return 'professional'
+  if (presence === 'no' && titles === 'no') return 'trader'
+  if (presence === 'yes' || titles === 'yes') return 'professional'
+  if (envType === 'white_collar') return 'professional'
+  if (envType === 'blue_collar') return 'trader'
+  return 'unsure'
+}
+
 // ═══ UTILITIES ═══
 const OUTCOMES = [
   { id: 'meeting_booked', label: 'Meeting Booked', desc: 'Date/time confirmed', hasDatetime: true },
@@ -313,9 +342,10 @@ function resolveScript(template: string, vars: Record<string, string>): string {
 interface CallGuideProps {
   client: any
   onClose: () => void
+  onMinimise?: () => void
 }
 
-export default function CallGuide({ client, onClose }: CallGuideProps) {
+export default function CallGuide({ client, onClose, onMinimise }: CallGuideProps) {
   const { user } = useAdminStore()
 
   // Classification state
@@ -323,6 +353,17 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
   const [envType, setEnvType] = useState<string>('')
   const [personaType, setPersonaType] = useState<string>('')
   const [pathId, setPathId] = useState<string>('')
+
+  // Self-image classification
+  const [hasProfPresence, setHasProfPresence] = useState<string>(client?.has_professional_presence || '')
+  const [usesProfTitles, setUsesProfTitles] = useState<string>(client?.uses_professional_titles || '')
+  const [selfImageOverride, setSelfImageOverride] = useState<string>(client?.self_image || '')
+  const [showSignalRef, setShowSignalRef] = useState(false)
+  const [selfImageConfirmed, setSelfImageConfirmed] = useState('')
+  const [showPivotCard, setShowPivotCard] = useState(false)
+  const [pivotHappened, setPivotHappened] = useState(false)
+
+  const computedSelfImage = selfImageOverride || computeSelfImage(hasProfPresence, usesProfTitles, envType)
 
   // Guide state
   const [checked, setChecked] = useState<Set<string>>(new Set())
@@ -426,6 +467,9 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
       call_notes: callNotes,
       contact_name: contactName,
       contact_phone: contactPhone,
+      self_image_initial: computedSelfImage,
+      self_image_confirmed: selfImageConfirmed || computedSelfImage,
+      self_image_pivoted: pivotHappened,
     }
 
     const result = await adminActions.saveCallLog(data)
@@ -443,9 +487,123 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-lg font-bold text-white">Start Call</h2>
-              <p className="text-xs text-neutral-500 mt-1">{client?.name || client?.company || 'Unknown'} — {client?.phone || 'No phone'}</p>
+              <p className="text-xs text-neutral-500 mt-1">{client?.name || client?.company || 'Unknown'} &mdash; {client?.phone || 'No phone'}</p>
             </div>
             <button onClick={onClose} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+          </div>
+
+          {/* ═══ PRE-CALL ASSESSMENT ═══ */}
+          <div className="cg-self-image-section">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                Pre-Call Classification
+              </p>
+              <button onClick={() => setShowSignalRef(!showSignalRef)} className="text-[10px] text-[#00bfff] hover:text-white cursor-pointer transition-colors flex items-center gap-1">
+                <BookOpen className="w-3 h-3" />{showSignalRef ? 'Hide' : 'Show'} Signals Guide
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              <div>
+                <p className="text-[11px] text-neutral-400 mb-1.5">Professional online presence? <span className="text-neutral-600">(website, branded social, About section)</span></p>
+                <div className="flex gap-2">
+                  {['yes', 'no', 'unsure'].map(v => (
+                    <button key={v} onClick={() => { setHasProfPresence(v); setSelfImageOverride('') }}
+                      className={`cg-signal-btn ${hasProfPresence === v ? (v === 'yes' ? 'yes' : v === 'no' ? 'no' : 'unsure') : ''}`}>
+                      {v === 'yes' ? 'Yes' : v === 'no' ? 'No' : 'Unsure'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-[11px] text-neutral-400 mb-1.5">Uses professional titles? <span className="text-neutral-600">(CEO, Director, Founder in listings)</span></p>
+                <div className="flex gap-2">
+                  {['yes', 'no', 'unsure'].map(v => (
+                    <button key={v} onClick={() => { setUsesProfTitles(v); setSelfImageOverride('') }}
+                      className={`cg-signal-btn ${usesProfTitles === v ? (v === 'yes' ? 'yes' : v === 'no' ? 'no' : 'unsure') : ''}`}>
+                      {v === 'yes' ? 'Yes' : v === 'no' ? 'No' : 'Unsure'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {(hasProfPresence || usesProfTitles) && (
+              <div className={`cg-self-image-result ${computedSelfImage}`}>
+                <div className="flex items-center gap-3">
+                  <div className={`cg-self-image-icon ${computedSelfImage}`}>
+                    {computedSelfImage === 'professional' ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                    ) : computedSelfImage === 'trader' ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-white">
+                      {computedSelfImage === 'professional' ? 'Professional' : computedSelfImage === 'trader' ? 'Trader' : 'Unsure'}
+                    </p>
+                    <p className="text-[10px] text-neutral-500">
+                      {computedSelfImage === 'professional' ? 'Research-First' : computedSelfImage === 'trader' ? 'Story-First' : 'Select environment type to default'}
+                    </p>
+                  </div>
+                  <div className="ml-auto flex gap-1.5">
+                    {(['professional', 'trader'] as const).map(si => (
+                      <button key={si} onClick={() => setSelfImageOverride(si === computedSelfImage && !selfImageOverride ? '' : si)}
+                        className={`text-[10px] px-2.5 py-1 rounded-lg font-bold cursor-pointer transition-all border ${
+                          computedSelfImage === si
+                            ? si === 'professional' ? 'bg-[#8b5cf6]/15 border-[#8b5cf6]/30 text-[#8b5cf6]' : 'bg-[#f59e0b]/15 border-[#f59e0b]/30 text-[#f59e0b]'
+                            : 'border-neutral-800 text-neutral-600 hover:text-neutral-400 hover:border-neutral-700'
+                        }`}>
+                        {si === 'professional' ? 'Professional' : 'Trader'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-2 pt-2 border-t border-neutral-800/50">
+                  <p className="text-[11px] text-neutral-500">
+                    {computedSelfImage === 'professional'
+                      ? '\u25b8 Open with research: "We\'re running a research project on companies in your industry\u2026"'
+                      : computedSelfImage === 'trader'
+                      ? '\u25b8 Open with Tema Harbour: "Have you heard about what happened at Tema Harbour with the AI?"'
+                      : '\u25b8 Read their tone in the first 30 seconds, then commit to a path.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {showSignalRef && (
+              <div className="cg-signal-ref">
+                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Before the Call (Online Signals)</p>
+                <div className="cg-signal-table mb-3">
+                  <div className="cg-signal-row header">
+                    <span>Signal</span><span>&rarr; Professional</span><span>&rarr; Trader</span>
+                  </div>
+                  {SELF_IMAGE_SIGNALS.before.map(s => (
+                    <div key={s.signal} className="cg-signal-row">
+                      <span className="text-neutral-400 font-medium">{s.signal}</span>
+                      <span className="text-[#8b5cf6]/80">{s.professional}</span>
+                      <span className="text-[#f59e0b]/80">{s.trader}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">During the Call (Voice Signals)</p>
+                <div className="cg-signal-table">
+                  <div className="cg-signal-row header">
+                    <span>Signal</span><span>&rarr; Professional</span><span>&rarr; Trader</span>
+                  </div>
+                  {SELF_IMAGE_SIGNALS.during.map(s => (
+                    <div key={s.signal} className="cg-signal-row">
+                      <span className="text-neutral-400 font-medium">{s.signal}</span>
+                      <span className="text-[#8b5cf6]/80">{s.professional}</span>
+                      <span className="text-[#f59e0b]/80">{s.trader}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <p className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-3">Environment Type</p>
@@ -492,6 +650,15 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Self-image pivot trigger */}
+          <button
+            onClick={() => setShowPivotCard(!showPivotCard)}
+            className={`cg-pivot-trigger ${computedSelfImage}`}
+            title="Mid-call pivot &#8212; switch approach"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            <span className="hidden sm:inline">{computedSelfImage === 'professional' ? 'Prof' : computedSelfImage === 'trader' ? 'Trader' : '?'}</span>
+          </button>
           {/* Escalation dropdown */}
           <select value={pathId} onChange={e => {
             const newP = Object.values(PERSONAS).flat().find(x => x.pathId === e.target.value)
@@ -502,8 +669,13 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
               <option key={p.pathId} value={p.pathId}>{p.label}</option>
             ))}
           </select>
-          {/* Pause — exit without losing state */}
-          <button onClick={onClose} className="cg-pause-btn" title="Pause — return to CRM (call stays open)">
+          {/* Pause — exit without losing state, show floating bubble */}
+          <button onClick={() => {
+            const startTime = new Date(callStart).getTime()
+            adminActions.minimiseCall(client, startTime)
+            if (onMinimise) onMinimise()
+            else onClose()
+          }} className="cg-pause-btn" title="Minimise — continue navigating (floating bubble appears)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
             Pause
           </button>
@@ -519,6 +691,65 @@ export default function CallGuide({ client, onClose }: CallGuideProps) {
       </div>
 
       <div className="cg-body">
+        {/* Mid-Call Pivot Card */}
+        {showPivotCard && (
+          <div className="cg-pivot-card">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+                Mid-Call Pivot
+              </p>
+              <button onClick={() => setShowPivotCard(false)} className="text-neutral-600 hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
+            </div>
+            <p className="text-[10px] text-neutral-600 mb-2">Read wrong? Switch approach and confirm what they actually are:</p>
+            <div className="space-y-2">
+              {computedSelfImage !== 'trader' && (
+                <button onClick={() => {
+                  setSelfImageConfirmed('trader')
+                  setSelfImageOverride('trader')
+                  setPivotHappened(true)
+                  if (!pathId.startsWith('bc_')) {
+                    const bcOwner = Object.values(PERSONAS).flat().find(x => x.pathId === 'bc_owner')
+                    if (bcOwner) switchPath(bcOwner.pathId, bcOwner.id)
+                  }
+                  setShowPivotCard(false)
+                }} className="cg-pivot-option trader">
+                  <div>
+                    <p className="text-sm font-bold">Pivot to Trader</p>
+                    <p className="text-[10px] opacity-70">Story-First</p>
+                  </div>
+                  <p className="text-[11px] italic opacity-80 mt-1">&ldquo;{PIVOT_SCRIPTS.professional_to_trader}&rdquo;</p>
+                </button>
+              )}
+              {computedSelfImage !== 'professional' && (
+                <button onClick={() => {
+                  setSelfImageConfirmed('professional')
+                  setSelfImageOverride('professional')
+                  setPivotHappened(true)
+                  if (!pathId.startsWith('wc_')) {
+                    const wcDM = Object.values(PERSONAS).flat().find(x => x.pathId === 'wc_decision_maker')
+                    if (wcDM) switchPath(wcDM.pathId, wcDM.id)
+                  }
+                  setShowPivotCard(false)
+                }} className="cg-pivot-option professional">
+                  <div>
+                    <p className="text-sm font-bold">Pivot to Professional</p>
+                    <p className="text-[10px] opacity-70">Research-First</p>
+                  </div>
+                  <p className="text-[11px] italic opacity-80 mt-1">&ldquo;{PIVOT_SCRIPTS.trader_to_professional}&rdquo;</p>
+                </button>
+              )}
+            </div>
+            <div className="mt-3 pt-2 border-t border-neutral-800/50">
+              <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-1">30-Second Voice Check</p>
+              <div className="flex gap-3 text-[10px]">
+                <span className="text-[#8b5cf6]/70">&ldquo;Hello, this is [Name]&hellip;&rdquo; &rarr; Professional</span>
+                <span className="text-[#f59e0b]/70">&ldquo;Hello?&rdquo; / &ldquo;Yes?&rdquo; &rarr; Trader</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Section 1: Contact Info */}
         <div className="cg-section">
           <div className="cg-section-header" onClick={() => toggleSection('contact')}>

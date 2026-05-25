@@ -628,3 +628,214 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   COUNTDOWN PILLS & STATUS BADGES
+   ═══════════════════════════════════════════════════════════ */
+
+.crm-countdown-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+}
+
+/* Urgency levels */
+.crm-countdown-pill.urgent,
+.crm-countdown-pill.now {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  animation: crm-pulse-urgent 1.5s ease-in-out infinite;
+}
+.crm-countdown-pill.soon {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+.crm-countdown-pill.today {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+}
+.crm-countdown-pill.later {
+  color: #64748b;
+  background: rgba(100, 116, 139, 0.08);
+}
+
+/* Status badges */
+.crm-countdown-pill.project {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  font-weight: 800;
+}
+.crm-countdown-pill.lost {
+  color: #475569;
+  background: rgba(71, 85, 105, 0.1);
+}
+
+@keyframes crm-pulse-urgent {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════════════ */
+
+.crm-toast-stack {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  max-width: 380px;
+  pointer-events: none;
+}
+
+.crm-toast {
+  pointer-events: auto;
+  background: rgba(15, 15, 25, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  animation: crm-toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.crm-toast.urgent {
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.08);
+}
+
+.crm-toast.dismissing {
+  animation: crm-toast-out 0.25s ease-in forwards;
+}
+
+@keyframes crm-toast-in {
+  from { opacity: 0; transform: translateX(100%) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes crm-toast-out {
+  to { opacity: 0; transform: translateX(100%) scale(0.95); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FLOATING CALL BUBBLE
+   ═══════════════════════════════════════════════════════════ */
+
+.call-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: auto;
+  animation: crm-toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.call-fab-bubble {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(10, 14, 26, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 50px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.08);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.call-fab-bubble:hover {
+  border-color: rgba(16, 185, 129, 0.5);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 30px rgba(16, 185, 129, 0.15);
+  transform: scale(1.03);
+}
+
+.call-fab-timer {
+  font-size: 14px;
+  font-weight: 800;
+  color: #10b981;
+  font-variant-numeric: tabular-nums;
+}
+
+.call-fab-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e2e8f0;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.call-fab-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: crm-fab-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes crm-fab-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.call-fab-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.call-fab-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.call-fab-btn.resume {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+.call-fab-btn.resume:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.call-fab-btn.end {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+}
+.call-fab-btn.end:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+@media (max-width: 768px) {
+  .crm-toast-stack {
+    left: 16px;
+    right: 16px;
+    bottom: 80px;
+    max-width: none;
+  }
+  .call-fab {
+    bottom: 16px;
+    right: 16px;
+  }
+}

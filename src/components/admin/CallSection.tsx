@@ -1,7 +1,8 @@
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { Phone, TrendingUp, Users, Clock, Target, BarChart3, ChevronDown, Download, Calendar, Filter, FileText, Pencil, ArrowRight } from 'lucide-react'
+import { Phone, TrendingUp, Users, Clock, Target, BarChart3, ChevronDown, Download, Calendar, Filter, FileText, Pencil, ArrowRight, Bell, X, AlertTriangle } from 'lucide-react'
 import CallGuide from './CallGuide'
+import '../admin/crm.css'
 
 const PATH_LABELS: Record<string, string> = {
   wc_receptionist: 'WC Receptionist',
@@ -34,7 +35,7 @@ type DateFilter = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_mont
 
 export default function CallSection() {
   const { callLogs, competitorIntel, clients } = useAdminStore()
-  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'competitor'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'competitor' | 'upcoming'>('overview')
   const [dateFilter, setDateFilter] = useState<DateFilter>('this_week')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
@@ -44,12 +45,81 @@ export default function CallSection() {
   const [showCallPicker, setShowCallPicker] = useState(false)
   const [callGuideClient, setCallGuideClient] = useState<any>(null)
   const callPickerRef = useRef<HTMLDivElement>(null)
+  
+  // Toast & Countdown State
+  const [toasts, setToasts] = useState<{ id: string; clientName: string; date: string; clientId: string }[]>([])
+  const dismissedToasts = useRef(new Set<string>())
+  const [_tick, setTick] = useState(0)
 
   useEffect(() => {
     adminActions.loadCallLogs()
     adminActions.loadCompetitorIntel()
     adminActions.loadClients()
   }, [])
+
+  // Live ticker for countdown timers
+  useEffect(() => {
+    const t = setInterval(() => setTick(x => x + 1), 1000)
+    return () => clearInterval(t)
+  }, [])
+
+  // ── Upcoming Calls ──
+  const upcomingCalls = useMemo(() => {
+    const now = Date.now()
+    const clientMap: Record<string, any> = {}
+    ;(clients || []).forEach((c: any) => { clientMap[c.client_id] = c })
+    
+    // Collect all future next_action_date entries, deduplicated by client_id (keep nearest)
+    const byClient: Record<string, any> = {}
+    ;(callLogs || []).forEach((log: any) => {
+      if (!log.next_action_date || !log.client_id) return
+      if (!['callback_scheduled', 'needs_follow_up', 'interested_will_revert', 'meeting_booked'].includes(log.outcome)) return
+      const d = new Date(log.next_action_date).getTime()
+      if (d < now - 86400000) return // skip if > 24h past
+      if (!byClient[log.client_id] || d < new Date(byClient[log.client_id].next_action_date).getTime()) {
+        byClient[log.client_id] = log
+      }
+    })
+    
+    return Object.values(byClient)
+      .map((log: any) => {
+        const client = clientMap[log.client_id] || {}
+        const diff = new Date(log.next_action_date).getTime() - now
+        return { ...log, client, diff, clientName: client.name || client.company || log.client_name || 'Unknown' }
+      })
+      .sort((a: any, b: any) => a.diff - b.diff)
+  }, [callLogs, clients, _tick])
+
+  // ── Toast Notifications (fire when ≤ 15min away) ──
+  const dismissToast = useCallback((id: string) => {
+    dismissedToasts.current.add(id)
+    setToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
+
+  useEffect(() => {
+    const now = Date.now()
+    const newToasts: typeof toasts = []
+    upcomingCalls.forEach((call: any) => {
+      const diff = new Date(call.next_action_date).getTime() - now
+      if (diff > 0 && diff <= 15 * 60 * 1000 && !dismissedToasts.current.has(call.call_id)) {
+        newToasts.push({ id: call.call_id, clientName: call.clientName, date: call.next_action_date, clientId: call.client_id })
+      }
+    })
+    if (newToasts.length > 0) {
+      setToasts(prev => {
+        const ids = new Set(prev.map(t => t.id))
+        const fresh = newToasts.filter(t => !ids.has(t.id))
+        return fresh.length > 0 ? [...prev, ...fresh] : prev
+      })
+    }
+  }, [upcomingCalls])
+
+  // Auto-dismiss toasts after 30s
+  useEffect(() => {
+    if (toasts.length === 0) return
+    const timers = toasts.map(t => setTimeout(() => dismissToast(t.id), 30000))
+    return () => timers.forEach(clearTimeout)
+  }, [toasts, dismissToast])
 
   // Close picker on outside click
   useEffect(() => {
@@ -311,6 +381,7 @@ export default function CallSection() {
       <div className="flex gap-1 mb-4 sm:mb-6 border-b border-neutral-800 overflow-x-auto scrollbar-hide">
         {[
           { id: 'overview', label: 'Overview', icon: BarChart3 },
+          { id: 'upcoming', label: `Upcoming (${upcomingCalls.filter((u: any) => u.diff > 0).length})`, icon: Bell },
           { id: 'logs', label: `Call Logs (${filteredLogs.length})`, icon: FileText },
           { id: 'competitor', label: 'Competitor Intel', icon: TrendingUp }
         ].map(t => (
@@ -473,6 +544,92 @@ export default function CallSection() {
           </div>
         )}
 
+        {activeTab === 'upcoming' && (
+          <div className="crm-fade-in space-y-4">
+            {upcomingCalls.length === 0 ? (
+              <div className="crm-metric text-center py-12">
+                <div className="w-12 h-12 rounded-full bg-neutral-900 flex items-center justify-center mx-auto mb-3">
+                  <Bell className="w-6 h-6 text-neutral-700" />
+                </div>
+                <p className="text-neutral-500 text-sm">No upcoming calls or callbacks scheduled.</p>
+                <p className="text-neutral-700 text-xs mt-1">Schedule follow-ups during calls to see them here.</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {upcomingCalls.map((call: any) => {
+                    const diff = new Date(call.next_action_date).getTime() - Date.now()
+                    const isPast = diff <= 0
+                    const isUrgent = diff > 0 && diff <= 15 * 60 * 1000
+                    const isSoon = diff > 0 && diff <= 60 * 60 * 1000
+                    const isToday = diff > 0 && diff <= 24 * 60 * 60 * 1000
+
+                    // Format countdown
+                    let countdown = ''
+                    if (isPast) countdown = 'OVERDUE'
+                    else {
+                      const s = Math.floor(diff / 1000)
+                      const m = Math.floor(s / 60)
+                      const h = Math.floor(m / 60)
+                      const d = Math.floor(h / 24)
+                      if (d > 0) countdown = `${d}d ${h % 24}h`
+                      else if (h > 0) countdown = `${h}h ${m % 60}m`
+                      else countdown = `${m}m ${s % 60}s`
+                    }
+
+                    const urgency = isPast ? 'now' : isUrgent ? 'urgent' : isSoon ? 'soon' : isToday ? 'today' : 'later'
+
+                    return (
+                      <div key={call.call_id} className={`crm-metric border-l-2 ${
+                        urgency === 'now' || urgency === 'urgent' ? 'border-l-red-500' :
+                        urgency === 'soon' ? 'border-l-amber-500' :
+                        urgency === 'today' ? 'border-l-emerald-500' : 'border-l-neutral-700'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span 
+                            className="text-sm font-bold text-white hover:text-[#00bfff] cursor-pointer transition-colors truncate max-w-[160px]"
+                            onClick={() => call.client_id && handleEditClient(call.client_id)}
+                          >
+                            {call.clientName}
+                          </span>
+                          <span className={`crm-countdown-pill ${urgency}`}>
+                            <Clock className="w-3 h-3" /> {countdown}
+                          </span>
+                        </div>
+
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider inline-block mb-2 ${
+                          call.outcome === 'callback_scheduled' ? 'bg-amber-500/10 text-amber-500' :
+                          call.outcome === 'meeting_booked' ? 'bg-emerald-500/10 text-emerald-500' :
+                          'bg-[#00bfff]/10 text-[#00bfff]'
+                        }`}>
+                          {OUTCOME_LABELS[call.outcome] || call.outcome}
+                        </span>
+
+                        {call.next_action_notes && (
+                          <p className="text-xs text-neutral-400 line-clamp-2 mb-2">"{call.next_action_notes}"</p>
+                        )}
+
+                        <div className="flex items-center justify-between pt-2 border-t border-neutral-800/50">
+                          <div className="text-[10px] text-neutral-500 flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {fmtDate(call.next_action_date)}
+                          </div>
+                          <button
+                            onClick={() => call.client && setCallGuideClient(call.client)}
+                            className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-emerald-500/15 transition-all"
+                          >
+                            <Phone className="w-3 h-3" /> Call
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {activeTab === 'logs' && (
           <div className="crm-fade-in crm-metric">
             {filteredLogs.length > 0 ? (
@@ -617,6 +774,45 @@ export default function CallSection() {
       {/* Call Guide Overlay */}
       {callGuideClient && (
         <CallGuide client={callGuideClient} onClose={() => setCallGuideClient(null)} />
+      )}
+
+      {/* Toast Notification Stack */}
+      {toasts.length > 0 && (
+        <div className="crm-toast-stack">
+          {toasts.map(toast => {
+            const diff = new Date(toast.date).getTime() - Date.now()
+            const m = Math.max(0, Math.floor(diff / 60000))
+            const s = Math.max(0, Math.floor((diff % 60000) / 1000))
+            const isUrgent = diff <= 5 * 60 * 1000
+            return (
+              <div key={toast.id} className={`crm-toast ${isUrgent ? 'urgent' : ''}`}>
+                <div className="w-8 h-8 rounded-full bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-4 h-4 text-amber-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-white truncate">{toast.clientName}</p>
+                  <p className="text-[10px] text-amber-400 font-bold">
+                    {diff <= 0 ? 'NOW — Call overdue!' : `In ${m}m ${s}s`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={() => {
+                      const cl = clients?.find((c: any) => c.client_id === toast.clientId)
+                      if (cl) { setCallGuideClient(cl); dismissToast(toast.id) }
+                    }}
+                    className="px-2.5 py-1 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 rounded-lg text-[10px] font-bold cursor-pointer hover:bg-emerald-500/25 transition-all"
+                  >
+                    <Phone className="w-3 h-3 inline mr-1" />Call
+                  </button>
+                  <button onClick={() => dismissToast(toast.id)} className="text-neutral-600 hover:text-white cursor-pointer transition-colors">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )

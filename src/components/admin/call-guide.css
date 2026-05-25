@@ -754,3 +754,214 @@
     min-width: unset;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   SELF-IMAGE CLASSIFICATION
+   ═══════════════════════════════════════════════════════════ */
+
+.cg-self-image-section {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+}
+
+/* Signal toggle buttons (Yes/No/Unsure) */
+.cg-signal-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #64748b;
+  transition: all 0.2s;
+  text-align: center;
+}
+.cg-signal-btn:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+}
+.cg-signal-btn.yes {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+}
+.cg-signal-btn.no {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.06);
+  color: #ef4444;
+}
+.cg-signal-btn.unsure {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.06);
+  color: #f59e0b;
+}
+
+/* Computed result card */
+.cg-self-image-result {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  margin-top: 12px;
+  animation: cg-script-in 0.25s ease-out;
+}
+.cg-self-image-result.professional {
+  border-color: rgba(139, 92, 246, 0.2);
+  background: rgba(139, 92, 246, 0.04);
+}
+.cg-self-image-result.trader {
+  border-color: rgba(245, 158, 11, 0.2);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.cg-self-image-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cg-self-image-icon.professional {
+  background: rgba(139, 92, 246, 0.12);
+  color: #8b5cf6;
+}
+.cg-self-image-icon.trader {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+.cg-self-image-icon.unsure {
+  background: rgba(100, 116, 139, 0.12);
+  color: #64748b;
+}
+
+/* Signal reference table */
+.cg-signal-ref {
+  margin-top: 16px;
+  padding: 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  animation: cg-script-in 0.2s ease-out;
+}
+
+.cg-signal-table {
+  display: grid;
+  gap: 0;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cg-signal-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr;
+  gap: 0;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.cg-signal-row span {
+  padding: 6px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+}
+.cg-signal-row span:last-child {
+  border-right: none;
+}
+
+.cg-signal-row.header {
+  background: rgba(255, 255, 255, 0.04);
+}
+.cg-signal-row.header span {
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 9px;
+}
+
+/* Pivot trigger button (in guide header) */
+.cg-pivot-trigger {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+}
+.cg-pivot-trigger:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+.cg-pivot-trigger.professional {
+  border-color: rgba(139, 92, 246, 0.3);
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.08);
+}
+.cg-pivot-trigger.trader {
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+/* Pivot card (mid-call) */
+.cg-pivot-card {
+  padding: 16px;
+  background: rgba(15, 15, 25, 0.9);
+  border: 1px solid rgba(255, 122, 0, 0.2);
+  border-radius: 14px;
+  margin-bottom: 16px;
+  animation: cg-script-in 0.25s ease-out;
+}
+
+.cg-pivot-option {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.2s;
+  color: #cbd5e1;
+}
+.cg-pivot-option:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+.cg-pivot-option.trader:hover {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.06);
+}
+.cg-pivot-option.professional:hover {
+  border-color: rgba(139, 92, 246, 0.3);
+  background: rgba(139, 92, 246, 0.06);
+}
+
+/* ─── Mobile (self-image) ─────────────────────────────────── */
+@media (max-width: 768px) {
+  .cg-signal-row {
+    grid-template-columns: 60px 1fr 1fr;
+    font-size: 9px;
+  }
+
+  .cg-self-image-result .flex {
+    flex-wrap: wrap;
+  }
+
+  .cg-pivot-card {
+    padding: 14px;
+  }
+}

@@ -25,6 +25,7 @@ import StarterclassSection from '../StarterclassSection'
 import OnboardingChecklist from '../OnboardingChecklist'
 import ReferralPortal from '../../portal/ReferralPortal'
 import ClientPortal from '../../portal/ClientPortal'
+import FloatingCallBubble from '../FloatingCallBubble'
 
 interface VercelAdminShellProps {
   onSwitchTheme: () => void
@@ -268,6 +269,9 @@ export default function VercelAdminShell({ onSwitchTheme }: VercelAdminShellProp
           />
         )}
       </AnimatePresence>
+
+      {/* Floating Call Bubble — persists across all sections */}
+      <FloatingCallBubble />
     </div>
   )
 }

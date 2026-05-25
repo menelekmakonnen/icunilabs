@@ -17,6 +17,15 @@ function getAvatarColor(name: string) { let h = 0; for (let i = 0; i < (name||''
 function getInitials(name: string) { const clean = (name || '').replace(/[^a-zA-Z\s]/g, '').trim(); if (!clean) return '\u2022'; return clean.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) }
 function fmtMoney(v: number) { return `GH₵${(v||0).toLocaleString()}` }
 function fmtDate(d: string) { if (!d) return '—'; try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) } catch { return d } }
+function fmtCountdown(target: string) {
+  const diff = new Date(target).getTime() - Date.now()
+  if (diff <= 0) return { text: 'NOW', urgency: 'now' as const }
+  const m = Math.floor(diff / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24)
+  if (d > 0) return { text: `${d}d ${h % 24}h`, urgency: 'later' as const }
+  if (h > 0) return { text: `${h}h ${m % 60}m`, urgency: h < 1 ? 'soon' as const : 'today' as const }
+  if (m > 0) return { text: `${m}m`, urgency: m <= 15 ? 'urgent' as const : 'soon' as const }
+  return { text: '<1m', urgency: 'urgent' as const }
+}
 function healthStatus(c: any) { if (!c.project_count) return 'inactive'; if (c.outstanding > 0) return 'warning'; if (c.active_projects > 0) return 'healthy'; return 'inactive' }
 
 const TAG_STYLES: Record<string, string> = { priority:'priority', vip:'vip', new:'new', returning:'returning' }
@@ -73,14 +82,15 @@ export default function CRMSection() {
   const [showAdd, setShowAdd] = useState(false)
   const [showAddProspect, setShowAddProspect] = useState(false)
   const [form, setForm] = useState({ name:'', email:'', phone:'', company:'', source:'', industry:'', website:'' })
-  const [prospectForm, setProspectForm] = useState({ name:'', email:'', phone:'', company:'', source:'', location:'', buyer_profile:'', first_contact_date:'' })
+  const [prospectForm, setProspectForm] = useState({ name:'', email:'', phone:'', company:'', source:'', location:'', buyer_profile:'', first_contact_date:'', self_image:'', has_professional_presence:'', uses_professional_titles:'' })
   const [batchMode, setBatchMode] = useState(false)
   const [batchName, setBatchName] = useState('')
   const [batchLocation, setBatchLocation] = useState('')
+  const [batchSelfImage, setBatchSelfImage] = useState<string>('')
   const [detailTab, setDetailTab] = useState<'overview'|'projects'|'invoices'|'notes'|'activity'|'email'|'calls'>('overview')
   const [noteText, setNoteText] = useState('')
   const [tagInput, setTagInput] = useState('')
-  const [viewMode, setViewMode] = useState<'contacts'|'pipeline'>('contacts')
+  const [viewMode, setViewMode] = useState<'contacts'|'pipeline'|'others'>('contacts')
   const [metricFilter, setMetricFilter] = useState<'all' | 'paying' | 'pipeline' | 'outstanding'>('all')
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'date_added', direction: 'desc' })
   const [showFilters, setShowFilters] = useState(false)
@@ -122,7 +132,7 @@ export default function CRMSection() {
 
   const isGodmode = user?.role === 'Godmode'
 
-  useEffect(() => { adminActions.loadClients() }, [])
+  useEffect(() => { adminActions.loadClients(); adminActions.loadCallLogs() }, [])
 
   // Close call picker on click outside
   useEffect(() => {
@@ -159,8 +169,13 @@ export default function CRMSection() {
     if (metricFilter === 'pipeline' && ['won', 'disqualified'].includes((c.prospect_stage || '').toLowerCase())) return false
     if (metricFilter === 'outstanding' && Number(c.outstanding || 0) <= 0) return false
 
-    // Stage filter
-    if (stageFilter.length > 0 && !stageFilter.includes(c.prospect_stage || 'new_lead')) return false
+    // Stage filter (treat 'lost' as alias for 'disqualified')
+    if (stageFilter.length > 0) {
+      const clientStage = c.prospect_stage || 'new_lead'
+      const expandedFilter = stageFilter.includes('disqualified') ? [...stageFilter, 'lost'] : stageFilter
+      const expandedStage = clientStage === 'lost' ? 'disqualified' : clientStage
+      if (!expandedFilter.includes(expandedStage)) return false
+    }
 
     // Source filter
     if (sourceFilter && (c.source || '') !== sourceFilter) return false
@@ -210,6 +225,37 @@ export default function CRMSection() {
     })
   }, [filtered, sortConfig])
 
+  // "Others" tab — clients added by other team members (Godmode only)
+  const othersClients = useMemo(() => {
+    if (!isGodmode || !user?.email) return []
+    return activeClients
+      .filter((c: any) => c.added_by && c.added_by !== user.email)
+      .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+  }, [activeClients, isGodmode, user])
+
+  // Next-action map: client_id → { date, type } for countdown pills
+  const { callLogs: allCallLogs } = useAdminStore()
+  const nextActionMap = useMemo(() => {
+    const map: Record<string, { date: string; type: string }> = {}
+    const now = Date.now()
+    ;(allCallLogs || []).forEach((log: any) => {
+      if (!log.next_action_date || !log.client_id) return
+      const d = new Date(log.next_action_date).getTime()
+      if (d < now) return // past
+      if (!map[log.client_id] || d < new Date(map[log.client_id].date).getTime()) {
+        map[log.client_id] = { date: log.next_action_date, type: log.outcome || '' }
+      }
+    })
+    return map
+  }, [allCallLogs])
+
+  // Live ticker for countdowns
+  const [_tick, setTick] = useState(0)
+  useEffect(() => {
+    const t = setInterval(() => setTick(x => x + 1), 30000) // refresh every 30s
+    return () => clearInterval(t)
+  }, [])
+
   const openClient = async (c: any) => {
     setDetailTab('overview')
     setEditing(false)
@@ -248,7 +294,7 @@ export default function CRMSection() {
       const payload: any = { ...prospectForm, prospect_stage: 'prospect' }
       if (prospectForm.location) payload.address = prospectForm.location
       const ok = await adminActions.createClient(payload)
-      if (ok) { setShowAddProspect(false); setProspectForm({ name:'', email:'', phone:'', company:'', source:'', location:'', buyer_profile:'', first_contact_date:'' }) }
+      if (ok) { setShowAddProspect(false); setProspectForm({ name:'', email:'', phone:'', company:'', source:'', location:'', buyer_profile:'', first_contact_date:'', self_image:'', has_professional_presence:'', uses_professional_titles:'' }) }
     } finally { setBusyProspect(false) }
   }
 
@@ -258,6 +304,7 @@ export default function CRMSection() {
     try {
       const payload: any = { name: batchName.trim(), source: 'Google Maps', prospect_stage: 'prospect' }
       if (batchLocation.trim()) payload.address = batchLocation.trim()
+      if (batchSelfImage) payload.self_image = batchSelfImage
       const ok = await adminActions.createClient(payload)
       if (ok) setBatchName('')
     } finally { setBusyBatch(false) }
@@ -546,6 +593,14 @@ export default function CRMSection() {
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Industry:</span>{c.industry || '—'}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Source:</span>{c.source || '—'}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Profile:</span>{c.buyer_profile ? personas.find(p => p.id === c.buyer_profile)?.title || c.buyer_profile : '—'}</p>
+                    {c.self_image && (
+                      <p className="text-neutral-300 flex items-center gap-2"><span className="text-neutral-600 mr-2">Self-Image:</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          c.self_image === 'professional' ? 'text-[#8b5cf6] border-[#8b5cf6]/30 bg-[#8b5cf6]/8' : 'text-[#f59e0b] border-[#f59e0b]/30 bg-[#f59e0b]/8'
+                        }`}>{c.self_image === 'professional' ? 'Professional' : 'Trader'}</span>
+                        <span className="text-[10px] text-neutral-600">{c.self_image === 'professional' ? 'Research-First' : 'Story-First'}</span>
+                      </p>
+                    )}
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Added By:</span>{c.added_by ? c.added_by.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : <span className="text-neutral-700 italic">Legacy entry</span>}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Client Since:</span>{fmtDate(c.created_at)}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Last Activity:</span>{fmtDate(c.last_activity)}</p>
@@ -1018,6 +1073,15 @@ export default function CRMSection() {
               </svg>
               Pipeline
             </button>
+            {isGodmode && (
+              <button onClick={() => setViewMode('others')}
+                className={`crm-view-tab ${viewMode === 'others' ? 'active' : ''}`}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><path d="M20 8v6" /><path d="M23 11h-6" />
+                </svg>
+                Others{othersClients.length > 0 && <span className="text-[9px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded-full ml-1">{othersClients.length}</span>}
+              </button>
+            )}
           </div>
           
           <div className="relative w-full sm:w-72 mb-1">
@@ -1208,6 +1272,70 @@ export default function CRMSection() {
         </div>
       </>)}
 
+      {/* ═══ OTHERS VIEW (Godmode only) ═══ */}
+      {viewMode === 'others' && (<>
+        <div className="p-3 bg-[#00bfff]/5 border border-[#00bfff]/15 rounded-xl mb-4 flex items-start gap-2.5">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00bfff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <div>
+            <p className="text-xs text-white font-bold">Contacts added by other team members</p>
+            <p className="text-[10px] text-neutral-500 mt-0.5">Start a call to any contact below to take ownership. Call logs will link you to the client.</p>
+          </div>
+        </div>
+        {othersClients.length === 0 ? (
+          <div className="text-center py-16"><p className="text-neutral-600 text-sm">No contacts from other team members found.</p></div>
+        ) : (
+          <div className="crm-grid">
+            <AnimatePresence>
+              {othersClients.map((c: any, i: number) => {
+                const displayName = c.name || c.company || c.email || 'Unnamed'
+                const stage = c.prospect_stage || 'new_lead'
+                const stageInfo = STAGES.find(s => s.id === stage)
+                const addedByName = c.added_by ? c.added_by.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : ''
+                return (
+                  <motion.div key={c.client_id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                    transition={{ delay: Math.min(i * 0.02, 0.4), duration: 0.3 }} onClick={() => openClient(c)}
+                    className={`crm-card ${stageClass(stage)}`}>
+                    <div className="crm-profile-avatar"><PersonAvatar name={displayName} /></div>
+                    <h3 className="text-sm font-bold text-white truncate w-full relative z-10">{displayName}</h3>
+                    {c.company && c.company !== displayName && (
+                      <p className="text-[11px] text-neutral-500 truncate w-full relative z-10 mt-0.5">{c.company}</p>
+                    )}
+                    <div className="mt-2 mb-1 relative z-10">
+                      <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full inline-flex items-center gap-1"
+                        style={{ color: stageInfo?.color || '#64748b', background: `${stageInfo?.color || '#475569'}15` }}>
+                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: stageInfo?.color || '#64748b' }} />
+                        {stageInfo?.label || stage}
+                      </span>
+                    </div>
+                    {/* Next Action Pill */}
+                    {nextActionMap[c.client_id] && (() => {
+                      const cd = fmtCountdown(nextActionMap[c.client_id].date)
+                      return <span className={`crm-countdown-pill ${cd.urgency} mt-1`}><Clock className="w-3 h-3" /> {cd.text}</span>
+                    })()}
+                    <div className="crm-meta relative z-10 flex justify-between items-end mt-2">
+                      <div>
+                        <div className="flex items-center gap-1 text-[10px] text-amber-500/70">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /></svg>
+                          Added by {addedByName}
+                        </div>
+                        <p className="text-[10px] text-neutral-700">{fmtDate(c.created_at)}</p>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setCallGuideClient(c) }}
+                        className="w-8 h-8 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center transition-all cursor-pointer group/call"
+                        title="Start Call — Take Ownership"
+                      >
+                        <Phone className="w-4 h-4 text-emerald-500 group-hover/call:scale-110 transition-transform" />
+                      </button>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </AnimatePresence>
+          </div>
+        )}
+      </>)}
+
       {viewMode === 'contacts' && (<>
 
       {/* Sorting + Content with optional Filter Sidebar */}
@@ -1301,6 +1429,19 @@ export default function CRMSection() {
                     <p className="text-[10px] text-red-400/80 mt-1 relative z-10">Owes {fmtMoney(c.outstanding)}</p>
                   )}
 
+                  {/* Next Action / Status Pill */}
+                  <div className="mt-1.5 relative z-10">
+                    {stage === 'won' ? (
+                      <span className="crm-countdown-pill project">→ Project</span>
+                    ) : stage === 'disqualified' ? (
+                      <span className="crm-countdown-pill lost">Lost</span>
+                    ) : nextActionMap[c.client_id] ? (() => {
+                      const cd = fmtCountdown(nextActionMap[c.client_id].date)
+                      return <span className={`crm-countdown-pill ${cd.urgency}`}>
+                        <Clock className="w-3 h-3" /> {cd.text}
+                      </span>
+                    })() : null}
+                  </div>
                   {/* Tags */}
                   {c.tags_list?.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2 justify-center relative z-10">
@@ -1492,6 +1633,23 @@ export default function CRMSection() {
                   <label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Location / Area</label>
                   <input value={batchLocation} onChange={e => setBatchLocation(e.target.value)} className={inputCls} placeholder="e.g. Print shops near Newtown" />
                 </div>
+                <div>
+                  <label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Bulk Self-Image Default <span className="text-neutral-700 normal-case">(optional)</span></label>
+                  <div className="flex gap-1.5">
+                    {[{ v: '', label: 'Skip' }, { v: 'professional', label: 'Professional' }, { v: 'trader', label: 'Trader' }].map(o => (
+                      <button key={o.v} type="button" onClick={() => setBatchSelfImage(o.v)}
+                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all border ${
+                          batchSelfImage === o.v
+                            ? o.v === 'professional' ? 'bg-[#8b5cf6]/10 border-[#8b5cf6]/30 text-[#8b5cf6]'
+                            : o.v === 'trader' ? 'bg-[#f59e0b]/10 border-[#f59e0b]/30 text-[#f59e0b]'
+                            : 'bg-neutral-800 border-neutral-700 text-neutral-400'
+                            : 'border-neutral-800 text-neutral-600 hover:text-neutral-400'
+                        }`}>
+                        {o.label}{o.v && <span className="block text-[8px] opacity-60 font-normal">{o.v === 'professional' ? 'Research-First' : 'Story-First'}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <input value={batchName} onChange={e => setBatchName(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleBatchAdd() } }}
@@ -1520,6 +1678,95 @@ export default function CRMSection() {
                     {personas.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                   </select>
                 </div>
+
+                {/* Pre-Call Classification */}
+                <div className="p-3 bg-neutral-900/40 border border-neutral-800 rounded-xl space-y-2.5">
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Pre-Call Classification</p>
+                  <div>
+                    <p className="text-[10px] text-neutral-500 mb-1">Professional online presence?</p>
+                    <div className="flex gap-1.5">
+                      {['yes', 'no', 'unsure'].map(v => (
+                        <button type="button" key={v} onClick={() => {
+                          const pp = { ...prospectForm, has_professional_presence: v, self_image: '' }
+                          const si = (v === 'yes' && (prospectForm.uses_professional_titles === 'yes' || !prospectForm.uses_professional_titles)) ? 'professional'
+                            : (v === 'no' && prospectForm.uses_professional_titles === 'no') ? 'trader' : ''
+                          pp.self_image = si
+                          setProspectForm(pp)
+                        }}
+                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all border ${
+                            prospectForm.has_professional_presence === v
+                              ? v === 'yes' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                              : v === 'no' ? 'bg-red-500/8 border-red-500/25 text-red-400'
+                              : 'bg-amber-500/8 border-amber-500/25 text-amber-400'
+                              : 'border-neutral-800 text-neutral-600 hover:text-neutral-400'
+                          }`}>
+                          {v === 'yes' ? 'Yes' : v === 'no' ? 'No' : 'Unsure'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-neutral-500 mb-1">Uses professional titles? (CEO, Director, Founder)</p>
+                    <div className="flex gap-1.5">
+                      {['yes', 'no', 'unsure'].map(v => (
+                        <button type="button" key={v} onClick={() => {
+                          const pp = { ...prospectForm, uses_professional_titles: v, self_image: '' }
+                          const si = (pp.has_professional_presence === 'yes' && v === 'yes') ? 'professional'
+                            : (pp.has_professional_presence === 'no' && v === 'no') ? 'trader' : ''
+                          pp.self_image = si
+                          setProspectForm(pp)
+                        }}
+                          className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all border ${
+                            prospectForm.uses_professional_titles === v
+                              ? v === 'yes' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                              : v === 'no' ? 'bg-red-500/8 border-red-500/25 text-red-400'
+                              : 'bg-amber-500/8 border-amber-500/25 text-amber-400'
+                              : 'border-neutral-800 text-neutral-600 hover:text-neutral-400'
+                          }`}>
+                          {v === 'yes' ? 'Yes' : v === 'no' ? 'No' : 'Unsure'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {(prospectForm.has_professional_presence || prospectForm.uses_professional_titles) && (() => {
+                    const si = prospectForm.self_image || (
+                      (prospectForm.has_professional_presence === 'yes' || prospectForm.uses_professional_titles === 'yes') ? 'professional'
+                      : (prospectForm.has_professional_presence === 'no' && prospectForm.uses_professional_titles === 'no') ? 'trader' : 'unsure'
+                    )
+                    return (
+                      <div className={`flex items-center gap-2 p-2 rounded-lg border ${
+                        si === 'professional' ? 'bg-[#8b5cf6]/6 border-[#8b5cf6]/20' : si === 'trader' ? 'bg-[#f59e0b]/6 border-[#f59e0b]/20' : 'bg-neutral-800/30 border-neutral-700/30'
+                      }`}>
+                        <div className={`w-6 h-6 rounded-md flex items-center justify-center ${si === 'professional' ? 'bg-[#8b5cf6]/15 text-[#8b5cf6]' : si === 'trader' ? 'bg-[#f59e0b]/15 text-[#f59e0b]' : 'bg-neutral-700/30 text-neutral-500'}`}>
+                          {si === 'professional' ? (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+                          ) : si === 'trader' ? (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                          ) : (
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-bold text-white">{si === 'professional' ? 'Professional' : si === 'trader' ? 'Trader' : 'Unsure'}</p>
+                          <p className="text-[9px] text-neutral-500">{si === 'professional' ? 'Research-First' : si === 'trader' ? 'Story-First' : 'Will default by environment type'}</p>
+                        </div>
+                        <div className="ml-auto flex gap-1">
+                          {(['professional', 'trader'] as const).map(o => (
+                            <button type="button" key={o} onClick={() => setProspectForm({...prospectForm, self_image: o})}
+                              className={`text-[9px] px-2 py-0.5 rounded font-bold cursor-pointer transition-all border ${
+                                (prospectForm.self_image || si) === o
+                                  ? o === 'professional' ? 'bg-[#8b5cf6]/15 border-[#8b5cf6]/30 text-[#8b5cf6]' : 'bg-[#f59e0b]/15 border-[#f59e0b]/30 text-[#f59e0b]'
+                                  : 'border-neutral-800 text-neutral-700 hover:text-neutral-500'
+                              }`}>
+                              {o === 'professional' ? 'Prof' : 'Trader'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })()}
+                </div>
+
                 <div>
                   <label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Expected First Contact</label>
                   <input type="datetime-local" value={prospectForm.first_contact_date} onChange={e => setProspectForm({...prospectForm, first_contact_date: e.target.value})} className={inputCls} />
