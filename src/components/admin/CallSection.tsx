@@ -190,6 +190,13 @@ export default function CallSection() {
     }
   }, [filteredLogs])
 
+  // ── Actionable Follow-ups ──
+  const actionableLogs = useMemo(() => {
+    return callLogs
+      .filter((log: any) => ['needs_follow_up', 'callback_scheduled', 'interested_will_revert'].includes(log.outcome))
+      .sort((a: any, b: any) => new Date(b.call_start).getTime() - new Date(a.call_start).getTime())
+  }, [callLogs])
+
   // ── CSV Export ──
   const handleExport = () => {
     if (!filteredLogs.length) return
@@ -224,9 +231,9 @@ export default function CallSection() {
   }
 
   return (
-    <div className="crm-fade-in p-6 h-full flex flex-col">
+    <div className="crm-fade-in p-3 sm:p-6 h-full flex flex-col">
       {/* Header & Filters */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+      <div className="flex flex-col gap-3 sm:gap-4 mb-6 sm:mb-8">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <Phone className="w-6 h-6 text-[#00bfff]" /> Call Dashboard
@@ -234,8 +241,8 @@ export default function CallSection() {
           <p className="text-sm text-neutral-400 mt-1">Advanced analytics and call activity monitoring.</p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 bg-neutral-900/50 p-2 rounded-xl border border-neutral-800">
-          <div className="flex items-center gap-2 pr-4 border-r border-neutral-800">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 bg-neutral-900/50 p-2 rounded-xl border border-neutral-800">
+          <div className="flex items-center gap-2 sm:pr-4 sm:border-r sm:border-neutral-800">
             <Calendar className="w-4 h-4 text-neutral-500" />
             <select 
               value={dateFilter} 
@@ -254,28 +261,28 @@ export default function CallSection() {
           </div>
           
           {dateFilter === 'custom' && (
-            <div className="flex items-center gap-2 text-sm pr-4 border-r border-neutral-800">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm sm:pr-4 sm:border-r sm:border-neutral-800">
               <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="bg-neutral-800 text-neutral-300 px-2 py-1 rounded outline-none border border-neutral-700" />
               <span className="text-neutral-500">to</span>
               <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="bg-neutral-800 text-neutral-300 px-2 py-1 rounded outline-none border border-neutral-700" />
             </div>
           )}
 
-          <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white text-sm font-medium rounded-lg transition-colors border border-neutral-700">
-            <Download className="w-4 h-4" /> Export
+          <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-white text-xs sm:text-sm font-medium rounded-lg transition-colors border border-neutral-700">
+            <Download className="w-4 h-4" /><span className="hidden sm:inline">Export</span>
           </button>
           
-          <div className="relative border-l border-neutral-800 pl-4 ml-1" ref={callPickerRef}>
+          <div className="relative sm:border-l sm:border-neutral-800 sm:pl-4 sm:ml-1" ref={callPickerRef}>
             <button
               onClick={() => setShowCallPicker(!showCallPicker)}
-              className="flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-lg text-sm font-bold cursor-pointer hover:bg-emerald-500/15 hover:border-emerald-400/40 transition-all"
+              className="mob-icon-btn flex items-center gap-2 px-3 sm:px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-lg text-xs sm:text-sm font-bold cursor-pointer hover:bg-emerald-500/15 hover:border-emerald-400/40 transition-all"
             >
               <Phone className="w-4 h-4" />
-              Start Call
-              <ChevronDown className="w-3.5 h-3.5 ml-0.5 opacity-60" />
+              <span className="mob-label">Start Call</span>
+              <ChevronDown className="w-3.5 h-3.5 ml-0.5 opacity-60 hidden sm:block" />
             </button>
             {showCallPicker && (
-              <div className="absolute top-full right-0 mt-2 w-80 max-h-72 overflow-y-auto bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl z-50 py-1"
+              <div className="absolute top-full right-0 mt-2 w-[calc(100vw-32px)] sm:w-80 max-h-72 overflow-y-auto bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl z-50 py-1"
                 style={{ scrollbarWidth: 'thin' }}>
                 <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold text-neutral-600 uppercase tracking-wider">Select a contact</p>
                 {(!clients || clients.length === 0) && (
@@ -301,7 +308,7 @@ export default function CallSection() {
       </div>
 
       {/* View Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-neutral-800">
+      <div className="flex gap-1 mb-4 sm:mb-6 border-b border-neutral-800 overflow-x-auto scrollbar-hide">
         {[
           { id: 'overview', label: 'Overview', icon: BarChart3 },
           { id: 'logs', label: `Call Logs (${filteredLogs.length})`, icon: FileText },
@@ -310,7 +317,7 @@ export default function CallSection() {
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id as any)}
-            className={`flex items-center gap-2 px-6 py-3 text-sm font-bold border-b-2 transition-all ${activeTab === t.id ? 'border-[#00bfff] text-white' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap ${activeTab === t.id ? 'border-[#00bfff] text-white' : 'border-transparent text-neutral-500 hover:text-neutral-300'}`}
           >
             <t.icon className="w-4 h-4" /> {t.label}
           </button>
@@ -405,6 +412,63 @@ export default function CallSection() {
                   ))}
                 </div>
               ) : <p className="text-neutral-600 text-sm">No outcomes recorded in this period.</p>}
+            </div>
+
+            {/* Action Board */}
+            <div className="crm-metric border-l-2 border-l-[#00bfff]">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4 text-[#00bfff]" />
+                  <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Follow-up Action Board</p>
+                </div>
+                <span className="text-xs bg-[#00bfff]/10 text-[#00bfff] px-2 py-0.5 rounded font-bold">{actionableLogs.length} Pending</span>
+              </div>
+              
+              {actionableLogs.length > 0 ? (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                  {actionableLogs.map((log: any) => (
+                    <div key={log.call_id} className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-3 hover:border-neutral-700 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <span 
+                          className="text-sm font-bold text-white hover:text-[#00bfff] cursor-pointer transition-colors"
+                          onClick={(e) => {
+                            if (log.client_id) handleEditClient(log.client_id, e)
+                          }}
+                        >
+                          {log.client_name || 'Unknown Prospect'}
+                        </span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${log.outcome === 'callback_scheduled' ? 'bg-amber-500/10 text-amber-500' : log.outcome === 'needs_follow_up' ? 'bg-[#00bfff]/10 text-[#00bfff]' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                          {(OUTCOME_LABELS[log.outcome] || log.outcome).replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                      
+                      <p className="text-xs text-neutral-400 mb-2 line-clamp-2">{log.call_notes || <span className="italic">No notes</span>}</p>
+                      
+                      <div className="flex items-center justify-between pt-2 border-t border-neutral-800/50">
+                        <div className="flex items-center gap-2 text-[10px] text-neutral-500">
+                          <Calendar className="w-3 h-3" />
+                          {log.next_action_date ? <span className="text-[#00bfff]">{fmtDate(log.next_action_date)}</span> : <span>{fmtDate(log.call_start)}</span>}
+                        </div>
+                        <button 
+                          onClick={(e) => {
+                            if (log.client_id) handleEditClient(log.client_id, e)
+                          }}
+                          className="text-[10px] text-white hover:text-[#00bfff] flex items-center gap-1 bg-neutral-800 px-2 py-1 rounded transition-colors"
+                        >
+                          Open Client <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-neutral-500">
+                  <div className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center mx-auto mb-2">
+                    <Target className="w-5 h-5 text-neutral-700" />
+                  </div>
+                  <p className="text-sm">No pending follow-ups!</p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -515,8 +579,8 @@ export default function CallSection() {
               <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Competitor Intelligence Database</p>
             </div>
             {competitorIntel.length > 0 ? (
-              <div className="overflow-x-auto rounded-lg border border-neutral-800">
-                <table className="w-full text-sm text-left">
+              <div className="overflow-x-auto rounded-lg border border-neutral-800 -mx-1">
+                <table className="w-full text-sm text-left" style={{ minWidth: 520 }}>
                   <thead className="bg-neutral-900/80 text-[10px] uppercase tracking-wider text-neutral-500 border-b border-neutral-800">
                     <tr>
                       <th className="px-4 py-3 font-bold">System Name</th>

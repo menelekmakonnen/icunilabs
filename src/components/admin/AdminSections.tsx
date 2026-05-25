@@ -58,9 +58,9 @@ export function ClientsSection() {
   }
 
   return (
-    <div className="flex gap-6">
+    <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
       {/* Left sidebar tabs */}
-      <div className="w-48 flex-shrink-0 space-y-1">
+      <div className="hidden sm:block w-48 flex-shrink-0 space-y-1">
         {CLIENT_SEGMENTS.map(seg => (
           <button key={seg.id} onClick={() => setSegment(seg.id)}
             className={`w-full text-left px-3 py-2 rounded-lg text-sm cursor-pointer transition-all ${
@@ -171,8 +171,8 @@ export function ProjectsSection() {
   // Full-screen Project Editor
   if (editProject && editForm) {
     return (
-      <div className="-m-6 flex flex-col h-[calc(100vh-64px)]">
-        <div className="flex items-center justify-between px-6 py-3 bg-neutral-900/50 border-b border-neutral-800">
+      <div className="-m-3 sm:-m-6 flex flex-col h-[calc(100vh-64px)]">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-3 bg-neutral-900/50 border-b border-neutral-800">
           <div className="flex items-center gap-3">
             <button onClick={() => { setEditProject(null); setEditForm(null) }} className="text-neutral-500 hover:text-white cursor-pointer transition-colors">
               <ArrowLeft className="w-4 h-4" />
@@ -187,8 +187,8 @@ export function ProjectsSection() {
             <button onClick={handleProjectSave} className={`${btnPrimary} text-xs px-4 py-1.5`}>Save Changes</button>
           </div>
         </div>
-        <div className="flex flex-1 overflow-hidden">
-          <div className="w-[55%] overflow-y-auto border-r border-neutral-800 p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
+          <div className="w-full sm:w-[55%] overflow-y-auto sm:border-r border-neutral-800 p-4 sm:p-6 space-y-4">
             <div className="flex gap-1 mb-4">
               {(['overview', 'content', 'media'] as const).map(id => (
                 <button key={id} onClick={() => setProjectEditorTab(id)}
@@ -199,11 +199,11 @@ export function ProjectsSection() {
             </div>
             {projectEditorTab === 'overview' && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div><label className="text-xs text-neutral-500 mb-1 block">Title</label><input value={editForm.title} onChange={e => updateField('title', e.target.value)} className={inputCls} /></div>
                   <div><label className="text-xs text-neutral-500 mb-1 block">Subtitle</label><input value={editForm.subtitle} onChange={e => updateField('subtitle', e.target.value)} className={inputCls} /></div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div><label className="text-xs text-neutral-500 mb-1 block">Tier</label><select value={editForm.tier} onChange={e => updateField('tier', e.target.value)} className={inputCls}><option value="flagship">Flagship</option><option value="production">Production</option><option value="active">Active</option><option value="spec">Spec</option></select></div>
                   <div><label className="text-xs text-neutral-500 mb-1 block">Visibility</label><select value={editForm.status} onChange={e => updateField('status', e.target.value)} className={inputCls}><option value="published">Published</option><option value="draft">Draft</option></select></div>
                   <div><label className="text-xs text-neutral-500 mb-1 block">Project Status</label><input value={editForm.projectStatus} onChange={e => updateField('projectStatus', e.target.value)} className={inputCls} placeholder="e.g. Production v2.1.0" /></div>
@@ -232,7 +232,7 @@ export function ProjectsSection() {
               </div>
             )}
           </div>
-          <div className="w-[45%] flex flex-col">
+          <div className="hidden sm:flex w-[45%] flex-col">
             <LivePreview mode="project" data={editForm as any} />
           </div>
         </div>
@@ -603,9 +603,9 @@ export function CareersSection() {
   if (tab === 'listings' && showListingModal) {
 
     return (
-      <div className="-m-6 flex flex-col h-[calc(100vh-64px)]">
+      <div className="-m-3 sm:-m-6 flex flex-col h-[calc(100vh-64px)]">
         {/* Editor top bar */}
-        <div className="flex items-center justify-between px-6 py-3 bg-neutral-900/50 border-b border-neutral-800">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-6 py-3 bg-neutral-900/50 border-b border-neutral-800">
           <div className="flex items-center gap-3">
             <button onClick={() => { setShowListingModal(false); setEditingListing(null) }} className="text-neutral-500 hover:text-white cursor-pointer transition-colors">
               <ArrowLeft className="w-4 h-4" />
@@ -620,9 +620,9 @@ export function CareersSection() {
         </div>
 
         {/* Split pane */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
           {/* Left: Editor */}
-          <div className="w-[55%] overflow-y-auto border-r border-neutral-800 p-6 space-y-4">
+          <div className="w-full sm:w-[55%] overflow-y-auto sm:border-r border-neutral-800 p-4 sm:p-6 space-y-4">
             {/* Editor sub-tabs */}
             <div className="flex gap-1 mb-4">
               {(['details', 'description', 'requirements', 'media'] as const).map(id => (
@@ -640,7 +640,7 @@ export function CareersSection() {
                   <label className="text-xs text-neutral-500 mb-1 block">Job Title *</label>
                   <input value={listingForm.title} onChange={e => setListingForm({...listingForm, title: e.target.value})} className={inputCls} placeholder="e.g. Operations Assistant" required />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-neutral-500 mb-1 block">Type</label>
                     <select value={listingForm.type} onChange={e => setListingForm({...listingForm, type: e.target.value})} className={inputCls}>
@@ -654,7 +654,7 @@ export function CareersSection() {
                     </select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-neutral-500 mb-1 block">Location</label>
                     <input value={listingForm.location} onChange={e => setListingForm({...listingForm, location: e.target.value})} className={inputCls} placeholder="Accra, Ghana" />
@@ -1201,7 +1201,7 @@ export function CareersSection() {
                 <input value={customSubject} onChange={e => setCustomSubject(e.target.value)} className={inputCls} placeholder="Email subject line" />
                 <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} className={inputCls} placeholder="Email heading / title" />
                 <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} className={`${inputCls} resize-none`} rows={5} placeholder="Email body content (plain text or HTML)" />
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input value={customCtaText} onChange={e => setCustomCtaText(e.target.value)} className={inputCls} placeholder="Button text (optional)" />
                   <input value={customCtaLink} onChange={e => setCustomCtaLink(e.target.value)} className={inputCls} placeholder="Button URL (optional)" />
                 </div>
@@ -1805,7 +1805,7 @@ export function UsersSection() {
                 <label className="text-xs text-neutral-500 mb-1 block">Work Email</label>
                 <input type="email" value={editForm.company_email} onChange={e => setEditForm({...editForm, company_email: e.target.value})} className={inputCls} placeholder="name@icuni.org" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-neutral-500 mb-1 block">Phone</label>
                   <input value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} className={inputCls} placeholder="+233 xxx xxx" />
@@ -1815,7 +1815,7 @@ export function UsersSection() {
                   <input value={editForm.job_title} onChange={e => setEditForm({...editForm, job_title: e.target.value})} className={inputCls} placeholder="Operations Assistant" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-neutral-500 mb-1 block">Role</label>
                   <select value={editForm.role} onChange={e => setEditForm({...editForm, role: e.target.value})} className={inputCls}>
@@ -1864,7 +1864,7 @@ export function UsersSection() {
                 <label className="text-xs text-neutral-500 mb-1 block">Email Address *</label>
                 <input type="email" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} className={inputCls} placeholder="their.email@example.com" required autoFocus />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-neutral-500 mb-1 block">Role *</label>
                   <select value={adminRole} onChange={e => setAdminRole(e.target.value)} className={inputCls}>

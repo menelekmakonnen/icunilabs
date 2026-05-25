@@ -299,29 +299,29 @@ export default function CRMSection() {
     ] as const
 
     return (
-      <div className="crm-slide-in -m-6 flex flex-col h-[calc(100vh-64px)]">
+      <div className="crm-slide-in -m-3 sm:-m-6 flex flex-col h-[calc(100vh-64px)]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur-sm">
-          <div className="flex items-center gap-4">
-            <button onClick={() => adminActions.clearActiveClient()} className="text-neutral-500 hover:text-white cursor-pointer transition-colors"><ArrowLeft className="w-5 h-5" /></button>
-            <PersonAvatar name={c.name || c.company || c.email || ''} size={42} />
-            <div>
-              <h2 className="text-lg font-bold text-white">{c.name}</h2>
-              <div className="flex items-center gap-3 text-xs text-neutral-500">
-                {c.company && <span>{c.company}</span>}
-                <span>{c.email}</span>
-                {c.phone && <span>{c.phone}</span>}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-3 sm:py-4 gap-2 sm:gap-0 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <button onClick={() => adminActions.clearActiveClient()} className="text-neutral-500 hover:text-white cursor-pointer transition-colors shrink-0"><ArrowLeft className="w-5 h-5" /></button>
+            <div className="hidden sm:block"><PersonAvatar name={c.name || c.company || c.email || ''} size={42} /></div>
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-white truncate">{c.name}</h2>
+              <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-neutral-500 truncate">
+                {c.company && <span className="truncate">{c.company}</span>}
+                <span className="truncate hidden sm:inline">{c.email}</span>
+                {c.phone && <span className="shrink-0">{c.phone}</span>}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-hide pl-8 sm:pl-0">
             {/* Start Call */}
-            <button onClick={() => setCallGuideClient(c)} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold cursor-pointer hover:bg-emerald-500/20 transition-all" title="Start call guide">
-              <Phone className="w-3.5 h-3.5" /> Call
+            <button onClick={() => setCallGuideClient(c)} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold cursor-pointer hover:bg-emerald-500/20 transition-all shrink-0" title="Start call guide">
+              <Phone className="w-3.5 h-3.5" /><span className="hidden sm:inline">Call</span>
             </button>
             {/* Stage Selector */}
             <select value={c.prospect_stage || 'new_lead'} onChange={e => handleAdvanceStage(c.client_id, e.target.value)}
-              className="text-xs bg-neutral-900 border border-neutral-700 text-white rounded-lg px-2 py-1 cursor-pointer">
+              className="text-xs bg-neutral-900 border border-neutral-700 text-white rounded-lg px-2 py-1.5 cursor-pointer shrink-0">
               {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
             </select>
             <button onClick={startEditing} className="text-neutral-500 hover:text-[#00bfff] cursor-pointer transition-colors" title="Edit client">
@@ -361,7 +361,7 @@ export default function CRMSection() {
         </div>
 
         {/* Tags Bar */}
-        <div className="flex items-center gap-2 px-6 py-2 border-b border-neutral-800/50 bg-neutral-950/50">
+        <div className="flex items-center gap-2 px-4 sm:px-6 py-2 border-b border-neutral-800/50 bg-neutral-950/50 overflow-x-auto scrollbar-hide">
           {(c.tags_list || []).map((tag: string) => (
             <span key={tag} className={`crm-tag ${TAG_STYLES[tag.toLowerCase()] || 'default'}`}>
               {tag}
@@ -375,14 +375,14 @@ export default function CRMSection() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-0 px-6 border-b border-neutral-800 bg-neutral-950/30">
+        <div className="flex gap-0 px-3 sm:px-6 border-b border-neutral-800 bg-neutral-950/30 overflow-x-auto scrollbar-hide">
           {tabs.map(t => (
             <button key={t.id} onClick={() => setDetailTab(t.id)} className={`crm-tab ${detailTab === t.id ? 'active' : ''}`}>{t.label}</button>
           ))}
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-6">
           {detailTab === 'overview' && (
             <div className="crm-fade-in space-y-6">
               {/* Edit Mode */}
@@ -397,7 +397,7 @@ export default function CRMSection() {
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Name</label><input value={editForm.name||''} onChange={e => setEditForm({...editForm, name: e.target.value})} className={inputCls} /></div>
                     <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Email</label><input value={editForm.email||''} onChange={e => setEditForm({...editForm, email: e.target.value})} className={inputCls} /></div>
                     <div><label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Phone</label><input value={editForm.phone||''} onChange={e => setEditForm({...editForm, phone: e.target.value})} className={inputCls} /></div>
@@ -412,7 +412,7 @@ export default function CRMSection() {
               ) : (
               <>
               {/* Metrics */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 {[
                   { label: 'Total Invoiced', value: fmtMoney(c.total_invoiced), color: '#00bfff' },
                   { label: 'Outstanding', value: fmtMoney(c.outstanding), color: c.outstanding > 0 ? '#ef4444' : '#10b981' },
@@ -814,18 +814,18 @@ export default function CRMSection() {
         </div>
 
         {/* Action Row: Start Call + Add buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <div className="relative" ref={callPickerRef}>
             <button
               onClick={() => setShowCallPicker(!showCallPicker)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-xl text-sm font-bold cursor-pointer hover:bg-emerald-500/15 hover:border-emerald-400/40 transition-all"
+              className="mob-icon-btn flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:bg-emerald-500/15 hover:border-emerald-400/40 transition-all"
             >
               <Phone className="w-4 h-4" />
-              Start Call
-              <ChevronDown className="w-3.5 h-3.5 ml-0.5 opacity-60" />
+              <span className="mob-label">Start Call</span>
+              <ChevronDown className="w-3.5 h-3.5 ml-0.5 opacity-60 hidden sm:block" />
             </button>
             {showCallPicker && (
-              <div className="absolute top-full left-0 mt-2 w-80 max-h-72 overflow-y-auto bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl z-50 py-1"
+              <div className="absolute top-full left-0 sm:left-auto sm:right-0 mt-2 w-[calc(100vw-32px)] sm:w-80 max-h-72 overflow-y-auto bg-neutral-950 border border-neutral-800 rounded-xl shadow-2xl z-50 py-1"
                 style={{ scrollbarWidth: 'thin' }}>
                 <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold text-neutral-600 uppercase tracking-wider">Select a contact</p>
                 {activeClients.length === 0 && (
@@ -852,36 +852,36 @@ export default function CRMSection() {
               </div>
             )}
           </div>
-          <div className="w-px h-6 bg-neutral-800" />
+          <div className="w-px h-6 bg-neutral-800 hidden sm:block" />
           <button onClick={() => setShowLinkExtractor(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#8b5cf6]/10 to-[#00bfff]/10 border border-[#8b5cf6]/25 text-[#8b5cf6] rounded-xl text-sm font-bold cursor-pointer hover:border-[#8b5cf6]/50 hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-all">
+            className="mob-icon-btn flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#8b5cf6]/10 to-[#00bfff]/10 border border-[#8b5cf6]/25 text-[#8b5cf6] rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:border-[#8b5cf6]/50 hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-all">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><path d="M11 8v6" /><path d="M8 11h6" />
             </svg>
-            Search and Add
+            <span className="mob-label">Search and Add</span>
           </button>
           <button onClick={() => setShowAddProspect(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
+            className="mob-icon-btn flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" />
             </svg>
-            Prospect
+            <span className="mob-label">Prospect</span>
           </button>
           {isGodmode && (
             <button onClick={() => setShowHistoric(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-neutral-900 border border-amber-700/40 text-amber-400 rounded-xl text-sm font-bold cursor-pointer hover:border-amber-500/60 hover:bg-amber-500/5 transition-all">
+              className="mob-icon-btn flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-neutral-900 border border-amber-700/40 text-amber-400 rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:border-amber-500/60 hover:bg-amber-500/5 transition-all">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><path d="M8 14h.01" /><path d="M12 14h.01" /><path d="M16 14h.01" /><path d="M8 18h.01" /><path d="M12 18h.01" />
               </svg>
-              Historic
+              <span className="mob-label">Historic</span>
             </button>
           )}
           <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-xl text-sm font-bold cursor-pointer hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all">
+            className="mob-icon-btn flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M20 8v6" /><path d="M23 11h-6" />
             </svg>
-            Client
+            <span className="mob-label">Client</span>
           </button>
         </div>
       </div>
@@ -911,7 +911,7 @@ export default function CRMSection() {
 
       {/* ═══ PIPELINE VIEW ═══ */}
       {viewMode === 'pipeline' && (
-        <div className="flex gap-3 overflow-x-auto overflow-y-auto pb-4" style={{ maxHeight: 'calc(100vh - 320px)', minHeight: 300 }}>
+        <div className="pipeline-scroll flex gap-2 sm:gap-3 overflow-x-auto overflow-y-auto pb-4 scrollbar-hide" style={{ maxHeight: 'calc(100vh - 320px)', minHeight: 300 }}>
           {STAGES.filter(s => s.id !== 'lost').map((stage) => {
             const stageClients = filtered.filter((c: any) => (c.prospect_stage || 'new_lead') === stage.id)
             const showBoundary = stage.id === 'meeting_scheduled'
@@ -923,7 +923,7 @@ export default function CRMSection() {
                     <span className="text-[8px] text-[#ff7a00]/60 font-bold uppercase tracking-wider whitespace-nowrap" style={{ writingMode: 'vertical-lr', transform: 'rotate(180deg)', marginTop: 8 }}>Handoff to Founder</span>
                   </div>
                 )}
-              <div className="w-64">
+              <div className="w-56 sm:w-64">
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <div className="w-2 h-2 rounded-full" style={{ background: stage.color }} />
                   <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{stage.label}</span>
@@ -1109,11 +1109,11 @@ export default function CRMSection() {
             <form onSubmit={handleAdd} className="space-y-3">
               <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={inputCls} placeholder="Full name *" required />
               <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className={inputCls} placeholder="Email *" required />
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputCls} placeholder="Phone" />
                 <input value={form.company} onChange={e => setForm({...form, company: e.target.value})} className={inputCls} placeholder="Company" />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input value={form.industry} onChange={e => setForm({...form, industry: e.target.value})} className={inputCls} placeholder="Industry" />
                 <input value={form.source} onChange={e => setForm({...form, source: e.target.value})} className={inputCls} placeholder="Source (e.g. Referral)" />
               </div>
@@ -1167,12 +1167,12 @@ export default function CRMSection() {
               <form onSubmit={handleAddProspect} className="space-y-3">
                 <input value={prospectForm.name} onChange={e => setProspectForm({...prospectForm, name: e.target.value})} className={inputCls} placeholder="Contact name" />
                 <input value={prospectForm.company} onChange={e => setProspectForm({...prospectForm, company: e.target.value})} className={inputCls} placeholder="Company name" />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input value={prospectForm.phone} onChange={e => setProspectForm({...prospectForm, phone: e.target.value})} className={inputCls} placeholder="Phone number" />
                   <input type="email" value={prospectForm.email} onChange={e => setProspectForm({...prospectForm, email: e.target.value})} className={inputCls} placeholder="Email" />
                 </div>
                 <input value={prospectForm.location} onChange={e => setProspectForm({...prospectForm, location: e.target.value})} className={inputCls} placeholder="Location / Area (e.g. Newtown, Accra)" />
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input value={prospectForm.source} onChange={e => setProspectForm({...prospectForm, source: e.target.value})} className={inputCls} placeholder="Source (Google Maps, Referral...)" />
                   <select value={prospectForm.buyer_profile} onChange={e => setProspectForm({...prospectForm, buyer_profile: e.target.value})} className={inputCls}>
                     <option value="">— Buyer Profile —</option>

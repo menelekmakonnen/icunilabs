@@ -63,16 +63,16 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-black text-white">{title}</h2>
+          <h2 className="text-xl sm:text-2xl font-black text-white">{title}</h2>
           {subtitle && <p className="text-sm text-neutral-500 mt-1">{subtitle}</p>}
         </div>
         <div className="flex items-center gap-3">
           {headerActions}
           {onAdd && (
-            <button onClick={onAdd} className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all cursor-pointer">
-              <Plus className="w-4 h-4" />{addLabel || 'Add New'}
+            <button onClick={onAdd} className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-xs sm:text-sm font-bold hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all cursor-pointer">
+              <Plus className="w-4 h-4" /><span className="hidden sm:inline">{addLabel || 'Add New'}</span><span className="sm:hidden">Add</span>
             </button>
           )}
         </div>
@@ -98,7 +98,7 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
 
       {!loading && paged.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-neutral-800">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm" style={{ minWidth: 600 }}>
             <thead>
               <tr className="bg-neutral-900/80">
                 {selectable && (

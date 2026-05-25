@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import { Users, FolderOpen, FileText, AlertTriangle, TrendingUp, Flame } from 'lucide-react'
 
-const card = 'bg-neutral-900/50 border border-neutral-800 rounded-xl p-5'
+const card = 'bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 sm:p-5'
 
 export default function DashboardSection() {
   const s = useAdminStore()
@@ -136,16 +136,17 @@ export default function DashboardSection() {
               <Users className="w-4 h-4 text-[#ff7a00]" />
               Ops Pipeline
             </h3>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <button onClick={() => { adminActions.setSection('clients'); /* LinkExtractor will be opened from CRM */ }}
                 className="flex items-center gap-1.5 text-xs text-[#8b5cf6] hover:text-white cursor-pointer transition-colors font-semibold">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><path d="M11 8v6" /><path d="M8 11h6" />
                 </svg>
-                Search and Add
+                <span className="hidden sm:inline">Search and Add</span>
+                <span className="sm:hidden">Add</span>
               </button>
               <div className="w-px h-3 bg-neutral-700" />
-              <button onClick={() => adminActions.setSection('clients')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Open CRM</button>
+              <button onClick={() => adminActions.setSection('clients')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors"><span className="hidden sm:inline">Open </span>CRM</button>
             </div>
           </div>
           {(() => {
@@ -159,7 +160,7 @@ export default function DashboardSection() {
             const qualified = prospects.filter((c: any) => (c.prospect_stage || 'new_lead') === 'qualified').length
             return (
               <div className="space-y-3">
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
                     { label: 'Total', value: prospects.length, color: '#00bfff' },
                     { label: 'This Week', value: addedThisWeek, color: '#ff7a00' },
@@ -257,7 +258,7 @@ export default function DashboardSection() {
                     <div className="text-sm text-white font-medium truncate">{sla.title}</div>
                     <div className="text-xs text-neutral-500">{sla.step_name} — {Math.round(sla.elapsed / 60)}h elapsed</div>
                   </div>
-                  <div className="w-24">
+                  <div className="w-16 sm:w-24">
                     <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${Math.min(pct, 100)}%`, background: color }} />
                     </div>

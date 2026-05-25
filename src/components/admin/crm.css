@@ -392,3 +392,107 @@
   border-color: rgba(239, 68, 68, 0.25);
   opacity: 1;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE OPTIMIZATION
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Scrollbar Hide (for horizontal scroll areas) ─────── */
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+
+/* ─── Pipeline Scroll Container ────────────────────────── */
+.pipeline-scroll {
+  position: relative;
+}
+
+.pipeline-scroll::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 48px;
+  background: linear-gradient(90deg, transparent, rgba(10, 10, 20, 0.95));
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+@media (max-width: 639px) {
+  .pipeline-scroll::after {
+    opacity: 1;
+  }
+}
+
+/* ─── Mobile Touch Targets & Sizing ────────────────────── */
+@media (max-width: 639px) {
+  /* Tab sizing */
+  .crm-tab {
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .crm-view-tab {
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+
+  /* Action buttons */
+  .crm-action-btn {
+    min-height: 40px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  /* Cards slightly smaller padding */
+  .crm-card {
+    padding: 16px 14px;
+  }
+
+  .crm-card .crm-profile-avatar {
+    width: 60px;
+    height: 60px;
+    margin-bottom: 10px;
+  }
+
+  /* Metric cards */
+  .crm-metric {
+    padding: 12px 14px;
+  }
+
+  /* Search bar */
+  .crm-search {
+    max-width: 100%;
+  }
+
+  /* Timeline tighter */
+  .crm-timeline {
+    padding-left: 20px;
+  }
+
+  .crm-timeline-item::before {
+    left: -16px;
+    width: 7px;
+    height: 7px;
+  }
+}
+
+/* ─── Mobile Action Bar (icon-only buttons below sm) ───── */
+@media (max-width: 639px) {
+  .mob-icon-btn .mob-label {
+    display: none;
+  }
+
+  .mob-icon-btn {
+    padding: 8px 10px !important;
+    min-width: 36px;
+    justify-content: center;
+  }
+
+  .mob-icon-btn svg {
+    margin: 0;
+  }
+}
