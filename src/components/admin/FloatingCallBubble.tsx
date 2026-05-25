@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { Phone, PhoneOff, Minimize2, Maximize2, X } from 'lucide-react'
+import { PhoneOff, Minimize2, Maximize2, X } from 'lucide-react'
 import CallGuide from './CallGuide'
 import './crm.css'
 

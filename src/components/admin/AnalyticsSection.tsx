@@ -375,14 +375,17 @@ export default function AnalyticsSection() {
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [selectedPage, setSelectedPage] = useState<string | null>(null)
-  const [deviceFilter, setDeviceFilter] = useState<string | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    const range = datePreset === 'custom'
-      ? { from_date: customFrom || undefined, to_date: customTo || undefined }
-      : getDateRange(datePreset)
-    await adminActions.loadAnalytics({ from_date: range.from, to_date: range.to })
+    let filters: Record<string, any> = {}
+    if (datePreset === 'custom') {
+      filters = { from_date: customFrom || undefined, to_date: customTo || undefined }
+    } else {
+      const range = getDateRange(datePreset)
+      filters = { from_date: range.from, to_date: range.to }
+    }
+    await adminActions.loadAnalytics(filters)
     setLoading(false)
   }, [datePreset, customFrom, customTo])
 
