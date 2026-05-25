@@ -829,13 +829,127 @@
 
 @media (max-width: 768px) {
   .crm-toast-stack {
-    left: 16px;
-    right: 16px;
-    bottom: 80px;
+    left: 12px;
+    right: 12px;
+    bottom: 72px;
     max-width: none;
   }
   .call-fab {
-    bottom: 16px;
-    right: 16px;
+    bottom: 12px;
+    right: 12px;
+  }
+  .call-fab-bubble {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .call-fab-name {
+    max-width: 100px;
+    font-size: 11px;
+  }
+  .call-fab-timer {
+    font-size: 12px;
+  }
+  .call-fab-btn {
+    padding: 5px 10px;
+    font-size: 10px;
   }
 }
+
+/* ═══ COMPREHENSIVE MOBILE CRM OVERRIDES ═══════════════════ */
+
+/* Prevent ALL horizontal overflow from CRM components */
+.crm-fade-in {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  /* CRM card grid: 1 column on phones */
+  .crm-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  /* Action bar: horizontal scroll if too many buttons */
+  .crm-fade-in > .mb-4 .flex.items-center.gap-2,
+  .crm-fade-in > .mb-4 .flex.items-center.gap-3 {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .crm-fade-in > .mb-4 .flex.items-center.gap-2::-webkit-scrollbar,
+  .crm-fade-in > .mb-4 .flex.items-center.gap-3::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Pipeline columns: tighter on mobile */
+  .pipeline-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 12px;
+  }
+
+  .pipeline-scroll > .flex {
+    min-width: max-content;
+  }
+
+  .pipeline-scroll .min-w-\\[260px\\] {
+    min-width: 220px;
+  }
+
+  /* Detail view sidebar: full width */
+  .crm-fade-in .flex.flex-col.sm\\:flex-row {
+    flex-direction: column !important;
+  }
+
+  /* Modals: full width on mobile */
+  .crm-fade-in .max-w-md,
+  .crm-fade-in .max-w-lg,
+  .crm-fade-in .max-w-xl {
+    max-width: calc(100vw - 24px) !important;
+    margin: 0 12px;
+  }
+
+  /* Stat metric cards: ensure grid doesn't overflow */
+  .grid.grid-cols-2.lg\\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  /* Filter panel: smaller text */
+  .crm-tab {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  /* Countdown pills: slightly smaller */
+  .crm-countdown-pill {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
+}
+
+/* Very small phones (iPhone SE, etc.) */
+@media (max-width: 380px) {
+  .crm-grid {
+    gap: 8px;
+  }
+
+  .crm-card {
+    padding: 12px 10px;
+    border-radius: 12px;
+  }
+
+  .crm-card .crm-profile-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .crm-metric {
+    padding: 10px 10px;
+  }
+}
+

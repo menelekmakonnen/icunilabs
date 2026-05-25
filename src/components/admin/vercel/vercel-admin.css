@@ -939,6 +939,23 @@
 }
 
 /* ── Responsive ─────────────────────── */
+
+/* GLOBAL: prevent horizontal overflow on all screen sizes */
+.vercel-theme {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+.v-main {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+.v-content {
+  overflow-x: hidden;
+  word-break: break-word;
+}
+
 @media (max-width: 768px) {
   .v-sidebar {
     transform: translateX(-100%);
@@ -953,19 +970,113 @@
   }
 
   .v-content {
-    padding: 16px;
+    padding: 12px 14px;
   }
 
   .v-mobile-hamburger {
     display: flex !important;
   }
 
+  /* ── Topbar: compact on mobile ── */
   .v-topbar {
-    padding: 0 12px;
+    padding: 0 8px 0 4px;
+    height: 44px;
+    gap: 4px;
   }
 
+  .v-breadcrumb {
+    gap: 3px;
+    font-size: 12px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .v-breadcrumb-item {
+    font-size: 12px;
+    max-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .v-breadcrumb-item.active {
+    max-width: 100px;
+  }
+
+  /* Topbar spacer: smaller on mobile */
+  .v-breadcrumb .v-mobile-hamburger {
+    width: 32px !important;
+    flex-shrink: 0;
+  }
+
+  .v-topbar-actions {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  /* Hide text labels on topbar buttons, show icons only */
+  .v-topbar-btn {
+    padding: 5px 8px;
+    font-size: 0;
+    gap: 0;
+  }
+
+  .v-topbar-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .v-topbar-link {
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+
+  /* Banner */
   .vercel-theme .v-banner {
     left: 0 !important;
+    font-size: 11px;
+    padding: 4px 12px;
+  }
+
+  /* ── Tables: prevent overflow ── */
+  .vercel-theme .v-content table {
+    font-size: 12px;
+  }
+
+  .vercel-theme .v-content th,
+  .vercel-theme .v-content td {
+    padding: 6px 8px;
+  }
+
+  /* Stat/metric grids: single column when very tight */
+  .vercel-theme .v-content .grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+/* Even tighter screens */
+@media (max-width: 380px) {
+  .v-content {
+    padding: 10px 10px;
+  }
+
+  .v-topbar {
+    padding: 0 6px 0 2px;
+  }
+
+  /* Breadcrumb: hide "ICUNI Labs" prefix, just show section */
+  .v-breadcrumb-item:not(.active),
+  .v-breadcrumb-sep {
+    display: none;
+  }
+
+  .v-breadcrumb .v-mobile-hamburger {
+    width: 28px !important;
+  }
+
+  .v-topbar-link {
+    display: none;
   }
 }
 
@@ -1008,3 +1119,4 @@
 .v-action-btn.danger:hover {
   background: rgba(238, 0, 0, 0.06);
 }
+
