@@ -31,14 +31,15 @@ const PATHS: Record<string, PathDef> = {
       {
         id: 'intro', label: 'Introduce with senior title',
         script: 'Good {{time_of_day}}. My name is {{user_name}}, and I\'m the {{user_title}} at ICUNI Labs. Can I take your name again please?',
-      },
-      {
-        id: 'got_name', label: 'Got receptionist\'s name',
-        script: 'Hello {{receptionist_name}}, we\'re running a research project on the finance and operations systems that {{industry}} companies like yours use. We would like to include your company.',
         dataFields: [{ id: 'receptionist_name', label: 'Receptionist Name', type: 'text' }],
       },
       {
-        id: 'stated_research', label: 'Stated research — two minutes — specific manager type',
+        id: 'got_name', label: 'Got receptionist\'s name — stated research',
+        script: 'Hello {{receptionist_name}}, we\'re running a research project on the finance and operations systems that {{industry}} companies like yours use. We would like to include your company.',
+        scriptNote: 'Use their name warmly. This builds immediate rapport and makes transfer more likely.',
+      },
+      {
+        id: 'stated_research', label: 'Asked for manager — two minutes',
         script: 'I\'d love to speak to your operations manager for just two minutes to ask a couple of questions. Are they available?',
       },
       {
@@ -58,13 +59,20 @@ const PATHS: Record<string, PathDef> = {
         dataFields: [{ id: 'manager_email', label: 'Manager Email', type: 'text' }],
       },
       {
-        id: 'receptionist_answered', label: 'If receptionist wants to answer: engaged then escalated',
-        script: 'Do you use a system for operations? Is it off the shelf or custom-built?',
+        id: 'receptionist_answered', label: 'If receptionist wants to answer: run research questions',
+        script: '{{receptionist_name}}, that\'s really helpful — let me ask you a few questions then.',
         responses: [
-          { label: '🗣️ They answer', text: 'Ask: "How much time does your manager spend on reporting or reconciliation each month, even with that system in place?"' },
-          { label: '↗️ Escalate to manager', text: 'I really appreciate you helping, but I wouldn\'t want to put you on the spot answering for the manager\'s department — these are really questions only they can answer properly. Would you mind connecting me?' },
+          { label: '↗️ Escalate to manager', text: 'I really appreciate you helping, {{receptionist_name}}, but I wouldn\'t want to put you on the spot answering for the manager\'s department — these are really questions only they can answer properly. Would you mind connecting me?' },
         ],
-        scriptNote: 'This is not aggressive. It is protective of the receptionist while making the case for transfer.',
+        scriptNote: 'If the receptionist wants to answer, treat them as a valid research respondent. Run through the core questions below and log their answers. You can still escalate to the manager at any point.',
+        dataFields: [
+          { id: 'rc_system_name', label: 'Q1: Do you use a system for operations? Which one?', type: 'text' },
+          { id: 'rc_system_type', label: 'Q1b: Is it custom-built or off-the-shelf?', type: 'select', options: ['custom', 'off_shelf', 'none', 'unsure'] },
+          { id: 'rc_expensive_problem', label: 'Q2: What is the most expensive or time-consuming problem?', type: 'textarea' },
+          { id: 'rc_cost_amount', label: 'Q3: Roughly how much does that cost per month? (GH₵ or time)', type: 'text' },
+          { id: 'rc_system_helps', label: 'Q4: Does the current system help with that problem?', type: 'select', options: ['yes_fully', 'yes_partially', 'no', 'no_system'] },
+          { id: 'rc_dream_system', label: 'Q5: If you could snap your fingers — what would the ideal system do?', type: 'textarea' },
+        ],
       },
     ]
   },
