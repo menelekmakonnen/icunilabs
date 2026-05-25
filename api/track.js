@@ -4,7 +4,9 @@
  * enriches with geo headers, and forwards to GAS backend.
  */
 
-const GAS_URL = process.env.VITE_GOOGLE_SCRIPT_URL || process.env.GOOGLE_SCRIPT_URL || '';
+// GAS URL — same as VITE_APPS_SCRIPT_URL. Already public in the frontend bundle.
+// Hardcoded here because VITE_* env vars are NOT available in Vercel serverless functions.
+const GAS_URL = process.env.GOOGLE_SCRIPT_URL || 'https://script.google.com/macros/s/AKfycbxr71FmHXQz28l7zkx-cncgh2tx0siAsl66O0W04zfOlwWuDHwF8qKSKYU1xv085lCSXg/exec';
 
 export const config = {
   runtime: 'edge',
