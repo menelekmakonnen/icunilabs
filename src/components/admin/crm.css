@@ -495,4 +495,18 @@
   .mob-icon-btn svg {
     margin: 0;
   }
+
+  /* Filter sidebar — full-width overlay on mobile */
+  .crm-fade-in.sticky {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0;
+    bottom: 0;
+    width: 85vw !important;
+    max-width: 320px;
+    z-index: 50;
+    border-radius: 16px 0 0 16px !important;
+    overflow-y: auto;
+    box-shadow: -8px 0 40px rgba(0,0,0,0.6);
+  }
 }

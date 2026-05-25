@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, ChevronDown, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone, ArrowUp, ArrowDown } from 'lucide-react'
+import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, ChevronDown, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone, ArrowUp, ArrowDown, Filter, SlidersHorizontal } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
 import { FormButton } from './ActionButton'
@@ -85,6 +85,11 @@ export default function CRMSection() {
   const [viewMode, setViewMode] = useState<'contacts'|'pipeline'>('contacts')
   const [metricFilter, setMetricFilter] = useState<'all' | 'paying' | 'pipeline' | 'outstanding'>('all')
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({ key: 'date_added', direction: 'desc' })
+  const [showFilters, setShowFilters] = useState(false)
+  const [stageFilter, setStageFilter] = useState<string[]>([])
+  const [sourceFilter, setSourceFilter] = useState('')
+  const [visibilityFilter, setVisibilityFilter] = useState<'all'|'public'|'private'>('all')
+  const [addedByFilter, setAddedByFilter] = useState('')
   const [callGuideClient, setCallGuideClient] = useState<any>(null)
   const [showCallPicker, setShowCallPicker] = useState(false)
   const callPickerRef = useRef<HTMLDivElement>(null)
@@ -132,16 +137,45 @@ export default function CRMSection() {
 
   const activeClients = clients.filter((c: any) => (c.status || '').toLowerCase() !== 'deleted')
 
+  // Unique sources for filter dropdown
+  const allSources = useMemo(() => {
+    const s = new Set<string>()
+    activeClients.forEach((c: any) => { if (c.source) s.add(c.source) })
+    return Array.from(s).sort()
+  }, [activeClients])
+
+  // Unique added_by for filter dropdown
+  const allAddedBy = useMemo(() => {
+    const s = new Set<string>()
+    activeClients.forEach((c: any) => { if (c.added_by) s.add(c.added_by) })
+    return Array.from(s).sort()
+  }, [activeClients])
+
+  const activeFilterCount = (stageFilter.length > 0 ? 1 : 0) + (sourceFilter ? 1 : 0) + (visibilityFilter !== 'all' ? 1 : 0) + (addedByFilter ? 1 : 0) + (metricFilter !== 'all' ? 1 : 0)
+
   const filtered = activeClients.filter((c: any) => {
     // Metric filter logic
     if (metricFilter === 'paying' && !['won', 'client'].includes((c.prospect_stage || '').toLowerCase())) return false
     if (metricFilter === 'pipeline' && ['won', 'lost'].includes((c.prospect_stage || '').toLowerCase())) return false
     if (metricFilter === 'outstanding' && Number(c.outstanding || 0) <= 0) return false
 
+    // Stage filter
+    if (stageFilter.length > 0 && !stageFilter.includes(c.prospect_stage || 'new_lead')) return false
+
+    // Source filter
+    if (sourceFilter && (c.source || '') !== sourceFilter) return false
+
+    // Visibility filter
+    if (visibilityFilter === 'public' && c.visibility !== 'public') return false
+    if (visibilityFilter === 'private' && c.visibility === 'public') return false
+
+    // Added by filter
+    if (addedByFilter && (c.added_by || '') !== addedByFilter) return false
+
     // Search logic
     if (search) {
       const q = search.toLowerCase()
-      if (!(c.name||'').toLowerCase().includes(q) && !(c.email||'').toLowerCase().includes(q) && !(c.company||'').toLowerCase().includes(q)) return false
+      if (!(c.name||'').toLowerCase().includes(q) && !(c.email||'').toLowerCase().includes(q) && !(c.company||'').toLowerCase().includes(q) && !(c.phone||'').toLowerCase().includes(q) && !(c.source||'').toLowerCase().includes(q)) return false
     }
     return true
   })
@@ -159,6 +193,12 @@ export default function CRMSection() {
         const stageOrder = STAGES.map(s => s.id)
         aVal = stageOrder.indexOf(a.prospect_stage || 'new_lead')
         bVal = stageOrder.indexOf(b.prospect_stage || 'new_lead')
+      } else if (sortConfig.key === 'company') {
+        aVal = (a.company || '').toLowerCase()
+        bVal = (b.company || '').toLowerCase()
+      } else if (sortConfig.key === 'outstanding') {
+        aVal = Number(a.outstanding || 0)
+        bVal = Number(b.outstanding || 0)
       } else {
         aVal = new Date(a.created_at || 0).getTime()
         bVal = new Date(b.created_at || 0).getTime()
@@ -813,8 +853,18 @@ export default function CRMSection() {
           </div>
         </div>
 
-        {/* Action Row: Start Call + Add buttons */}
+        {/* Action Row: Add buttons + Filter toggle */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {/* Link Extractor — prominent */}
+          <button onClick={() => setShowLinkExtractor(true)}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#8b5cf6]/15 to-[#00bfff]/15 border border-[#8b5cf6]/30 text-[#8b5cf6] rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:border-[#8b5cf6]/50 hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-all">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><path d="M11 8v6" /><path d="M8 11h6" />
+            </svg>
+            <span className="hidden sm:inline">Search and Add</span>
+            <span className="sm:hidden">Extract</span>
+          </button>
+
           <div className="relative" ref={callPickerRef}>
             <button
               onClick={() => setShowCallPicker(!showCallPicker)}
@@ -852,14 +902,7 @@ export default function CRMSection() {
               </div>
             )}
           </div>
-          <div className="w-px h-6 bg-neutral-800 hidden sm:block" />
-          <button onClick={() => setShowLinkExtractor(true)}
-            className="mob-icon-btn flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#8b5cf6]/10 to-[#00bfff]/10 border border-[#8b5cf6]/25 text-[#8b5cf6] rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:border-[#8b5cf6]/50 hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-all">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><path d="M11 8v6" /><path d="M8 11h6" />
-            </svg>
-            <span className="mob-label">Search and Add</span>
-          </button>
+
           <button onClick={() => setShowAddProspect(true)}
             className="mob-icon-btn flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-300 rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:border-neutral-500 hover:text-white transition-all">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -882,6 +925,22 @@ export default function CRMSection() {
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M20 8v6" /><path d="M23 11h-6" />
             </svg>
             <span className="mob-label">Client</span>
+          </button>
+
+          {/* Filter Toggle */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1.5 px-3 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold cursor-pointer transition-all border ${
+              showFilters || activeFilterCount > 0
+                ? 'bg-[#00bfff]/10 border-[#00bfff]/30 text-[#00bfff]'
+                : 'bg-neutral-900 border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500'
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span className="hidden sm:inline">Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="w-5 h-5 rounded-full bg-[#00bfff] text-white text-[10px] font-bold flex items-center justify-center">{activeFilterCount}</span>
+            )}
           </button>
         </div>
       </div>
@@ -910,7 +969,7 @@ export default function CRMSection() {
       )}
 
       {/* ═══ PIPELINE VIEW ═══ */}
-      {viewMode === 'pipeline' && (
+      {viewMode === 'pipeline' && (<>
         <div className="pipeline-scroll flex gap-2 sm:gap-3 overflow-x-auto overflow-y-auto pb-4 scrollbar-hide" style={{ maxHeight: 'calc(100vh - 320px)', minHeight: 300 }}>
           {STAGES.filter(s => s.id !== 'lost').map((stage) => {
             const stageClients = filtered.filter((c: any) => (c.prospect_stage || 'new_lead') === stage.id)
@@ -974,23 +1033,29 @@ export default function CRMSection() {
             )
           })}
         </div>
-      )}
+      </>)}
 
       {viewMode === 'contacts' && (<>
 
+      {/* Sorting + Content with optional Filter Sidebar */}
+      <div className="flex gap-4">
+      <div className="flex-1 min-w-0">
+
       {/* Sorting Bar */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-neutral-900/30 rounded-lg border border-neutral-800 w-max">
-        <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold mr-2">Sort by:</span>
+      <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-neutral-900/30 rounded-lg border border-neutral-800">
+        <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold mr-1 sm:mr-2">Sort:</span>
         {[
           { key: 'date_added', label: 'Date Added' },
           { key: 'name', label: 'Name' },
           { key: 'pipeline_stage', label: 'Stage' },
-          { key: 'added_by', label: 'Added By' }
+          { key: 'added_by', label: 'Added By' },
+          { key: 'company', label: 'Company' },
+          { key: 'outstanding', label: 'Outstanding' },
         ].map(col => (
           <button 
             key={col.key}
             onClick={() => setSortConfig({ key: col.key, direction: sortConfig.key === col.key && sortConfig.direction === 'desc' ? 'asc' : 'desc' })}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${sortConfig.key === col.key ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/50 cursor-pointer'}`}
+            className={`flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-[11px] sm:text-xs font-bold transition-all ${sortConfig.key === col.key ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/50 cursor-pointer'}`}
           >
             {col.label}
             {sortConfig.key === col.key && (
@@ -1095,6 +1160,106 @@ export default function CRMSection() {
           </AnimatePresence>
         </div>
       )}
+
+      </div>{/* end flex-1 content column */}
+
+      {/* ═══ FILTER SIDEBAR ═══ */}
+      {showFilters && (
+        <div className="w-64 sm:w-72 flex-shrink-0 bg-neutral-950/60 border border-neutral-800 rounded-xl p-4 space-y-5 h-fit sticky top-4 crm-fade-in">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-white flex items-center gap-2"><Filter className="w-4 h-4 text-[#00bfff]" /> Filters</h3>
+            {activeFilterCount > 0 && (
+              <button onClick={() => { setStageFilter([]); setSourceFilter(''); setVisibilityFilter('all'); setAddedByFilter(''); setMetricFilter('all') }}
+                className="text-[10px] text-red-400 hover:text-red-300 cursor-pointer transition-colors">Clear All</button>
+            )}
+          </div>
+
+          {/* Stage Filter */}
+          <div>
+            <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold mb-2">Pipeline Stage</p>
+            <div className="space-y-1">
+              {STAGES.map(s => (
+                <button key={s.id}
+                  onClick={() => setStageFilter(prev => prev.includes(s.id) ? prev.filter(x => x !== s.id) : [...prev, s.id])}
+                  className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                    stageFilter.includes(s.id) ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30'
+                  }`}>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                  <span className="flex-1 text-left">{s.label}</span>
+                  {stageFilter.includes(s.id) && <CheckCircle className="w-3.5 h-3.5 text-[#00bfff]" />}
+                  <span className="text-[10px] text-neutral-700">{activeClients.filter((c: any) => (c.prospect_stage || 'new_lead') === s.id).length}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Source Filter */}
+          {allSources.length > 0 && (
+            <div>
+              <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold mb-2">Source</p>
+              <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-neutral-900 border border-neutral-700 rounded-lg text-xs text-white cursor-pointer focus:outline-none focus:border-[#00bfff]">
+                <option value="">All Sources</option>
+                {allSources.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+          )}
+
+          {/* Visibility Filter */}
+          <div>
+            <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold mb-2">Visibility</p>
+            <div className="flex gap-1">
+              {([['all', 'All'], ['public', 'Public'], ['private', 'Private']] as const).map(([v, label]) => (
+                <button key={v} onClick={() => setVisibilityFilter(v)}
+                  className={`flex-1 px-2 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    visibilityFilter === v ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300'
+                  }`}>{label}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Added By Filter */}
+          {allAddedBy.length > 1 && (
+            <div>
+              <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold mb-2">Added By</p>
+              <select value={addedByFilter} onChange={e => setAddedByFilter(e.target.value)}
+                className="w-full px-2.5 py-1.5 bg-neutral-900 border border-neutral-700 rounded-lg text-xs text-white cursor-pointer focus:outline-none focus:border-[#00bfff]">
+                <option value="">All Team Members</option>
+                {allAddedBy.map(a => (
+                  <option key={a} value={a}>{a.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Quick Stats */}
+          <div className="pt-3 border-t border-neutral-800">
+            <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold mb-2">Quick Filters</p>
+            <div className="space-y-1">
+              {[
+                { id: 'all' as const, label: 'All Contacts', count: activeClients.length, color: '#00bfff' },
+                { id: 'paying' as const, label: 'Paying Only', count: activeClients.filter((c: any) => ['won', 'client'].includes((c.prospect_stage || '').toLowerCase())).length, color: '#10b981' },
+                { id: 'pipeline' as const, label: 'In Pipeline', count: activeClients.filter((c: any) => !['won', 'lost'].includes(c.prospect_stage || '')).length, color: '#f59e0b' },
+                { id: 'outstanding' as const, label: 'Has Outstanding', count: activeClients.filter((c: any) => Number(c.outstanding || 0) > 0).length, color: '#ef4444' },
+              ].map(q => (
+                <button key={q.id}
+                  onClick={() => setMetricFilter(metricFilter === q.id ? 'all' : q.id)}
+                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
+                    metricFilter === q.id ? 'bg-neutral-800 text-white' : 'text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30'
+                  }`}>
+                  <span className="flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: q.color }} />
+                    {q.label}
+                  </span>
+                  <span className="text-[10px]" style={{ color: metricFilter === q.id ? q.color : undefined }}>{q.count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      </div>{/* end flex row */}
       </>)}
 
 
