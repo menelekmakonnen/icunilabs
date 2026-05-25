@@ -24,6 +24,7 @@
     "CallLog.js",
     "Interconnect.js",
     "ProjectRegistry.js",
+    "LinkExtractor.js",
     "Setup.js",
     "Code.js"
   ],
