@@ -4,7 +4,7 @@
  */
 
 // ─── STAGE ORDERING (for auto-advance logic) ─────────────
-var STAGE_ORDER = ['prospect', 'new_lead', 'contacted', 'qualified', 'meeting_scheduled', 'proposal_sent', 'negotiation', 'won', 'lost'];
+var STAGE_ORDER = ['prospect', 'new_lead', 'contacted', 'qualified', 'meeting_scheduled', 'won', 'disqualified'];
 
 function stageIndex_(stage) {
     var idx = STAGE_ORDER.indexOf(stage);
@@ -64,7 +64,7 @@ function handleSaveCallLog(payload) {
             break;
         case 'no_interest':
             if (currentStage === 'prospect' || currentStage === 'new_lead') {
-                targetStage = 'lost';
+                targetStage = 'disqualified';
             }
             break;
     }

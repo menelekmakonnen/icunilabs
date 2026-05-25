@@ -393,6 +393,79 @@
   opacity: 1;
 }
 
+/* ─── Disqualified Stage ──────────────────────────────────── */
+.crm-card.stage-disqualified {
+  border-color: rgba(71, 85, 105, 0.2);
+  border-style: dashed;
+  opacity: 0.6;
+  background: rgba(10, 10, 18, 0.5);
+}
+.crm-card.stage-disqualified:hover {
+  border-color: rgba(71, 85, 105, 0.4);
+  opacity: 0.85;
+}
+.crm-card.stage-disqualified::before {
+  background: linear-gradient(135deg, rgba(71, 85, 105, 0.04), transparent 60%);
+}
+
+/* ─── Call Accordion ──────────────────────────────────────── */
+.crm-call-accordion {
+  background: rgba(15, 15, 25, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.crm-call-accordion:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.crm-call-accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.crm-call-accordion-header:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.crm-call-chevron {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.crm-call-chevron.expanded {
+  transform: rotate(180deg);
+}
+
+.crm-call-accordion-body {
+  padding: 0 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  animation: crm-fade-in 0.25s ease-out;
+}
+
+/* ─── Link Extractor Button (always visible) ──────────────── */
+.crm-link-extractor-btn {
+  flex-shrink: 0;
+  z-index: 1;
+}
+
+/* ─── Sort Bar ────────────────────────────────────────────── */
+.crm-sort-bar {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.crm-sort-bar::-webkit-scrollbar { display: none; }
+
 /* ═══════════════════════════════════════════════════════════
    MOBILE OPTIMIZATION
    ═══════════════════════════════════════════════════════════ */
@@ -478,6 +551,20 @@
     width: 7px;
     height: 7px;
   }
+
+  /* Call accordion mobile tweaks */
+  .crm-call-accordion-header {
+    padding: 12px 14px;
+  }
+
+  .crm-call-accordion-body {
+    padding: 0 14px 14px;
+  }
+
+  /* Sort bar scroll on mobile */
+  .crm-sort-bar {
+    flex-wrap: nowrap;
+  }
 }
 
 /* ─── Mobile Action Bar (icon-only buttons below sm) ───── */
@@ -496,6 +583,16 @@
     margin: 0;
   }
 
+  /* Link Extractor always shows label */
+  .crm-link-extractor-btn span {
+    display: inline !important;
+  }
+
+  .crm-link-extractor-btn {
+    font-size: 11px;
+    padding: 8px 12px !important;
+  }
+
   /* Filter sidebar — full-width overlay on mobile */
   .crm-fade-in.sticky {
     position: fixed !important;
@@ -510,3 +607,4 @@
     box-shadow: -8px 0 40px rgba(0,0,0,0.6);
   }
 }
+

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, ChevronDown, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone, ArrowUp, ArrowDown, Filter, SlidersHorizontal } from 'lucide-react'
+import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, ChevronDown, ChevronUp, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone, ArrowUp, ArrowDown, Filter, SlidersHorizontal, PhoneCall, Clock } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
 import { FormButton } from './ActionButton'
@@ -24,7 +24,7 @@ const TAG_STYLES: Record<string, string> = { priority:'priority', vip:'vip', new
 function stageClass(stage: string): string {
   if (stage === 'prospect') return 'stage-prospect'
   if (stage === 'won') return 'stage-won'
-  if (stage === 'lost') return 'stage-lost'
+  if (stage === 'disqualified') return 'stage-disqualified'
   if (['new_lead','contacted','qualified'].includes(stage)) return 'stage-lead'
   return ''
 }
@@ -45,15 +45,13 @@ function PersonAvatar({ name, size = 80 }: { name: string; size?: number }) {
 }
 
 const STAGES = [
-  { id: 'prospect', label: 'Prospect', color: '#64748b' },
-  { id: 'new_lead', label: 'New Lead', color: '#00bfff' },
-  { id: 'contacted', label: 'Contacted', color: '#8b5cf6' },
-  { id: 'qualified', label: 'Qualified', color: '#f59e0b' },
-  { id: 'meeting_scheduled', label: 'Meeting', color: '#ff7a00' },
-  { id: 'proposal_sent', label: 'Proposal', color: '#ec4899' },
-  { id: 'negotiation', label: 'Negotiation', color: '#ef4444' },
-  { id: 'won', label: 'Won', color: '#10b981' },
-  { id: 'lost', label: 'Lost', color: '#475569' },
+  { id: 'prospect', label: 'Prospect', color: '#64748b', hidden: false },
+  { id: 'new_lead', label: 'New Lead', color: '#00bfff', hidden: false },
+  { id: 'contacted', label: 'Contacted', color: '#8b5cf6', hidden: false },
+  { id: 'qualified', label: 'Qualified', color: '#f59e0b', hidden: false },
+  { id: 'meeting_scheduled', label: 'Meeting', color: '#ff7a00', hidden: false },
+  { id: 'won', label: 'Won', color: '#10b981', hidden: false },
+  { id: 'disqualified', label: 'Disqualified', color: '#475569', hidden: true },
 ] as const
 
 const EMAIL_TEMPLATES = [
@@ -79,7 +77,7 @@ export default function CRMSection() {
   const [batchMode, setBatchMode] = useState(false)
   const [batchName, setBatchName] = useState('')
   const [batchLocation, setBatchLocation] = useState('')
-  const [detailTab, setDetailTab] = useState<'overview'|'projects'|'invoices'|'notes'|'activity'|'email'>('overview')
+  const [detailTab, setDetailTab] = useState<'overview'|'projects'|'invoices'|'notes'|'activity'|'email'|'calls'>('overview')
   const [noteText, setNoteText] = useState('')
   const [tagInput, setTagInput] = useState('')
   const [viewMode, setViewMode] = useState<'contacts'|'pipeline'>('contacts')
@@ -119,6 +117,8 @@ export default function CRMSection() {
   const [projectForm, setProjectForm] = useState({ title:'', type:'Website', estimated_cost:'', description:'', est_completion:'' })
   const [busyProject, setBusyProject] = useState(false)
   const [showLinkExtractor, setShowLinkExtractor] = useState(false)
+  const [clientCalls, setClientCalls] = useState<any[]>([])
+  const [expandedCalls, setExpandedCalls] = useState<Set<string>>(new Set())
 
   const isGodmode = user?.role === 'Godmode'
 
@@ -156,7 +156,7 @@ export default function CRMSection() {
   const filtered = activeClients.filter((c: any) => {
     // Metric filter logic
     if (metricFilter === 'paying' && !['won', 'client'].includes((c.prospect_stage || '').toLowerCase())) return false
-    if (metricFilter === 'pipeline' && ['won', 'lost'].includes((c.prospect_stage || '').toLowerCase())) return false
+    if (metricFilter === 'pipeline' && ['won', 'disqualified'].includes((c.prospect_stage || '').toLowerCase())) return false
     if (metricFilter === 'outstanding' && Number(c.outstanding || 0) <= 0) return false
 
     // Stage filter
@@ -213,6 +213,8 @@ export default function CRMSection() {
   const openClient = async (c: any) => {
     setDetailTab('overview')
     setEditing(false)
+    setClientCalls([])
+    setExpandedCalls(new Set())
     // Show the client immediately from local data (optimistic)
     adminActions.setActiveClientOptimistic(c)
     setBusyOpen(c.client_id)
@@ -220,6 +222,10 @@ export default function CRMSection() {
       // Fetch fresh data in background
       adminActions.getClient(c.client_id).then(() => setBusyOpen(null))
       adminActions.getClientActivity(c.client_id)
+      // Fetch calls for this client
+      adminActions.loadCallLogs({ client_id: c.client_id }).then((res: any) => {
+        setClientCalls(res?.logs || [])
+      })
     } catch (err) {
       console.error('Failed to open client:', err)
       setBusyOpen(null)
@@ -333,6 +339,7 @@ export default function CRMSection() {
       { id: 'overview', label: 'Overview' },
       { id: 'projects', label: `Projects (${c.projects?.length || 0})` },
       { id: 'invoices', label: `Invoices (${c.invoices?.length || 0})` },
+      { id: 'calls', label: `Calls (${clientCalls.length})` },
       { id: 'notes', label: `Notes (${c.notes_list?.length || 0})` },
       { id: 'activity', label: 'Activity' },
       { id: 'email', label: 'Email' },
@@ -492,7 +499,7 @@ export default function CRMSection() {
                   </div>
                 </div>
                 <div className="flex items-center gap-0">
-                  {STAGES.filter(s => s.id !== 'lost').map((s, i, arr) => {
+                  {STAGES.filter(s => !s.hidden).map((s, i, arr) => {
                     const currentIdx = arr.findIndex(st => st.id === (c.prospect_stage || 'new_lead'))
                     const isActive = i === currentIdx
                     const isPast = i < currentIdx
@@ -794,6 +801,172 @@ export default function CRMSection() {
               </div>
             </div>
           )}
+
+          {detailTab === 'calls' && (
+            <div className="crm-fade-in space-y-3">
+              {clientCalls.length === 0 ? (
+                <div className="text-center py-16">
+                  <PhoneCall className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
+                  <p className="text-neutral-600 text-sm">No calls recorded yet</p>
+                  <p className="text-neutral-700 text-xs mt-1">Use the Call Guide to log calls with this client</p>
+                </div>
+              ) : clientCalls.map((call: any) => {
+                const isExpanded = expandedCalls.has(call.call_id)
+                const toggleCall = () => {
+                  setExpandedCalls(prev => {
+                    const next = new Set(prev)
+                    next.has(call.call_id) ? next.delete(call.call_id) : next.add(call.call_id)
+                    return next
+                  })
+                }
+                const durationMin = Math.floor(Number(call.duration_seconds || 0) / 60)
+                const durationSec = Number(call.duration_seconds || 0) % 60
+                const durationStr = `${durationMin}:${String(durationSec).padStart(2, '0')}`
+                const outcomeColors: Record<string, string> = {
+                  meeting_booked: '#10b981',
+                  callback_scheduled: '#00bfff',
+                  interested_will_revert: '#8b5cf6',
+                  no_interest: '#ef4444',
+                  needs_follow_up: '#f59e0b',
+                }
+                const outcomeLabels: Record<string, string> = {
+                  meeting_booked: 'Meeting Booked',
+                  callback_scheduled: 'Callback Scheduled',
+                  interested_will_revert: 'Interested — Will Revert',
+                  no_interest: 'No Interest',
+                  needs_follow_up: 'Needs Follow-Up',
+                }
+                const outcomeColor = outcomeColors[call.outcome] || '#64748b'
+                const outcomeLabel = outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || '—'
+
+                let dataCapture: Record<string, any> = {}
+                try { dataCapture = typeof call.data_capture === 'string' ? JSON.parse(call.data_capture) : (call.data_capture || {}) } catch {}
+                let outcomeDetails: Record<string, any> = {}
+                try { outcomeDetails = typeof call.outcome_details === 'string' ? JSON.parse(call.outcome_details) : (call.outcome_details || {}) } catch {}
+                let tpChecked: string[] = []
+                try { tpChecked = typeof call.talking_points_checked === 'string' ? JSON.parse(call.talking_points_checked) : (call.talking_points_checked || []) } catch {}
+                let tpSkipped: string[] = []
+                try { tpSkipped = typeof call.talking_points_skipped === 'string' ? JSON.parse(call.talking_points_skipped) : (call.talking_points_skipped || []) } catch {}
+
+                return (
+                  <div key={call.call_id} className="crm-call-accordion">
+                    {/* Accordion Header */}
+                    <button onClick={toggleCall} className="crm-call-accordion-header">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${outcomeColor}15`, border: `1px solid ${outcomeColor}30` }}>
+                          <PhoneCall className="w-4 h-4" style={{ color: outcomeColor }} />
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm text-white font-medium">{fmtDate(call.call_start)}</span>
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ color: outcomeColor, background: `${outcomeColor}15` }}>{outcomeLabel}</span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-0.5 text-[11px] text-neutral-500">
+                            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{durationStr}</span>
+                            <span>{call.caller_name || call.caller_email?.split('@')[0] || '—'}</span>
+                            {call.path_loaded && <span className="text-neutral-600">{call.path_loaded.replace(/_/g, ' ')}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`crm-call-chevron ${isExpanded ? 'expanded' : ''}`}>
+                        <ChevronDown className="w-4 h-4 text-neutral-600" />
+                      </div>
+                    </button>
+
+                    {/* Accordion Body */}
+                    {isExpanded && (
+                      <div className="crm-call-accordion-body">
+                        {/* Call Summary Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                          <div>
+                            <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Environment</p>
+                            <p className="text-xs text-neutral-300 font-medium">{(call.environment_type || '—').replace(/_/g, ' ')}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Persona</p>
+                            <p className="text-xs text-neutral-300 font-medium">{(call.persona_type || '—').replace(/_/g, ' ')}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Path</p>
+                            <p className="text-xs text-neutral-300 font-medium">{(call.path_loaded || '—').replace(/_/g, ' ')}</p>
+                          </div>
+                          <div>
+                            <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Auto-Advanced</p>
+                            <p className="text-xs text-neutral-300 font-medium">{call.auto_advanced || 'No'}</p>
+                          </div>
+                        </div>
+
+                        {/* Talking Points */}
+                        {(tpChecked.length > 0 || tpSkipped.length > 0) && (
+                          <div className="mb-4">
+                            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Talking Points ({tpChecked.length}/{Number(call.talking_points_total || 0)})</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {tpChecked.map((tp: string) => (
+                                <span key={tp} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                  ✓ {tp.replace(/_/g, ' ')}
+                                </span>
+                              ))}
+                              {tpSkipped.map((tp: string) => (
+                                <span key={tp} className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-500 border border-neutral-700">
+                                  {tp.replace(/_/g, ' ')}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Data Captured */}
+                        {Object.keys(dataCapture).length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Data Captured</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              {Object.entries(dataCapture).filter(([, v]) => v).map(([k, v]) => (
+                                <div key={k} className="bg-neutral-900/50 rounded-lg p-2">
+                                  <p className="text-[9px] text-neutral-600 uppercase tracking-wider">{k.replace(/_/g, ' ')}</p>
+                                  <p className="text-xs text-neutral-300 mt-0.5">{String(v)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Outcome Details */}
+                        {(outcomeDetails.date || outcomeDetails.notes) && (
+                          <div className="mb-4">
+                            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Outcome Details</p>
+                            <div className="bg-neutral-900/50 rounded-lg p-3">
+                              {outcomeDetails.date && <p className="text-xs text-neutral-300"><span className="text-neutral-600">Date:</span> {outcomeDetails.date}{outcomeDetails.time ? ` at ${outcomeDetails.time}` : ''}</p>}
+                              {outcomeDetails.notes && <p className="text-xs text-neutral-300 mt-1"><span className="text-neutral-600">Notes:</span> {outcomeDetails.notes}</p>}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Next Action */}
+                        {call.next_action && (
+                          <div className="mb-4">
+                            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Next Action</p>
+                            <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-lg p-3">
+                              <p className="text-xs text-emerald-400 font-medium">{call.next_action}</p>
+                              {call.next_action_date && <p className="text-[10px] text-neutral-500 mt-1">Scheduled: {call.next_action_date}</p>}
+                              {call.next_action_notes && <p className="text-[10px] text-neutral-500 mt-0.5">{call.next_action_notes}</p>}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Call Notes */}
+                        {call.call_notes && (
+                          <div>
+                            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Call Notes</p>
+                            <p className="text-xs text-neutral-400 whitespace-pre-wrap leading-relaxed">{call.call_notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Delete Confirmation Modal */}
@@ -855,14 +1028,13 @@ export default function CRMSection() {
 
         {/* Action Row: Add buttons + Filter toggle */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {/* Link Extractor — prominent */}
+          {/* Link Extractor — prominent, always visible */}
           <button onClick={() => setShowLinkExtractor(true)}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#8b5cf6]/15 to-[#00bfff]/15 border border-[#8b5cf6]/30 text-[#8b5cf6] rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:border-[#8b5cf6]/50 hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-all">
+            className="crm-link-extractor-btn flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#8b5cf6]/15 to-[#00bfff]/15 border border-[#8b5cf6]/30 text-[#8b5cf6] rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:border-[#8b5cf6]/50 hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-all">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><path d="M11 8v6" /><path d="M8 11h6" />
             </svg>
-            <span className="hidden sm:inline">Search and Add</span>
-            <span className="sm:hidden">Extract</span>
+            <span>Search & Add</span>
           </button>
 
           <div className="relative" ref={callPickerRef}>
@@ -951,7 +1123,7 @@ export default function CRMSection() {
           {[
             { id: 'all', label: 'Total Contacts', value: activeClients.length, color: '#00bfff' },
             { id: 'paying', label: 'Paying Clients', value: activeClients.filter((c: any) => ['won', 'client'].includes((c.prospect_stage || '').toLowerCase())).length, color: '#10b981' },
-            { id: 'pipeline', label: 'In Pipeline', value: activeClients.filter((c: any) => !['won', 'lost'].includes(c.prospect_stage || '')).length, color: '#f59e0b' },
+            { id: 'pipeline', label: 'In Pipeline', value: activeClients.filter((c: any) => !['won', 'disqualified'].includes(c.prospect_stage || '')).length, color: '#f59e0b' },
             { id: 'outstanding', label: 'Outstanding', value: fmtMoney(outstandingTotal), color: outstandingTotal > 0 ? '#ef4444' : '#10b981' },
           ].map((s, i) => (
             <button 
@@ -971,7 +1143,7 @@ export default function CRMSection() {
       {/* ═══ PIPELINE VIEW ═══ */}
       {viewMode === 'pipeline' && (<>
         <div className="pipeline-scroll flex gap-2 sm:gap-3 overflow-x-auto overflow-y-auto pb-4 scrollbar-hide" style={{ maxHeight: 'calc(100vh - 320px)', minHeight: 300 }}>
-          {STAGES.filter(s => s.id !== 'lost').map((stage) => {
+          {STAGES.filter(s => !s.hidden).map((stage) => {
             const stageClients = filtered.filter((c: any) => (c.prospect_stage || 'new_lead') === stage.id)
             const showBoundary = stage.id === 'meeting_scheduled'
             return (
@@ -1042,8 +1214,11 @@ export default function CRMSection() {
       <div className="flex-1 min-w-0">
 
       {/* Sorting Bar */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 p-2 bg-neutral-900/30 rounded-lg border border-neutral-800">
-        <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold mr-1 sm:mr-2">Sort:</span>
+      <div className="crm-sort-bar flex flex-wrap items-center gap-2 mb-4 p-2.5 bg-neutral-900/40 rounded-xl border border-neutral-800">
+        <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold mr-1 sm:mr-2 flex items-center gap-1.5">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M6 12h12"/><path d="M9 18h6"/></svg>
+          Sort
+        </span>
         {[
           { key: 'date_added', label: 'Date Added' },
           { key: 'name', label: 'Name' },
@@ -1239,7 +1414,7 @@ export default function CRMSection() {
               {[
                 { id: 'all' as const, label: 'All Contacts', count: activeClients.length, color: '#00bfff' },
                 { id: 'paying' as const, label: 'Paying Only', count: activeClients.filter((c: any) => ['won', 'client'].includes((c.prospect_stage || '').toLowerCase())).length, color: '#10b981' },
-                { id: 'pipeline' as const, label: 'In Pipeline', count: activeClients.filter((c: any) => !['won', 'lost'].includes(c.prospect_stage || '')).length, color: '#f59e0b' },
+                { id: 'pipeline' as const, label: 'In Pipeline', count: activeClients.filter((c: any) => !['won', 'disqualified'].includes(c.prospect_stage || '')).length, color: '#f59e0b' },
                 { id: 'outstanding' as const, label: 'Has Outstanding', count: activeClients.filter((c: any) => Number(c.outstanding || 0) > 0).length, color: '#ef4444' },
               ].map(q => (
                 <button key={q.id}
