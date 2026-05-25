@@ -1025,8 +1025,8 @@ export default function CRMSection() {
             <input value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-3 py-1.5 bg-neutral-900/50 border border-neutral-800 rounded-lg text-white placeholder-neutral-600 focus:outline-none focus:border-[#00bfff] focus:bg-neutral-900 transition-all text-sm" placeholder="Search clients..." />
           </div>
         </div>
-
-        {/* Action Row: Add buttons + Filter toggle */}
+        {/* Action Row: Add buttons + Filter toggle — Contacts mode only */}
+        {viewMode === 'contacts' && (
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {/* Link Extractor — prominent, always visible */}
           <button onClick={() => setShowLinkExtractor(true)}
@@ -1115,6 +1115,7 @@ export default function CRMSection() {
             )}
           </button>
         </div>
+        )}
       </div>
 
       {/* Quick Stats (Interactive Filters in Contacts Mode) */}
@@ -1142,7 +1143,7 @@ export default function CRMSection() {
 
       {/* ═══ PIPELINE VIEW ═══ */}
       {viewMode === 'pipeline' && (<>
-        <div className="pipeline-scroll flex gap-2 sm:gap-3 overflow-x-auto overflow-y-auto pb-4 scrollbar-hide" style={{ maxHeight: 'calc(100vh - 320px)', minHeight: 300 }}>
+        <div className="pipeline-scroll flex gap-2 sm:gap-3 overflow-x-auto overflow-y-auto pb-4" style={{ maxHeight: 'calc(100vh - 260px)', minHeight: 300 }}>
           {STAGES.filter(s => !s.hidden).map((stage) => {
             const stageClients = filtered.filter((c: any) => (c.prospect_stage || 'new_lead') === stage.id)
             const showBoundary = stage.id === 'meeting_scheduled'

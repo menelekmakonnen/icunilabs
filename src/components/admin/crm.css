@@ -477,6 +477,26 @@
 /* ─── Pipeline Scroll Container ────────────────────────── */
 .pipeline-scroll {
   position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+
+.pipeline-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.pipeline-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+}
+
+.pipeline-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+
+.pipeline-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .pipeline-scroll::after {
