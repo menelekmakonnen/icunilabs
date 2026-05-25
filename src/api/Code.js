@@ -176,12 +176,6 @@ function doGet(e) {
     if (action === 'getTestimonials')   return handleGetTestimonials({});
     if (action === 'getSettings')       return handleGetSettings({});
 
-    // One-time migration endpoint — visit with ?action=setupAnalytics&key=ICUNI2026
-    if (action === 'setupAnalytics' && params.key === 'ICUNI2026') {
-        setupAnalyticsSheet();
-        return jsonResponse_(200, 'Analytics_Events sheet created/verified.', { done: true });
-    }
-
     return jsonResponse_(200, 'ICUNI Labs API v2 — Active', {
         version: '2.0.0',
         endpoints: 'POST with { action: "..." } payload',
