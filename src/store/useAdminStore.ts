@@ -76,6 +76,8 @@ interface AdminState {
   emailTemplates: any[]
   // Floating Call Bubble
   floatingCall: { client: any; callStartTime: number; paused: boolean; callGuideState?: any } | null
+  // Analytics
+  analyticsData: any | null
   // Cache timestamps (ms)
   _cache: Record<string, number>
 }
@@ -170,6 +172,7 @@ let state: AdminState = {
   emailAliases: [],
   emailTemplates: [],
   floatingCall: null,
+  analyticsData: null,
   _cache: {},
 }
 
@@ -1149,6 +1152,14 @@ export const adminActions = {
     try {
       const intel = await apiPost('getCompetitorIntel', { token: state.token })
       setState({ competitorIntel: intel?.aggregated || [] })
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  loadAnalytics: async (filters?: Record<string, any>) => {
+    try {
+      const result = await apiPost('getAnalytics', { token: state.token, ...(filters || {}) })
+      setState({ analyticsData: result || null })
+      return result
     } catch (err: any) { setState({ error: err.message }) }
   },
 

@@ -137,6 +137,9 @@ var ACTION_MAP = {
     // ── Staff/Invoice/Deployment API (Orbit Pull) ──
     staffList: handleStaffList, invoicesList: handleInvoicesList,
     deploymentsList: handleDeploymentsList, staffSync: handleStaffSync,
+
+    // ── Analytics ──
+    trackEvent: handleTrackEvent, getAnalytics: handleGetAnalytics,
 };
 
 // ═══════════════════════════════════════════════════════════

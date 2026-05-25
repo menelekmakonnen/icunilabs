@@ -10,7 +10,7 @@ import {
   LogsIcon, SettingsIcon, SearchIcon, LogoutIcon,
   SidebarCollapseIcon, SidebarExpandIcon, ThemeIcon,
   OnboardingIcon, ICUNILogo, SunIcon, MoonIcon,
-  PhoneIcon,
+  PhoneIcon, AnalyticsIcon,
 } from './VercelIcons'
 
 interface NavItem {
@@ -23,6 +23,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   // Overview
   { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, section: 'Overview' },
+  { id: 'analytics', label: 'Analytics', icon: AnalyticsIcon },
   // Operations
   { id: 'mail', label: 'Mail Hub', icon: MailIcon, section: 'Operations' },
   { id: 'calls', label: 'Calls', icon: PhoneIcon },

@@ -322,3 +322,13 @@ export function PhoneIcon({ className, size = 18 }: IconProps) {
   )
 }
 
+export function AnalyticsIcon({ className, size = 18 }: IconProps) {
+  return (
+    <svg {...d(size)} className={className} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3v18h18" />
+      <path d="M7 16l4-8 4 4 6-6" />
+    </svg>
+  )
+}
+
+

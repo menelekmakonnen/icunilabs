@@ -25,6 +25,7 @@
     "Interconnect.js",
     "ProjectRegistry.js",
     "LinkExtractor.js",
+    "Analytics.js",
     "Setup.js",
     "Code.js"
   ],
