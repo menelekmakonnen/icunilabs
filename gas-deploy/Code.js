@@ -11,9 +11,6 @@
 // ═══════════════════════════════════════════════════════════
 
 var ACTION_MAP = {
-    // ── Debug (temporary) ──
-    debugClientHeaders: handleDebugClientHeaders,
-
     // ── Auth ──
     sendOTP: handleSendOTP, verifyOTP: handleVerifyOTP,
     passwordLogin: handlePasswordLogin, pinLogin: handlePinLogin,
@@ -54,6 +51,10 @@ var ACTION_MAP = {
     getClientActivity: handleGetClientActivity, addClientNote: handleAddClientNote,
     updateClientTags: handleUpdateClientTags, updateClientStatus: handleUpdateClientStatus,
     sendClientEmail: handleSendClientEmail, previewClientEmail: handlePreviewClientEmail,
+
+    // ── Link Extraction ──
+    extractFromUrl: handleExtractFromUrl, checkDuplicate: handleCheckDuplicate,
+    bulkSearch: handleBulkSearch,
 
     // ── Call Logs ──
     saveCallLog: handleSaveCallLog, getCallLogs: handleGetCallLogs,
@@ -136,6 +137,9 @@ var ACTION_MAP = {
     // ── Staff/Invoice/Deployment API (Orbit Pull) ──
     staffList: handleStaffList, invoicesList: handleInvoicesList,
     deploymentsList: handleDeploymentsList, staffSync: handleStaffSync,
+
+    // ── Analytics ──
+    trackEvent: handleTrackEvent, getAnalytics: handleGetAnalytics,
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -548,37 +552,4 @@ function handleBugReport(payload) {
     
     logAction_(userName, userName, 'BUG_REPORT', category + ' — ' + projectTitle);
     return successResponse_(null, 'Bug report submitted. Our team has been notified.');
-}
-
-// ── TEMPORARY DIAGNOSTIC ──
-function handleDebugClientHeaders(payload) {
-    // Trigger ensureHeaders_ cleanup via sheetToObjects_
-    invalidateSheetCache_(SHEETS.CLIENTS);
-    var clients = sheetToObjects_(SHEETS.CLIENTS);
-    // Now read the cleaned-up state
-    var sheet = getSheetByName_(SHEETS.CLIENTS);
-    var lastCol = sheet.getLastColumn();
-    var lastRow = sheet.getLastRow();
-    var headers = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0] : [];
-    var sampleData = [];
-    for (var r = 2; r <= Math.min(lastRow, 5); r++) {
-        var row = sheet.getRange(r, 1, 1, lastCol).getValues()[0];
-        var obj = {};
-        for (var c = 0; c < headers.length; c++) {
-            obj[headers[c] || 'col_' + c] = row[c];
-        }
-        sampleData.push({ row: r, prospect_stage: obj.prospect_stage, name: obj.name, status: obj.status });
-    }
-    // Also show what sheetToObjects_ returned for prospect_stage
-    var stagesFromSheetToObjects = clients.slice(0, 4).map(function(c) {
-        return { name: c.name, prospect_stage: c.prospect_stage, status: c.status };
-    });
-    return successResponse_({
-        lastCol: lastCol,
-        lastRow: lastRow,
-        headers: headers,
-        prospectStageIndex: headers.indexOf('prospect_stage'),
-        sampleData: sampleData,
-        stagesFromSheetToObjects: stagesFromSheetToObjects
-    });
 }

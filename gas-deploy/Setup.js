@@ -195,6 +195,15 @@ function setupSpreadsheets() {
         'archive_id', 'spreadsheet_id', 'sheet_name', 'row_count',
         'archived_at', 'url'
     ]);
+    setupSheetHeaders_(ssLogs, SHEETS.ANALYTICS_EVENTS, [
+        'event_id', 'session_id', 'event_type', 'timestamp',
+        'page_url', 'page_title', 'device_type', 'browser', 'os',
+        'viewport_w', 'viewport_h', 'referrer', 'utm_json',
+        'city', 'country', 'latitude', 'longitude', 'region',
+        'scroll_depth', 'time_on_page', 'clicks_json',
+        'session_duration', 'page_sequence_json', 'pages_visited',
+        'lang', 'screen_w', 'screen_h', 'created_at'
+    ]);
 
     // ── Drive folder structure ──
     var jobs = getOrCreateFolder_(root, DRIVE_FOLDERS.JOBS);
@@ -215,6 +224,29 @@ function setupSpreadsheets() {
     Logger.log('Clients:    ' + ssClients.getUrl());
     Logger.log('Referrals:  ' + ssReferrals.getUrl());
     Logger.log('Logs:       ' + ssLogs.getUrl());
+}
+
+/**
+ * Standalone analytics sheet setup — run from Apps Script editor.
+ * Creates the Analytics_Events sheet in the Logs spreadsheet.
+ */
+function setupAnalyticsSheet() {
+    var props = PropertiesService.getScriptProperties();
+    var ssId = props.getProperty(PROP_KEYS.SS_LOGS);
+    if (!ssId) { Logger.log('ERROR: Logs spreadsheet not set up. Run setupSpreadsheets() first.'); return; }
+
+    var ss = SpreadsheetApp.openById(ssId);
+    setupSheetHeaders_(ss, SHEETS.ANALYTICS_EVENTS, [
+        'event_id', 'session_id', 'event_type', 'timestamp',
+        'page_url', 'page_title', 'device_type', 'browser', 'os',
+        'viewport_w', 'viewport_h', 'referrer', 'utm_json',
+        'city', 'country', 'latitude', 'longitude', 'region',
+        'scroll_depth', 'time_on_page', 'clicks_json',
+        'session_duration', 'page_sequence_json', 'pages_visited',
+        'lang', 'screen_w', 'screen_h', 'created_at'
+    ]);
+
+    Logger.log('Analytics_Events sheet created/verified in Logs spreadsheet: ' + ss.getUrl());
 }
 
 /**
