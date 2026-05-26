@@ -71,7 +71,7 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
         <div className="flex items-center gap-3">
           {headerActions}
           {onAdd && (
-            <button onClick={onAdd} className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-xs sm:text-sm font-bold hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all cursor-pointer">
+            <button onClick={onAdd} className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-xs sm:text-sm font-bold hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all cursor-pointer whitespace-nowrap">
               <Plus className="w-4 h-4" /><span className="hidden sm:inline">{addLabel || 'Add New'}</span><span className="sm:hidden">Add</span>
             </button>
           )}
@@ -98,7 +98,7 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
 
       {!loading && paged.length > 0 && (
         <div className="overflow-x-auto rounded-xl border border-neutral-800">
-          <table className="w-full text-sm" style={{ minWidth: 600 }}>
+          <table className="min-w-full text-sm" style={{ tableLayout: 'auto' }}>
             <thead>
               <tr className="bg-neutral-900/80">
                 {selectable && (
@@ -110,7 +110,7 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
                 )}
                 {columns.map(col => (
                   <th key={col.key} onClick={() => toggleSort(col.key)}
-                    className="px-4 py-3 text-left text-xs text-neutral-500 font-bold uppercase tracking-wider cursor-pointer hover:text-neutral-300 transition-colors select-none"
+                    className="px-4 py-3 text-left text-xs text-neutral-500 font-bold uppercase tracking-wider cursor-pointer hover:text-neutral-300 transition-colors select-none whitespace-nowrap"
                     style={{ width: col.width }}>
                     <span className="flex items-center gap-1">
                       {col.label}
@@ -118,7 +118,7 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
                     </span>
                   </th>
                 ))}
-                {renderRowActions && <th className="px-4 py-3 text-right text-xs text-neutral-500 font-bold uppercase tracking-wider w-[100px]">Actions</th>}
+                {renderRowActions && <th className="px-4 py-3 text-right text-xs text-neutral-500 font-bold uppercase tracking-wider whitespace-nowrap" style={{ minWidth: 140 }}>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -138,11 +138,11 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
                         </td>
                       )}
                       {columns.map(col => (
-                        <td key={col.key} className="px-4 py-3 text-neutral-300">
+                        <td key={col.key} className="px-4 py-3 text-neutral-300 whitespace-nowrap">
                           {col.render ? col.render(row[col.key], row) : (String(row[col.key] || '—'))}
                         </td>
                       ))}
-                      {renderRowActions && <td className="px-4 py-3 text-right">{renderRowActions(row)}</td>}
+                      {renderRowActions && <td className="px-4 py-3 text-right whitespace-nowrap">{renderRowActions(row)}</td>}
                     </motion.tr>
                   )
                 })}
