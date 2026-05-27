@@ -68,7 +68,7 @@ export default function VercelSidebar({
   // Department scope mapping
   const DEPT_SCOPE: Record<string, string[]> = {
     'Admin': ['dashboard', 'mail', 'clients', 'calls', 'referrals', 'invoices', 'sla', 'projects', 'settings'],
-    'Sales': ['dashboard', 'analytics', 'mail', 'clients', 'calls', 'referrals', 'sla'],
+    'Sales': ['dashboard', 'analytics', 'mail', 'clients', 'calls', 'sla'],
     'Product': ['dashboard', 'mail', 'projects', 'sla'],
   }
 

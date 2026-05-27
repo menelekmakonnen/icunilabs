@@ -130,10 +130,27 @@ function removeStageOverride(clientId: string) {
   } catch { /* non-critical */ }
 }
 
+// ─── OPTIMISTIC SESSION CACHE ─────────────────────────────
+// Cache user data alongside the token so returning users see the dashboard instantly
+// while the background validation confirms the session is still valid.
+function getCachedUser(): any {
+  try {
+    const raw = localStorage.getItem('icuni_admin_user')
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch { return null }
+}
+function setCachedUser(user: any) {
+  try {
+    if (user) localStorage.setItem('icuni_admin_user', JSON.stringify(user))
+    else localStorage.removeItem('icuni_admin_user')
+  } catch { /* non-critical */ }
+}
+
 // Singleton store
 let state: AdminState = {
   token: localStorage.getItem('icuni_admin_token'),
-  user: null,
+  user: getCachedUser(),
   loading: false,
   error: null,
   otpSent: false,
@@ -232,6 +249,7 @@ export const adminActions = {
       }
       setState({ token: session.token, user: session.user, loading: false })
       localStorage.setItem('icuni_admin_token', session.token)
+      setCachedUser(session.user)
     } catch (err: any) {
       setState({ error: err.message, loading: false })
     }
@@ -247,6 +265,7 @@ export const adminActions = {
       }
       setState({ token: session.token, user: session.user, loading: false })
       localStorage.setItem('icuni_admin_token', session.token)
+      setCachedUser(session.user)
     } catch (err: any) {
       setState({ error: err.message, loading: false })
     }
@@ -262,6 +281,7 @@ export const adminActions = {
       }
       setState({ token: session.token, user: session.user, loading: false })
       localStorage.setItem('icuni_admin_token', session.token)
+      setCachedUser(session.user)
     } catch (err: any) {
       setState({ error: err.message, loading: false })
     }
@@ -270,18 +290,21 @@ export const adminActions = {
   validateSession: async () => {
     const { token } = state
     if (!token) return
-    setState({ loading: true })
+    // Don't set loading:true — allow optimistic rendering with cached user data
     try {
       const result = await apiPost('validateSession', { token })
       if (!ALLOWED_ROLES.includes(result.user?.role)) {
         setState({ token: null, user: null, loading: false })
         localStorage.removeItem('icuni_admin_token')
+        setCachedUser(null)
         return
       }
       setState({ user: result.user, loading: false })
+      setCachedUser(result.user)
     } catch {
       setState({ token: null, user: null, loading: false })
       localStorage.removeItem('icuni_admin_token')
+      setCachedUser(null)
     }
   },
 
@@ -290,6 +313,7 @@ export const adminActions = {
     if (token) apiPost('logout', { token }).catch(() => {})
     setState({ token: null, user: null, otpSent: false, activeSection: 'dashboard' })
     localStorage.removeItem('icuni_admin_token')
+    setCachedUser(null)
   },
 
   // ── Password & PIN ──

@@ -1,10 +1,10 @@
 /**
  * SLASection — Rich, live SLA dashboard with countdown cards, urgency colors, and filtering.
- * Replaces the old DataTable-based SLA view.
+ * For Sales/Growth execs: shows Growth Team Performance dashboard instead.
  */
 import { useEffect, useState, useMemo } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { Clock, AlertTriangle, CheckCircle, Shield, ChevronDown, Pause, Eye, BarChart3, Filter } from 'lucide-react'
+import { Clock, AlertTriangle, CheckCircle, Shield, ChevronDown, Pause, Eye, BarChart3, Filter, Phone, Users, Target, TrendingUp, Calendar, ArrowRight } from 'lucide-react'
 import DataTable from './DataTable'
 
 // ── Project Steps (mirrored from Config.js) ──
@@ -40,7 +40,7 @@ function fmtElapsed(minutes: number): string {
   return `${d}d ${h % 24}h`
 }
 
-function Badge({ status }: { status: string }) {
+function SLABadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; text: string; label: string }> = {
     breached: { bg: 'rgba(239,68,68,0.12)', text: '#ef4444', label: 'Breached' },
     active:   { bg: 'rgba(34,197,94,0.12)', text: '#22c55e', label: 'On Track' },
@@ -50,6 +50,338 @@ function Badge({ status }: { status: string }) {
   return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ background: s.bg, color: s.text }}>{s.label}</span>
 }
 
+// ═══════════════════════════════════════════════════════════
+// ──  GROWTH PERFORMANCE DASHBOARD  (Sales role)  ──────────
+// ═══════════════════════════════════════════════════════════
+
+const OUTCOME_LABELS: Record<string, string> = {
+  meeting_booked: 'Meeting Booked',
+  callback_scheduled: 'Callback',
+  interested_will_revert: 'Interested',
+  no_interest: 'No Interest',
+  needs_follow_up: 'Follow-Up',
+}
+
+function GrowthPerformanceDashboard() {
+  const { callLogs, clients, users, loading } = useAdminStore()
+  const [_tick, setTick] = useState(0)
+
+  useEffect(() => {
+    adminActions.loadCallLogs({ page_size: 500 })
+    adminActions.loadClients()
+    adminActions.loadUsers()
+  }, [])
+
+  // Tick for live countdowns
+  useEffect(() => {
+    const t = setInterval(() => setTick(x => x + 1), 30000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Find all active Growth execs (Sales role, Active status)
+  const growthExecs = useMemo(() => {
+    return (users || []).filter((u: any) => u.role === 'Sales' && u.status === 'Active')
+  }, [users])
+
+  // ── Per-exec performance from call logs ──
+  const execPerf = useMemo(() => {
+    const now = Date.now()
+    const weekAgo = now - 7 * 86400000
+    const monthAgo = now - 30 * 86400000
+
+    // Build caller map
+    const byExec: Record<string, {
+      email: string; name: string; callsWeek: number; callsMonth: number; callsAll: number;
+      meetingsWeek: number; meetingsMonth: number; meetingsAll: number;
+      totalDurationWeek: number; totalDurationAll: number;
+      overdueFollowUps: number; upcomingFollowUps: number;
+      outcomes: Record<string, number>; lastCall: string;
+    }> = {}
+
+    // Seed from known execs so they show even with 0 calls
+    growthExecs.forEach((u: any) => {
+      byExec[u.email] = {
+        email: u.email, name: u.name, callsWeek: 0, callsMonth: 0, callsAll: 0,
+        meetingsWeek: 0, meetingsMonth: 0, meetingsAll: 0,
+        totalDurationWeek: 0, totalDurationAll: 0,
+        overdueFollowUps: 0, upcomingFollowUps: 0,
+        outcomes: {}, lastCall: '',
+      }
+    })
+
+    ;(callLogs || []).forEach((log: any) => {
+      const callerEmail = log.caller_email
+      if (!callerEmail) return
+      // Only count Growth execs
+      if (!byExec[callerEmail] && !growthExecs.some((u: any) => u.email === callerEmail)) return
+      if (!byExec[callerEmail]) {
+        byExec[callerEmail] = {
+          email: callerEmail, name: log.caller_name || callerEmail,
+          callsWeek: 0, callsMonth: 0, callsAll: 0,
+          meetingsWeek: 0, meetingsMonth: 0, meetingsAll: 0,
+          totalDurationWeek: 0, totalDurationAll: 0,
+          overdueFollowUps: 0, upcomingFollowUps: 0,
+          outcomes: {}, lastCall: '',
+        }
+      }
+      const e = byExec[callerEmail]
+      const callDate = new Date(log.call_start).getTime()
+      const dur = Number(log.duration_seconds || 0)
+
+      e.callsAll++
+      e.totalDurationAll += dur
+      if (callDate >= weekAgo) { e.callsWeek++; e.totalDurationWeek += dur }
+      if (callDate >= monthAgo) e.callsMonth++
+      if (log.outcome === 'meeting_booked') {
+        e.meetingsAll++
+        if (callDate >= weekAgo) e.meetingsWeek++
+        if (callDate >= monthAgo) e.meetingsMonth++
+      }
+      const out = log.outcome || 'unknown'
+      e.outcomes[out] = (e.outcomes[out] || 0) + 1
+      if (!e.lastCall || callDate > new Date(e.lastCall).getTime()) e.lastCall = log.call_start
+
+      // Track follow-up compliance
+      if (log.next_action_date && ['callback_scheduled', 'needs_follow_up', 'meeting_booked'].includes(log.outcome)) {
+        const nextDate = new Date(log.next_action_date).getTime()
+        if (nextDate < now) e.overdueFollowUps++
+        else e.upcomingFollowUps++
+      }
+    })
+
+    return Object.values(byExec).sort((a, b) => b.meetingsWeek - a.meetingsWeek || b.callsWeek - a.callsWeek)
+  }, [callLogs, growthExecs, _tick])
+
+  // ── Team-wide summary ──
+  const teamSummary = useMemo(() => {
+    const totals = {
+      callsWeek: 0, callsMonth: 0, meetingsWeek: 0, meetingsMonth: 0,
+      totalDurationWeek: 0, overdueFollowUps: 0, upcomingFollowUps: 0,
+      activeExecs: execPerf.length,
+    }
+    execPerf.forEach(e => {
+      totals.callsWeek += e.callsWeek
+      totals.callsMonth += e.callsMonth
+      totals.meetingsWeek += e.meetingsWeek
+      totals.meetingsMonth += e.meetingsMonth
+      totals.totalDurationWeek += e.totalDurationWeek
+      totals.overdueFollowUps += e.overdueFollowUps
+      totals.upcomingFollowUps += e.upcomingFollowUps
+    })
+    return totals
+  }, [execPerf])
+
+  // ── Pipeline stage distribution ──
+  const pipelineSummary = useMemo(() => {
+    const stages: Record<string, number> = {}
+    ;(clients || []).forEach((c: any) => {
+      const stage = c.prospect_stage || 'unknown'
+      stages[stage] = (stages[stage] || 0) + 1
+    })
+    return stages
+  }, [clients])
+
+  const conversionRate = teamSummary.callsWeek > 0
+    ? Math.round((teamSummary.meetingsWeek / teamSummary.callsWeek) * 100) : 0
+  const avgCallDuration = teamSummary.callsWeek > 0
+    ? Math.round(teamSummary.totalDurationWeek / teamSummary.callsWeek) : 0
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-black text-white tracking-tight">Growth Performance</h2>
+        <p className="text-sm text-neutral-500 mt-1">Team-wide metrics for all active Growth executives</p>
+      </div>
+
+      {loading && <div className="text-center py-8 text-neutral-500 text-sm">Loading performance data...</div>}
+
+      {/* ── Team Summary Metrics ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Calls This Week', value: teamSummary.callsWeek, sub: `${teamSummary.callsMonth} this month`, icon: Phone, color: '#00bfff' },
+          { label: 'Meetings Booked', value: teamSummary.meetingsWeek, sub: `${conversionRate}% conversion`, icon: Target, color: '#22c55e' },
+          { label: 'Avg Call Duration', value: `${Math.floor(avgCallDuration / 60)}:${String(avgCallDuration % 60).padStart(2, '0')}`, sub: 'minutes this week', icon: Clock, color: '#8b5cf6' },
+          { label: 'Follow-Up SLA', value: teamSummary.overdueFollowUps, sub: `${teamSummary.upcomingFollowUps} upcoming`, icon: teamSummary.overdueFollowUps > 0 ? AlertTriangle : CheckCircle, color: teamSummary.overdueFollowUps > 0 ? '#ef4444' : '#22c55e' },
+        ].map((m, i) => (
+          <div key={i} className="relative bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 overflow-hidden group">
+            <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity" style={{ background: `linear-gradient(135deg, ${m.color} 0%, transparent 100%)` }} />
+            <div className="relative z-[1]">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${m.color}15` }}>
+                  <m.icon className="w-4 h-4" style={{ color: m.color }} />
+                </div>
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">{m.label}</span>
+              </div>
+              <p className="text-2xl font-black text-white">{m.value}</p>
+              <p className="text-[10px] text-neutral-600 mt-1">{m.sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Exec Leaderboard ── */}
+      <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl overflow-hidden">
+        <div className="px-5 py-4 border-b border-neutral-800/50 flex items-center gap-2">
+          <Users className="w-4 h-4 text-[#00bfff]" />
+          <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Growth Exec Leaderboard</h3>
+          <span className="text-[10px] bg-neutral-800 text-neutral-500 px-2 py-0.5 rounded-full ml-auto">{execPerf.length} active</span>
+        </div>
+
+        {execPerf.length === 0 ? (
+          <div className="px-5 py-8 text-center text-neutral-600 text-sm">No active Growth executives found.</div>
+        ) : (
+          <div className="divide-y divide-neutral-800/50">
+            {execPerf.map((exec, idx) => {
+              const rate = exec.callsWeek > 0 ? Math.round((exec.meetingsWeek / exec.callsWeek) * 100) : 0
+              const hasOverdue = exec.overdueFollowUps > 0
+              const avgDur = exec.callsWeek > 0 ? Math.round(exec.totalDurationWeek / exec.callsWeek) : 0
+
+              return (
+                <div key={exec.email} className="px-5 py-4 hover:bg-neutral-900/30 transition-colors">
+                  <div className="flex items-center gap-4">
+                    {/* Rank */}
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-black ${
+                      idx === 0 ? 'bg-amber-500/15 text-amber-400' :
+                      idx === 1 ? 'bg-neutral-700/30 text-neutral-300' :
+                      idx === 2 ? 'bg-orange-900/20 text-orange-400' :
+                      'bg-neutral-800 text-neutral-600'
+                    }`}>
+                      {idx + 1}
+                    </div>
+
+                    {/* Name */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-white truncate">{exec.name}</p>
+                      <p className="text-[10px] text-neutral-600 truncate">{exec.email}</p>
+                    </div>
+
+                    {/* This Week Stats */}
+                    <div className="hidden sm:flex items-center gap-6 text-xs">
+                      <div className="text-center">
+                        <p className="text-white font-bold">{exec.callsWeek}</p>
+                        <p className="text-[9px] text-neutral-600 uppercase">Calls</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-emerald-400 font-bold">{exec.meetingsWeek}</p>
+                        <p className="text-[9px] text-neutral-600 uppercase">Meetings</p>
+                      </div>
+                      <div className="text-center">
+                        <p className={`font-bold ${rate >= 20 ? 'text-emerald-400' : rate >= 10 ? 'text-amber-400' : 'text-red-400'}`}>{rate}%</p>
+                        <p className="text-[9px] text-neutral-600 uppercase">Conv.</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-neutral-300 font-bold font-mono">{Math.floor(avgDur / 60)}:{String(avgDur % 60).padStart(2, '0')}</p>
+                        <p className="text-[9px] text-neutral-600 uppercase">Avg Dur</p>
+                      </div>
+                    </div>
+
+                    {/* Follow-up SLA */}
+                    <div className="flex-shrink-0">
+                      {hasOverdue ? (
+                        <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-500/10 text-red-400 text-[10px] font-bold">
+                          <AlertTriangle className="w-3 h-3" /> {exec.overdueFollowUps} overdue
+                        </span>
+                      ) : exec.upcomingFollowUps > 0 ? (
+                        <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">
+                          <Calendar className="w-3 h-3" /> {exec.upcomingFollowUps} upcoming
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-neutral-700">No follow-ups</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mobile stats row */}
+                  <div className="sm:hidden flex items-center gap-4 mt-2 ml-12 text-[10px]">
+                    <span className="text-neutral-400"><span className="text-white font-bold">{exec.callsWeek}</span> calls</span>
+                    <span className="text-neutral-400"><span className="text-emerald-400 font-bold">{exec.meetingsWeek}</span> meetings</span>
+                    <span className={`font-bold ${rate >= 20 ? 'text-emerald-400' : rate >= 10 ? 'text-amber-400' : 'text-red-400'}`}>{rate}% conv.</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Pipeline Health ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Pipeline Stage Distribution */}
+        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-4 h-4 text-[#ff7a00]" />
+            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Pipeline Stages</h3>
+          </div>
+          <div className="space-y-2">
+            {Object.entries(pipelineSummary)
+              .filter(([stage]) => stage !== 'unknown')
+              .sort((a, b) => b[1] - a[1])
+              .map(([stage, count]) => {
+                const total = Object.values(pipelineSummary).reduce((a, b) => a + b, 0)
+                const pct = total > 0 ? Math.round((count / total) * 100) : 0
+                const stageColors: Record<string, string> = {
+                  new_lead: '#00bfff', contacted: '#8b5cf6', discovery: '#6366f1',
+                  proposal: '#f59e0b', negotiation: '#ff7a00', won: '#22c55e',
+                  disqualified: '#6b7280', lost: '#6b7280',
+                }
+                const color = stageColors[stage] || '#6b7280'
+                return (
+                  <div key={stage} className="flex items-center gap-3">
+                    <span className="text-[10px] text-neutral-500 uppercase w-24 truncate font-medium">{stage.replace(/_/g, ' ')}</span>
+                    <div className="flex-1 h-2 bg-neutral-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+                    </div>
+                    <span className="text-xs text-white font-bold w-8 text-right">{count}</span>
+                  </div>
+                )
+              })}
+          </div>
+        </div>
+
+        {/* Follow-Up Compliance Card */}
+        <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-4 h-4 text-[#8b5cf6]" />
+            <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Follow-Up Compliance</h3>
+          </div>
+          <div className="space-y-4">
+            {execPerf.map(exec => {
+              const total = exec.overdueFollowUps + exec.upcomingFollowUps
+              if (total === 0) return null
+              const compliancePct = total > 0 ? Math.round((exec.upcomingFollowUps / total) * 100) : 100
+              const barColor = compliancePct >= 80 ? '#22c55e' : compliancePct >= 50 ? '#f59e0b' : '#ef4444'
+              return (
+                <div key={exec.email}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs text-white font-medium truncate max-w-[120px]">{exec.name}</span>
+                    <span className="text-[10px] font-bold" style={{ color: barColor }}>{compliancePct}%</span>
+                  </div>
+                  <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{ width: `${compliancePct}%`, background: barColor }} />
+                  </div>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <span className="text-[9px] text-neutral-600">{exec.overdueFollowUps} overdue</span>
+                    <span className="text-[9px] text-neutral-600">{exec.upcomingFollowUps} on time</span>
+                  </div>
+                </div>
+              )
+            }).filter(Boolean)}
+            {execPerf.every(e => e.overdueFollowUps + e.upcomingFollowUps === 0) && (
+              <p className="text-neutral-600 text-sm text-center py-4">No follow-ups tracked yet.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// ──  MAIN SLA SECTION  (project-based for Admin+)  ────────
+// ═══════════════════════════════════════════════════════════
+
 export default function SLASection() {
   const { slaStatuses, slaCosts, slaConfig, loading, user } = useAdminStore()
   const [tab, setTab] = useState<'status' | 'costs'>('status')
@@ -58,26 +390,28 @@ export default function SLASection() {
   const [_tick, setTick] = useState(0)
 
   const role = user?.role || ''
+  const isSales = role === 'Sales'
   const canSnooze = ['Godmode', 'SuperAdmin', 'Admin'].includes(role)
 
-  useEffect(() => { adminActions.loadSLA(); adminActions.loadSlaCosts() }, [])
+  useEffect(() => { if (!isSales) { adminActions.loadSLA(); adminActions.loadSlaCosts() } }, [isSales])
 
   // Live ticker: re-render every 30s for countdown freshness
   useEffect(() => {
+    if (isSales) return
     const t = setInterval(() => setTick(x => x + 1), 30000)
     return () => clearInterval(t)
-  }, [])
+  }, [isSales])
 
   // ── Filtered statuses ──
   const filtered = useMemo(() => {
-    if (!slaStatuses) return []
+    if (isSales || !slaStatuses) return []
     return slaStatuses.filter((s: any) => {
       if (filter === 'on_track') return !s.breached && s.severity < 0.75
       if (filter === 'at_risk') return !s.breached && s.severity >= 0.75
       if (filter === 'breached') return s.breached
       return true
     })
-  }, [slaStatuses, filter, _tick])
+  }, [slaStatuses, filter, _tick, isSales])
 
   // ── Summary metrics ──
   const summary = useMemo(() => {
@@ -92,7 +426,7 @@ export default function SLASection() {
 
   // ── Grouped by step ──
   const grouped = useMemo(() => {
-    if (!groupByStep) return null
+    if (isSales || !groupByStep) return null
     const map: Record<string, any[]> = {}
     filtered.forEach((s: any) => {
       const key = `${s.step} — ${s.step_name}`
@@ -100,7 +434,10 @@ export default function SLASection() {
       map[key].push(s)
     })
     return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]))
-  }, [filtered, groupByStep])
+  }, [filtered, groupByStep, isSales])
+
+  // ── Growth execs see the Growth Performance dashboard ──
+  if (isSales) return <GrowthPerformanceDashboard />
 
   // ── Costs Tab ──
   if (tab === 'costs') {
@@ -160,7 +497,7 @@ export default function SLASection() {
               </span>
             </div>
           </div>
-          <Badge status={s.snoozed ? 'snoozed' : s.breached ? 'breached' : 'active'} />
+          <SLABadge status={s.snoozed ? 'snoozed' : s.breached ? 'breached' : 'active'} />
         </div>
 
         {/* Step name */}
