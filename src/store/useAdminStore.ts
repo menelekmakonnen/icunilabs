@@ -49,6 +49,7 @@ interface AdminState {
   slaCosts: any[]
   slaConfig: any
   callFollowUpSLA: any[]
+  slaNotifications: any[]
   blogPosts: any[]
   portfolio: any[]
 
@@ -174,6 +175,7 @@ let state: AdminState = {
   slaCosts: [],
   slaConfig: null,
   callFollowUpSLA: [],
+  slaNotifications: [],
   blogPosts: [],
   portfolio: [],
   activeInvoiceHTML: null,
@@ -790,6 +792,20 @@ export const adminActions = {
     try {
       await apiPost('completeFollowUp', { token: state.token, sla_id: slaId })
       await adminActions.loadCallFollowUpSLA()
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  loadSlaNotifications: async () => {
+    try {
+      const notifs = await apiPost('getSlaNotifications', { token: state.token })
+      setState({ slaNotifications: notifs || [] })
+    } catch (err: any) { /* silent */ }
+  },
+
+  dismissSlaNotification: async (logId: string) => {
+    try {
+      await apiPost('dismissSlaNotification', { token: state.token, log_id: logId })
+      await adminActions.loadSlaNotifications()
     } catch (err: any) { setState({ error: err.message }) }
   },
 

@@ -478,31 +478,28 @@ function findSuperior_(userEmail, users) {
 }
 
 /**
- * Send escalation email to the superior.
+ * Record an in-app escalation notification for the superior.
+ * Writes to SLA_Log so the frontend can surface it in the dashboard.
  */
 function sendCallSlaEscalation_(superiorEmail, sla, fee, hours) {
-    var subject = '[ESCALATION] Missed Follow-Up — ' + (sla.client_name || 'Unknown Client');
-    var body = '<div style="font-family:-apple-system,sans-serif;background:#f1f5f9;padding:32px 16px;">' +
-        '<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">' +
-        '<div style="background:linear-gradient(135deg,#450a0a,#dc2626);padding:28px;text-align:center;">' +
-        '<div style="font-size:22px;font-weight:800;color:#fff;">ICUNI Labs</div>' +
-        '<div style="font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:3px;margin-top:4px;">CALL SLA ESCALATION</div></div>' +
-        '<div style="padding:24px;">' +
-        '<p style="font-size:14px;color:#0f172a;margin:0 0 12px;"><strong>' + (sla.caller_name || sla.caller_email) + '</strong> has a missed follow-up that has exceeded ' + Math.round(hours) + ' business hours.</p>' +
-        '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:12px 0;">' +
-        '<p style="margin:0 0 6px;font-size:13px;color:#7f1d1d;"><strong>Client:</strong> ' + (sla.client_name || 'N/A') + '</p>' +
-        '<p style="margin:0 0 6px;font-size:13px;color:#7f1d1d;"><strong>Due:</strong> ' + sla.due_date + '</p>' +
-        '<p style="margin:0 0 6px;font-size:13px;color:#7f1d1d;"><strong>Outcome:</strong> ' + (sla.outcome || 'N/A').replace(/_/g, ' ') + '</p>' +
-        '<p style="margin:0;font-size:15px;color:#dc2626;font-weight:700;">Accrued Fee: GH₵' + fee.toFixed(2) + '</p></div>' +
-        '<p style="font-size:13px;color:#475569;">Please follow up with this team member to ensure the call is actioned.</p>' +
-        '</div></div></div>';
+    var nowStr = now_();
+    var message = (sla.caller_name || sla.caller_email) +
+        ' has a missed follow-up for ' + (sla.client_name || 'Unknown') +
+        ' — ' + Math.round(hours) + ' business hours overdue (GH₵' + fee.toFixed(2) + ' accrued).';
     
-    try {
-        sendEmail_({ to: superiorEmail, subject: subject, htmlBody: body, from: 'labs@icuni.org' });
-        logEmail_(superiorEmail, subject, 'call_sla_escalation', 'sent');
-    } catch(e) {
-        logEmail_(superiorEmail, subject, 'call_sla_escalation', 'failed');
-    }
+    // Write to SLA_Log as an in-app notification
+    appendRow_(SHEETS.SLA_LOG, [
+        generateId_('SLAN'),          // log_id
+        'call_sla_escalation',        // type
+        sla.sla_id || '',             // reference_id
+        sla.caller_email || '',       // subject_email (the person who missed)
+        superiorEmail,                // notify_email  (who should see this)
+        sla.client_name || '',        // client_name
+        message,                      // message
+        fee.toFixed(2),               // accrued_fee
+        'unread',                     // status (unread / read / dismissed)
+        nowStr                        // created_at
+    ]);
 }
 
 // ─── CALL FOLLOW-UP SLA API ENDPOINTS ───────────────────
@@ -605,4 +602,46 @@ function handleCompleteFollowUp(payload) {
         sla.client_name + ' (fee: GH₵' + (parseFloat(sla.accrued_fee) || 0).toFixed(2) + ')');
     
     return successResponse_(null, 'Follow-up marked complete.');
+}
+
+// ─── SLA IN-APP NOTIFICATIONS ───────────────────────────
+
+function handleGetSlaNotifications(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    
+    var logs;
+    try { logs = sheetToObjects_(SHEETS.SLA_LOG); } catch(e) { logs = []; }
+    
+    // Filter to call_sla_escalation type and notifications for this user
+    var userEmail = auth.user.email;
+    var role = auth.user.role;
+    var isElevated = ['Godmode', 'SuperAdmin'].indexOf(role) >= 0;
+    
+    var notifications = logs.filter(function(l) {
+        if (l.type !== 'call_sla_escalation') return false;
+        // Show to the notified person, or to elevated roles
+        return l.notify_email === userEmail || isElevated;
+    });
+    
+    // Sort newest first
+    notifications.sort(function(a, b) {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
+    
+    return successResponse_(notifications);
+}
+
+function handleDismissSlaNotification(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    
+    var logId = payload.log_id;
+    if (!logId) return errorResponse_('Log ID required.');
+    
+    var entry = findRow_(SHEETS.SLA_LOG, 'log_id', logId);
+    if (!entry) return errorResponse_('Notification not found.');
+    
+    updateRow_(SHEETS.SLA_LOG, entry._rowIndex, { status: 'dismissed' });
+    return successResponse_(null, 'Notification dismissed.');
 }

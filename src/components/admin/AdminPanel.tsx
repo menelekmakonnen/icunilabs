@@ -8,7 +8,7 @@ import CRMSection from './CRMSection'
 import ProfileSection from './ProfileSection'
 import ReferralPortal from '../portal/ReferralPortal'
 import ClientPortal from '../portal/ClientPortal'
-import { LayoutDashboard, BarChart3, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe, Mail, GraduationCap, Phone } from 'lucide-react'
+import { LayoutDashboard, BarChart3, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe, Mail, GraduationCap, Phone, Bell, AlertTriangle } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import OnboardingChecklist from './OnboardingChecklist'
@@ -38,18 +38,20 @@ const NAV = [
 ]
 
 export default function AdminPanel() {
-  const { token, user, activeSection, actingAs, impersonating, users } = useAdminStore()
+  const { token, user, activeSection, actingAs, impersonating, users, slaNotifications } = useAdminStore()
   const [collapsed, setCollapsed] = useState(false)
   const [showActAs, setShowActAs] = useState(false)
   const [showImpersonate, setShowImpersonate] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [showNotifs, setShowNotifs] = useState(false)
   const [adminTheme, setAdminTheme] = useState(() =>
     localStorage.getItem('icuni_admin_theme') || 'modern'
   )
 
   // ── Session validation — must be called before any early returns (React hook rules) ──
   useEffect(() => { adminActions.validateSession() }, [])
+  useEffect(() => { if (token) adminActions.loadSlaNotifications() }, [token])
 
   // ── Modern Theme Routing ──
   // If Modern theme selected, delegate entirely to VercelAdminShell
@@ -291,6 +293,60 @@ export default function AdminPanel() {
             <h1 className="text-base md:text-lg font-bold text-white capitalize">{activeSection}</h1>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
+            {/* Notification Bell */}
+            {(() => {
+              const unread = (slaNotifications || []).filter((n: any) => n.status === 'unread')
+              return (
+                <div className="relative">
+                  <button
+                    onClick={() => { setShowNotifs(!showNotifs); setShowActAs(false); setShowImpersonate(false) }}
+                    className="relative flex items-center justify-center w-9 h-9 rounded-lg text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer border border-neutral-800"
+                  >
+                    <Bell className="w-4 h-4" />
+                    {unread.length > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-red-500 text-white text-[9px] font-black rounded-full animate-pulse">
+                        {unread.length}
+                      </span>
+                    )}
+                  </button>
+                  {showNotifs && (
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-neutral-900 border border-neutral-800 rounded-xl shadow-2xl overflow-hidden z-50">
+                      <div className="px-4 py-3 border-b border-neutral-800 flex items-center justify-between">
+                        <span className="text-xs font-bold text-white uppercase tracking-wider">Notifications</span>
+                        {unread.length > 0 && <span className="text-[10px] text-red-400 font-bold">{unread.length} unread</span>}
+                      </div>
+                      <div className="max-h-72 overflow-y-auto">
+                        {(slaNotifications || []).length === 0 ? (
+                          <p className="text-sm text-neutral-600 text-center py-6">No notifications</p>
+                        ) : (
+                          (slaNotifications || []).slice(0, 20).map((n: any) => (
+                            <div key={n.log_id} className={`px-4 py-3 border-b border-neutral-800/50 hover:bg-neutral-800/30 transition-all ${n.status === 'unread' ? 'bg-red-500/[0.03]' : ''}`}>
+                              <div className="flex items-start gap-2">
+                                <AlertTriangle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${n.status === 'unread' ? 'text-red-400' : 'text-neutral-600'}`} />
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-xs ${n.status === 'unread' ? 'text-white font-medium' : 'text-neutral-400'}`}>{n.message}</p>
+                                  <div className="flex items-center justify-between mt-1">
+                                    <span className="text-[9px] text-neutral-600">
+                                      {n.created_at ? new Date(n.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+                                    </span>
+                                    {n.status === 'unread' && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); adminActions.dismissSlaNotification(n.log_id) }}
+                                        className="text-[9px] text-neutral-500 hover:text-white cursor-pointer transition-colors"
+                                      >Dismiss</button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
             {isElevated && (
               <div className="relative">
                 <button onClick={() => { setShowActAs(!showActAs); setShowImpersonate(false) }}

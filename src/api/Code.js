@@ -146,6 +146,8 @@ var ACTION_MAP = {
     getCallFollowUpSLA: handleGetCallFollowUpSLA,
     postponeFollowUp: handlePostponeFollowUp,
     completeFollowUp: handleCompleteFollowUp,
+    getSlaNotifications: handleGetSlaNotifications,
+    dismissSlaNotification: handleDismissSlaNotification,
 };
 
 // ═══════════════════════════════════════════════════════════
