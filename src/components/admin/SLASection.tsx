@@ -4,7 +4,7 @@
  */
 import { useEffect, useState, useMemo } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { Clock, AlertTriangle, CheckCircle, Shield, ChevronDown, Pause, Eye, BarChart3, Filter, Phone, Users, Target, TrendingUp, Calendar, ArrowRight } from 'lucide-react'
+import { Clock, AlertTriangle, CheckCircle, Shield, ChevronDown, Pause, Eye, BarChart3, Filter, Phone, Users, Target, TrendingUp, Calendar } from 'lucide-react'
 import DataTable from './DataTable'
 
 // ── Project Steps (mirrored from Config.js) ──
@@ -54,13 +54,6 @@ function SLABadge({ status }: { status: string }) {
 // ──  GROWTH PERFORMANCE DASHBOARD  (Sales role)  ──────────
 // ═══════════════════════════════════════════════════════════
 
-const OUTCOME_LABELS: Record<string, string> = {
-  meeting_booked: 'Meeting Booked',
-  callback_scheduled: 'Callback',
-  interested_will_revert: 'Interested',
-  no_interest: 'No Interest',
-  needs_follow_up: 'Follow-Up',
-}
 
 function GrowthPerformanceDashboard() {
   const { callLogs, clients, users, loading } = useAdminStore()
@@ -383,7 +376,7 @@ function GrowthPerformanceDashboard() {
 // ═══════════════════════════════════════════════════════════
 
 export default function SLASection() {
-  const { slaStatuses, slaCosts, slaConfig, loading, user } = useAdminStore()
+  const { slaStatuses, slaCosts, loading, user } = useAdminStore()
   const [tab, setTab] = useState<'status' | 'costs'>('status')
   const [filter, setFilter] = useState<SLAFilter>('all')
   const [groupByStep, setGroupByStep] = useState(false)

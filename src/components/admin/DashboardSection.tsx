@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import {
   Users, FolderOpen, FileText, AlertTriangle, TrendingUp, Flame,
-  Phone, Target, Clock, Calendar, ArrowRight, CheckCircle, BarChart3
+  Phone, Target, Clock, Calendar, CheckCircle, BarChart3
 } from 'lucide-react'
 
 const card = 'bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 sm:p-5'
@@ -43,7 +43,7 @@ interface GrowthDashProps {
 }
 
 function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
-  const { callLogs, clients, users } = useAdminStore()
+  const { callLogs, clients } = useAdminStore()
   const [_tick, setTick] = useState(0)
 
   useEffect(() => {

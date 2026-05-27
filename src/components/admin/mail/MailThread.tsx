@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAdminStore, adminActions } from '../../../store/useAdminStore'
-import { ChevronLeft, Reply, Send, Paperclip, Clock, UserPlus, FileText, Eye, X, RefreshCw } from 'lucide-react'
+import { ChevronLeft, Reply, Send, Paperclip, Clock, UserPlus, Eye, X, RefreshCw } from 'lucide-react'
 import SafeHtml from '../../shared/SafeHtml'
 
 const cls = "w-full bg-neutral-900/80 border border-neutral-700/50 rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 focus:border-[#00bfff]/40 focus:ring-1 focus:ring-[#00bfff]/20 focus:outline-none transition-all backdrop-blur-sm"
@@ -43,7 +43,6 @@ export default function MailThread({ thread, aliases, onClose }: { thread: any; 
   const [useTemplate, setUseTemplate] = useState(true)
   // Template reply
   const [selectedTpl, setSelectedTpl] = useState<string>('freeform')
-  const [tplPreview, setTplPreview] = useState('')
   const tplRef = useRef<HTMLIFrameElement>(null)
   // Import as applicant
   const [showImport, setShowImport] = useState(false)
@@ -102,7 +101,6 @@ export default function MailThread({ thread, aliases, onClose }: { thread: any; 
   const handleTplSelect = async (tplId: string) => {
     setSelectedTpl(tplId)
     if (tplId === 'freeform') {
-      setTplPreview('')
       return
     }
     // Set the from alias to the template's default if available
@@ -111,7 +109,6 @@ export default function MailThread({ thread, aliases, onClose }: { thread: any; 
     // Preview the template
     const preview = await adminActions.previewBrandedEmail({ templateId: tplId, recipientName: extractName(msgs[0]?.from || 'Recipient') })
     if (preview?.html) {
-      setTplPreview(preview.html)
       writeIframe(tplRef, preview.html)
     }
   }
@@ -121,14 +118,13 @@ export default function MailThread({ thread, aliases, onClose }: { thread: any; 
     setReplying(true)
     const ok = await adminActions.replyToThread(thread.id, replyBody || '(sent via template)', replyFrom, useTemplate)
     setReplying(false)
-    if (ok) { setReplyBody(''); setShowReply(false); setSelectedTpl('freeform'); setTplPreview('') }
+    if (ok) { setReplyBody(''); setShowReply(false); setSelectedTpl('freeform') }
   }
 
   // Detect CV-like attachments
   const allAttachments = msgs.flatMap((m: any) => (m.attachments || []).map((a: any) => ({ ...a, msgFrom: m.from })))
   const cvAttachments = allAttachments.filter((a: any) =>
     /\.(pdf|doc|docx)$/i.test(a.name) && /cv|resume|curriculum/i.test(a.name))
-  const otherAttachments = allAttachments.filter((a: any) => !cvAttachments.includes(a))
 
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-300">
