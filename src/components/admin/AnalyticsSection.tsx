@@ -21,6 +21,20 @@ function fmtNum(n: number): string {
 function pct(n: number, total: number): string {
   return total > 0 ? Math.round((n / total) * 100) + '%' : '0%'
 }
+/** Convert hex (#RRGGBB) or rgb() color to rgba with given alpha. */
+function hexToRgba(color: string, alpha: number): string {
+  if (color.startsWith('#')) {
+    const hex = color.slice(1)
+    const r = parseInt(hex.substring(0, 2), 16)
+    const g = parseInt(hex.substring(2, 4), 16)
+    const b = parseInt(hex.substring(4, 6), 16)
+    return `rgba(${r},${g},${b},${alpha})`
+  }
+  if (color.startsWith('rgb(')) {
+    return color.replace('rgb(', 'rgba(').replace(')', `,${alpha})`)
+  }
+  return color
+}
 
 // ── Date Filter Presets ───────────────────────────────────
 type DatePreset = 'today' | '7d' | '30d' | '90d' | 'all' | 'custom'
@@ -149,7 +163,7 @@ function TrendChart({ data }: { data: { date: string; views: number; visitors: n
         ctx.lineTo(pad.left, pad.top + ch)
         ctx.closePath()
         const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch)
-        grad.addColorStop(0, color.replace(')', ',0.15)').replace('rgb', 'rgba'))
+        grad.addColorStop(0, hexToRgba(color, 0.15))
         grad.addColorStop(1, 'transparent')
         ctx.fillStyle = grad; ctx.fill()
       }
@@ -355,7 +369,7 @@ function Sparkline({ values, color = '#00bfff' }: { values: number[]; color?: st
     // Fill
     ctx.lineTo(100, 38); ctx.lineTo(0, 38); ctx.closePath()
     const grad = ctx.createLinearGradient(0, 0, 0, 40)
-    grad.addColorStop(0, color.replace(')', ',0.15)').replace('rgb', 'rgba').replace('#', ''))
+    grad.addColorStop(0, hexToRgba(color, 0.15))
     grad.addColorStop(1, 'transparent')
     ctx.fillStyle = grad; ctx.fill()
   }, [values, color])
