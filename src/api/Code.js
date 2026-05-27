@@ -141,6 +141,11 @@ var ACTION_MAP = {
 
     // ── Analytics ──
     trackEvent: handleTrackEvent, getAnalytics: handleGetAnalytics,
+
+    // ── Call Follow-Up SLA ──
+    getCallFollowUpSLA: handleGetCallFollowUpSLA,
+    postponeFollowUp: handlePostponeFollowUp,
+    completeFollowUp: handleCompleteFollowUp,
 };
 
 // ═══════════════════════════════════════════════════════════

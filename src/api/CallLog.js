@@ -139,6 +139,21 @@ function handleSaveCallLog(payload) {
         ]);
     }
 
+    // ── Call Follow-Up SLA ──
+    // Auto-complete any outstanding follow-up SLAs for this client (new call = follow-up done)
+    try { autoCompleteCallSLA_(auth.user.email, clientId); } catch(e) {}
+    
+    // Create new SLA record if this call has a follow-up action
+    if (payload.next_action_date && ['callback_scheduled', 'needs_follow_up', 'meeting_booked'].indexOf(outcome) >= 0) {
+        try {
+            createCallFollowUpSLA_(
+                callId, auth.user.email, auth.user.name,
+                clientId, client.name || client.company || 'Unknown',
+                outcome, payload.next_action_date
+            );
+        } catch(e) { Logger.log('createCallFollowUpSLA_ error: ' + e.message); }
+    }
+
     logAction_(auth.user.user_id, auth.user.name, 'CALL_LOGGED',
         client.name + ' / ' + (payload.path_loaded || 'unknown') + ' → ' + outcome);
 

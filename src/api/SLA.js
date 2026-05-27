@@ -297,3 +297,312 @@ function handleGetSlaCosts(payload) {
     if (auth.error) return auth.error;
     return successResponse_(sheetToObjects_(SHEETS.SLA_COSTS));
 }
+
+// ═══════════════════════════════════════════════════════════
+// ──  CALL FOLLOW-UP SLA SYSTEM  ───────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+var CALL_SLA_HEADERS = [
+    'sla_id', 'call_id', 'caller_email', 'caller_name',
+    'client_id', 'client_name', 'outcome', 'due_date',
+    'status', 'postponed_until', 'accrued_fee', 'fee_last_calculated',
+    'escalated', 'escalated_at', 'completed_at', 'created_at'
+];
+
+/**
+ * Create a follow-up SLA record. Called internally when a call is logged
+ * with callback_scheduled, needs_follow_up, or meeting_booked.
+ */
+function createCallFollowUpSLA_(callId, callerEmail, callerName, clientId, clientName, outcome, dueDate) {
+    if (!dueDate) return;
+    var sheet = ensureSheet_(SHEETS.CALL_FOLLOW_UP_SLA, CALL_SLA_HEADERS);
+    var slaId = generateId_('FSLA');
+    var nowStr = now_();
+    sheet.appendRow([
+        slaId, callId, callerEmail, callerName,
+        clientId, clientName, outcome, dueDate,
+        'active', '', 0, nowStr,
+        '', '', '', nowStr
+    ]);
+    return slaId;
+}
+
+/**
+ * Auto-complete any outstanding follow-up SLAs for a given client+caller
+ * when a new call is logged for the same client.
+ */
+function autoCompleteCallSLA_(callerEmail, clientId) {
+    try {
+        var slas = sheetToObjects_(SHEETS.CALL_FOLLOW_UP_SLA);
+        var nowStr = now_();
+        slas.forEach(function(s) {
+            if (s.caller_email === callerEmail && s.client_id === clientId &&
+                (s.status === 'active' || s.status === 'postponed')) {
+                updateRow_(SHEETS.CALL_FOLLOW_UP_SLA, s._rowIndex, {
+                    status: 'completed', completed_at: nowStr
+                });
+            }
+        });
+    } catch(e) { Logger.log('autoCompleteCallSLA_ error: ' + e.message); }
+}
+
+/**
+ * Count business hours between two dates (Mon-Fri, 8am-6pm Africa/Accra).
+ * Returns fractional hours.
+ */
+function countBusinessHours_(fromDate, toDate, cfg) {
+    var startHour = cfg.call_sla_business_start || 8;
+    var endHour = cfg.call_sla_business_end || 18;
+    var businessHoursPerDay = endHour - startHour; // 10 hours
+    
+    var from = new Date(fromDate);
+    var to = new Date(toDate);
+    if (from >= to) return 0;
+    
+    var totalMinutes = 0;
+    var cursor = new Date(from);
+    
+    // Walk through each day
+    while (cursor < to) {
+        var day = cursor.getDay(); // 0=Sun, 6=Sat
+        if (day >= 1 && day <= 5) { // Mon-Fri
+            var dayStart = new Date(cursor);
+            dayStart.setHours(startHour, 0, 0, 0);
+            var dayEnd = new Date(cursor);
+            dayEnd.setHours(endHour, 0, 0, 0);
+            
+            var windowStart = cursor > dayStart ? cursor : dayStart;
+            var windowEnd = to < dayEnd ? to : dayEnd;
+            
+            if (windowStart < windowEnd) {
+                totalMinutes += (windowEnd - windowStart) / 60000;
+            }
+        }
+        // Move to next day at midnight
+        cursor = new Date(cursor);
+        cursor.setDate(cursor.getDate() + 1);
+        cursor.setHours(0, 0, 0, 0);
+    }
+    
+    return Math.round(totalMinutes * 100) / 6000; // Convert to hours, 2 decimal
+}
+
+/**
+ * Hourly cron: check all active call follow-up SLAs for penalties and escalation.
+ */
+function checkCallFollowUpSLA() {
+    var cfg = getSlaConfig_();
+    if (!cfg.sla_enabled) return;
+    
+    var slas;
+    try { slas = sheetToObjects_(SHEETS.CALL_FOLLOW_UP_SLA); } catch(e) { return; }
+    
+    var now = new Date();
+    var nowStr = now_();
+    var ratePerHour = cfg.call_sla_rate_per_hour || 1.00;
+    var escalationHours = cfg.call_sla_escalation_hours || 2;
+    
+    // Load users for escalation lookups
+    var users;
+    try { users = sheetToObjects_(SHEETS.USERS); } catch(e) { users = []; }
+    
+    slas.forEach(function(s) {
+        if (s.status !== 'active' && s.status !== 'postponed') return;
+        
+        var dueDate = new Date(s.due_date);
+        if (isNaN(dueDate.getTime())) return;
+        
+        // If postponed and not yet past the postpone time, skip
+        if (s.status === 'postponed' && s.postponed_until) {
+            var postponedUntil = new Date(s.postponed_until);
+            if (now < postponedUntil) return;
+            // Postpone expired — reactivate and adjust billing start
+            updateRow_(SHEETS.CALL_FOLLOW_UP_SLA, s._rowIndex, { status: 'active' });
+            s.status = 'active';
+            // Use postponed_until as the new billing start
+            dueDate = postponedUntil;
+        }
+        
+        // Not overdue yet
+        if (now <= dueDate) return;
+        
+        // Calculate business hours overdue
+        var businessHours = countBusinessHours_(dueDate, now, cfg);
+        if (businessHours <= 0) return;
+        
+        // Calculate fee: existing accrued (from before postpone) + new accrual
+        var existingFee = parseFloat(s.accrued_fee) || 0;
+        // Fee for this period = hours since due (or since postpone ended) × rate
+        var periodFee = Math.round(businessHours * ratePerHour * 100) / 100;
+        var totalFee = Math.round((existingFee + periodFee) * 100) / 100;
+        
+        // But don't double-count: total = max(old fee, new calculation)
+        // Simple approach: recalculate from scratch since due_date
+        var totalBusinessHours = countBusinessHours_(new Date(s.due_date), now, cfg);
+        totalFee = Math.max(existingFee, Math.round(totalBusinessHours * ratePerHour * 100) / 100);
+        
+        var updates = { accrued_fee: totalFee, fee_last_calculated: nowStr };
+        
+        // Escalation: if overdue >= escalation threshold AND not yet escalated
+        if (totalBusinessHours >= escalationHours && s.escalated !== 'true') {
+            var superior = findSuperior_(s.caller_email, users);
+            if (superior) {
+                sendCallSlaEscalation_(superior.email, s, totalFee, totalBusinessHours);
+                updates.escalated = 'true';
+                updates.escalated_at = nowStr;
+            }
+        }
+        
+        updateRow_(SHEETS.CALL_FOLLOW_UP_SLA, s._rowIndex, updates);
+    });
+}
+
+/**
+ * Find the superior of a user by role hierarchy.
+ */
+function findSuperior_(userEmail, users) {
+    var user = users.filter(function(u) { return u.email === userEmail; })[0];
+    if (!user) return null;
+    
+    var userRoleIdx = ROLE_HIERARCHY.indexOf(user.role);
+    if (userRoleIdx < 0) return null;
+    
+    // Find someone with a higher role
+    for (var i = userRoleIdx + 1; i < ROLE_HIERARCHY.length; i++) {
+        var superiors = users.filter(function(u) {
+            return u.role === ROLE_HIERARCHY[i] && u.status === 'active';
+        });
+        if (superiors.length > 0) return superiors[0];
+    }
+    return null;
+}
+
+/**
+ * Send escalation email to the superior.
+ */
+function sendCallSlaEscalation_(superiorEmail, sla, fee, hours) {
+    var subject = '[ESCALATION] Missed Follow-Up — ' + (sla.client_name || 'Unknown Client');
+    var body = '<div style="font-family:-apple-system,sans-serif;background:#f1f5f9;padding:32px 16px;">' +
+        '<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;">' +
+        '<div style="background:linear-gradient(135deg,#450a0a,#dc2626);padding:28px;text-align:center;">' +
+        '<div style="font-size:22px;font-weight:800;color:#fff;">ICUNI Labs</div>' +
+        '<div style="font-size:11px;color:rgba(255,255,255,0.7);letter-spacing:3px;margin-top:4px;">CALL SLA ESCALATION</div></div>' +
+        '<div style="padding:24px;">' +
+        '<p style="font-size:14px;color:#0f172a;margin:0 0 12px;"><strong>' + (sla.caller_name || sla.caller_email) + '</strong> has a missed follow-up that has exceeded ' + Math.round(hours) + ' business hours.</p>' +
+        '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:12px 0;">' +
+        '<p style="margin:0 0 6px;font-size:13px;color:#7f1d1d;"><strong>Client:</strong> ' + (sla.client_name || 'N/A') + '</p>' +
+        '<p style="margin:0 0 6px;font-size:13px;color:#7f1d1d;"><strong>Due:</strong> ' + sla.due_date + '</p>' +
+        '<p style="margin:0 0 6px;font-size:13px;color:#7f1d1d;"><strong>Outcome:</strong> ' + (sla.outcome || 'N/A').replace(/_/g, ' ') + '</p>' +
+        '<p style="margin:0;font-size:15px;color:#dc2626;font-weight:700;">Accrued Fee: GH₵' + fee.toFixed(2) + '</p></div>' +
+        '<p style="font-size:13px;color:#475569;">Please follow up with this team member to ensure the call is actioned.</p>' +
+        '</div></div></div>';
+    
+    try {
+        sendEmail_({ to: superiorEmail, subject: subject, htmlBody: body, from: 'labs@icuni.org' });
+        logEmail_(superiorEmail, subject, 'call_sla_escalation', 'sent');
+    } catch(e) {
+        logEmail_(superiorEmail, subject, 'call_sla_escalation', 'failed');
+    }
+}
+
+// ─── CALL FOLLOW-UP SLA API ENDPOINTS ───────────────────
+
+function handleGetCallFollowUpSLA(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    
+    var slas;
+    try { slas = sheetToObjects_(SHEETS.CALL_FOLLOW_UP_SLA); } catch(e) { slas = []; }
+    
+    // Recalculate live fees for active SLAs
+    var cfg = getSlaConfig_();
+    var now = new Date();
+    slas.forEach(function(s) {
+        if (s.status !== 'active') return;
+        var dueDate = new Date(s.due_date);
+        if (now > dueDate) {
+            var bh = countBusinessHours_(dueDate, now, cfg);
+            var existingFee = parseFloat(s.accrued_fee) || 0;
+            s.live_fee = Math.max(existingFee, Math.round(bh * (cfg.call_sla_rate_per_hour || 1) * 100) / 100);
+            s.business_hours_overdue = Math.round(bh * 100) / 100;
+        } else {
+            s.live_fee = parseFloat(s.accrued_fee) || 0;
+            s.business_hours_overdue = 0;
+        }
+    });
+    
+    // Sort: active first, then by overdue hours descending
+    slas.sort(function(a, b) {
+        var statusOrder = { active: 0, postponed: 1, completed: 2 };
+        var sa = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 3;
+        var sb = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 3;
+        if (sa !== sb) return sa - sb;
+        return (b.business_hours_overdue || 0) - (a.business_hours_overdue || 0);
+    });
+    
+    return successResponse_(slas);
+}
+
+function handlePostponeFollowUp(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    
+    var slaId = payload.sla_id;
+    if (!slaId) return errorResponse_('SLA ID required.');
+    
+    var sla = findRow_(SHEETS.CALL_FOLLOW_UP_SLA, 'sla_id', slaId);
+    if (!sla) return errorResponse_('SLA record not found.');
+    
+    // Only the owner or a superior can postpone
+    if (sla.caller_email !== auth.user.email) {
+        var userRoleIdx = ROLE_HIERARCHY.indexOf(auth.user.role);
+        var slaRoleIdx = ROLE_HIERARCHY.indexOf('Sales');
+        if (userRoleIdx <= slaRoleIdx) return errorResponse_('You can only postpone your own SLAs.');
+    }
+    
+    var postponeUntil = payload.postpone_until;
+    if (!postponeUntil) return errorResponse_('Postpone date required.');
+    
+    // Freeze current fees before postponing
+    var cfg = getSlaConfig_();
+    var now = new Date();
+    var dueDate = new Date(sla.due_date);
+    var currentFee = parseFloat(sla.accrued_fee) || 0;
+    if (now > dueDate && sla.status === 'active') {
+        var bh = countBusinessHours_(dueDate, now, cfg);
+        currentFee = Math.max(currentFee, Math.round(bh * (cfg.call_sla_rate_per_hour || 1) * 100) / 100);
+    }
+    
+    updateRow_(SHEETS.CALL_FOLLOW_UP_SLA, sla._rowIndex, {
+        status: 'postponed',
+        postponed_until: postponeUntil,
+        accrued_fee: currentFee,
+        fee_last_calculated: now_()
+    });
+    
+    logAction_(auth.user.user_id, auth.user.name, 'CALL_SLA_POSTPONED',
+        sla.client_name + ' postponed to ' + postponeUntil);
+    
+    return successResponse_(null, 'Follow-up postponed. Accrued fee of GH₵' + currentFee.toFixed(2) + ' preserved.');
+}
+
+function handleCompleteFollowUp(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+    
+    var slaId = payload.sla_id;
+    if (!slaId) return errorResponse_('SLA ID required.');
+    
+    var sla = findRow_(SHEETS.CALL_FOLLOW_UP_SLA, 'sla_id', slaId);
+    if (!sla) return errorResponse_('SLA record not found.');
+    
+    updateRow_(SHEETS.CALL_FOLLOW_UP_SLA, sla._rowIndex, {
+        status: 'completed',
+        completed_at: now_()
+    });
+    
+    logAction_(auth.user.user_id, auth.user.name, 'CALL_SLA_COMPLETED',
+        sla.client_name + ' (fee: GH₵' + (parseFloat(sla.accrued_fee) || 0).toFixed(2) + ')');
+    
+    return successResponse_(null, 'Follow-up marked complete.');
+}

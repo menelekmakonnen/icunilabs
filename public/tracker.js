@@ -105,6 +105,25 @@
     lang: navigator.language || ''
   };
 
+  // ── Precise Geolocation (township-level) ──
+  // Asks browser for exact coordinates once per session.
+  // Falls back to Vercel edge geo headers if denied.
+  var preciseGeo = JSON.parse(sessionStorage.getItem('_ilg') || 'null');
+  if (!preciseGeo && navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        preciseGeo = {
+          latitude: Math.round(pos.coords.latitude * 10000) / 10000,
+          longitude: Math.round(pos.coords.longitude * 10000) / 10000,
+          accuracy: Math.round(pos.coords.accuracy)
+        };
+        sessionStorage.setItem('_ilg', JSON.stringify(preciseGeo));
+      },
+      function() { /* denied or unavailable — Vercel geo will be used instead */ },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+    );
+  }
+
   // ── Queue an event ──
   function queueEvent(type, data) {
     eventQueue.push(Object.assign({
@@ -192,7 +211,8 @@
       session_meta: sessionMeta,
       events: eventQueue.splice(0),
       session_duration: Math.round((Date.now() - sessionStart) / 1000),
-      page_sequence: pageSequence
+      page_sequence: pageSequence,
+      precise_geo: preciseGeo || null
     };
 
     var blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });

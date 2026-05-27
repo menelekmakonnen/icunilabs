@@ -232,6 +232,42 @@ function LocationMap({ locations }: { locations: { city: string; lat: number; ln
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null)
 
+  // Ghana reference townships for contextual labels
+  const GHANA_TOWNSHIPS = [
+    // Greater Accra
+    { name: 'Accra CBD', lat: 5.555, lng: -0.197 },
+    { name: 'Osu', lat: 5.556, lng: -0.178 },
+    { name: 'Cantonments', lat: 5.573, lng: -0.175 },
+    { name: 'Airport Res.', lat: 5.607, lng: -0.175 },
+    { name: 'East Legon', lat: 5.635, lng: -0.160 },
+    { name: 'Spintex', lat: 5.617, lng: -0.092 },
+    { name: 'Tema', lat: 5.623, lng: -0.017 },
+    { name: 'Madina', lat: 5.680, lng: -0.170 },
+    { name: 'Kasoa', lat: 5.535, lng: -0.320 },
+    { name: 'Dansoman', lat: 5.550, lng: -0.260 },
+    { name: 'Achimota', lat: 5.617, lng: -0.225 },
+    { name: 'Teshie', lat: 5.576, lng: -0.105 },
+    { name: 'Nungua', lat: 5.583, lng: -0.075 },
+    { name: 'Labone', lat: 5.563, lng: -0.182 },
+    { name: 'Adenta', lat: 5.698, lng: -0.158 },
+    { name: 'Dome', lat: 5.652, lng: -0.232 },
+    { name: 'Haatso', lat: 5.663, lng: -0.208 },
+    { name: 'Labadi', lat: 5.558, lng: -0.153 },
+    { name: 'Sakumono', lat: 5.599, lng: -0.044 },
+    { name: 'Ashaiman', lat: 5.691, lng: -0.040 },
+    { name: 'Teshi-Nungua', lat: 5.577, lng: -0.092 },
+    // Other regions
+    { name: 'Kumasi', lat: 6.693, lng: -1.614 },
+    { name: 'Takoradi', lat: 4.901, lng: -1.755 },
+    { name: 'Cape Coast', lat: 5.109, lng: -1.247 },
+    { name: 'Tamale', lat: 9.400, lng: -0.840 },
+    { name: 'Sunyani', lat: 7.336, lng: -2.329 },
+    { name: 'Ho', lat: 6.600, lng: 0.471 },
+    { name: 'Koforidua', lat: 6.094, lng: -0.260 },
+    { name: 'Wa', lat: 10.060, lng: -2.502 },
+    { name: 'Bolgatanga', lat: 10.786, lng: -0.851 },
+  ]
+
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || locations.length === 0) return
@@ -245,59 +281,81 @@ function LocationMap({ locations }: { locations: { city: string; lat: number; ln
     // Map background
     ctx.fillStyle = '#0d1117'; ctx.fillRect(0, 0, w, h)
 
-    // Greater Accra rough boundaries: lat 5.5-5.75, lng -0.35 to 0.05
-    const latMin = 5.48, latMax = 5.78, lngMin = -0.38, lngMax = 0.08
+    // ── Dynamic bounds from actual data ──
+    const lats = locations.map(l => l.lat).filter(v => v !== 0)
+    const lngs = locations.map(l => l.lng).filter(v => v !== 0)
+    if (lats.length === 0 || lngs.length === 0) return
 
-    // Draw coast line hint (southern edge of Accra)
-    ctx.strokeStyle = 'rgba(0,191,255,0.1)'; ctx.lineWidth = 2
-    ctx.beginPath()
-    ctx.moveTo(0, h * 0.82); ctx.quadraticCurveTo(w * 0.3, h * 0.78, w * 0.5, h * 0.8)
-    ctx.quadraticCurveTo(w * 0.7, h * 0.83, w, h * 0.75)
-    ctx.stroke()
+    const dataLatMin = Math.min(...lats)
+    const dataLatMax = Math.max(...lats)
+    const dataLngMin = Math.min(...lngs)
+    const dataLngMax = Math.max(...lngs)
 
-    // Water fill below coastline
-    ctx.fillStyle = 'rgba(0,191,255,0.02)'
-    ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill()
+    // Add 15% padding around data points (or minimum 0.02° to avoid zero-range)
+    const latSpan = Math.max(dataLatMax - dataLatMin, 0.02)
+    const lngSpan = Math.max(dataLngMax - dataLngMin, 0.02)
+    const pad = 0.15
+    const latMin = dataLatMin - latSpan * pad
+    const latMax = dataLatMax + latSpan * pad
+    const lngMin = dataLngMin - lngSpan * pad
+    const lngMax = dataLngMax + lngSpan * pad
 
-    // District labels (approximate positions for Greater Accra)
-    const districts = [
-      { name: 'Accra CBD', lat: 5.555, lng: -0.197 },
-      { name: 'Tema', lat: 5.623, lng: -0.017 },
-      { name: 'East Legon', lat: 5.635, lng: -0.160 },
-      { name: 'Airport', lat: 5.607, lng: -0.175 },
-      { name: 'Osu', lat: 5.556, lng: -0.178 },
-      { name: 'Spintex', lat: 5.617, lng: -0.092 },
-      { name: 'Kasoa', lat: 5.535, lng: -0.320 },
-      { name: 'Madina', lat: 5.680, lng: -0.170 },
-    ]
-    ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.font = '9px system-ui'; ctx.textAlign = 'center'
-    districts.forEach(d => {
-      const x = ((d.lng - lngMin) / (lngMax - lngMin)) * w
-      const y = h - ((d.lat - latMin) / (latMax - latMin)) * h
-      ctx.fillText(d.name, x, y)
+    // Coordinate transforms
+    const toX = (lng: number) => ((lng - lngMin) / (lngMax - lngMin)) * w
+    const toY = (lat: number) => h - ((lat - latMin) / (latMax - latMin)) * h
+
+    // ── Draw coast/water hint if in Greater Accra range ──
+    if (latMin < 5.8 && latMax > 5.4 && lngMin < 0.1 && lngMax > -0.4) {
+      ctx.strokeStyle = 'rgba(0,191,255,0.08)'; ctx.lineWidth = 1.5
+      ctx.beginPath()
+      const coastPoints = [
+        { lat: 5.535, lng: -0.35 }, { lat: 5.540, lng: -0.25 }, { lat: 5.555, lng: -0.19 },
+        { lat: 5.550, lng: -0.12 }, { lat: 5.560, lng: -0.05 }, { lat: 5.555, lng: 0.02 },
+      ]
+      coastPoints.forEach((p, i) => {
+        const cx = toX(p.lng), cy = toY(p.lat)
+        i === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy)
+      })
+      ctx.stroke()
+      // Water below
+      ctx.fillStyle = 'rgba(0,191,255,0.015)'
+      ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill()
+    }
+
+    // ── Reference township labels (only show those within current bounds) ──
+    ctx.fillStyle = 'rgba(255,255,255,0.07)'; ctx.font = '9px system-ui'; ctx.textAlign = 'center'
+    GHANA_TOWNSHIPS.forEach(t => {
+      if (t.lat < latMin || t.lat > latMax || t.lng < lngMin || t.lng > lngMax) return
+      const tx = toX(t.lng), ty = toY(t.lat)
+      // Don't draw if too close to a data point (avoid label overlap)
+      const tooClose = locations.some(l => {
+        const dx = toX(l.lng) - tx, dy = toY(l.lat) - ty
+        return Math.sqrt(dx * dx + dy * dy) < 25
+      })
+      if (!tooClose) {
+        ctx.fillText(t.name, tx, ty)
+      }
     })
 
-    // Plot visitor pins
+    // ── Plot visitor pins ──
     const maxCount = Math.max(...locations.map(l => l.count), 1)
     locations.forEach(loc => {
-      const x = ((loc.lng - lngMin) / (lngMax - lngMin)) * w
-      const y = h - ((loc.lat - latMin) / (latMax - latMin)) * h
+      const x = toX(loc.lng), y = toY(loc.lat)
 
-      // Skip if outside bounds
-      if (x < 0 || x > w || y < 0 || y > h) {
-        // Draw at nearest edge for out-of-Accra visitors
-        return
-      }
+      // Skip if still outside (shouldn't happen with dynamic bounds)
+      if (x < -10 || x > w + 10 || y < -10 || y > h + 10) return
 
       const intensity = loc.count / maxCount
-      const radius = 4 + intensity * 12
+      const radius = 5 + intensity * 14
 
       // Glow
-      const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 2.5)
-      glow.addColorStop(0, `rgba(0,191,255,${0.2 + intensity * 0.3})`)
-      glow.addColorStop(1, 'transparent')
-      ctx.fillStyle = glow
-      ctx.fillRect(x - radius * 2.5, y - radius * 2.5, radius * 5, radius * 5)
+      try {
+        const glow = ctx.createRadialGradient(x, y, 0, x, y, radius * 2.5)
+        glow.addColorStop(0, `rgba(0,191,255,${0.2 + intensity * 0.3})`)
+        glow.addColorStop(1, 'transparent')
+        ctx.fillStyle = glow
+        ctx.fillRect(x - radius * 2.5, y - radius * 2.5, radius * 5, radius * 5)
+      } catch { /* gradient error */ }
 
       // Pin dot
       ctx.beginPath(); ctx.arc(x, y, radius, 0, Math.PI * 2)
@@ -306,11 +364,18 @@ function LocationMap({ locations }: { locations: { city: string; lat: number; ln
       ctx.strokeStyle = 'rgba(0,191,255,0.8)'; ctx.lineWidth = 1; ctx.stroke()
 
       // Count label
-      if (loc.count > 1) {
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center'
-        ctx.fillText(String(loc.count), x, y + 3)
-      }
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 10px system-ui'; ctx.textAlign = 'center'
+      ctx.fillText(String(loc.count), x, y + 3)
+
+      // City name below pin
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = '9px system-ui'
+      ctx.fillText(loc.city || '?', x, y + radius + 12)
     })
+
+    // ── Zoom level indicator ──
+    const kmSpan = latSpan * 111  // ~111 km per degree of latitude
+    ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.font = '9px system-ui'; ctx.textAlign = 'left'
+    ctx.fillText(`~${Math.round(kmSpan)} km span`, 8, h - 8)
 
     // Hover handler
     const handleMove = (e: MouseEvent) => {
@@ -318,11 +383,10 @@ function LocationMap({ locations }: { locations: { city: string; lat: number; ln
       const mx = e.clientX - rect.left, my = e.clientY - rect.top
       let found: typeof tooltip = null
       locations.forEach(loc => {
-        const x = ((loc.lng - lngMin) / (lngMax - lngMin)) * w
-        const y = h - ((loc.lat - latMin) / (latMax - latMin)) * h
-        const dist = Math.sqrt((mx - x) ** 2 + (my - y) ** 2)
+        const px = toX(loc.lng), py = toY(loc.lat)
+        const dist = Math.sqrt((mx - px) ** 2 + (my - py) ** 2)
         if (dist < 20) {
-          found = { x: mx, y: my, text: `${loc.city}: ${loc.count} visits` }
+          found = { x: mx, y: my, text: `${loc.city}: ${loc.count} visit${loc.count !== 1 ? 's' : ''} (${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)})` }
         }
       })
       setTooltip(found)
@@ -338,8 +402,8 @@ function LocationMap({ locations }: { locations: { city: string; lat: number; ln
       {tooltip && (
         <div style={{
           position: 'absolute', left: tooltip.x + 12, top: tooltip.y - 8,
-          background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 8, padding: '4px 10px', fontSize: 11, color: '#fff',
+          background: 'rgba(0,0,0,0.9)', border: '1px solid rgba(0,191,255,0.2)',
+          borderRadius: 8, padding: '5px 12px', fontSize: 11, color: '#fff',
           fontWeight: 600, pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 5,
         }}>{tooltip.text}</div>
       )}

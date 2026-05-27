@@ -71,7 +71,10 @@ var SHEETS = {
     USER_MAILBOXES:    'User_Mailboxes',
 
     // Analytics
-    ANALYTICS_EVENTS:  'Analytics_Events'
+    ANALYTICS_EVENTS:  'Analytics_Events',
+
+    // Call Follow-Up SLA
+    CALL_FOLLOW_UP_SLA: 'Call_Follow_Up_SLA'
 };
 
 // ─── COLUMN MAPS ─────────────────────────────────────────
@@ -170,7 +173,12 @@ var DEFAULT_SLA = {
     step_9_to_10:    10080,  // 1 week
     sla_enabled:     true,
     sla_cost_per_minute: 0.1667, // GH₵10/hour
-    sla_cost_daily_rate: 100     // GH₵100/day after 24h
+    sla_cost_daily_rate: 100,    // GH₵100/day after 24h
+    // Call follow-up SLA
+    call_sla_rate_per_hour: 1.00,  // GH₵1/hour during business hours
+    call_sla_escalation_hours: 2,  // Escalate after 2 business hours overdue
+    call_sla_business_start: 8,    // 8am
+    call_sla_business_end: 18      // 6pm
 };
 
 // ─── SESSION CONFIG ──────────────────────────────────────

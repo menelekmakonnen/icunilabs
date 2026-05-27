@@ -48,6 +48,7 @@ interface AdminState {
   slaStatuses: any[]
   slaCosts: any[]
   slaConfig: any
+  callFollowUpSLA: any[]
   blogPosts: any[]
   portfolio: any[]
 
@@ -172,6 +173,7 @@ let state: AdminState = {
   slaStatuses: [],
   slaCosts: [],
   slaConfig: null,
+  callFollowUpSLA: [],
   blogPosts: [],
   portfolio: [],
   activeInvoiceHTML: null,
@@ -767,6 +769,27 @@ export const adminActions = {
     try {
       const costs = await apiPost('getSlaCosts', { token: state.token })
       setState({ slaCosts: costs || [] })
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  loadCallFollowUpSLA: async () => {
+    try {
+      const slas = await apiPost('getCallFollowUpSLA', { token: state.token })
+      setState({ callFollowUpSLA: slas || [] })
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  postponeFollowUp: async (slaId: string, postponeUntil: string) => {
+    try {
+      await apiPost('postponeFollowUp', { token: state.token, sla_id: slaId, postpone_until: postponeUntil })
+      await adminActions.loadCallFollowUpSLA()
+    } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  completeFollowUp: async (slaId: string) => {
+    try {
+      await apiPost('completeFollowUp', { token: state.token, sla_id: slaId })
+      await adminActions.loadCallFollowUpSLA()
     } catch (err: any) { setState({ error: err.message }) }
   },
 

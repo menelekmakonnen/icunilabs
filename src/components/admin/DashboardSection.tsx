@@ -125,14 +125,28 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
     }
   }, [secondaryCalls, _tick])
 
-  // ── Today's schedule (upcoming callbacks/meetings) ──
+  // ── Today's schedule (upcoming callbacks/meetings + OVERDUE backlog) ──
   const upcomingActions = useMemo(() => {
     const source = isGodmode ? allCalls : myCalls
-    return source.filter((l: any) => {
+    const withAction = source.filter((l: any) => {
       if (!l.next_action_date) return false
-      return new Date(l.next_action_date).getTime() > now
-    }).sort((a: any, b: any) => new Date(a.next_action_date).getTime() - new Date(b.next_action_date).getTime())
-      .slice(0, 8)
+      // Include both future AND past-due follow-ups that need actioning
+      return ['callback_scheduled', 'needs_follow_up', 'meeting_booked'].includes(l.outcome)
+    })
+    // Sort: overdue items first (most overdue at top), then future by soonest
+    return withAction.sort((a: any, b: any) => {
+      const aTime = new Date(a.next_action_date).getTime()
+      const bTime = new Date(b.next_action_date).getTime()
+      const aOverdue = aTime < now
+      const bOverdue = bTime < now
+      // Overdue items come first
+      if (aOverdue && !bOverdue) return -1
+      if (!aOverdue && bOverdue) return 1
+      // Among overdue: most overdue first (smallest time = oldest)
+      if (aOverdue && bOverdue) return aTime - bTime
+      // Among future: soonest first
+      return aTime - bTime
+    }).slice(0, 15)
   }, [myCalls, allCalls, _tick])
 
   // ── Outcome distribution this week ──
@@ -240,24 +254,54 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
           {upcomingActions.length === 0 ? (
             <p className="text-sm text-neutral-600 py-4 text-center">No upcoming callbacks or meetings</p>
           ) : (
-            <div className="space-y-2 max-h-[280px] overflow-y-auto">
+            <div className="space-y-2 max-h-[320px] overflow-y-auto">
               {upcomingActions.map((l: any, i: number) => {
                 const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || 'Unknown'
+                const actionTime = new Date(l.next_action_date).getTime()
+                const isOverdue = actionTime < now
                 const isToday = new Date(l.next_action_date).toDateString() === new Date().toDateString()
+                const overdueMs = isOverdue ? now - actionTime : 0
+                const overdueHours = Math.floor(overdueMs / 3600000)
+                const overdueMins = Math.floor((overdueMs % 3600000) / 60000)
+                const overdueStr = overdueHours > 24
+                  ? `${Math.floor(overdueHours / 24)}d ${overdueHours % 24}h`
+                  : overdueHours > 0 ? `${overdueHours}h ${overdueMins}m` : `${overdueMins}m`
                 return (
                   <div key={l.call_id || i}
-                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-neutral-800/30 ${isToday ? 'border-[#00bfff]/20 bg-[#00bfff]/[0.03]' : 'border-transparent'}`}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-neutral-800/30 ${
+                      isOverdue ? 'border-red-500/30 bg-red-500/[0.04]' : isToday ? 'border-[#00bfff]/20 bg-[#00bfff]/[0.03]' : 'border-transparent'
+                    }`}
                     onClick={() => adminActions.setSection('calls')}>
-                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${OUTCOME_COLORS[l.outcome] || '#6b7280'}15` }}>
-                      <Phone className="w-4 h-4" style={{ color: OUTCOME_COLORS[l.outcome] || '#6b7280' }} />
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isOverdue ? 'animate-pulse' : ''}`}
+                      style={{ background: isOverdue ? 'rgba(239,68,68,0.15)' : `${OUTCOME_COLORS[l.outcome] || '#6b7280'}15` }}>
+                      {isOverdue
+                        ? <AlertTriangle className="w-4 h-4 text-red-400" />
+                        : <Phone className="w-4 h-4" style={{ color: OUTCOME_COLORS[l.outcome] || '#6b7280' }} />
+                      }
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{clientName}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-white truncate">{clientName}</p>
+                        {isOverdue && (
+                          <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 flex-shrink-0">
+                            Overdue
+                          </span>
+                        )}
+                      </div>
                       <p className="text-[10px] text-neutral-500">{OUTCOME_LABELS[l.outcome] || l.outcome} — {l.next_action || 'Follow up'}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className={`text-xs font-bold ${isToday ? 'text-[#00bfff]' : 'text-neutral-400'}`}>{fmtCountdown(l.next_action_date)}</p>
-                      <p className="text-[9px] text-neutral-600">{new Date(l.next_action_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+                      {isOverdue ? (
+                        <>
+                          <p className="text-xs font-bold text-red-400">{overdueStr} ago</p>
+                          <p className="text-[9px] text-red-500/60">was {new Date(l.next_action_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className={`text-xs font-bold ${isToday ? 'text-[#00bfff]' : 'text-neutral-400'}`}>{fmtCountdown(l.next_action_date)}</p>
+                          <p className="text-[9px] text-neutral-600">{new Date(l.next_action_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 )

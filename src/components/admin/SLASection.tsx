@@ -376,8 +376,8 @@ function GrowthPerformanceDashboard() {
 // ═══════════════════════════════════════════════════════════
 
 export default function SLASection() {
-  const { slaStatuses, slaCosts, loading, user } = useAdminStore()
-  const [tab, setTab] = useState<'status' | 'costs'>('status')
+  const { slaStatuses, slaCosts, callFollowUpSLA, loading, user } = useAdminStore()
+  const [tab, setTab] = useState<'status' | 'costs' | 'follow_ups'>('status')
   const [filter, setFilter] = useState<SLAFilter>('all')
   const [groupByStep, setGroupByStep] = useState(false)
   const [_tick, setTick] = useState(0)
@@ -386,7 +386,13 @@ export default function SLASection() {
   const isSales = role === 'Sales'
   const canSnooze = ['Godmode', 'SuperAdmin', 'Admin'].includes(role)
 
-  useEffect(() => { if (!isSales) { adminActions.loadSLA(); adminActions.loadSlaCosts() } }, [isSales])
+  useEffect(() => {
+    if (!isSales) {
+      adminActions.loadSLA()
+      adminActions.loadSlaCosts()
+      adminActions.loadCallFollowUpSLA()
+    }
+  }, [isSales])
 
   // Live ticker: re-render every 30s for countdown freshness
   useEffect(() => {
@@ -449,6 +455,222 @@ export default function SLASection() {
             { key: 'breach_date', label: 'Breach Date' },
           ]}
         />
+      </div>
+    )
+  }
+
+  // ── Follow-Ups Tab ──
+  if (tab === 'follow_ups') {
+    const activeSLAs = (callFollowUpSLA || []).filter((s: any) => s.status === 'active' || s.status === 'postponed')
+    const completedSLAs = (callFollowUpSLA || []).filter((s: any) => s.status === 'completed')
+
+    // Per-person summary
+    const personMap: Record<string, { name: string; email: string; active: number; totalFee: number; escalated: number; completed: number }> = {}
+    ;(callFollowUpSLA || []).forEach((s: any) => {
+      const key = s.caller_email || 'unknown'
+      if (!personMap[key]) personMap[key] = { name: s.caller_name || key, email: key, active: 0, totalFee: 0, escalated: 0, completed: 0 }
+      if (s.status === 'active' || s.status === 'postponed') {
+        personMap[key].active++
+        personMap[key].totalFee += parseFloat(s.live_fee || s.accrued_fee || 0)
+        if (s.escalated === 'true') personMap[key].escalated++
+      } else if (s.status === 'completed') {
+        personMap[key].completed++
+      }
+    })
+    const personSummary = Object.values(personMap).sort((a, b) => b.totalFee - a.totalFee)
+    const totalActiveFees = activeSLAs.reduce((s: number, a: any) => s + parseFloat(a.live_fee || a.accrued_fee || 0), 0)
+
+    return (
+      <div className="space-y-6">
+        {/* Tab Bar */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-white tracking-tight">SLA Tracker</h2>
+            <p className="text-sm text-neutral-500 mt-1">Call follow-up penalties &amp; compliance</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setTab('status')} className="px-4 py-2 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors font-medium">Dashboard</button>
+            <button className="px-4 py-2 rounded-lg text-sm bg-neutral-800 text-white font-bold">Follow-Ups ({activeSLAs.length})</button>
+            <button onClick={() => setTab('costs')} className="px-4 py-2 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors font-medium">Costs ({slaCosts.length})</button>
+          </div>
+        </div>
+
+        {loading && <div className="text-center py-8 text-neutral-500 text-sm">Loading follow-up data...</div>}
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Active Follow-Ups', value: activeSLAs.length, icon: Clock, color: '#f59e0b' },
+            { label: 'Total Accrued', value: `GH₵${totalActiveFees.toFixed(2)}`, icon: AlertTriangle, color: '#ef4444' },
+            { label: 'Escalated', value: activeSLAs.filter((s: any) => s.escalated === 'true').length, icon: Users, color: '#dc2626' },
+            { label: 'Completed', value: completedSLAs.length, icon: CheckCircle, color: '#22c55e' },
+          ].map((m, i) => (
+            <div key={i} className="relative bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 overflow-hidden">
+              <div className="absolute inset-0 opacity-5" style={{ background: `linear-gradient(135deg, ${m.color} 0%, transparent 100%)` }} />
+              <div className="relative z-[1]">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${m.color}15` }}>
+                    <m.icon className="w-4 h-4" style={{ color: m.color }} />
+                  </div>
+                  <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">{m.label}</span>
+                </div>
+                <p className="text-2xl font-black text-white">{m.value}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Per-Person Summary */}
+        {personSummary.length > 0 && (
+          <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4">
+            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4 text-[#00bfff]" /> Per-Person Breakdown
+            </h3>
+            <div className="space-y-3">
+              {personSummary.map(p => (
+                <div key={p.email} className="flex items-center gap-4 p-3 rounded-xl border border-neutral-800/50 hover:bg-neutral-800/30 transition-all">
+                  <div className="w-9 h-9 rounded-lg bg-neutral-800 flex items-center justify-center text-xs font-black text-white">
+                    {p.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate">{p.name}</p>
+                    <p className="text-[10px] text-neutral-500">{p.email}</p>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="text-center">
+                      <p className={`font-bold ${p.active > 0 ? 'text-amber-400' : 'text-neutral-600'}`}>{p.active}</p>
+                      <p className="text-[9px] text-neutral-600">Active</p>
+                    </div>
+                    <div className="text-center">
+                      <p className={`font-bold ${p.totalFee > 0 ? 'text-red-400' : 'text-neutral-600'}`}>GH₵{p.totalFee.toFixed(2)}</p>
+                      <p className="text-[9px] text-neutral-600">Fee</p>
+                    </div>
+                    {p.escalated > 0 && (
+                      <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-red-500/15 text-red-400">
+                        {p.escalated} escalated
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Active SLA Cards */}
+        <div>
+          <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-3">Active Follow-Up SLAs</h3>
+          {activeSLAs.length === 0 ? (
+            <div className="text-center py-8">
+              <CheckCircle className="w-8 h-8 text-emerald-500/30 mx-auto mb-2" />
+              <p className="text-neutral-500 text-sm">No overdue follow-ups — great work!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeSLAs.map((s: any) => {
+                const fee = parseFloat(s.live_fee || s.accrued_fee || 0)
+                const hoursOverdue = s.business_hours_overdue || 0
+                const isEscalated = s.escalated === 'true'
+                const isPostponed = s.status === 'postponed'
+                const severity = hoursOverdue >= 4 ? 'critical' : hoursOverdue >= 2 ? 'high' : hoursOverdue > 0 ? 'medium' : 'ok'
+                const borderColor = severity === 'critical' ? 'border-red-500/40' : severity === 'high' ? 'border-red-500/20' : severity === 'medium' ? 'border-amber-500/20' : 'border-neutral-800'
+
+                return (
+                  <div key={s.sla_id}
+                    className={`relative bg-neutral-900/50 border rounded-xl p-4 overflow-hidden transition-all hover:border-neutral-600 ${borderColor} ${severity === 'critical' ? 'animate-pulse' : ''}`}>
+                    {/* Severity glow */}
+                    {hoursOverdue > 0 && (
+                      <div className="absolute inset-0 opacity-5" style={{ background: `linear-gradient(135deg, #ef4444 0%, transparent 70%)` }} />
+                    )}
+                    <div className="relative z-[1]">
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-white truncate max-w-[140px]">{s.client_name || 'Unknown'}</span>
+                          {isEscalated && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-red-500/15 text-red-400">Escalated</span>
+                          )}
+                          {isPostponed && (
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-amber-500/15 text-amber-400">Postponed</span>
+                          )}
+                        </div>
+                        <span className={`text-lg font-black ${fee > 0 ? 'text-red-400' : 'text-neutral-600'}`}>GH₵{fee.toFixed(2)}</span>
+                      </div>
+
+                      {/* Details */}
+                      <div className="space-y-1 mb-3">
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-neutral-500">Assigned to</span>
+                          <span className="text-neutral-300 font-medium">{s.caller_name || s.caller_email}</span>
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-neutral-500">Due</span>
+                          <span className="text-neutral-300">{new Date(s.due_date).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-neutral-500">Overdue (business hrs)</span>
+                          <span className={`font-bold ${hoursOverdue >= 2 ? 'text-red-400' : hoursOverdue > 0 ? 'text-amber-400' : 'text-neutral-600'}`}>
+                            {hoursOverdue > 0 ? `${hoursOverdue.toFixed(1)}h` : 'Not yet'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-neutral-500">Outcome</span>
+                          <span className="text-neutral-300 capitalize">{(s.outcome || '').replace(/_/g, ' ')}</span>
+                        </div>
+                        {isPostponed && s.postponed_until && (
+                          <div className="flex justify-between text-[10px]">
+                            <span className="text-neutral-500">Postponed until</span>
+                            <span className="text-amber-400">{new Date(s.postponed_until).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const postponeTo = new Date()
+                            postponeTo.setHours(postponeTo.getHours() + 2)
+                            adminActions.postponeFollowUp(s.sla_id, postponeTo.toISOString())
+                          }}
+                          className="flex-1 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-amber-500/20 text-amber-400 hover:bg-amber-500/10 cursor-pointer transition-all"
+                        >
+                          <Pause className="w-3 h-3 inline mr-1" />Postpone 2h
+                        </button>
+                        <button
+                          onClick={() => adminActions.completeFollowUp(s.sla_id)}
+                          className="flex-1 text-[10px] font-bold px-3 py-1.5 rounded-lg border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10 cursor-pointer transition-all"
+                        >
+                          <CheckCircle className="w-3 h-3 inline mr-1" />Complete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Recently Completed */}
+        {completedSLAs.length > 0 && (
+          <div>
+            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-3">Recently Completed</h3>
+            <div className="space-y-1">
+              {completedSLAs.slice(0, 10).map((s: any) => (
+                <div key={s.sla_id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-800/30 transition-all text-xs">
+                  <CheckCircle className="w-4 h-4 text-emerald-500/50 flex-shrink-0" />
+                  <span className="text-neutral-400 truncate flex-1">{s.client_name}</span>
+                  <span className="text-neutral-500">{s.caller_name}</span>
+                  <span className="text-neutral-600">{s.completed_at ? new Date(s.completed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}</span>
+                  <span className={`font-bold ${parseFloat(s.accrued_fee || 0) > 0 ? 'text-red-400/60' : 'text-neutral-600'}`}>
+                    GH₵{parseFloat(s.accrued_fee || 0).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -564,6 +786,9 @@ export default function SLASection() {
         </div>
         <div className="flex gap-2">
           <button className="px-4 py-2 rounded-lg text-sm bg-neutral-800 text-white font-bold">Dashboard</button>
+          <button onClick={() => setTab('follow_ups')} className="px-4 py-2 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors font-medium">
+            Follow-Ups ({(callFollowUpSLA || []).filter((s: any) => s.status === 'active' || s.status === 'postponed').length})
+          </button>
           <button onClick={() => setTab('costs')} className="px-4 py-2 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors font-medium">
             Costs ({slaCosts.length})
           </button>
