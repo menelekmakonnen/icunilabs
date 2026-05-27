@@ -159,13 +159,15 @@ function TrendChart({ data }: { data: { date: string; views: number; visitors: n
       ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke()
 
       if (fill) {
-        ctx.lineTo(pad.left + cw, pad.top + ch)
-        ctx.lineTo(pad.left, pad.top + ch)
-        ctx.closePath()
-        const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch)
-        grad.addColorStop(0, hexToRgba(color, 0.15))
-        grad.addColorStop(1, 'transparent')
-        ctx.fillStyle = grad; ctx.fill()
+        try {
+          ctx.lineTo(pad.left + cw, pad.top + ch)
+          ctx.lineTo(pad.left, pad.top + ch)
+          ctx.closePath()
+          const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ch)
+          grad.addColorStop(0, hexToRgba(color, 0.15))
+          grad.addColorStop(1, 'transparent')
+          ctx.fillStyle = grad; ctx.fill()
+        } catch { /* ignore gradient error */ }
       }
     }
 
@@ -368,10 +370,12 @@ function Sparkline({ values, color = '#00bfff' }: { values: number[]; color?: st
 
     // Fill
     ctx.lineTo(100, 38); ctx.lineTo(0, 38); ctx.closePath()
-    const grad = ctx.createLinearGradient(0, 0, 0, 40)
-    grad.addColorStop(0, hexToRgba(color, 0.15))
-    grad.addColorStop(1, 'transparent')
-    ctx.fillStyle = grad; ctx.fill()
+    try {
+      const grad = ctx.createLinearGradient(0, 0, 0, 40)
+      grad.addColorStop(0, hexToRgba(color, 0.15))
+      grad.addColorStop(1, 'transparent')
+      ctx.fillStyle = grad; ctx.fill()
+    } catch { /* ignore gradient error */ }
   }, [values, color])
 
   return <canvas ref={canvasRef} className="an-kpi-sparkline" width={100} height={40} />
