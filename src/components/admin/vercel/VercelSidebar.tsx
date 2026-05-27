@@ -192,7 +192,7 @@ export default function VercelSidebar({
           {!collapsed && (
             <div className="v-user-info">
               <div className="v-user-name">{effectiveUser?.name || user?.name}</div>
-              <div className="v-user-email">{effectiveUser?.company_email || (effectiveUser?.email?.includes('@icuni.org') ? effectiveUser.email : effectiveUser?.email)}</div>
+              <div className="v-user-email">{effectiveUser?.company_email || effectiveUser?.email}</div>
             </div>
           )}
         </button>

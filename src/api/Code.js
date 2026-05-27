@@ -40,6 +40,7 @@ var ACTION_MAP = {
     saveEmailTemplate: handleSaveEmailTemplate, previewBrandedEmail: handlePreviewBrandedEmail,
     assignMailbox: handleAssignMailbox, removeMailbox: handleRemoveMailbox,
     getUserMailboxes: handleGetUserMailboxes,
+    importEmailAsApplication: handleImportEmailAsApplication,
 
     // ── Dashboard ──
     getDashboard: handleGetDashboard,

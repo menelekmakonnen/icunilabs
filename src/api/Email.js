@@ -201,17 +201,30 @@ function handleGetInbox(payload) {
     var page = parseInt(payload.page) || 0;
     var pageSize = Math.min(parseInt(payload.pageSize) || 20, 50);
     var extraQuery = payload.query || '';
+    var folder = payload.folder || 'all'; // 'inbox' | 'sent' | 'all'
 
     // Build Gmail search query
     var aliasParts = [];
     if (alias !== 'all') {
         if (userAliases.indexOf(alias) === -1) return errorResponse_('No access to this alias.');
-        aliasParts.push('(to:' + alias + ' OR from:' + alias + ')');
+        if (folder === 'inbox') {
+            aliasParts.push('to:' + alias);
+        } else if (folder === 'sent') {
+            aliasParts.push('from:' + alias);
+        } else {
+            aliasParts.push('(to:' + alias + ' OR from:' + alias + ')');
+        }
     } else {
         var parts = [];
         for (var i = 0; i < userAliases.length; i++) {
-            parts.push('to:' + userAliases[i]);
-            parts.push('from:' + userAliases[i]);
+            if (folder === 'inbox') {
+                parts.push('to:' + userAliases[i]);
+            } else if (folder === 'sent') {
+                parts.push('from:' + userAliases[i]);
+            } else {
+                parts.push('to:' + userAliases[i]);
+                parts.push('from:' + userAliases[i]);
+            }
         }
         aliasParts.push('(' + parts.join(' OR ') + ')');
     }
@@ -785,5 +798,108 @@ function handlePreviewBrandedEmail(payload) {
     var opts = payload.opts || {};
     var html = buildBrandedEmail_(name, subject, body, opts);
     return successResponse_({ html: html, subject: subject });
+}
+
+// ═══════════════════════════════════════════════════════════
+// IMPORT EMAIL AS JOB APPLICATION
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * Import a Gmail thread/message as a job application.
+ * Reads the message, extracts body as cover letter, saves attachments to Drive,
+ * and creates an entry in Job_Applications using the same schema as website submissions.
+ * payload: { token, threadId, messageId?, name, email, phone?, jobTitle?, coverLetterOverride? }
+ */
+function handleImportEmailAsApplication(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+
+    if (!payload.threadId) return errorResponse_('Thread ID required.');
+    if (!payload.name || !payload.email) return errorResponse_('Name and email are required.');
+
+    try {
+        var thread = GmailApp.getThreadById(payload.threadId);
+        if (!thread) return errorResponse_('Thread not found.');
+
+        // Get target message (first message or specific message)
+        var messages = thread.getMessages();
+        var msg = null;
+        if (payload.messageId) {
+            for (var i = 0; i < messages.length; i++) {
+                if (messages[i].getId() === payload.messageId) { msg = messages[i]; break; }
+            }
+        }
+        if (!msg) msg = messages[0];
+
+        var name = payload.name.trim();
+        var email = payload.email.trim().toLowerCase();
+        var phone = payload.phone || '';
+        var jobTitle = payload.jobTitle || 'Email Import';
+        var coverLetter = payload.coverLetterOverride || msg.getPlainBody() || '';
+        // Trim cover letter to reasonable length
+        if (coverLetter.length > 5000) coverLetter = coverLetter.substring(0, 5000) + '...';
+
+        // Check for duplicate
+        var existing = findRow_(SHEETS.JOB_APPLICATIONS, 'email', email);
+        if (existing) {
+            return errorResponse_('An application from ' + email + ' already exists (ID: ' + existing.application_id + ').');
+        }
+
+        // Save attachments to Drive (same structure as website submissions)
+        var cvLink = '', audioLink = '', videoLink = '';
+        var attachments = msg.getAttachments();
+
+        if (attachments.length > 0) {
+            var jobsFolder = getDriveSubfolder_(DRIVE_FOLDERS.JOBS);
+            var appsFolder = getOrCreateFolder_(jobsFolder, DRIVE_FOLDERS.APPLICATIONS);
+            var folderName = name + ' — ' + Utilities.formatDate(new Date(), 'Africa/Accra', 'yyyy-MM-dd') + ' (Email Import)';
+            var applicantFolder = getOrCreateFolder_(appsFolder, folderName);
+
+            for (var a = 0; a < attachments.length; a++) {
+                var att = attachments[a];
+                var attName = att.getName();
+                var blob = att.copyBlob();
+                var file = applicantFolder.createFile(blob.setName(attName));
+                var fileUrl = file.getUrl();
+
+                // Classify: CV = PDF/DOC, Audio = webm/mp3/m4a, Video = mp4/mov
+                if (/\.(pdf|doc|docx)$/i.test(attName) && !cvLink) {
+                    cvLink = fileUrl;
+                } else if (/\.(webm|mp3|m4a|ogg|wav)$/i.test(attName) && !audioLink) {
+                    audioLink = fileUrl;
+                } else if (/\.(mp4|mov|avi|mkv)$/i.test(attName) && !videoLink) {
+                    videoLink = fileUrl;
+                } else if (!cvLink && /\.(pdf|doc|docx)$/i.test(attName)) {
+                    cvLink = fileUrl;
+                }
+                // Any remaining attachments are still saved in the folder
+            }
+        }
+
+        // Create application row (same schema as website submissions)
+        var appId = generateId_('APP');
+        appendRow_(SHEETS.JOB_APPLICATIONS, [
+            appId, 'email-import', jobTitle,
+            name, email, phone, coverLetter,
+            cvLink ? 'Yes' : 'No', audioLink ? 'Yes' : 'No', videoLink ? 'Yes' : 'No',
+            cvLink, audioLink, videoLink,
+            'received', now_()
+        ]);
+
+        logAction_(auth.user.user_id, auth.user.name, 'EMAIL_IMPORT_APPLICATION',
+            name + ' (' + email + ') from thread: ' + thread.getFirstMessageSubject());
+
+        return successResponse_({
+            application_id: appId,
+            has_cv: !!cvLink,
+            has_audio: !!audioLink,
+            has_video: !!videoLink,
+            attachments_saved: attachments.length
+        }, 'Application imported from email.');
+
+    } catch (e) {
+        Logger.log('importEmailAsApplication error: ' + e.message);
+        return errorResponse_('Failed to import: ' + e.message);
+    }
 }
 

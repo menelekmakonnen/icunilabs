@@ -1,11 +1,372 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { Users, FolderOpen, FileText, AlertTriangle, TrendingUp, Flame } from 'lucide-react'
+import {
+  Users, FolderOpen, FileText, AlertTriangle, TrendingUp, Flame,
+  Phone, Target, Clock, Calendar, ArrowRight, CheckCircle, BarChart3
+} from 'lucide-react'
 
 const card = 'bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 sm:p-5'
 
-export default function DashboardSection() {
+// ═══════════════════════════════════════════════════════════
+// ── GROWTH COMMAND CENTER  (Sales / Admin / SuperAdmin / Godmode) ──
+// ═══════════════════════════════════════════════════════════
+
+function fmtDuration(s: number) {
+  const m = Math.floor(s / 60), sec = s % 60
+  return `${m}:${String(sec).padStart(2, '0')}`
+}
+
+function fmtCountdown(target: string) {
+  const diff = new Date(target).getTime() - Date.now()
+  if (diff <= 0) return 'Now'
+  const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000)
+  if (h > 24) return `${Math.floor(h / 24)}d ${h % 24}h`
+  return h > 0 ? `${h}h ${m}m` : `${m}m`
+}
+
+const OUTCOME_COLORS: Record<string, string> = {
+  meeting_booked: '#22c55e', callback_scheduled: '#00bfff',
+  interested_will_revert: '#8b5cf6', no_interest: '#6b7280',
+  needs_follow_up: '#f59e0b', voicemail: '#64748b', wrong_number: '#ef4444',
+}
+const OUTCOME_LABELS: Record<string, string> = {
+  meeting_booked: 'Meeting', callback_scheduled: 'Callback',
+  interested_will_revert: 'Interested', no_interest: 'No Interest',
+  needs_follow_up: 'Follow-Up', voicemail: 'Voicemail', wrong_number: 'Wrong #',
+}
+
+interface GrowthDashProps {
+  role: string
+  userEmail: string
+  userName: string
+}
+
+function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
+  const { callLogs, clients, users } = useAdminStore()
+  const [_tick, setTick] = useState(0)
+
+  useEffect(() => {
+    adminActions.loadCallLogs({ page_size: 500 })
+    adminActions.loadClients()
+    if (['Godmode', 'SuperAdmin'].includes(role)) adminActions.loadUsers()
+  }, [])
+
+  // Live countdown refresh
+  useEffect(() => {
+    const t = setInterval(() => setTick(x => x + 1), 30000)
+    return () => clearInterval(t)
+  }, [])
+
+  const now = Date.now()
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+  const weekAgo = now - 7 * 86400000
+  const monthAgo = now - 30 * 86400000
+
+  // ── Scope logic ──
+  // Sales/Admin: "My Calls" primary, "My Team Average" secondary
+  // SuperAdmin: "My Calls" primary, "My Team's Calls" secondary (all calls)
+  // Godmode: "All Calls" primary, "My Calls" secondary
+  const isGodmode = role === 'Godmode'
+  const isSuperAdmin = role === 'SuperAdmin'
+
+  const myCalls = useMemo(() =>
+    (callLogs || []).filter((l: any) => l.caller_email === userEmail),
+    [callLogs, userEmail])
+
+  const allCalls = callLogs || []
+
+  const primaryCalls = isGodmode ? allCalls : myCalls
+  const primaryLabel = isGodmode ? 'All Calls' : 'My Calls'
+
+  // ── Primary metrics ──
+  const primaryMetrics = useMemo(() => {
+    const today = primaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= todayStart.getTime())
+    const week = primaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= weekAgo)
+    const month = primaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= monthAgo)
+    const meetingsWeek = week.filter((l: any) => l.outcome === 'meeting_booked')
+    const totalDurWeek = week.reduce((s: number, l: any) => s + Number(l.duration_seconds || 0), 0)
+    const avgDur = week.length > 0 ? Math.round(totalDurWeek / week.length) : 0
+    const convRate = week.length > 0 ? Math.round((meetingsWeek.length / week.length) * 100) : 0
+    // Overdue follow-ups
+    const overdue = primaryCalls.filter((l: any) =>
+      l.next_action_date && new Date(l.next_action_date).getTime() < now &&
+      ['callback_scheduled', 'needs_follow_up', 'meeting_booked'].includes(l.outcome)
+    ).length
+    return {
+      today: today.length, week: week.length, month: month.length,
+      meetingsWeek: meetingsWeek.length, convRate, avgDur, overdue,
+    }
+  }, [primaryCalls, _tick])
+
+  // ── Secondary scope (team avg or team calls) ──
+  const secondaryLabel = isGodmode ? 'My Calls' : isSuperAdmin ? "Team's Calls" : 'Team Average'
+  const secondaryCalls = isGodmode ? myCalls : allCalls
+
+  const secondaryMetrics = useMemo(() => {
+    const week = secondaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= weekAgo)
+    const meetingsWeek = week.filter((l: any) => l.outcome === 'meeting_booked')
+
+    if (isGodmode) {
+      // For Godmode secondary = my calls
+      return { week: week.length, meetingsWeek: meetingsWeek.length, convRate: week.length > 0 ? Math.round((meetingsWeek.length / week.length) * 100) : 0 }
+    }
+    if (isSuperAdmin) {
+      // SuperAdmin sees team totals
+      return { week: week.length, meetingsWeek: meetingsWeek.length, convRate: week.length > 0 ? Math.round((meetingsWeek.length / week.length) * 100) : 0 }
+    }
+    // Admin/Sales: team average
+    const execs = new Set((week).map((l: any) => l.caller_email))
+    const execCount = Math.max(execs.size, 1)
+    return {
+      week: Math.round(week.length / execCount),
+      meetingsWeek: Math.round(meetingsWeek.length / execCount),
+      convRate: week.length > 0 ? Math.round((meetingsWeek.length / week.length) * 100) : 0,
+    }
+  }, [secondaryCalls, _tick])
+
+  // ── Today's schedule (upcoming callbacks/meetings) ──
+  const upcomingActions = useMemo(() => {
+    const source = isGodmode ? allCalls : myCalls
+    return source.filter((l: any) => {
+      if (!l.next_action_date) return false
+      return new Date(l.next_action_date).getTime() > now
+    }).sort((a: any, b: any) => new Date(a.next_action_date).getTime() - new Date(b.next_action_date).getTime())
+      .slice(0, 8)
+  }, [myCalls, allCalls, _tick])
+
+  // ── Outcome distribution this week ──
+  const outcomeDist = useMemo(() => {
+    const week = primaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= weekAgo)
+    const map: Record<string, number> = {}
+    week.forEach((l: any) => {
+      const o = l.outcome || 'unknown'
+      map[o] = (map[o] || 0) + 1
+    })
+    return Object.entries(map).sort((a, b) => b[1] - a[1])
+  }, [primaryCalls, _tick])
+
+  // ── Recent calls ──
+  const recentCalls = useMemo(() =>
+    primaryCalls
+      .sort((a: any, b: any) => new Date(b.call_start).getTime() - new Date(a.call_start).getTime())
+      .slice(0, 10),
+    [primaryCalls])
+
+  // ── Pipeline summary ──
+  const pipeline = useMemo(() => {
+    const stages: Record<string, number> = {}
+    const src = isGodmode ? clients : clients.filter((c: any) => c.added_by === userEmail)
+    src.forEach((c: any) => {
+      const st = c.prospect_stage || 'new_lead'
+      if (st !== 'won' && st !== 'lost' && st !== 'disqualified') stages[st] = (stages[st] || 0) + 1
+    })
+    return stages
+  }, [clients, userEmail])
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-black text-white">Growth Command Center</h2>
+        <p className="text-sm text-neutral-500 mt-1">Welcome back, {userName} — here's your call performance</p>
+      </div>
+
+      {/* ── Primary Metric Cards ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: `Today (${primaryLabel})`, value: primaryMetrics.today, sub: `${primaryMetrics.week} this week`, icon: Phone, color: '#00bfff' },
+          { label: 'Meetings Booked', value: primaryMetrics.meetingsWeek, sub: `${primaryMetrics.convRate}% conversion`, icon: Target, color: '#22c55e' },
+          { label: 'Avg Call Duration', value: fmtDuration(primaryMetrics.avgDur), sub: 'this week', icon: Clock, color: '#8b5cf6' },
+          { label: 'Overdue Follow-Ups', value: primaryMetrics.overdue, sub: primaryMetrics.overdue === 0 ? 'All caught up!' : 'Need attention', icon: primaryMetrics.overdue > 0 ? AlertTriangle : CheckCircle, color: primaryMetrics.overdue > 0 ? '#ef4444' : '#22c55e' },
+        ].map((m, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+            className="relative bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 overflow-hidden group hover:border-neutral-700 transition-all">
+            <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity" style={{ background: `linear-gradient(135deg, ${m.color} 0%, transparent 100%)` }} />
+            <div className="relative z-[1]">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${m.color}15` }}>
+                  <m.icon className="w-4 h-4" style={{ color: m.color }} />
+                </div>
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">{m.label}</span>
+              </div>
+              <p className="text-2xl font-black text-white">{m.value}</p>
+              <p className="text-[10px] text-neutral-600 mt-1">{m.sub}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ── Secondary Scope Banner ── */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
+        className="bg-neutral-900/30 border border-neutral-800/50 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-[#ff7a00]/10 flex items-center justify-center">
+            <BarChart3 className="w-4 h-4 text-[#ff7a00]" />
+          </div>
+          <div>
+            <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{secondaryLabel}</span>
+            <p className="text-[10px] text-neutral-600">This week comparison</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-6 text-xs">
+          <div className="text-center">
+            <p className="text-white font-bold text-lg">{secondaryMetrics.week}</p>
+            <p className="text-[9px] text-neutral-600 uppercase">Calls</p>
+          </div>
+          <div className="text-center">
+            <p className="text-emerald-400 font-bold text-lg">{secondaryMetrics.meetingsWeek}</p>
+            <p className="text-[9px] text-neutral-600 uppercase">Meetings</p>
+          </div>
+          <div className="text-center">
+            <p className={`font-bold text-lg ${secondaryMetrics.convRate >= 15 ? 'text-emerald-400' : secondaryMetrics.convRate >= 8 ? 'text-amber-400' : 'text-red-400'}`}>{secondaryMetrics.convRate}%</p>
+            <p className="text-[9px] text-neutral-600 uppercase">Conv. Rate</p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ── Main Content Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Today's Schedule */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={card}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-[#00bfff]" /> Upcoming Actions
+            </h3>
+            <button onClick={() => adminActions.setSection('calls')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">
+              View All
+            </button>
+          </div>
+          {upcomingActions.length === 0 ? (
+            <p className="text-sm text-neutral-600 py-4 text-center">No upcoming callbacks or meetings</p>
+          ) : (
+            <div className="space-y-2 max-h-[280px] overflow-y-auto">
+              {upcomingActions.map((l: any, i: number) => {
+                const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || 'Unknown'
+                const isToday = new Date(l.next_action_date).toDateString() === new Date().toDateString()
+                return (
+                  <div key={l.call_id || i}
+                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-neutral-800/30 ${isToday ? 'border-[#00bfff]/20 bg-[#00bfff]/[0.03]' : 'border-transparent'}`}
+                    onClick={() => adminActions.setSection('calls')}>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${OUTCOME_COLORS[l.outcome] || '#6b7280'}15` }}>
+                      <Phone className="w-4 h-4" style={{ color: OUTCOME_COLORS[l.outcome] || '#6b7280' }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{clientName}</p>
+                      <p className="text-[10px] text-neutral-500">{OUTCOME_LABELS[l.outcome] || l.outcome} — {l.next_action || 'Follow up'}</p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`text-xs font-bold ${isToday ? 'text-[#00bfff]' : 'text-neutral-400'}`}>{fmtCountdown(l.next_action_date)}</p>
+                      <p className="text-[9px] text-neutral-600">{new Date(l.next_action_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Outcome Distribution */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className={card}>
+          <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-[#ff7a00]" /> Outcomes This Week
+          </h3>
+          {outcomeDist.length === 0 ? (
+            <p className="text-sm text-neutral-600 py-4 text-center">No calls this week</p>
+          ) : (
+            <div className="space-y-2.5">
+              {outcomeDist.map(([outcome, count]) => {
+                const total = outcomeDist.reduce((s, [, c]) => s + c, 0)
+                const pct = total > 0 ? Math.round((count / total) * 100) : 0
+                const color = OUTCOME_COLORS[outcome] || '#6b7280'
+                return (
+                  <div key={outcome}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-neutral-400 capitalize">{OUTCOME_LABELS[outcome] || outcome.replace(/_/g, ' ')}</span>
+                      <span className="text-xs font-bold text-white">{count} <span className="text-neutral-600 font-normal">({pct}%)</span></span>
+                    </div>
+                    <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6, delay: 0.1 }}
+                        className="h-full rounded-full" style={{ background: color }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </motion.div>
+      </div>
+
+      {/* ── Bottom Row: Pipeline + Recent Calls ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Pipeline */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className={card}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-[#ff7a00]" /> {isGodmode ? 'All' : 'My'} Pipeline
+            </h3>
+            <button onClick={() => adminActions.setSection('clients')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Open CRM</button>
+          </div>
+          {Object.keys(pipeline).length === 0 ? (
+            <p className="text-sm text-neutral-600 py-4 text-center">No active prospects</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {Object.entries(pipeline).sort((a, b) => b[1] - a[1]).map(([stage, count]) => {
+                const stageColors: Record<string, string> = {
+                  new_lead: '#00bfff', contacted: '#8b5cf6', qualified: '#f59e0b',
+                  meeting_scheduled: '#ff7a00', proposal_sent: '#ec4899', negotiation: '#ef4444',
+                  discovery: '#6366f1', prospect: '#64748b',
+                }
+                const color = stageColors[stage] || '#6b7280'
+                return (
+                  <div key={stage} className="text-center p-3 bg-neutral-900/50 rounded-xl border border-neutral-800/50 hover:border-neutral-700 transition-colors cursor-pointer"
+                    onClick={() => adminActions.setSection('clients')}>
+                    <div className="text-xl font-black" style={{ color }}>{count}</div>
+                    <div className="text-[9px] text-neutral-600 uppercase tracking-wider mt-1 capitalize">{stage.replace(/_/g, ' ')}</div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Recent Calls */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className={card}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+              <Phone className="w-4 h-4 text-[#00bfff]" /> Recent Calls
+            </h3>
+            <button onClick={() => adminActions.setSection('calls')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">View Logs</button>
+          </div>
+          <div className="space-y-1 max-h-[260px] overflow-y-auto">
+            {recentCalls.length === 0 && <p className="text-sm text-neutral-600 py-4 text-center">No recent calls</p>}
+            {recentCalls.map((l: any, i: number) => {
+              const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || 'Unknown'
+              const color = OUTCOME_COLORS[l.outcome] || '#6b7280'
+              return (
+                <div key={l.call_id || i} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-neutral-800/30 transition-colors">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
+                  <span className="text-sm text-neutral-300 truncate flex-1">{clientName}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase" style={{ color, background: `${color}15` }}>
+                    {OUTCOME_LABELS[l.outcome] || l.outcome || '—'}
+                  </span>
+                  <span className="text-[10px] text-neutral-600 flex-shrink-0 font-mono">{fmtDuration(Number(l.duration_seconds || 0))}</span>
+                </div>
+              )
+            })}
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// ── ADMIN OVERVIEW DASHBOARD  (existing, for non-call views) ──
+// ═══════════════════════════════════════════════════════════
+
+function AdminOverviewDashboard() {
   const s = useAdminStore()
   useEffect(() => { adminActions.loadDashboard() }, [])
 
@@ -15,14 +376,9 @@ export default function DashboardSection() {
   const breached = s.slaStatuses.filter((st: any) => st.breached).length
   const weekAgo = useMemo(() => new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0], [])
 
-
-  // Analytics: Project type breakdown
   const projectTypes = useMemo(() => {
     const map = new Map<string, number>()
-    s.projects.forEach((p: any) => {
-      const t = p.type || 'Other'
-      map.set(t, (map.get(t) || 0) + 1)
-    })
+    s.projects.forEach((p: any) => { const t = p.type || 'Other'; map.set(t, (map.get(t) || 0) + 1) })
     return Array.from(map.entries()).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count)
   }, [s.projects])
 
@@ -34,16 +390,10 @@ export default function DashboardSection() {
     return { ...item, dash, gap, offset, color: TYPE_COLORS[i % TYPE_COLORS.length] }
   })
 
-  // CRM Feed: recent prospect updates
-  const recentProspects = useMemo(() => {
-    return s.clients
-      .filter((c: any) => {
-        const stage = c.prospect_stage || 'new_lead'
-        return stage !== 'won' && stage !== 'lost'
-      })
+  const recentProspects = useMemo(() =>
+    s.clients.filter((c: any) => { const stage = c.prospect_stage || 'new_lead'; return stage !== 'won' && stage !== 'lost' })
       .sort((a: any, b: any) => new Date(b.last_activity || 0).getTime() - new Date(a.last_activity || 0).getTime())
-      .slice(0, 5)
-  }, [s.clients])
+      .slice(0, 5), [s.clients])
 
   const STAGE_LABELS: Record<string, string> = {
     new_lead: 'New Lead', contacted: 'Contacted', qualified: 'Qualified',
@@ -56,7 +406,6 @@ export default function DashboardSection() {
     won: '#10b981', lost: '#475569'
   }
 
-  // Client = someone who has paid (prospect_stage=won or client). Everything else is a prospect/lead.
   const allContacts = s.clients.filter((c: any) => (c.status || '').toLowerCase() !== 'deleted')
   const payingClients = allContacts.filter((c: any) => ['won', 'client'].includes((c.prospect_stage || '').toLowerCase())).length
   const pipelineCount = allContacts.length - payingClients
@@ -71,15 +420,9 @@ export default function DashboardSection() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-black text-white">Dashboard</h2>
-        <p className="text-sm text-neutral-500 mt-1">Welcome back, {s.user?.name}</p>
-      </div>
-
+    <>
       {s.loading && <div className="text-center py-8 text-neutral-500 text-sm">Loading dashboard data...</div>}
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {stats.map((st, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
@@ -95,12 +438,9 @@ export default function DashboardSection() {
         ))}
       </div>
 
-      {/* ═══ ANALYTICS ROW ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Project Type Ring */}
         {typeArcs.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-            className={card}>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={card}>
             <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4">Project Types</h3>
             <div className="flex items-center gap-6">
               <svg width="120" height="120" viewBox="0 0 100 100">
@@ -126,65 +466,43 @@ export default function DashboardSection() {
         )}
       </div>
 
-      {/* ═══ OPS PIPELINE + CHALLENGE HIT RATE ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Ops Pipeline Widget */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-          className={card}>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className={card}>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#ff7a00]" />
-              Ops Pipeline
+              <Users className="w-4 h-4 text-[#ff7a00]" /> Ops Pipeline
             </h3>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <button onClick={() => { adminActions.setSection('clients'); /* LinkExtractor will be opened from CRM */ }}
-                className="flex items-center gap-1.5 text-xs text-[#8b5cf6] hover:text-white cursor-pointer transition-colors font-semibold">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><path d="M11 8v6" /><path d="M8 11h6" />
-                </svg>
-                <span className="hidden sm:inline">Search and Add</span>
-                <span className="sm:hidden">Add</span>
-              </button>
-              <div className="w-px h-3 bg-neutral-700" />
-              <button onClick={() => adminActions.setSection('clients')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors"><span className="hidden sm:inline">Open </span>CRM</button>
-            </div>
+            <button onClick={() => adminActions.setSection('clients')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Open CRM</button>
           </div>
           {(() => {
             const prospects = s.clients.filter((c: any) => {
               const stage = c.prospect_stage || 'new_lead'
               return ['prospect', 'new_lead', 'contacted', 'qualified'].includes(stage)
             })
-            // weekAgo computed in component body via useMemo
             const addedThisWeek = prospects.filter((c: any) => (c.created_at || '') >= weekAgo).length
             const awaitingContact = prospects.filter((c: any) => (c.prospect_stage || 'new_lead') === 'prospect').length
             const qualified = prospects.filter((c: any) => (c.prospect_stage || 'new_lead') === 'qualified').length
             return (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { label: 'Total', value: prospects.length, color: '#00bfff' },
-                    { label: 'This Week', value: addedThisWeek, color: '#ff7a00' },
-                    { label: 'Awaiting', value: awaitingContact, color: '#64748b' },
-                    { label: 'Qualified', value: qualified, color: '#f59e0b' },
-                  ].map((m, i) => (
-                    <div key={i} className="text-center p-2 bg-neutral-900/50 rounded-lg border border-neutral-800/50">
-                      <div className="text-lg font-bold" style={{ color: m.color }}>{m.value}</div>
-                      <div className="text-[9px] text-neutral-600 uppercase tracking-wider">{m.label}</div>
-                    </div>
-                  ))}
-                </div>
-                {prospects.length === 0 && <p className="text-sm text-neutral-600 text-center py-2">No active prospects. Start prospecting!</p>}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { label: 'Total', value: prospects.length, color: '#00bfff' },
+                  { label: 'This Week', value: addedThisWeek, color: '#ff7a00' },
+                  { label: 'Awaiting', value: awaitingContact, color: '#64748b' },
+                  { label: 'Qualified', value: qualified, color: '#f59e0b' },
+                ].map((m, i) => (
+                  <div key={i} className="text-center p-2 bg-neutral-900/50 rounded-lg border border-neutral-800/50">
+                    <div className="text-lg font-bold" style={{ color: m.color }}>{m.value}</div>
+                    <div className="text-[9px] text-neutral-600 uppercase tracking-wider">{m.label}</div>
+                  </div>
+                ))}
               </div>
             )
           })()}
         </motion.div>
 
-        {/* Challenge Hit Rate */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}
-          className={card}>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }} className={card}>
           <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Flame className="w-4 h-4 text-amber-500" />
-            Challenge Hit Rate
+            <Flame className="w-4 h-4 text-amber-500" /> Challenge Hit Rate
           </h3>
           {(() => {
             const contacted = s.clients.filter((c: any) => {
@@ -211,9 +529,7 @@ export default function DashboardSection() {
         </motion.div>
       </div>
 
-      {/* ═══ CRM FEED + SLA ROW ═══ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* CRM Feed */}
         <div className={card}>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">Prospect Pipeline</h3>
@@ -225,7 +541,7 @@ export default function DashboardSection() {
             <div className="space-y-2">
               {recentProspects.map((c: any) => (
                 <div key={c.client_id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-neutral-800/30 transition-colors cursor-pointer"
-                  onClick={() => { adminActions.setSection('clients') }}>
+                  onClick={() => adminActions.setSection('clients')}>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white"
                     style={{ background: STAGE_COLORS[c.prospect_stage] || '#475569' }}>
                     {(c.name || '?').charAt(0)}
@@ -244,7 +560,6 @@ export default function DashboardSection() {
           )}
         </div>
 
-        {/* SLA Health */}
         <div className={card}>
           <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-3">SLA Health</h3>
           <div className="space-y-2 max-h-[250px] overflow-y-auto">
@@ -271,7 +586,6 @@ export default function DashboardSection() {
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div className={card}>
         <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-3">Recent Activity</h3>
         <div className="space-y-1 max-h-[300px] overflow-y-auto">
@@ -285,6 +599,43 @@ export default function DashboardSection() {
           ))}
         </div>
       </div>
+    </>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// ── MAIN DASHBOARD SECTION  ───────────────────────────────
+// ═══════════════════════════════════════════════════════════
+
+export default function DashboardSection() {
+  const { user } = useAdminStore()
+  const role = user?.role || ''
+  const showGrowthDash = ['Sales', 'Admin', 'SuperAdmin', 'Godmode'].includes(role)
+
+  return (
+    <div className="space-y-6">
+      {showGrowthDash ? (
+        <GrowthCommandCenter role={role} userEmail={user?.email || ''} userName={user?.name || 'there'} />
+      ) : (
+        <>
+          <div>
+            <h2 className="text-2xl font-black text-white">Dashboard</h2>
+            <p className="text-sm text-neutral-500 mt-1">Welcome back, {user?.name}</p>
+          </div>
+          <AdminOverviewDashboard />
+        </>
+      )}
+
+      {/* For elevated roles, also show the admin overview below the Growth dashboard */}
+      {showGrowthDash && ['Godmode', 'SuperAdmin'].includes(role) && (
+        <div className="pt-6 border-t border-neutral-800/50">
+          <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <FolderOpen className="w-5 h-5 text-[#ff7a00]" /> Operations Overview
+          </h3>
+          <AdminOverviewDashboard />
+        </div>
+      )}
     </div>
   )
 }

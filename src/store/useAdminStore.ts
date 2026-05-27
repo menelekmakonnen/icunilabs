@@ -596,10 +596,10 @@ export const adminActions = {
   },
 
   // ── Email Hub ──
-  loadInbox: async (alias?: string, page?: number, query?: string) => {
+  loadInbox: async (alias?: string, page?: number, query?: string, folder?: 'inbox' | 'sent' | 'all') => {
     setState({ inboxLoading: true })
     try {
-      const result = await apiPost('getInbox', { token: state.token, alias: alias || 'all', page: page || 0, query })
+      const result = await apiPost('getInbox', { token: state.token, alias: alias || 'all', page: page || 0, query, folder: folder || 'all' })
       setState({ inbox: result?.threads || [], inboxLoading: false, emailAliases: result?.aliases || state.emailAliases })
       return result
     } catch (err: any) {
@@ -636,6 +636,18 @@ export const adminActions = {
   sendBrandedEmail: async (data: { to?: string; subject: string; body: string; fromAlias?: string; recipients?: any[]; useTemplate?: boolean; templateOpts?: any; recipientName?: string }) => {
     try {
       const result = await apiPost('sendBrandedEmail', { token: state.token, ...data })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  importEmailAsApplication: async (data: { threadId: string; messageId?: string; name: string; email: string; phone?: string; jobTitle?: string; coverLetterOverride?: string }) => {
+    try {
+      const result = await apiPost('importEmailAsApplication', { token: state.token, ...data })
+      // Reload applications list so careers page shows the new entry
+      adminActions.loadApplications()
       return result
     } catch (err: any) {
       setState({ error: err.message })

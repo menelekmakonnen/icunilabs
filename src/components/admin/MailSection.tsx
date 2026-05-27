@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { Mail, Inbox, Send, FileText, Search, Plus, X, Sliders } from 'lucide-react'
+import { Mail, Inbox, Send, FileText, Search, Plus, X, Sliders, ArrowUpRight } from 'lucide-react'
 import MailThread from './mail/MailThread'
 import MailCompose from './mail/MailCompose'
 import MailTemplates from './mail/MailTemplates'
@@ -42,6 +42,7 @@ export default function MailSection() {
   const [activeMailboxes, setActiveMailboxes] = useState<string[]>([])
   const [searchQ, setSearchQ] = useState('')
   const [page, setPage] = useState(0)
+  const [folder, setFolder] = useState<'inbox' | 'sent' | 'all'>('inbox')
   const [impersonatedBoxes, setImpersonatedBoxes] = useState<string[] | null>(null)
 
   // Effective user = impersonated user when active
@@ -93,7 +94,7 @@ export default function MailSection() {
       const def = companyEmail || (aliasList.length > 0 ? aliasKey(aliasList[0]) : '')
       if (def) {
         setActiveMailboxes([def])
-        adminActions.loadInbox(def, 0)
+        adminActions.loadInbox(def, 0, '', 'inbox')
       }
       setInitialLoaded(true)
     })()
@@ -105,7 +106,7 @@ export default function MailSection() {
     if (aliases.length > 0 && activeMailboxes.length === 0) {
       const def = companyEmail || aliasKey(aliases[0])
       setActiveMailboxes([def])
-      adminActions.loadInbox(def, 0)
+      adminActions.loadInbox(def, 0, '', folder)
     }
   }, [aliases.length, companyEmail, initialLoaded])
 
@@ -120,17 +121,18 @@ export default function MailSection() {
       const next = prev.includes(alias) ? prev.filter(a => a !== alias) : [...prev, alias]
       if (next.length === 0) return prev // must have at least one
       setPage(0)
-      adminActions.loadInbox(next.length === aliases.length ? 'all' : next.join(','), 0, searchQ)
+      adminActions.loadInbox(next.length === aliases.length ? 'all' : next.join(','), 0, searchQ, folder)
       return next
     })
   }
 
   const currentFilter = activeMailboxes.length === aliases.length ? 'all' : activeMailboxes.join(',')
 
-  const doSearch = () => { setPage(0); adminActions.loadInbox(currentFilter, 0, searchQ) }
-  const changePage = (p: number) => { setPage(p); adminActions.loadInbox(currentFilter, p, searchQ) }
+  const doSearch = () => { setPage(0); adminActions.loadInbox(currentFilter, 0, searchQ, folder) }
+  const changePage = (p: number) => { setPage(p); adminActions.loadInbox(currentFilter, p, searchQ, folder) }
+  const switchFolder = (f: 'inbox' | 'sent' | 'all') => { setFolder(f); setPage(0); adminActions.loadInbox(currentFilter, 0, searchQ, f) }
   const openThread = async (id: string) => { await adminActions.loadThread(id) }
-  const closeThread = () => { adminActions.clearActiveThread(); adminActions.loadInbox(currentFilter, page, searchQ) }
+  const closeThread = () => { adminActions.clearActiveThread(); adminActions.loadInbox(currentFilter, page, searchQ, folder) }
 
   const tabs: { id: Tab; label: string; icon: any; access?: boolean }[] = [
     { id: 'inbox', label: 'Inbox', icon: Inbox },
@@ -199,18 +201,37 @@ export default function MailSection() {
             })}
           </div>
 
+          {/* Folder tabs: Inbox / Sent / All */}
+          <div className="flex items-center gap-1 bg-neutral-900/50 rounded-xl border border-neutral-800/40 p-1">
+            {([['inbox', 'Inbox', Inbox], ['sent', 'Sent', ArrowUpRight], ['all', 'All Mail', Mail]] as const).map(([f, label, Icon]) => (
+              <button key={f} onClick={() => switchFolder(f as any)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${folder === f ? 'bg-[#00bfff]/10 text-[#00bfff] shadow-[0_0_8px_rgba(0,191,255,0.08)]' : 'text-neutral-500 hover:text-neutral-300'}`}>
+                <Icon className="w-3.5 h-3.5" />{label}
+              </button>
+            ))}
+          </div>
+
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
             <input value={searchQ} onChange={e => setSearchQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && doSearch()}
-              className={`${cls} !pl-10`} placeholder="Search emails..." />
+              className={`${cls} !pl-10`} placeholder={`Search ${folder === 'sent' ? 'sent' : folder === 'all' ? 'all' : 'inbox'} emails...`} />
           </div>
 
           {/* Thread list */}
           {inboxLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <div className="w-8 h-8 border-2 border-[#00bfff]/30 border-t-[#00bfff] rounded-full animate-spin" />
-              <span className="text-xs text-neutral-600">Loading inbox...</span>
+            <div className="space-y-2">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-3.5 rounded-xl border border-transparent animate-pulse">
+                  <div className="w-10 h-10 rounded-full bg-neutral-800" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-neutral-800 rounded w-1/3" />
+                    <div className="h-3 bg-neutral-800/60 rounded w-2/3" />
+                    <div className="h-2 bg-neutral-800/40 rounded w-full" />
+                  </div>
+                  <div className="h-3 w-8 bg-neutral-800 rounded" />
+                </div>
+              ))}
             </div>
           ) : inbox.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
