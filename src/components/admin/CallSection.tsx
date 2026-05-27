@@ -64,31 +64,40 @@ export default function CallSection() {
     return () => clearInterval(t)
   }, [])
 
-  // ── Upcoming Calls ──
+  // ── Upcoming Calls (includes overdue backlog) ──
   const upcomingCalls = useMemo(() => {
     const now = Date.now()
     const clientMap: Record<string, any> = {}
     ;(clients || []).forEach((c: any) => { clientMap[c.client_id] = c })
     
-    // Collect all future next_action_date entries, deduplicated by client_id (keep nearest)
+    // Collect all next_action_date entries with actionable outcomes, deduplicated by client_id (keep nearest)
     const byClient: Record<string, any> = {}
     ;(callLogs || []).forEach((log: any) => {
       if (!log.next_action_date || !log.client_id) return
-      // Accept any log with a valid future (or recent past) next_action_date
+      if (!['callback_scheduled', 'needs_follow_up', 'meeting_booked'].includes(log.outcome)) return
       const d = new Date(log.next_action_date).getTime()
-      if (isNaN(d) || d < now - 86400000) return // skip invalid or > 24h past
-      if (!byClient[log.client_id] || d < new Date(byClient[log.client_id].next_action_date).getTime()) {
+      if (isNaN(d)) return
+      // Keep the most recent (closest to now) entry per client
+      if (!byClient[log.client_id] || Math.abs(d - now) < Math.abs(new Date(byClient[log.client_id].next_action_date).getTime() - now)) {
         byClient[log.client_id] = log
       }
     })
-    
+
     return Object.values(byClient)
       .map((log: any) => {
         const client = clientMap[log.client_id] || {}
-        const diff = new Date(log.next_action_date).getTime() - now
-        return { ...log, client, diff, clientName: client.name || client.company || log.client_name || 'Unknown' }
+        const actionTime = new Date(log.next_action_date).getTime()
+        const diff = actionTime - now
+        const isOverdue = actionTime < now
+        return { ...log, client, diff, isOverdue, clientName: client.name || client.company || log.client_name || 'Unknown' }
       })
-      .sort((a: any, b: any) => a.diff - b.diff)
+      // Sort: overdue first (most overdue at top), then future by soonest
+      .sort((a: any, b: any) => {
+        if (a.isOverdue && !b.isOverdue) return -1
+        if (!a.isOverdue && b.isOverdue) return 1
+        if (a.isOverdue && b.isOverdue) return new Date(a.next_action_date).getTime() - new Date(b.next_action_date).getTime()
+        return a.diff - b.diff
+      })
   }, [callLogs, clients, _tick])
 
   // ── Toast Notifications (fire when ≤ 15min away) ──
@@ -386,7 +395,7 @@ export default function CallSection() {
       <div className="flex gap-1 mb-4 sm:mb-6 border-b border-neutral-800 overflow-x-auto scrollbar-hide">
         {[
           { id: 'overview', label: 'Overview', icon: BarChart3 },
-          { id: 'upcoming', label: `Upcoming (${upcomingCalls.filter((u: any) => u.diff > 0).length})`, icon: Bell },
+          { id: 'upcoming', label: `Upcoming (${upcomingCalls.length})`, icon: Bell },
           { id: 'logs', label: `Call Logs (${filteredLogs.length})`, icon: FileText },
           { id: 'competitor', label: 'Competitor Intel', icon: TrendingUp }
         ].map(t => (

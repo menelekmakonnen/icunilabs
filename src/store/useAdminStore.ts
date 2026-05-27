@@ -1211,7 +1211,11 @@ export const adminActions = {
   loadCallLogs: async (filters?: Record<string, any>) => {
     try {
       const result = await apiPost('getCallLogs', { token: state.token, ...(filters || {}) })
-      setState({ callLogs: result?.logs || [] })
+      const logs = result?.logs || result || []
+      // Never wipe populated call logs with an empty/failed response
+      if (Array.isArray(logs) && (logs.length > 0 || state.callLogs.length === 0)) {
+        setState({ callLogs: logs })
+      }
       return result
     } catch (err: any) { setState({ error: err.message }) }
   },
