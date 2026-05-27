@@ -103,6 +103,18 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
 
                     {/* Links */}
                     <div className="flex flex-wrap gap-4">
+                        {project.projectLinks?.map((link, i) => (
+                            <a
+                                key={i}
+                                href={link.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-[#00bfff]/20 backdrop-blur-md border border-[#00bfff]/40 text-white font-bold rounded-lg hover:bg-[#00bfff]/30 transition-all shadow-lg"
+                            >
+                                <ExternalLink size={18} />
+                                <span>{link.label}</span>
+                            </a>
+                        ))}
                         {project.projectUrl && (
                             <a
                                 href={project.projectUrl}

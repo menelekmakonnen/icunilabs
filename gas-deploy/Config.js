@@ -68,7 +68,10 @@ var SHEETS = {
     // Email Hub
     EMAIL_ALIASES:     'Email_Aliases',
     EMAIL_TEMPLATES:   'Email_Templates',
-    USER_MAILBOXES:    'User_Mailboxes'
+    USER_MAILBOXES:    'User_Mailboxes',
+
+    // Analytics
+    ANALYTICS_EVENTS:  'Analytics_Events'
 };
 
 // ─── COLUMN MAPS ─────────────────────────────────────────

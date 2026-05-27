@@ -5,7 +5,7 @@ import { KeyRound, Hash, Shield, Bell, Save, Check, Eye, EyeOff } from 'lucide-r
 
 const inputCls = 'w-full px-4 py-3 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] focus:ring-1 focus:ring-[#00bfff]/30 transition-all text-sm'
 const cardCls = 'bg-neutral-900/50 border border-neutral-800 rounded-xl p-6'
-const btnPrimary = 'flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all disabled:opacity-40 cursor-pointer'
+const btnPrimary = 'flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all disabled:opacity-40 cursor-pointer whitespace-nowrap'
 
 export default function SettingsSection() {
   const { user, loading, error } = useAdminStore()

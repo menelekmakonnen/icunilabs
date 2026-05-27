@@ -40,6 +40,7 @@ export default function CallSection() {
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
   const [expandedLog, setExpandedLog] = useState<string | null>(null)
+  const [outcomeFilter, setOutcomeFilter] = useState<string | null>(null)
   
   // Call Picker State
   const [showCallPicker, setShowCallPicker] = useState(false)
@@ -52,7 +53,7 @@ export default function CallSection() {
   const [_tick, setTick] = useState(0)
 
   useEffect(() => {
-    adminActions.loadCallLogs()
+    adminActions.loadCallLogs({ page_size: 500 })
     adminActions.loadCompetitorIntel()
     adminActions.loadClients()
   }, [])
@@ -73,9 +74,9 @@ export default function CallSection() {
     const byClient: Record<string, any> = {}
     ;(callLogs || []).forEach((log: any) => {
       if (!log.next_action_date || !log.client_id) return
-      if (!['callback_scheduled', 'needs_follow_up', 'interested_will_revert', 'meeting_booked'].includes(log.outcome)) return
+      // Accept any log with a valid future (or recent past) next_action_date
       const d = new Date(log.next_action_date).getTime()
-      if (d < now - 86400000) return // skip if > 24h past
+      if (isNaN(d) || d < now - 86400000) return // skip invalid or > 24h past
       if (!byClient[log.client_id] || d < new Date(byClient[log.client_id].next_action_date).getTime()) {
         byClient[log.client_id] = log
       }
@@ -190,15 +191,19 @@ export default function CallSection() {
         break
     }
 
-    if (!start && !end) return callLogs
+    if (!start && !end) {
+      if (outcomeFilter) return callLogs.filter((log: any) => log.outcome === outcomeFilter)
+      return callLogs
+    }
 
     return callLogs.filter(log => {
       const d = new Date(log.call_start)
       if (start && d < start) return false
       if (end && d >= end) return false
+      if (outcomeFilter && log.outcome !== outcomeFilter) return false
       return true
     })
-  }, [callLogs, dateFilter, customStart, customEnd])
+  }, [callLogs, dateFilter, customStart, customEnd, outcomeFilter])
 
   // ── Client-Side Analytics ──
   const analytics = useMemo(() => {
@@ -472,14 +477,29 @@ export default function CallSection() {
 
             {/* Outcome Distribution */}
             <div className="crm-metric">
-              <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold mb-4">Outcome Distribution</p>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Outcome Distribution</p>
+                {outcomeFilter && (
+                  <button onClick={() => setOutcomeFilter(null)} className="text-[10px] text-[#00bfff] hover:text-white cursor-pointer transition-colors font-bold flex items-center gap-1">
+                    <X className="w-3 h-3" /> Clear filter
+                  </button>
+                )}
+              </div>
               {Object.keys(analytics.outcomeCounts).length > 0 ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                   {Object.entries(analytics.outcomeCounts).sort((a, b) => b[1] - a[1]).map(([outcome, count]) => (
-                    <div key={outcome} className="bg-neutral-900/50 p-3 rounded-lg border border-neutral-800 text-center">
+                    <button
+                      key={outcome}
+                      onClick={() => { setOutcomeFilter(outcomeFilter === outcome ? null : outcome); setActiveTab('logs') }}
+                      className={`p-3 rounded-lg border text-center cursor-pointer transition-all ${
+                        outcomeFilter === outcome
+                          ? 'bg-[#00bfff]/10 border-[#00bfff]/40 shadow-[0_0_12px_rgba(0,191,255,0.1)]'
+                          : 'bg-neutral-900/50 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900/80'
+                      }`}
+                    >
                       <p className="text-xl font-bold text-white mb-1">{count}</p>
                       <p className="text-[10px] text-neutral-500 uppercase">{OUTCOME_LABELS[outcome] || outcome}</p>
-                    </div>
+                    </button>
                   ))}
                 </div>
               ) : <p className="text-neutral-600 text-sm">No outcomes recorded in this period.</p>}
@@ -632,6 +652,17 @@ export default function CallSection() {
 
         {activeTab === 'logs' && (
           <div className="crm-fade-in crm-metric">
+            {outcomeFilter && (
+              <div className="flex items-center gap-2 mb-3 pb-3 border-b border-neutral-800/50">
+                <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Filtered by:</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-[#00bfff]/10 text-[#00bfff] text-[10px] font-bold uppercase">
+                  {OUTCOME_LABELS[outcomeFilter] || outcomeFilter}
+                </span>
+                <button onClick={() => setOutcomeFilter(null)} className="text-neutral-600 hover:text-white cursor-pointer transition-colors ml-1">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
             {filteredLogs.length > 0 ? (
               <div className="space-y-0">
                 {filteredLogs.map(log => {

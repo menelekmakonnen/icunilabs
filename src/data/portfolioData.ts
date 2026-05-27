@@ -22,6 +22,7 @@ export interface ProjectData {
     expertDeepDive: string;
     githubUrl?: string;
     projectUrl?: string;
+    projectLinks?: { label: string; url: string }[];
     status?: string;
     tier?: 'flagship' | 'production' | 'active' | 'spec';
 }
@@ -54,6 +55,10 @@ export const portfolioProjects: ProjectData[] = [
         imageUrl: '/images/covers/auto-antigravity.webp',
         status: 'Production v2.1.0',
         tier: 'flagship',
+        projectLinks: [
+            { label: 'Antigravity IDE', url: 'https://antigravity.dev' },
+            { label: 'Agent Manager', url: 'https://antigravity.dev/agent-manager' },
+        ],
         clientProblem: 'AI-assisted coding tools like Google Antigravity, Cursor, and similar agentic IDEs require constant manual approval — every terminal command, file edit, and permission prompt demands the developer\'s attention. This click-babysitting bottleneck completely eliminates the efficiency gains that AI coding agents promise, reducing them to glorified autocomplete that still requires human presence at the keyboard.',
         solution: 'Engineered AutoAntigravity, a production-grade VS Code extension implementing a dual-strategy automation architecture: VS Code Commands (500ms polling) and Chrome DevTools Protocol MutationObserver (event-driven DOM reactions). The extension operates in Background Mode across all open tabs simultaneously — no tab-switching needed — while a built-in Dangerous Command Blocking system protects against `rm -rf /`, fork bombs, and disk overwrites.',
         businessImpact: 'Saves 50+ manual clicks per hour per developer. Background Mode enables running 10+ AI agents simultaneously across tabs with zero human intervention. The ROI Dashboard tracks clicks saved, time recovered, and dangerous commands blocked weekly — proving measurable efficiency gains for every session.',

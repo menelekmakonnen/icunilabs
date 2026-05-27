@@ -72,7 +72,7 @@ function getSheetByName_(sheetName) {
     // Logs
     else if ([SHEETS.ACTIVITY_LOG, SHEETS.ERROR_LOG, SHEETS.EMAIL_LOG,
               SHEETS.SLA_LOG, SHEETS.SLA_COSTS, SHEETS.ARCHIVES,
-              SHEETS.IMPERSONATION_LOG].indexOf(sheetName) >= 0) {
+              SHEETS.IMPERSONATION_LOG, SHEETS.ANALYTICS_EVENTS].indexOf(sheetName) >= 0) {
         ssGetter = getLogsSS_;
     }
     // Email Hub & Ecosystem (stored in Main SS)

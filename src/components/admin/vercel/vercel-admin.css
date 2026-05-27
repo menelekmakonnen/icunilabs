@@ -953,7 +953,18 @@
 
 .v-content {
   overflow-x: hidden;
-  word-break: break-word;
+}
+
+/* ── Professional text / button / table anti-wrap rules ── */
+.vercel-theme .v-content table th,
+.vercel-theme .v-content table td {
+  white-space: nowrap;
+}
+
+.vercel-theme .v-content button,
+.vercel-theme .v-content a[class*="text-xs"],
+.vercel-theme .v-content span[class*="rounded-full"] {
+  white-space: nowrap;
 }
 
 @media (max-width: 768px) {

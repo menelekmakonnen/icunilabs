@@ -11,7 +11,7 @@ import { portfolioProjects } from '../../data/portfolioData'
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
 const modalBg = 'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4'
 const modalCard = 'bg-neutral-950 border border-neutral-800 rounded-2xl p-6 w-full max-w-md shadow-2xl'
-const btnPrimary = 'px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all disabled:opacity-40'
+const btnPrimary = 'px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all disabled:opacity-40 whitespace-nowrap'
 
 const CLIENT_SEGMENTS = [
   { id: 'all', label: 'All Clients', color: '#ffffff' },
@@ -37,7 +37,7 @@ function Badge({ status }: { status: string }) {
     completed: 'bg-purple-500/15 text-purple-400 border-purple-500/20',
   }
   const cls = colors[status] || 'bg-neutral-800 text-neutral-400 border-neutral-700'
-  return <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}>{status}</span>
+  return <span className={`px-2 py-0.5 rounded-full text-xs font-medium border whitespace-nowrap ${cls}`}>{status}</span>
 }
 
 // ─── CLIENTS ─────────────────────────────────────────────
