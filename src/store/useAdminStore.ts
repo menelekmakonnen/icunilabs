@@ -883,10 +883,10 @@ export const adminActions = {
     }
   },
 
-  createAdmin: async (email: string, jobTitle?: string, permissions?: Record<string, boolean>, role?: string) => {
+  createAdmin: async (email: string, jobTitle?: string, permissions?: Record<string, boolean>, role?: string, companyEmail?: string) => {
     setState({ loading: true, error: null })
     try {
-      await apiPost('createAdmin', { token: state.token, email, job_title: jobTitle || 'Operations Assistant', permissions, role: role || 'Admin' })
+      await apiPost('createAdmin', { token: state.token, email, job_title: jobTitle || 'Operations Assistant', permissions, role: role || 'Admin', company_email: companyEmail || '' })
       await adminActions.loadUsers()
       setState({ loading: false })
       return true

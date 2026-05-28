@@ -80,10 +80,11 @@ function requireElevated_(token) { return requireAuth_(token, [ROLES.SUPERADMIN]
 function findUserByEmail_(email) {
     if (!email) return null;
     email = email.toLowerCase().trim();
-    // Check Users sheet
+    // Check Users sheet — match primary or company email
     var users = sheetToObjects_(SHEETS.USERS);
     for (var i = 0; i < users.length; i++) {
-        if (users[i].email && users[i].email.toString().toLowerCase().trim() === email) {
+        if ((users[i].email && users[i].email.toString().toLowerCase().trim() === email) ||
+            (users[i].company_email && users[i].company_email.toString().toLowerCase().trim() === email)) {
             if (users[i].status !== 'Active') return null;
             return users[i];
         }
@@ -432,6 +433,16 @@ function handleCreateAdmin(payload) {
     var existing = findUserByEmail_(email);
     if (existing) return errorResponse_('A user with this email already exists.');
 
+    // Company email — optional, must be unique if provided
+    var companyEmail = (payload.company_email || '').trim().toLowerCase();
+    if (companyEmail) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(companyEmail)) {
+            return errorResponse_('Please enter a valid company email address.');
+        }
+        var existingCompany = findUserByIdentifier_(companyEmail);
+        if (existingCompany) return errorResponse_('A user with company email ' + companyEmail + ' already exists.');
+    }
+
     // Determine role — default Admin, validate
     var targetRole = payload.role || ROLES.ADMIN;
     var validRoles = ['SuperAdmin', 'Admin', 'Sales', 'Product'];
@@ -470,7 +481,7 @@ function handleCreateAdmin(payload) {
         userId, email.split('@')[0], email, '', targetRole,
         'Active', '', '',  // no password, no pin — they use OTP first
         true, true, now_(), '', '', true, '', '',
-        JSON.stringify(defaultPerms), jobTitle
+        JSON.stringify(defaultPerms), jobTitle, companyEmail
     ]);
 
     logAction_(auth.user.user_id, auth.user.name, 'TEAM_MEMBER_CREATED', 'Created ' + targetRole + ': ' + email + ' (' + jobTitle + ')');
@@ -488,7 +499,7 @@ function handleCreateAdmin(payload) {
         sendEmail_({
             to: email,
             subject: 'Welcome to ICUNI Labs — Your Admin Account',
-            htmlBody: buildAdminWelcomeEmail_(email.split('@')[0], otp),
+            htmlBody: buildAdminWelcomeEmail_(email.split('@')[0], otp, companyEmail),
             from: 'hello@icuni.org'
         });
         emailSent = true;
@@ -736,15 +747,26 @@ function buildWelcomeEmail_(name, email, tempPw, role) {
     );
 }
 
-function buildAdminWelcomeEmail_(name, otp) {
+function buildAdminWelcomeEmail_(name, otp, companyEmail) {
     var digits = otp.split('');
     var boxes = digits.map(function(d) {
         return '<td style="width:44px;height:52px;text-align:center;font-family:monospace;font-size:28px;font-weight:700;color:#8b5cf6;background:#1a1a2e;border:2px solid #2a2a4a;border-radius:10px;">' + d + '</td>';
     }).join('<td style="width:6px;"></td>');
 
+    var companyEmailSection = '';
+    if (companyEmail) {
+        companyEmailSection =
+            '<div style="background:#0a1628;border:1px solid #1e3a5f;border-radius:10px;padding:16px;margin:16px 0;text-align:center;">' +
+            '<p style="margin:0 0 6px;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:2px;font-weight:600;">Your Company Email</p>' +
+            '<p style="margin:0;font-size:18px;color:#00bfff;font-weight:700;">' + companyEmail + '</p>' +
+            '<p style="margin:6px 0 0;font-size:12px;color:#94a3b8;">You can use this email or your personal email to log in.</p>' +
+            '</div>';
+    }
+
     return buildBrandedEmail_(name,
         'Welcome to the Team',
         'You have been invited to join <strong style="color:#ff7a00;">ICUNI Labs</strong> as an <strong style="color:#8b5cf6;">Admin</strong>.<br><br>' +
+        companyEmailSection +
         'Use the login code below to access your account for the first time:<br><br>' +
         '<table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr>' + boxes + '</tr></table><br>' +
         'Once logged in, you can set up your password and PIN for faster access.',

@@ -1645,6 +1645,7 @@ export function UsersSection() {
   const [showCreateAdmin, setShowCreateAdmin] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', role: 'Staff' })
   const [adminEmail, setAdminEmail] = useState('')
+  const [adminCompanyEmail, setAdminCompanyEmail] = useState('')
   const [adminJobTitle, setAdminJobTitle] = useState('Operations Assistant')
   const [adminRole, setAdminRole] = useState('Admin')
   const [selectedUser, setSelectedUser] = useState<any>(null)
@@ -1674,8 +1675,8 @@ export function UsersSection() {
     e.preventDefault()
     setBusyInviteAdmin(true)
     try {
-      const ok = await adminActions.createAdmin(adminEmail, adminJobTitle, undefined, adminRole)
-      if (ok) { setShowCreateAdmin(false); setAdminEmail(''); setAdminJobTitle('Operations Assistant'); setAdminRole('Admin') }
+      const ok = await adminActions.createAdmin(adminEmail, adminJobTitle, undefined, adminRole, adminCompanyEmail)
+      if (ok) { setShowCreateAdmin(false); setAdminEmail(''); setAdminCompanyEmail(''); setAdminJobTitle('Operations Assistant'); setAdminRole('Admin') }
     } finally { setBusyInviteAdmin(false) }
   }
 
@@ -1861,8 +1862,21 @@ export function UsersSection() {
             </div>
             <form onSubmit={handleCreateAdmin} className="space-y-3">
               <div>
-                <label className="text-xs text-neutral-500 mb-1 block">Email Address *</label>
-                <input type="email" value={adminEmail} onChange={e => setAdminEmail(e.target.value)} className={inputCls} placeholder="their.email@example.com" required autoFocus />
+                <label className="text-xs text-neutral-500 mb-1 block">Personal Email *</label>
+                <input type="email" value={adminEmail} onChange={e => {
+                  setAdminEmail(e.target.value)
+                  // Auto-suggest company email from personal email name
+                  const name = e.target.value.split('@')[0]
+                  if (name && !adminCompanyEmail) setAdminCompanyEmail(name.toLowerCase().replace(/[^a-z0-9.]/g, '.') + '@icuni.org')
+                }} className={inputCls} placeholder="their.email@example.com" required autoFocus />
+              </div>
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block flex items-center gap-1.5">
+                  Company Email
+                  <span className="text-[9px] text-[#00bfff]/60 font-normal">@icuni.org</span>
+                </label>
+                <input type="email" value={adminCompanyEmail} onChange={e => setAdminCompanyEmail(e.target.value)} className={inputCls} placeholder="firstname.lastname@icuni.org" />
+                <p className="text-[10px] text-neutral-600 mt-1">They can use either email to log in. Shown as their work email across the system.</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
