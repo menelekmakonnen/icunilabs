@@ -43,34 +43,23 @@ export default async function handler(req) {
       body.events = body.events.slice(0, 100);
     }
 
-    // Enrich with Vercel geo headers (city-level fallback)
-    const vercelGeo = {
+    // Enrich with Vercel edge geo headers (IP-based, no browser prompt)
+    const geo = {
       city: req.headers.get('x-vercel-ip-city') || '',
       country: req.headers.get('x-vercel-ip-country') || '',
       region: req.headers.get('x-vercel-ip-region') || '',
       latitude: req.headers.get('x-vercel-ip-latitude') || '',
       longitude: req.headers.get('x-vercel-ip-longitude') || '',
+      geo_source: 'vercel',
     };
 
     // Decode URL-encoded city names (Vercel sends them encoded)
-    if (vercelGeo.city) {
-      try { vercelGeo.city = decodeURIComponent(vercelGeo.city); } catch(e) {}
+    if (geo.city) {
+      try { geo.city = decodeURIComponent(geo.city); } catch(e) {}
     }
-    if (vercelGeo.region) {
-      try { vercelGeo.region = decodeURIComponent(vercelGeo.region); } catch(e) {}
+    if (geo.region) {
+      try { geo.region = decodeURIComponent(geo.region); } catch(e) {}
     }
-
-    // Prefer browser-provided precise geo (township-level) over Vercel's city-level
-    const preciseGeo = body.precise_geo;
-    const geo = {
-      city: vercelGeo.city,
-      country: vercelGeo.country,
-      region: vercelGeo.region,
-      latitude: (preciseGeo && preciseGeo.latitude) ? String(preciseGeo.latitude) : vercelGeo.latitude,
-      longitude: (preciseGeo && preciseGeo.longitude) ? String(preciseGeo.longitude) : vercelGeo.longitude,
-      geo_accuracy: (preciseGeo && preciseGeo.accuracy) ? String(preciseGeo.accuracy) : '',
-      geo_source: preciseGeo ? 'browser' : 'vercel',
-    };
 
     // Build enriched payload for GAS
     const gasPayload = {
