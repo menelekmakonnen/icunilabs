@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { adminActions, useAdminStore } from '../../store/useAdminStore'
 import { X, Check, ChevronDown, ChevronUp, Phone, ArrowRight, BookOpen } from 'lucide-react'
 import './call-guide.css'
 
 // ═══ TYPES ═══
-interface DataField { id: string; label: string; type: 'text' | 'number' | 'textarea' | 'select' | 'datetime-local'; options?: string[] }
+interface DataField { id: string; label: string; type: 'text' | 'number' | 'textarea' | 'select' | 'datetime-local'; options?: string[]; suggestions?: string[] }
 
 interface ScriptResponse { label: string; text: string }
 
@@ -12,7 +12,7 @@ interface TalkingPoint {
   id: string
   label: string
   script?: string
-  scriptNote?: string // italic instruction/guidance note
+  scriptNote?: string
   responses?: ScriptResponse[]
   dataFields?: DataField[]
 }
@@ -23,55 +23,51 @@ interface PathDef {
   points: TalkingPoint[]
 }
 
-// ═══ PATH DEFINITIONS WITH FULL SCRIPTS ═══
+// ═══ PATH DEFINITIONS — v3.0 (May 2026) ═══
 const PATHS: Record<string, PathDef> = {
   wc_receptionist: {
     label: 'WC Receptionist', color: '#8b5cf6',
     points: [
       {
         id: 'intro', label: 'Greet warmly — ask their name',
-        script: 'Good {{time_of_day}}. My name is {{user_name}}, and I\'m the {{user_title}} at ICUNI Labs. May I ask who I\'m speaking with?',
+        script: 'Good {{time_of_day}}. My name is {{user_name}}, {{user_title}} at ICUNI Labs. May I ask who I\'m speaking with?',
         dataFields: [{ id: 'receptionist_name', label: 'Receptionist Name', type: 'text' }],
       },
       {
         id: 'got_name', label: 'Thank them — state research purpose',
-        script: '{{receptionist_name}}, thank you so much for taking the time to speak with me today — I really appreciate it. We\'re running a research project on the finance and operations systems that {{industry}} companies like yours use, and we would love to include your company.',
+        script: '{{receptionist_name}}, thank you so much for taking the time to speak with me today — I really appreciate it. We\'re running a research project on the operations systems that {{industry}} companies use, and we\'d like to include your company. Could I speak to your operations manager for just two minutes?',
         scriptNote: 'Use their name warmly. Genuine gratitude builds immediate rapport and makes transfer more likely.',
       },
       {
-        id: 'stated_research', label: 'Asked for manager — two minutes',
-        script: 'I\'d love to speak to your operations manager for just two minutes to ask a couple of questions. Are they available?',
+        id: 'if_yes', label: 'If yes — get transferred',
+        scriptNote: 'Thank them by name. Ask who you\'ll be speaking to. Get transferred. Switch to "WC Decision-Maker" path.',
+        responses: [
+          { label: '✅ Transferring now', text: 'Thank you so much, {{receptionist_name}}. Who will I be speaking with? … Great, thank you.' },
+        ],
       },
       {
-        id: 'unavailable', label: 'If unavailable: got callback time & confirmed it',
-        script: 'No worries at all. When would be a good time to reach them?',
-        responses: [
-          { label: '✅ They say yes', text: 'Thank them by name if they gave it. Ask who you\'ll be speaking to. Get transferred.' },
-          { label: '⏰ Manager unavailable', text: 'If I call back at that time, would they be available? … Great. My name is {{user_name}} from ICUNI Labs. Thank you so much for your help, {{receptionist_name}}.' },
-        ],
+        id: 'if_unavailable', label: 'If unavailable — get callback time',
+        script: 'No worries at all. When would be a good time to reach them? … If I call back at that time, would they be available? … Great. My name is {{user_name}} from ICUNI Labs. Thank you so much for your help, {{receptionist_name}}.',
         scriptNote: 'Log the callback time. Set your SLA timer. Call back at exactly that time.',
         dataFields: [{ id: 'callback_datetime', label: 'Callback Date/Time', type: 'datetime-local' }],
       },
       {
-        id: 'refused_email', label: 'If refused: offered to email first — got manager\'s email',
+        id: 'if_refused', label: 'If refused — offer to email first',
         script: 'I completely understand. It\'s a two-minute research call and we\'re genuinely gathering useful data on how companies in your industry manage their operations. If it helps, I\'m happy to send a brief email first so they know to expect the call. What email address should I use?',
         scriptNote: 'This gives you a direct email to the manager, which is often more valuable than the phone transfer.',
         dataFields: [{ id: 'manager_email', label: 'Manager Email', type: 'text' }],
       },
       {
-        id: 'receptionist_answered', label: 'If receptionist wants to answer: run research questions',
+        id: 'receptionist_answered', label: 'If receptionist wants to answer — engage then escalate',
         script: '{{receptionist_name}}, that\'s really helpful — let me ask you a few questions then.',
+        scriptNote: 'Start with easy questions. Escalate difficulty until they defer upward.',
         responses: [
-          { label: '↗️ Escalate to manager', text: 'I really appreciate you helping, {{receptionist_name}}, but I wouldn\'t want to put you on the spot answering for the manager\'s department — these are really questions only they can answer properly. Would you mind connecting me?' },
+          { label: '↗️ Escalate to manager', text: 'I really appreciate you helping, {{receptionist_name}}, but I wouldn\'t want to put you on the spot answering for the manager\'s department — these are really questions only they can answer properly, and I only need about two minutes of their time. Can you please check for me, {{receptionist_name}}?' },
         ],
-        scriptNote: 'If the receptionist wants to answer, treat them as a valid research respondent. Run through the core questions below and log their answers. You can still escalate to the manager at any point.',
         dataFields: [
           { id: 'rc_system_name', label: 'Q1: Do you use a system for operations? Which one?', type: 'text' },
           { id: 'rc_system_type', label: 'Q1b: Is it custom-built or off-the-shelf?', type: 'select', options: ['custom', 'off_shelf', 'none', 'unsure'] },
-          { id: 'rc_expensive_problem', label: 'Q2: What is the most expensive or time-consuming problem?', type: 'textarea' },
-          { id: 'rc_cost_amount', label: 'Q3: Roughly how much does that cost per month? (GH₵ or time)', type: 'text' },
-          { id: 'rc_system_helps', label: 'Q4: Does the current system help with that problem?', type: 'select', options: ['yes_fully', 'yes_partially', 'no', 'no_system'] },
-          { id: 'rc_dream_system', label: 'Q5: If you could snap your fingers — what would the ideal system do?', type: 'textarea' },
+          { id: 'rc_reporting_time', label: 'Q2: How much time does the manager spend on reporting/reconciliation?', type: 'text' },
         ],
       },
     ]
@@ -81,67 +77,99 @@ const PATHS: Record<string, PathDef> = {
     label: 'WC Decision-Maker', color: '#00bfff',
     points: [
       {
-        id: 'confirm_name', label: 'Confirm name — thank them for their time',
+        id: 'confirm_name', label: 'Confirm name — thank them',
         script: 'Hello, may I ask who I\'m speaking with? … {{name}}, thank you so much for taking the time to speak with me today — I genuinely appreciate it.',
-        scriptNote: 'If transferred from the receptionist, confirm the name you were given. If they answer directly, ask for their name first.',
+        scriptNote: 'If transferred from the receptionist, confirm the name you were given. If they answer directly, ask first.',
         dataFields: [{ id: 'dm_name', label: 'Decision-Maker Name', type: 'text' }],
       },
       {
         id: 'positioned_expert', label: 'Positioned them as the expert',
-        script: 'I believe you\'re the best person for me to speak to about this — you know your industry and your role better than anyone else I could ask.',
+        script: 'Like I explained earlier to {{receptionist_name}}, I am the {{user_title}} at ICUNI Labs and we are running a research on business operations systems for your department specifically. It would only take two minutes, and your expertise would really help us here.',
       },
       {
-        id: 'asked_system', label: 'Asked about current system',
-        script: 'Do you use an operations system for your department, and is it custom-built for you or off the shelf?',
+        id: 'asked_system', label: 'Q1: Current system',
+        script: 'Do you use a business operations system for your department?',
         dataFields: [
           { id: 'system_name', label: 'System Name', type: 'text' },
           { id: 'system_type', label: 'System Type', type: 'select', options: ['custom', 'off_shelf', 'none'] },
+          { id: 'system_cost', label: 'System Cost (if known)', type: 'text' },
+        ],
+        responses: [
+          { label: '✅ Yes — has a system', text: 'Thank you. Is it custom-built for you or off the shelf? … What\'s it called? … Do you know what it cost?' },
+          { label: '❌ No system', text: 'I see. So does that mean you use Excel and WhatsApp for your operations?' },
         ],
       },
       {
-        id: 'asked_problem', label: 'Asked most expensive problem',
-        script: 'What would you say is the most expensive problem, or the most time-consuming workflow, that your company has to deal with?',
-        dataFields: [{ id: 'problem_description', label: 'Problem Description', type: 'textarea' }],
+        id: 'asked_problem', label: 'Q2: Most expensive problem',
+        script: 'This is mostly based on your experience and expertise. What would you say is the most expensive problem, or the most time-consuming workflow, that your company deals with?',
+        dataFields: [{
+          id: 'problem_description', label: 'Problem Description', type: 'textarea',
+          suggestions: ['Manual reporting', 'Stock discrepancies', 'Payment reconciliation', 'Staff coordination', 'Client follow-ups', 'Order management'],
+        }],
       },
       {
-        id: 'put_number', label: 'Put a number on it — cedis or time',
-        script: 'Roughly how much does that cost you per month in money or time?',
+        id: 'put_number', label: 'Q3: Put a number on it',
+        script: 'Roughly how much does that cost you per month — in cedis or in hours?',
+        scriptNote: 'Get a specific number. This becomes your most powerful tool in the pitch.',
         dataFields: [
-          { id: 'cost_amount', label: 'Amount (GHS)', type: 'number' },
-          { id: 'time_estimate', label: 'Time Estimate', type: 'text' },
+          { id: 'cost_amount', label: 'Monthly Cost (GH₵)', type: 'number' },
+          { id: 'time_estimate', label: 'Time Lost (e.g. "3 days/month")', type: 'text' },
         ],
       },
       {
-        id: 'current_system_helps', label: 'Asked if current system helps with that problem',
-        script: 'Does your current system help you deal with that problem?',
+        id: 'run_calculation', label: 'Q3b: Run back the calculation',
+        script: 'So if I understand correctly, that means each month you {{cost_summary}}. Over a year, that\'s {{annual_cost}}.',
+        scriptNote: 'Reflect their number back. Make the cost feel real and tangible. The math auto-calculates below.',
       },
       {
-        id: 'snap_fingers', label: 'Snap-your-fingers question — dream system',
-        script: 'If you could snap your fingers and get a system that makes your job easier — or saves your company a lot of money and time — what would that system do?',
+        id: 'read_energy', label: 'Read their energy',
+        scriptNote: 'After 3-4 questions, read their tone. Engaged and talkative → PIVOT. Short answers → finish research, exit warm.',
+        responses: [
+          { label: '💬 Strong engagement → PIVOT', text: 'They\'re opening up, sharing specifics. Go to the PIVOT now.' },
+          { label: '⏱️ Low engagement', text: '"It\'s manageable." Do NOT push. Finish research, exit warmly.' },
+        ],
+      },
+      {
+        id: 'pivot', label: 'THE PIVOT — "We\'ve solved that"',
+        script: 'That\'s actually something we\'ve solved for businesses in similar positions. We could probably solve it for you too.',
+        scriptNote: 'If they ask "can it do X?" — the answer is YES. Let interest build, then push for meeting.',
+        responses: [
+          { label: '🔥 Asking questions', text: 'Yes, we can do that. [Let interest build, then close the meeting.]' },
+          { label: '😐 Not biting', text: 'Continue research. You\'ll get a second push at the end.' },
+        ],
+      },
+      {
+        id: 'current_system_helps', label: 'Q4: Does current system help?',
+        script: 'Can I ask — does your current system help you with that specific problem?',
+        responses: [
+          { label: '❌ No', text: 'That\'s what we hear a lot. → PIVOT if not done.' },
+          { label: '🚫 No system', text: 'Do you think a business operations system could solve this? → If they ask HOW, PIVOT.' },
+          { label: '✅ Yes', text: 'Continue to dream system question.' },
+        ],
+      },
+      {
+        id: 'snap_fingers', label: 'Q5: Dream system',
+        script: 'If you could snap your fingers and get a system that made your job easier, what would it do?',
         dataFields: [{ id: 'dream_system', label: 'Dream System Description', type: 'textarea' }],
       },
       {
-        id: 'read_energy', label: 'Read their energy — rushed vs relaxed',
-        scriptNote: 'After 3-4 questions, read their tone. Are they engaged and talkative, or giving short answers?',
-        responses: [
-          { label: '⏱️ They\'re rushed', text: 'Thank you so much for your time — this has been incredibly helpful. Would it be alright if I shared the results of our research once it\'s complete? And if I have a couple of follow-up questions, could I call you back tomorrow at a specific time for just two more minutes?' },
-          { label: '💬 They have time', text: 'Great — transition to the Challenge (next talking point).' },
-        ],
+        id: 'push_meeting', label: 'Close — 15-min conversation',
+        script: 'I really think you should talk to our team properly. We are notorious for solving pretty much every type of business operations problem. Can I arrange a 15-minute conversation where we listen to the full problem and brainstorm a solution together? If you like what you hear, we\'ll build it. If not, you\'ve spent 15 minutes on a problem that\'s costing you {{annual_cost}} a year. Do you prefer in person or Google Meet on {{day}} at {{time}}?',
+        scriptNote: 'For Professionals: "conversation" or "brainstorm," NEVER "demo." Treat them as a peer.',
       },
       {
-        id: 'transitioned_challenge', label: 'Transitioned to Challenge — "We have a problem…"',
-        script: 'I have one last question for you… but before that, {{name}}, we have a bit of a problem.',
-        responses: [
-          { label: '❓ "What problem?"', text: 'We have notoriously built many business operations systems, and we have hit a wall.' },
-          { label: '🧱 After "hit a wall"', text: 'We have not met a business problem that we could not solve with one of our systems.' },
-          { label: '🎯 The Challenge', text: 'So I would like you to throw us a challenge. What if I told you we could solve your most expensive problem using one of our operations systems?' },
-        ],
-        scriptNote: 'Stay serious, stay warm, stay confident. Whatever their reaction — laughter, skepticism, curiosity — hold your ground.',
+        id: 'second_push', label: 'Second push — reframe their number',
+        script: 'You mentioned your problem costs you around {{cost_summary}}. What if I told you we could build a system that solves exactly that? It would be worth a 15-minute conversation — in person or Google Meet — to talk it through. No strings. If you like it, we build it. If not, at least you know we\'re here.',
+        scriptNote: 'Only use if the mid-research pivot didn\'t land. This is your final attempt.',
       },
       {
-        id: 'pushed_meeting', label: 'After 3 yeses: pushed for meeting with specific day/time',
-        script: 'I really think you should see it — I know you\'d find it useful. Would you be available for us to come in on {{day}} at {{time}}? It\'s just a 15-minute demo, zero commitment. If you like it, great. If not, at least you know we\'re here.',
-        scriptNote: 'Meeting availability: Monday to Friday, 11:00 AM to 3:00 PM. Have 2-3 time options ready.',
+        id: 'warm_exit', label: 'Warm exit — offer research results',
+        script: 'This has been really helpful, thank you. Would it be alright if I shared the results of our research with you once it\'s done? … Great — what\'s the best email for you?',
+        scriptNote: 'Even with no meeting, you leave with a warm lead. Capture everything.',
+        dataFields: [
+          { id: 'dm_email', label: 'Email Address', type: 'text' },
+          { id: 'dm_direct_phone', label: 'Direct Phone (if offered)', type: 'text' },
+        ],
       },
     ]
   },
@@ -152,26 +180,26 @@ const PATHS: Record<string, PathDef> = {
       {
         id: 'greet_name', label: 'Greet warmly — ask their name',
         script: 'Hello, good {{time_of_day}}. My name is {{user_name}} from ICUNI Labs. May I ask who I\'m speaking with?',
-        scriptNote: 'Start warm — front desk staff are the gatekeepers and deserve the same respect as any professional. A good first impression here opens doors.',
+        scriptNote: 'Start warm — front desk staff deserve the same respect as any professional. A good first impression opens doors.',
         dataFields: [{ id: 'frontdesk_name', label: 'Front Desk Name', type: 'text' }],
       },
       {
-        id: 'thank_and_ask', label: 'Thank them — ask about owner availability',
+        id: 'thank_and_ask', label: 'Thank them — ask about owner',
         script: '{{frontdesk_name}}, thank you so much for taking the time to talk to me today — I really appreciate it. I was hoping to have a quick word with the owner. When are they usually around? Would it be better to call or come in person?',
-        scriptNote: 'The front desk will almost always connect you to the floor manager but resist connecting to the owner. Accept this gracefully.',
+        scriptNote: 'The front desk will resist connecting to the owner. Accept this gracefully.',
         dataFields: [
           { id: 'boss_available', label: 'Boss Available When', type: 'text' },
           { id: 'contact_method', label: 'Preferred Method', type: 'select', options: ['phone', 'in_person'] },
         ],
       },
       {
-        id: 'asked_floor_mgr', label: 'Asked to speak to floor manager while on the line',
+        id: 'asked_floor_mgr', label: 'Ask to speak to floor manager',
         script: 'That\'s really helpful, thank you. In the meantime, would it be possible to speak to the manager on duty for just two minutes?',
         scriptNote: 'You now have a scheduled attempt for the boss AND immediate access to Mr Cooper.',
       },
       {
-        id: 'connected_owner', label: 'If connected to owner — pivot to owner script',
-        scriptNote: 'Switch your path to "BC Owner" using the escalation dropdown in the header. The Tema Harbour hook begins.',
+        id: 'connected_owner', label: 'If connected to owner — pivot',
+        scriptNote: 'Switch to "BC Owner" using the escalation dropdown in the header.',
       },
     ]
   },
@@ -182,132 +210,152 @@ const PATHS: Record<string, PathDef> = {
       {
         id: 'confirm_name', label: 'Greet — confirm name — thank them',
         script: 'Hello, may I ask who I\'m speaking with? … {{name}}, thank you so much for taking the time to speak with me today — I really appreciate it. I\'m {{user_name}} from ICUNI Labs.',
-        scriptNote: 'If transferred from front desk, confirm the name. If you reach them directly, ask first. Always lead with warmth — Mr Cooper is your future advocate.',
+        scriptNote: 'Always lead with warmth — Mr Cooper is your future advocate.',
         dataFields: [{ id: 'cooper_name', label: 'Manager Name', type: 'text' }],
       },
       {
-        id: 'most_time', label: 'Asked what takes the most time in their day',
-        script: 'We build business operations systems, and I just have a couple of quick questions about how things run at your {{company}}. What takes the most time in your day?',
-        scriptNote: 'With Mr Cooper, frame everything around making THEIR job easier. Never mention theft, lost money, or accountability.',
-        dataFields: [{ id: 'time_sink', label: 'Biggest Time Sink', type: 'text' }],
+        id: 'position_expertise', label: 'Position their expertise',
+        script: 'We build business operations systems. I believe you have a lot of expertise in your industry and I just have a couple of quick questions about how things run at your {{company}}.',
+        scriptNote: 'Frame everything around making THEIR job easier. Never mention theft, lost money, or accountability.',
       },
       {
-        id: 'most_frustrating', label: 'Asked most frustrating part of workflow',
-        script: 'What\'s the most frustrating part of your workflow?',
-        dataFields: [{ id: 'frustration', label: 'Key Frustration', type: 'text' }],
+        id: 'most_time', label: 'Q1: What wastes the most time?',
+        script: 'In your opinion, what wastes the most time in your day at your company?',
+        dataFields: [{
+          id: 'time_sink', label: 'Biggest Time Sink', type: 'text',
+          suggestions: ['Stock counting', 'Reporting', 'Reconciliation', 'Staff scheduling', 'Order processing', 'Customer follow-ups'],
+        }],
       },
       {
-        id: 'system_usage', label: 'Asked about system usage for orders/stock/deliveries',
-        script: 'Do you use any system to manage orders, stock, deliveries, or client follow-ups?',
+        id: 'most_frustrating', label: 'Q2: Most frustrating workflow',
+        script: 'What\'s the most frustrating part of your workflow at your company?',
+        dataFields: [{
+          id: 'frustration', label: 'Key Frustration', type: 'text',
+          suggestions: ['Stock disappearing', 'Cash/MoMo reconciliation', 'Manual processes', 'Staff tracking', 'Delivery coordination'],
+        }],
       },
       {
-        id: 'challenge_easier', label: 'Presented the challenge — "What if we could make your job easier?"',
-        script: 'We\'ve built systems for businesses just like yours that handle order tracking, client follow-ups, delivery coordination, employee scheduling. What if I told you we could build something that makes your job significantly easier?',
+        id: 'most_expensive', label: 'Q3: Most expensive problem',
+        script: 'Do you know the most expensive problem that your company has to deal with?',
+        dataFields: [{ id: 'expensive_problem', label: 'Most Expensive Problem', type: 'textarea' }],
       },
       {
-        id: 'demo_together', label: 'Offered to demo to Mr Cooper AND the boss together',
-        script: 'I\'d love to show you what we\'ve got. Would it be possible for us to come in when the boss is available and show both of you together? That way you can see it first-hand and decide together.',
-        scriptNote: 'This makes Mr Cooper the hero who brought the solution. The owner trusts Mr Cooper\'s judgment — make Mr Cooper the advocate, not the target.',
+        id: 'system_usage', label: 'Q4: System usage',
+        script: 'Do you use any system to manage orders, stock, deliveries, or client follow-ups that help with any of those problems?',
+        dataFields: [{ id: 'system_used', label: 'System Used', type: 'text' }],
+      },
+      {
+        id: 'challenge', label: 'The challenge — demo together',
+        script: 'We\'ve built systems for businesses just like yours that handle {{frustration}}. I would like to come and show you what we\'ve got. Would it be possible for us to come in when the boss is available and show both of you together? That way you can see it first-hand and decide together.',
+        scriptNote: 'This makes Mr Cooper the hero who brought the solution. The owner trusts Mr Cooper\'s judgment.',
       },
     ]
   },
 
   bc_owner: {
-    label: 'BC Owner', color: '#ef4444',
+    label: 'BC Owner/Trader', color: '#ef4444',
     points: [
       {
-        id: 'greet_owner', label: 'Greet — confirm name — thank them',
-        script: 'Good {{time_of_day}}. My name is {{user_name}} from ICUNI Labs. May I ask who I\'m speaking with?',
+        id: 'greet_owner', label: 'Greet — ask their name',
+        script: 'Good {{time_of_day}}, this is {{user_name}} from ICUNI Labs. Can I take your name please?',
         dataFields: [{ id: 'owner_name', label: 'Owner Name', type: 'text' }],
       },
       {
         id: 'thank_and_hook', label: 'Thank them — Tema Harbour hook',
-        script: '{{name}}, thank you so much for taking the time to talk to me today — I really appreciate it. Can I ask — have you heard about what happened at Tema Harbour with the AI?',
-        scriptNote: 'Let them respond. They might say yes, no, or ask what happened. All reactions are good — it hooks them in.',
+        script: '{{name}}, thank you so much for taking the time to talk to me today. Quick question — have you heard about what happened at Tema Harbour with the AI?',
+        scriptNote: 'Let them respond. Yes, no, or "what happened?" All reactions hook them in.',
       },
       {
-        id: 'key_number', label: 'Key number: GH₵1.2 billion recovered in two weeks',
-        script: 'They introduced an AI system for customs — a process that used to take officers two hours per declaration now takes five minutes. And in the first two weeks, they recovered an extra GH₵1.2 billion that was going missing. One point two billion cedis. In two weeks.',
-        scriptNote: 'Pause. Let them react. They might laugh, vent about their own staff, express shock, or be indifferent. Acknowledge it naturally.',
+        id: 'key_number', label: 'Key number: GH₵1.2 billion',
+        script: 'They brought in an AI system for customs. A job that used to take two hours per declaration now takes five minutes. And in the first two weeks, they recovered an extra one point two billion cedis that was going missing. One point two billion. In two weeks.',
+        scriptNote: 'Pause. Let them react. Acknowledge whatever they give you.',
       },
       {
-        id: 'connected_back', label: 'Connected it back — "Just like Tema Harbour, we can help you"',
-        script: 'It\'s really something, isn\'t it? Here\'s why I\'m calling you. We build business operations systems — with AI capabilities — and just like the system at Tema Harbour, we can help you recover your lost time and money. We\'ve built systems for {{industry}} businesses that track everything from stock to sales to finances.',
+        id: 'connected_back', label: 'What we do — phone access',
+        script: 'Here is why I called. We build systems like that for businesses here in Accra — print shops, supermarkets, warehouses. The system shows you everything from your phone no matter where you are: what comes in, what goes out, where your money is, what your staff are doing. You do not have to be at the shop every day to know what is happening.',
       },
       {
-        id: 'phone_access', label: 'Emphasized phone access — "See everything from your phone"',
-        script: 'And the best part is you can see it all from your phone anywhere you are. You don\'t have to be at the shop to know what\'s happening.',
+        id: 'drop_by', label: 'The close — 10-minute drop-by',
+        script: 'You know what, let us just come by. We will be in your area on {{day}} anyway. We will come by with a laptop around {{time}} and show you what we built for a business like yours — takes about ten minutes. If you like it, we talk. If you don\'t, no problem, we leave. Sound okay?',
+        scriptNote: '✓ Magic words: "in your area anyway," "ten minutes," "if you don\'t like it we leave." Founder does the drop-by.',
       },
       {
-        id: 'pushed_meeting_bc', label: 'Pushed for specific meeting day and time',
-        script: 'I really think you should see what we\'ve built. Would you be available on {{day}} around {{time}} for us to come and show you a quick 15-minute demo? No commitment at all — if you like it, great. If not, at least you know we\'re here.',
+        id: 'already_have_system', label: 'If they have a system — probe',
+        script: 'Oh, that\'s great. What system do you use? And who built it for you?',
         responses: [
-          { label: '💬 They\'re chatty', text: 'Push for the meeting with a specific day and time.' },
-          { label: '👥 Want to discuss with staff', text: 'I can come in and show you and your staff a demo and take questions from everyone. No commitments. If you like it, it will be built specifically for them.' },
-          { label: '🖥️ Already have a system', text: 'That\'s great. Can I ask — what system do you use, and who built it for you? Does it handle everything you need? What if I told you we could connect everything to your phone for you?' },
-          { label: '🚫 Not interested', text: 'That\'s great to hear — honestly, it\'s refreshing to speak to a business that has things running smoothly. If anything changes in the future, you\'ve got my number. Thanks for your time.' },
+          { label: '📱 Phone access', text: 'Does it handle seeing everything from your phone?' },
+          { label: '💰 Subscription?', text: 'Quick question — do you pay for it every month, or is it yours?' },
+          { label: '🔄 Ownership pitch', text: 'Interesting. When we build, it is yours for life — you pay once and you own it, no monthly fees. If you ever want to compare, we would happily show you. Could we drop by for ten minutes tomorrow?' },
+        ],
+        dataFields: [
+          { id: 'competitor_system', label: 'Competitor System', type: 'text' },
+          { id: 'competitor_developer', label: 'Developer Name', type: 'text' },
+          { id: 'competitor_monthly_cost', label: 'Monthly Cost (if known)', type: 'number' },
         ],
       },
       {
-        id: 'no_interest_competitor', label: 'If no interest: asked what system they use & who built it',
-        script: 'Can I ask quickly — what system do you use and who built it?',
-        scriptNote: 'Log the competitor information into the CRM. This builds competitive intelligence over time.',
+        id: 'not_interested', label: 'If not interested — exit warm',
+        script: 'No problem at all — honestly refreshing to hear things are running smoothly. Quick thing before I go: what system do you use, and who built it? … Thank you. And if you ever know someone who needs a system, please point them our way — we are the best people for it. Thanks for your time, {{name}}.',
+        scriptNote: 'Short, gracious. Get competitor info and ask for referral. No begging.',
         dataFields: [
-          { id: 'competitor_system', label: 'Competitor System Name', type: 'text' },
-          { id: 'competitor_developer', label: 'Competitor Developer', type: 'text' },
+          { id: 'competitor_system_exit', label: 'Competitor System', type: 'text' },
+          { id: 'referral_info', label: 'Any referral given?', type: 'text' },
         ],
       },
     ]
   },
 }
 
-// ═══ REFERENCE DATA ═══
+// ═══ REFERENCE DATA — v3.0 ═══
 const KEY_DATA_POINTS = [
-  { stat: '63% of businesses run manually', use: 'When prospect says "we\'re fine without a system"' },
-  { stat: 'GH₵1.2 billion recovered in 2 weeks', use: 'Blue-collar owner opener (Tema Harbour hook)' },
+  { stat: '63% of businesses run manually', use: 'Prospect says "we\'re fine without a system"' },
+  { stat: 'GH₵1.2 billion recovered in 2 weeks', use: 'Trader opener (Tema Harbour hook)' },
   { stat: '2 hours → 5 minutes review time', use: 'Anyone asks how a system saves time' },
   { stat: '23% margin increase in 4 months', use: 'Prospect asks "what results have you seen?"' },
-  { stat: 'Stock loss reduced within 60 days', use: 'Prospect\'s pain is shrinkage / stock variance' },
+  { stat: 'Stock loss cut within 60 days', use: 'Prospect\'s pain is shrinkage / stock variance' },
   { stat: '4–12 months ROI for basic systems', use: 'Prospect asks "how long before this pays off?"' },
-  { stat: 'GH₵14,364 renting vs owning (3 yr)', use: 'Prospect mentions paying monthly for current system' },
+  { stat: 'Pay once, own forever', use: 'Prospect mentions paying monthly for current system' },
 ]
 
 const OBJECTION_HANDLERS: Record<string, string> = {
-  'We already have a system': 'Great. Ask: What is it called? Who built it? Does it handle [specific pain point]? Use the ownership argument: "How much are you paying per month? Multiply by 3 years. That\'s what you spend to rent something you\'ll never own. We build it once, you own it forever."',
-  'Send me an email': 'Take the email address. Ask for the manager\'s name. Send a brief professional email with a demo link. Call back 2 days later referencing the email.',
-  'How much does it cost?': 'It depends on what your business needs — we build custom systems, so pricing is based on what we\'re building for you. That\'s exactly why I\'d love to set up a quick meeting — once we understand your setup, we can give you an honest quote. No commitment.',
-  'I\'m not interested': 'Completely understand. Thanks for your time. If anything changes down the road, you\'ve got my number. Short. Gracious. No begging. Log and move on.',
-  'What do you even do?': 'We build operations systems that help companies like yours track stock, orders, finances, and employees all in one place. But I\'m actually calling to learn how you do things, not to pitch you.',
-  'Why should I trust you?': 'A Kumasi retailer saw 23% margin improvement in 4 months. A pharmacy reduced stock loss within 60 days. And the Tema Harbour AI recovered GH₵1.2 billion in 2 weeks on the same principle. We\'re happy to show you a free demo so you can judge for yourself.',
+  'We already have a system': 'Ask what it\'s called and who built it (log it). Ask if it does the things they care about. Recovery: "Do you pay monthly, or is it yours?" If monthly: "When we build, it\'s yours for life, no monthly fees." Multiply their monthly fee by 3 years to show what renting really costs.',
+  'How much does it cost?': 'Never price on a cold call. "It depends on what your business needs — we build custom, so pricing is based on what we build for you. That\'s exactly why a quick conversation helps: once we understand your setup, we give you an honest number. No commitment."',
+  'Send me an email': 'Usually means "go away," but take the email. Ask for the right person\'s name. Send a short message with the relevant link, then follow up with a call 2 days later referencing it.',
+  'I\'m not interested': 'Respect it immediately. Get competitor info, ask for a referral, exit warm. "Completely understand. If anything changes, you have us. And if you know anyone who needs a system, point them our way." No begging.',
+  'What do you even do?': '"We build operations systems that help companies like yours track stock, orders, finances, and employees all in one place. But I\'m actually calling to learn how you do things, not to pitch you."',
+  'Why should I trust you?': '"A Kumasi retailer saw 23% margin increase in 4 months. A pharmacy cut stock loss within 60 days. And the Tema Harbour AI — same principle — recovered 1.2 billion cedis in 2 weeks. Happy to show you, free, so you can judge for yourself."',
 }
 
 const COMPETITORS = [
-  { name: 'JFSyncPOS', gap: 'No deep custom workflows', cost: 'GH₵99–499/mo' },
-  { name: 'CliqPOS', gap: 'No delivery orchestration or custom automation', cost: 'GH₵199–799/mo' },
-  { name: 'Odoo', gap: 'Implementations often stall; unused modules', cost: 'GH₵284–559/mo' },
+  { name: 'JFSyncPOS', gap: 'Strong POS, no deep custom workflows', cost: 'GH₵99–499/mo' },
+  { name: 'CliqPOS', gap: 'Good branch dashboards, no delivery or custom automation', cost: 'GH₵199–799/mo' },
+  { name: 'Webhuk ERP', gap: 'Ghana tax logic, less established track record', cost: 'Quote-based' },
+  { name: 'Odoo', gap: 'Full ERP but implementations often stall on unused modules', cost: 'GH₵284–559/mo' },
   { name: 'ERPNext', gap: 'Needs technical partner for setup', cost: 'GH₵160–1,233/mo' },
   { name: 'Zoho Inventory', gap: 'Custom flows need partner work', cost: 'GH₵331–2,843/mo' },
   { name: 'Business Central', gap: 'Expensive; needs existing discipline', cost: 'GH₵913/user/mo' },
+  { name: 'SAP Business One', gap: 'Partner-led project, high cost', cost: 'Quote-based' },
 ]
 
 const SELF_IMAGE_SIGNALS = {
   before: [
-    { signal: 'Website', professional: 'Polished, About section, team photos', trader: 'No website or basic Facebook page' },
-    { signal: 'Branding', professional: 'Consistent across locations', trader: 'Hand-painted signage' },
-    { signal: 'Social Media', professional: 'Branded, curated content', trader: "Owner's name in WhatsApp listings" },
-    { signal: 'Titles', professional: 'CEO, Director, Founder', trader: 'Owner, business = owner name' },
-    { signal: 'Branches', professional: 'Multiple with consistent branding', trader: 'Single location, no listed email' },
+    { signal: 'Website', professional: 'Polished, About section, mission content', trader: 'No website or basic Facebook page' },
+    { signal: 'Branding', professional: 'Branded, consistent visual identity', trader: 'Hand-painted or simple signage' },
+    { signal: 'Business Name', professional: 'Company-style name and logo', trader: 'Name-as-brand ("Auntie Akua\'s")' },
+    { signal: 'Locations', professional: 'Multiple branches, consistent branding', trader: 'Single location' },
+    { signal: 'Titles', professional: 'CEO, Director, Founder', trader: 'Owner, "I run the shop"' },
+    { signal: 'Contact', professional: 'Email, website, team page', trader: 'Just a phone number' },
   ],
   during: [
-    { signal: 'Phone answer', professional: 'Hello, this is [Name], how can I help?', trader: 'Hello? or Yes?' },
-    { signal: 'Role description', professional: 'I am the CEO / operations manager', trader: 'I am the owner / I run the shop' },
-    { signal: 'First 10 seconds', professional: 'Warm, yes how can I help?', trader: 'Sharp, what is this about?' },
+    { signal: 'Phone answer', professional: '"Good afternoon, how can I help?"', trader: '"Hello?" / "Yes?"' },
+    { signal: 'Identity', professional: 'Identifies by name or title', trader: 'Asks "what is this about?"' },
+    { signal: 'First 30 seconds', professional: 'Open to conversation', trader: 'Impatient, wants the point' },
   ],
 }
 
 const PIVOT_SCRIPTS = {
-  professional_to_trader: "Sorry, let me get to the point \u2014 have you heard about what happened at Tema Harbour with the AI?",
-  trader_to_professional: "That's a good question. I'm actually trying to understand how businesses in your space manage their operations \u2014 would you mind if I asked a few quick questions?",
+  professional_to_trader: "Let me get to the point \u2014 have you heard about what happened at Tema Harbour with the AI?",
+  trader_to_professional: "Actually, let me ask \u2014 how do you currently manage your operations?",
 }
 
 function computeSelfImage(presence: string, titles: string, envType: string): 'professional' | 'trader' | 'unsure' {
@@ -320,12 +368,14 @@ function computeSelfImage(presence: string, titles: string, envType: string): 'p
 }
 
 // ═══ UTILITIES ═══
-const OUTCOMES = [
+const OUTCOMES: { id: string; label: string; desc: string; hasDatetime?: boolean; hasDate?: boolean; hasNotes?: boolean }[] = [
   { id: 'meeting_booked', label: 'Meeting Booked', desc: 'Date/time confirmed', hasDatetime: true },
+  { id: 'dropby_booked', label: 'Drop-By Booked', desc: 'Founder will visit', hasDatetime: true },
   { id: 'callback_scheduled', label: 'Callback Scheduled', desc: 'Call back at agreed time', hasDatetime: true },
   { id: 'interested_will_revert', label: 'Interested — Will Revert', desc: 'They\'ll get back to us', hasNotes: true },
+  { id: 'warm_lead', label: 'Warm Lead — Research Share', desc: 'Got their details, will share research', hasNotes: true, hasDate: true },
   { id: 'no_interest', label: 'No Interest — Logged', desc: 'Graceful close' },
-  { id: 'needs_follow_up', label: 'Needs Follow-Up', desc: 'Requires our follow-up', hasNotes: true, hasDate: true },
+  { id: 'disqualified_early', label: 'Disqualified — Early Exit', desc: 'Energy was dead, exited cleanly' },
 ]
 
 const PERSONAS: Record<string, { id: string; label: string; pathId: string }[]> = {
@@ -336,7 +386,7 @@ const PERSONAS: Record<string, { id: string; label: string; pathId: string }[]> 
   blue_collar: [
     { id: 'front_desk', label: 'Front Desk', pathId: 'bc_front_desk' },
     { id: 'mr_cooper', label: 'Mr Cooper (Floor Manager)', pathId: 'bc_mr_cooper' },
-    { id: 'owner', label: 'Owner', pathId: 'bc_owner' },
+    { id: 'owner', label: 'Owner / Trader', pathId: 'bc_owner' },
   ],
   hybrid: [
     { id: 'receptionist', label: 'Receptionist (WC)', pathId: 'wc_receptionist' },
@@ -364,9 +414,13 @@ function resolveScript(template: string, vars: Record<string, string>): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     const val = vars[key]
     if (val) return val
-    // Return a highlighted placeholder if no value
     return `⟨${key.replace(/_/g, ' ')}⟩`
   })
+}
+
+function formatCurrency(n: number): string {
+  if (!n || isNaN(n)) return ''
+  return 'GH₵' + n.toLocaleString('en-GH', { maximumFractionDigits: 0 })
 }
 
 // ═══ COMPONENT ═══
@@ -413,30 +467,65 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [expandedScripts, setExpandedScripts] = useState<Set<string>>(new Set())
   const [activeResponse, setActiveResponse] = useState<Record<string, number>>({})
-  const [callStart] = useState(new Date().toISOString())
+
+  // Timer — starts when entering guide phase, not on mount
+  const [callStart, setCallStart] = useState('')
   const [elapsed, setElapsed] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined)
 
   useEffect(() => {
-    timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
-    return () => clearInterval(timerRef.current)
-  }, [])
+    if (phase === 'guide' && !timerRef.current) {
+      setCallStart(new Date().toISOString())
+      timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [phase])
+
+  // Auto-sync contactName when a name field is captured
+  useEffect(() => {
+    const nameVal = dataCapture.dm_name || dataCapture.cooper_name || dataCapture.owner_name || ''
+    if (nameVal && !contactName) setContactName(nameVal)
+  }, [dataCapture.dm_name, dataCapture.cooper_name, dataCapture.owner_name]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentPath = PATHS[pathId]
   const availablePersonas = envType ? PERSONAS[envType] || [] : []
 
-  // Template variables for script resolution
-  const scriptVars: Record<string, string> = {
-    name: contactName || client?.name || '',
+  // ── Auto-math for cost calculations ──
+  const costMath = useMemo(() => {
+    const monthly = Number(dataCapture.cost_amount) || 0
+    const competitorMonthly = Number(dataCapture.competitor_monthly_cost) || 0
+    return {
+      monthly,
+      quarterly: monthly * 3,
+      annual: monthly * 12,
+      threeYear: monthly * 36,
+      competitorMonthly,
+      competitor3Year: competitorMonthly * 36,
+      hasCost: monthly > 0,
+      hasCompetitor: competitorMonthly > 0,
+    }
+  }, [dataCapture.cost_amount, dataCapture.competitor_monthly_cost])
+
+  // ── Template variables — auto-populated from all name fields ──
+  const scriptVars: Record<string, string> = useMemo(() => ({
+    name: contactName || dataCapture.dm_name || dataCapture.cooper_name || dataCapture.owner_name || client?.name || '',
     company: client?.company || '',
     industry: client?.industry || 'your',
     time_of_day: getTimeOfDay(),
     user_name: user?.name || 'your name',
     user_title: 'Research Lead',
-    receptionist_name: dataCapture.receptionist_name || '',
-    day: outcomeDate || '',
-    time: outcomeTime || '',
-  }
+    receptionist_name: dataCapture.receptionist_name || dataCapture.frontdesk_name || '',
+    frontdesk_name: dataCapture.frontdesk_name || '',
+    day: outcomeDate || '⟨day⟩',
+    time: outcomeTime || '⟨time⟩',
+    cost_amount: costMath.hasCost ? formatCurrency(costMath.monthly) : '',
+    annual_cost: costMath.hasCost ? formatCurrency(costMath.annual) : '⟨annual cost⟩',
+    cost_summary: costMath.hasCost
+      ? `spend ${formatCurrency(costMath.monthly)}/month` + (dataCapture.time_estimate ? ` and lose ${dataCapture.time_estimate}` : '')
+      : (dataCapture.time_estimate ? `lose ${dataCapture.time_estimate} every month` : '⟨cost summary⟩'),
+    time_estimate: dataCapture.time_estimate || '',
+    frustration: dataCapture.frustration || dataCapture.time_sink || '⟨their frustration⟩',
+  }), [contactName, dataCapture, client, user, outcomeDate, outcomeTime, costMath])
 
   const startGuide = () => {
     if (!envType || !personaType || !pathId) return
@@ -461,12 +550,13 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   }
 
   const getNextAction = () => {
-    const o = OUTCOMES.find(x => x.id === outcome)
-    if (!o) return ''
+    if (!outcome) return ''
     if (outcome === 'meeting_booked') return `Meeting on ${outcomeDate} at ${outcomeTime}`
+    if (outcome === 'dropby_booked') return `Founder drop-by on ${outcomeDate} at ${outcomeTime}`
     if (outcome === 'callback_scheduled') return `Call back on ${outcomeDate} at ${outcomeTime}`
-    if (outcome === 'needs_follow_up') return `Follow up on ${outcomeDate}`
+    if (outcome === 'warm_lead') return 'Share research results, follow up'
     if (outcome === 'interested_will_revert') return 'Wait for their response'
+    if (outcome === 'disqualified_early') return 'No action — disqualified'
     return 'No further action'
   }
 
@@ -489,7 +579,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
       talking_points_checked: checkedArr,
       talking_points_skipped: skippedArr,
       talking_points_total: points.length,
-      data_capture: dataCapture,
+      data_capture: { ...dataCapture, _cost_math: costMath.hasCost ? costMath : undefined },
       outcome,
       outcome_details: { date: outcomeDate, time: outcomeTime, notes: outcomeNotes },
       next_action: getNextAction(),
@@ -498,6 +588,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
       call_notes: callNotes,
       contact_name: contactName,
       contact_phone: contactPhone,
+      contact_role: contactRole,
       self_image_initial: computedSelfImage,
       self_image_confirmed: selfImageConfirmed || computedSelfImage,
       self_image_pivoted: pivotHappened,
@@ -700,17 +791,17 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
               <option key={p.pathId} value={p.pathId}>{p.label}</option>
             ))}
           </select>
-          {/* Pause — exit without losing state, show floating bubble */}
+          {/* Pause */}
           <button onClick={() => {
-            const startTime = new Date(callStart).getTime()
+            const startTime = callStart ? new Date(callStart).getTime() : Date.now()
             adminActions.minimiseCall(client, startTime)
             if (onMinimise) onMinimise()
             else onClose()
-          }} className="cg-pause-btn" title="Minimise — continue navigating (floating bubble appears)">
+          }} className="cg-pause-btn" title="Minimise — continue navigating">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
             Pause
           </button>
-          {/* Discard — end without saving */}
+          {/* Discard */}
           <button onClick={() => setShowDiscardConfirm(true)} className="cg-discard-btn" title="End call without saving">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
             Discard
@@ -732,41 +823,31 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
               </p>
               <button onClick={() => setShowPivotCard(false)} className="text-neutral-600 hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
             </div>
-            <p className="text-[10px] text-neutral-600 mb-2">Read wrong? Switch approach and confirm what they actually are:</p>
+            <p className="text-[10px] text-neutral-600 mb-2">Read wrong? Switch approach:</p>
             <div className="space-y-2">
               {computedSelfImage !== 'trader' && (
                 <button onClick={() => {
-                  setSelfImageConfirmed('trader')
-                  setSelfImageOverride('trader')
-                  setPivotHappened(true)
+                  setSelfImageConfirmed('trader'); setSelfImageOverride('trader'); setPivotHappened(true)
                   if (!pathId.startsWith('bc_')) {
                     const bcOwner = Object.values(PERSONAS).flat().find(x => x.pathId === 'bc_owner')
                     if (bcOwner) switchPath(bcOwner.pathId, bcOwner.id)
                   }
                   setShowPivotCard(false)
                 }} className="cg-pivot-option trader">
-                  <div>
-                    <p className="text-sm font-bold">Pivot to Trader</p>
-                    <p className="text-[10px] opacity-70">Story-First</p>
-                  </div>
+                  <div><p className="text-sm font-bold">Pivot to Trader</p><p className="text-[10px] opacity-70">Story-First</p></div>
                   <p className="text-[11px] italic opacity-80 mt-1">&ldquo;{PIVOT_SCRIPTS.professional_to_trader}&rdquo;</p>
                 </button>
               )}
               {computedSelfImage !== 'professional' && (
                 <button onClick={() => {
-                  setSelfImageConfirmed('professional')
-                  setSelfImageOverride('professional')
-                  setPivotHappened(true)
+                  setSelfImageConfirmed('professional'); setSelfImageOverride('professional'); setPivotHappened(true)
                   if (!pathId.startsWith('wc_')) {
                     const wcDM = Object.values(PERSONAS).flat().find(x => x.pathId === 'wc_decision_maker')
                     if (wcDM) switchPath(wcDM.pathId, wcDM.id)
                   }
                   setShowPivotCard(false)
                 }} className="cg-pivot-option professional">
-                  <div>
-                    <p className="text-sm font-bold">Pivot to Professional</p>
-                    <p className="text-[10px] opacity-70">Research-First</p>
-                  </div>
+                  <div><p className="text-sm font-bold">Pivot to Professional</p><p className="text-[10px] opacity-70">Research-First</p></div>
                   <p className="text-[11px] italic opacity-80 mt-1">&ldquo;{PIVOT_SCRIPTS.trader_to_professional}&rdquo;</p>
                 </button>
               )}
@@ -818,6 +899,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
                 const hasScript = !!(p.script || p.scriptNote || p.responses)
                 const isExpanded = expandedScripts.has(p.id)
                 const isChecked = checked.has(p.id)
+                const showFields = (isChecked || isExpanded) && p.dataFields
 
                 return (
                   <div key={p.id} className="cg-tp-wrapper">
@@ -873,10 +955,10 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
                       </div>
                     )}
 
-                    {/* Contextual data fields */}
-                    {isChecked && p.dataFields && (
+                    {/* Contextual data fields — show on check OR expand */}
+                    {showFields && (
                       <div className="cg-data-field">
-                        {p.dataFields.map(f => (
+                        {p.dataFields!.map(f => (
                           <div key={f.id} className="mb-2 last:mb-0">
                             <label>{f.label}</label>
                             {f.type === 'textarea' ? (
@@ -890,8 +972,51 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
                               <input type={f.type === 'number' ? 'text' : f.type} inputMode={f.type === 'number' ? 'numeric' : undefined}
                                 value={dataCapture[f.id] || ''} onChange={e => updateData(f.id, e.target.value)} />
                             )}
+                            {/* Quick suggestion chips */}
+                            {f.suggestions && f.suggestions.length > 0 && !dataCapture[f.id] && (
+                              <div className="flex flex-wrap gap-1 mt-1.5">
+                                {f.suggestions.map(s => (
+                                  <button key={s} onClick={() => updateData(f.id, s)}
+                                    className="text-[10px] px-2 py-0.5 rounded-md bg-neutral-800/80 border border-neutral-700/50 text-neutral-400 hover:text-white hover:border-[#00bfff]/40 hover:bg-[#00bfff]/10 cursor-pointer transition-all">
+                                    {s}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ))}
+                        {/* Auto-math display after cost fields */}
+                        {costMath.hasCost && (p.id === 'put_number' || p.id === 'run_calculation') && (
+                          <div className="mt-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                            <p className="text-[10px] text-emerald-400/60 font-bold uppercase tracking-wider mb-1.5">💰 Auto-Calculated Impact</p>
+                            <div className="grid grid-cols-3 gap-2 text-center">
+                              <div><p className="text-[10px] text-neutral-500">Monthly</p><p className="text-sm font-bold text-emerald-400">{formatCurrency(costMath.monthly)}</p></div>
+                              <div><p className="text-[10px] text-neutral-500">Annual</p><p className="text-sm font-bold text-emerald-400">{formatCurrency(costMath.annual)}</p></div>
+                              <div><p className="text-[10px] text-neutral-500">3-Year</p><p className="text-sm font-bold text-[#ff7a00]">{formatCurrency(costMath.threeYear)}</p></div>
+                            </div>
+                            {dataCapture.time_estimate && (
+                              <p className="text-[11px] text-neutral-400 mt-2 text-center">+ {dataCapture.time_estimate} lost per month</p>
+                            )}
+                          </div>
+                        )}
+                        {/* Competitor cost comparison */}
+                        {costMath.hasCompetitor && p.id === 'already_have_system' && (
+                          <div className="mt-3 p-3 rounded-lg bg-[#ff7a00]/5 border border-[#ff7a00]/20">
+                            <p className="text-[10px] text-[#ff7a00]/60 font-bold uppercase tracking-wider mb-1.5">💸 Subscription vs Ownership</p>
+                            <div className="grid grid-cols-2 gap-3 text-center">
+                              <div className="p-2 rounded-lg bg-red-500/5 border border-red-500/10">
+                                <p className="text-[10px] text-neutral-500">Their system (3 yr)</p>
+                                <p className="text-sm font-bold text-red-400">{formatCurrency(costMath.competitor3Year)}</p>
+                                <p className="text-[9px] text-neutral-600">…and still renting</p>
+                              </div>
+                              <div className="p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                                <p className="text-[10px] text-neutral-500">ICUNI Labs</p>
+                                <p className="text-sm font-bold text-emerald-400">Built once</p>
+                                <p className="text-[9px] text-emerald-600">Owned forever</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -932,6 +1057,16 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
                       <span className="cg-ref-use">{c.gap}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Three Pains */}
+              <div className="mb-4">
+                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">3 Pains Every Accra Business Shares</p>
+                <div className="space-y-1">
+                  <p className="text-[11px] text-neutral-400">📦 <strong>Stock disappearing</strong> — variance between what comes in and what sells</p>
+                  <p className="text-[11px] text-neutral-400">💳 <strong>Cash & MoMo chaos</strong> — fragmented payments that don't reconcile</p>
+                  <p className="text-[11px] text-neutral-400">🏪 <strong>Owner trapped at the shop</strong> — can't see what's happening without being there</p>
                 </div>
               </div>
 
@@ -1009,7 +1144,12 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
 
         {/* Bottom Action Buttons */}
         <div className="flex gap-3 mb-8">
-          <button onClick={onClose}
+          <button onClick={() => {
+            const startTime = callStart ? new Date(callStart).getTime() : Date.now()
+            adminActions.minimiseCall(client, startTime)
+            if (onMinimise) onMinimise()
+            else onClose()
+          }}
             className="flex-1 py-3.5 rounded-xl font-bold text-sm bg-neutral-800 border border-neutral-700 text-neutral-400 cursor-pointer hover:bg-neutral-700 hover:text-white transition-all flex items-center justify-center gap-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></svg>
             Pause Call
