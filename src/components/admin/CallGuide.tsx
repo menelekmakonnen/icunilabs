@@ -109,17 +109,13 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'put_number', label: 'Q3: Put a number on it',
-        script: 'Roughly how much does that cost you per month — in cedis or in hours?',
-        scriptNote: 'Get a specific number. This becomes your most powerful tool in the pitch.',
-        dataFields: [
-          { id: 'cost_amount', label: 'Monthly Cost (GH₵)', type: 'number' },
-          { id: 'time_estimate', label: 'Time Lost (e.g. "3 days/month")', type: 'text' },
-        ],
+        script: 'Roughly how much does that cost you — in cedis or in time?',
+        scriptNote: 'Get a specific number. They can give it per day, week, month, or year — the Pain Point Calculator below converts it all to monthly and annual for you.',
       },
       {
         id: 'run_calculation', label: 'Q3b: Run back the calculation',
         script: 'So if I understand correctly, that means each month you {{cost_summary}}. Over a year, that\'s {{annual_cost}}.',
-        scriptNote: 'Reflect their number back. Make the cost feel real and tangible. The math auto-calculates below.',
+        scriptNote: 'Reflect their number back. Make the cost feel real and tangible. The calculator below does the math automatically.',
       },
       {
         id: 'read_energy', label: 'Read their energy',
@@ -337,6 +333,51 @@ const COMPETITORS = [
   { name: 'SAP Business One', gap: 'Partner-led project, high cost', cost: 'Quote-based' },
 ]
 
+// ═══ PAIN POINT PRESETS ═══
+type PainUnit = 'cedis' | 'hours' | 'days'
+type PainFreq = 'daily' | 'weekly' | 'monthly' | 'yearly'
+
+interface PainPreset {
+  id: string
+  label: string
+  icon: string
+  category: 'money' | 'time'
+  defaultUnit: PainUnit
+  defaultFreq: PainFreq
+  hint: string
+}
+
+const PAIN_PRESETS: PainPreset[] = [
+  // Money-based pain points
+  { id: 'stock_shrinkage', label: 'Stock shrinkage / theft', icon: '📦', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'How much stock goes missing or unaccounted for?' },
+  { id: 'cash_reconciliation', label: 'Cash & MoMo reconciliation errors', icon: '💳', category: 'money', defaultUnit: 'cedis', defaultFreq: 'weekly', hint: 'How much is unaccounted for when you reconcile?' },
+  { id: 'overpurchasing', label: 'Overpurchasing / duplicate orders', icon: '🔄', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'Extra spent on redundant or excess orders?' },
+  { id: 'lost_sales', label: 'Lost sales / missed orders', icon: '📉', category: 'money', defaultUnit: 'cedis', defaultFreq: 'weekly', hint: 'Revenue lost from stockouts or missed customer orders?' },
+  { id: 'customer_churn', label: 'Customer churn / poor follow-up', icon: '👋', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'Revenue lost from clients who left?' },
+  { id: 'delivery_issues', label: 'Late deliveries / penalties', icon: '🚚', category: 'money', defaultUnit: 'cedis', defaultFreq: 'weekly', hint: 'Fines, refunds, or lost goodwill from late deliveries?' },
+  { id: 'system_subscription', label: 'Current system subscription', icon: '💸', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'How much do you pay per month for your current system?' },
+  // Time-based pain points
+  { id: 'manual_stock_count', label: 'Manual stock counting', icon: '📋', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Hours spent physically counting stock?' },
+  { id: 'whatsapp_reporting', label: 'WhatsApp & phone-based reporting', icon: '📱', category: 'time', defaultUnit: 'hours', defaultFreq: 'daily', hint: 'Time spent gathering reports via WhatsApp/calls?' },
+  { id: 'manual_reconciliation', label: 'Manual reconciliation', icon: '🧮', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Hours spent reconciling cash, MoMo, and bank?' },
+  { id: 'staff_scheduling', label: 'Staff scheduling & attendance', icon: '👥', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Time managing rotas, attendance, and shift changes?' },
+  { id: 'order_processing', label: 'Order processing & tracking', icon: '📝', category: 'time', defaultUnit: 'hours', defaultFreq: 'daily', hint: 'Hours processing and tracking customer orders?' },
+  { id: 'branch_visits', label: 'Branch visits for oversight', icon: '🏪', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Time traveling to branches just to check on things?' },
+  { id: 'invoice_prep', label: 'Invoice & receipt preparation', icon: '🧾', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Time creating invoices, receipts, or quotes manually?' },
+  { id: 'chasing_payments', label: 'Chasing payments & follow-ups', icon: '📞', category: 'time', defaultUnit: 'hours', defaultFreq: 'daily', hint: 'Time calling customers for overdue payments?' },
+]
+
+const FREQ_MULTIPLIERS: Record<PainFreq, number> = {
+  daily: 22,     // working days per month
+  weekly: 4.33,  // weeks per month
+  monthly: 1,
+  yearly: 1 / 12,
+}
+
+const FREQ_LABELS: Record<PainFreq, string> = {
+  daily: '/day', weekly: '/week', monthly: '/month', yearly: '/year',
+}
+
 const SELF_IMAGE_SIGNALS = {
   before: [
     { signal: 'Website', professional: 'Polished, About section, mission content', trader: 'No website or basic Facebook page' },
@@ -468,6 +509,14 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   const [expandedScripts, setExpandedScripts] = useState<Set<string>>(new Set())
   const [activeResponse, setActiveResponse] = useState<Record<string, number>>({})
 
+  // ── Pain Point Calculator state ──
+  const [painPresetId, setPainPresetId] = useState('')
+  const [painCustomLabel, setPainCustomLabel] = useState('')
+  const [painValue, setPainValue] = useState('')
+  const [painUnit, setPainUnit] = useState<PainUnit>('cedis')
+  const [painFreq, setPainFreq] = useState<PainFreq>('monthly')
+  const [painItems, setPainItems] = useState<{ label: string; value: number; unit: PainUnit; freq: PainFreq; monthlyValue: number }[]>([])
+
   // Timer — starts when entering guide phase, not on mount
   const [callStart, setCallStart] = useState('')
   const [elapsed, setElapsed] = useState(0)
@@ -490,21 +539,63 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   const currentPath = PATHS[pathId]
   const availablePersonas = envType ? PERSONAS[envType] || [] : []
 
+  // ── Pain point: add item ──
+  const addPainItem = () => {
+    const val = Number(painValue)
+    if (!val || val <= 0) return
+    const label = painPresetId === '_custom'
+      ? (painCustomLabel || 'Custom problem')
+      : (PAIN_PRESETS.find(p => p.id === painPresetId)?.label || 'Problem')
+    const monthlyValue = painUnit === 'cedis'
+      ? val * FREQ_MULTIPLIERS[painFreq]
+      : val * FREQ_MULTIPLIERS[painFreq] // hours/days stay as time units
+    setPainItems(prev => [...prev, { label, value: val, unit: painUnit, freq: painFreq, monthlyValue }])
+    // Auto-fill dataCapture for script vars
+    const totalMonthlyCedis = [...painItems, { unit: painUnit, monthlyValue }]
+      .filter(i => i.unit === 'cedis')
+      .reduce((sum, i) => sum + i.monthlyValue, 0)
+    const totalMonthlyTime = [...painItems, { unit: painUnit, monthlyValue }]
+      .filter(i => i.unit !== 'cedis')
+      .reduce((sum, i) => sum + i.monthlyValue, 0)
+    if (totalMonthlyCedis > 0) updateData('cost_amount', String(Math.round(totalMonthlyCedis)))
+    if (totalMonthlyTime > 0) updateData('time_estimate', `${Math.round(totalMonthlyTime)} ${painUnit === 'days' ? 'days' : 'hours'}/month`)
+    // Reset inputs
+    setPainValue('')
+    setPainPresetId('')
+    setPainCustomLabel('')
+  }
+
+  const removePainItem = (idx: number) => {
+    setPainItems(prev => {
+      const next = prev.filter((_, i) => i !== idx)
+      const totalCedis = next.filter(i => i.unit === 'cedis').reduce((s, i) => s + i.monthlyValue, 0)
+      const totalTime = next.filter(i => i.unit !== 'cedis').reduce((s, i) => s + i.monthlyValue, 0)
+      updateData('cost_amount', totalCedis > 0 ? String(Math.round(totalCedis)) : '')
+      updateData('time_estimate', totalTime > 0 ? `${Math.round(totalTime)} hours/month` : '')
+      return next
+    })
+  }
+
   // ── Auto-math for cost calculations ──
   const costMath = useMemo(() => {
     const monthly = Number(dataCapture.cost_amount) || 0
     const competitorMonthly = Number(dataCapture.competitor_monthly_cost) || 0
+    const totalMonthlyTime = painItems.filter(i => i.unit !== 'cedis').reduce((s, i) => s + i.monthlyValue, 0)
     return {
       monthly,
       quarterly: monthly * 3,
       annual: monthly * 12,
       threeYear: monthly * 36,
+      monthlyTimeHours: Math.round(totalMonthlyTime),
+      annualTimeHours: Math.round(totalMonthlyTime * 12),
       competitorMonthly,
       competitor3Year: competitorMonthly * 36,
       hasCost: monthly > 0,
+      hasTime: totalMonthlyTime > 0,
       hasCompetitor: competitorMonthly > 0,
+      painItems,
     }
-  }, [dataCapture.cost_amount, dataCapture.competitor_monthly_cost])
+  }, [dataCapture.cost_amount, dataCapture.competitor_monthly_cost, painItems])
 
   // ── Template variables — auto-populated from all name fields ──
   const scriptVars: Record<string, string> = useMemo(() => ({
@@ -520,10 +611,14 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
     time: outcomeTime || '⟨time⟩',
     cost_amount: costMath.hasCost ? formatCurrency(costMath.monthly) : '',
     annual_cost: costMath.hasCost ? formatCurrency(costMath.annual) : '⟨annual cost⟩',
-    cost_summary: costMath.hasCost
-      ? `spend ${formatCurrency(costMath.monthly)}/month` + (dataCapture.time_estimate ? ` and lose ${dataCapture.time_estimate}` : '')
-      : (dataCapture.time_estimate ? `lose ${dataCapture.time_estimate} every month` : '⟨cost summary⟩'),
-    time_estimate: dataCapture.time_estimate || '',
+    cost_summary: (() => {
+      const parts: string[] = []
+      if (costMath.hasCost) parts.push(`spend ${formatCurrency(costMath.monthly)}/month`)
+      if (costMath.hasTime) parts.push(`lose ${costMath.monthlyTimeHours} hours/month`)
+      if (dataCapture.time_estimate && !costMath.hasTime) parts.push(`lose ${dataCapture.time_estimate}`)
+      return parts.length > 0 ? parts.join(' and ') : '⟨cost summary⟩'
+    })(),
+    time_estimate: dataCapture.time_estimate || (costMath.hasTime ? `${costMath.monthlyTimeHours} hours/month` : ''),
     frustration: dataCapture.frustration || dataCapture.time_sink || '⟨their frustration⟩',
   }), [contactName, dataCapture, client, user, outcomeDate, outcomeTime, costMath])
 
@@ -579,7 +674,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
       talking_points_checked: checkedArr,
       talking_points_skipped: skippedArr,
       talking_points_total: points.length,
-      data_capture: { ...dataCapture, _cost_math: costMath.hasCost ? costMath : undefined },
+      data_capture: { ...dataCapture, _cost_math: costMath.hasCost ? costMath : undefined, _pain_items: painItems.length > 0 ? painItems : undefined },
       outcome,
       outcome_details: { date: outcomeDate, time: outcomeTime, notes: outcomeNotes },
       next_action: getNextAction(),
@@ -985,17 +1080,122 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
                             )}
                           </div>
                         ))}
-                        {/* Auto-math display after cost fields */}
-                        {costMath.hasCost && (p.id === 'put_number' || p.id === 'run_calculation') && (
-                          <div className="mt-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                            <p className="text-[10px] text-emerald-400/60 font-bold uppercase tracking-wider mb-1.5">💰 Auto-Calculated Impact</p>
-                            <div className="grid grid-cols-3 gap-2 text-center">
-                              <div><p className="text-[10px] text-neutral-500">Monthly</p><p className="text-sm font-bold text-emerald-400">{formatCurrency(costMath.monthly)}</p></div>
-                              <div><p className="text-[10px] text-neutral-500">Annual</p><p className="text-sm font-bold text-emerald-400">{formatCurrency(costMath.annual)}</p></div>
-                              <div><p className="text-[10px] text-neutral-500">3-Year</p><p className="text-sm font-bold text-[#ff7a00]">{formatCurrency(costMath.threeYear)}</p></div>
+                        {/* ═══ PAIN POINT CALCULATOR ═══ */}
+                        {(p.id === 'put_number' || p.id === 'run_calculation' || p.id === 'asked_problem' || p.id === 'most_expensive') && (
+                          <div className="mt-3 p-3 rounded-xl bg-neutral-900/80 border border-neutral-700/50">
+                            <p className="text-[10px] text-[#00bfff]/70 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                              Pain Point Calculator
+                            </p>
+
+                            {/* Logged pain items */}
+                            {painItems.length > 0 && (
+                              <div className="space-y-1.5 mb-3">
+                                {painItems.map((item, i) => (
+                                  <div key={i} className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-neutral-800/60 border border-neutral-700/30">
+                                    <div className="flex-1 min-w-0">
+                                      <span className="text-[11px] text-white font-medium">{item.label}</span>
+                                      <span className="text-[10px] text-neutral-500 ml-1.5">
+                                        {item.unit === 'cedis' ? formatCurrency(item.value) : `${item.value} ${item.unit}`}{FREQ_LABELS[item.freq]}
+                                      </span>
+                                      <span className="text-[10px] text-emerald-400/70 ml-1.5">
+                                        = {item.unit === 'cedis' ? `${formatCurrency(item.monthlyValue)}/mo` : `${Math.round(item.monthlyValue)} ${item.unit}/mo`}
+                                      </span>
+                                    </div>
+                                    <button onClick={() => removePainItem(i)} className="text-neutral-600 hover:text-red-400 cursor-pointer ml-2 p-0.5 transition-colors">
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Preset selector */}
+                            <div className="mb-2">
+                              <p className="text-[10px] text-neutral-500 mb-1.5">What's costing them?</p>
+                              <div className="flex flex-wrap gap-1">
+                                {PAIN_PRESETS.map(pp => (
+                                  <button key={pp.id} onClick={() => { setPainPresetId(pp.id); setPainUnit(pp.defaultUnit); setPainFreq(pp.defaultFreq); setPainCustomLabel('') }}
+                                    className={`text-[10px] px-2 py-1 rounded-md border cursor-pointer transition-all flex items-center gap-1 ${
+                                      painPresetId === pp.id
+                                        ? 'bg-[#00bfff]/10 border-[#00bfff]/40 text-[#00bfff]'
+                                        : 'bg-neutral-800/60 border-neutral-700/40 text-neutral-400 hover:text-white hover:border-neutral-600'
+                                    }`}>
+                                    <span>{pp.icon}</span> {pp.label}
+                                  </button>
+                                ))}
+                                <button onClick={() => { setPainPresetId('_custom'); setPainUnit('cedis'); setPainFreq('monthly') }}
+                                  className={`text-[10px] px-2 py-1 rounded-md border cursor-pointer transition-all ${
+                                    painPresetId === '_custom'
+                                      ? 'bg-[#8b5cf6]/10 border-[#8b5cf6]/40 text-[#8b5cf6]'
+                                      : 'bg-neutral-800/60 border-neutral-700/40 text-neutral-400 hover:text-white hover:border-neutral-600'
+                                  }`}>
+                                  ✏️ Other
+                                </button>
+                              </div>
                             </div>
-                            {dataCapture.time_estimate && (
-                              <p className="text-[11px] text-neutral-400 mt-2 text-center">+ {dataCapture.time_estimate} lost per month</p>
+
+                            {/* Input row — only when a preset is selected */}
+                            {painPresetId && (
+                              <div className="space-y-2 mt-2">
+                                {painPresetId === '_custom' && (
+                                  <input value={painCustomLabel} onChange={e => setPainCustomLabel(e.target.value)}
+                                    placeholder="Describe the problem…"
+                                    className="w-full px-3 py-2 bg-neutral-800/60 border border-neutral-700/50 rounded-lg text-white text-sm placeholder-neutral-600" />
+                                )}
+                                {painPresetId !== '_custom' && (
+                                  <p className="text-[10px] text-neutral-500 italic">{PAIN_PRESETS.find(p => p.id === painPresetId)?.hint}</p>
+                                )}
+                                <div className="flex gap-2">
+                                  <input value={painValue} onChange={e => setPainValue(e.target.value)}
+                                    type="text" inputMode="numeric" placeholder={painUnit === 'cedis' ? 'Amount' : 'Hours/Days'}
+                                    className="flex-1 px-3 py-2 bg-neutral-800/60 border border-neutral-700/50 rounded-lg text-white text-sm placeholder-neutral-600"
+                                    onKeyDown={e => { if (e.key === 'Enter') addPainItem() }} />
+                                  <select value={painUnit} onChange={e => setPainUnit(e.target.value as PainUnit)}
+                                    className="px-2 py-2 bg-neutral-800/60 border border-neutral-700/50 rounded-lg text-white text-[11px] min-w-[70px]">
+                                    <option value="cedis">GH₵</option>
+                                    <option value="hours">Hours</option>
+                                    <option value="days">Days</option>
+                                  </select>
+                                  <select value={painFreq} onChange={e => setPainFreq(e.target.value as PainFreq)}
+                                    className="px-2 py-2 bg-neutral-800/60 border border-neutral-700/50 rounded-lg text-white text-[11px] min-w-[80px]">
+                                    <option value="daily">Per Day</option>
+                                    <option value="weekly">Per Week</option>
+                                    <option value="monthly">Per Month</option>
+                                    <option value="yearly">Per Year</option>
+                                  </select>
+                                  <button onClick={addPainItem}
+                                    className="px-3 py-2 bg-[#00bfff]/15 border border-[#00bfff]/30 text-[#00bfff] rounded-lg text-[11px] font-bold cursor-pointer hover:bg-[#00bfff]/25 transition-all">
+                                    Add
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Auto-calculated totals */}
+                            {(costMath.hasCost || costMath.hasTime) && (
+                              <div className="mt-3 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                                <p className="text-[9px] text-emerald-400/50 font-bold uppercase tracking-wider mb-1.5">📊 Total Calculated Impact</p>
+                                <div className={`grid ${costMath.hasCost && costMath.hasTime ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
+                                  {costMath.hasCost && (
+                                    <div className="text-center p-2 rounded-lg bg-emerald-500/5">
+                                      <p className="text-[9px] text-neutral-500 uppercase">Money Lost</p>
+                                      <p className="text-sm font-bold text-emerald-400">{formatCurrency(costMath.monthly)}<span className="text-[10px] text-neutral-500">/mo</span></p>
+                                      <p className="text-xs font-bold text-[#ff7a00]">{formatCurrency(costMath.annual)}<span className="text-[10px] text-neutral-500">/yr</span></p>
+                                    </div>
+                                  )}
+                                  {costMath.hasTime && (
+                                    <div className="text-center p-2 rounded-lg bg-[#8b5cf6]/5">
+                                      <p className="text-[9px] text-neutral-500 uppercase">Time Lost</p>
+                                      <p className="text-sm font-bold text-[#8b5cf6]">{costMath.monthlyTimeHours} hrs<span className="text-[10px] text-neutral-500">/mo</span></p>
+                                      <p className="text-xs font-bold text-[#8b5cf6]/70">{costMath.annualTimeHours} hrs<span className="text-[10px] text-neutral-500">/yr</span></p>
+                                    </div>
+                                  )}
+                                </div>
+                                {costMath.hasCost && (
+                                  <p className="text-[10px] text-neutral-500 text-center mt-1.5">3-year cost: <strong className="text-[#ff7a00]">{formatCurrency(costMath.threeYear)}</strong></p>
+                                )}
+                              </div>
                             )}
                           </div>
                         )}
