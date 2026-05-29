@@ -29,14 +29,14 @@ const PATHS: Record<string, PathDef> = {
     label: 'WC Receptionist', color: '#8b5cf6',
     points: [
       {
-        id: 'intro', label: 'Introduce with senior title',
-        script: 'Good {{time_of_day}}. My name is {{user_name}}, and I\'m the {{user_title}} at ICUNI Labs. Can I take your name again please?',
+        id: 'intro', label: 'Greet warmly — ask their name',
+        script: 'Good {{time_of_day}}. My name is {{user_name}}, and I\'m the {{user_title}} at ICUNI Labs. May I ask who I\'m speaking with?',
         dataFields: [{ id: 'receptionist_name', label: 'Receptionist Name', type: 'text' }],
       },
       {
-        id: 'got_name', label: 'Got receptionist\'s name — stated research',
-        script: 'Hello {{receptionist_name}}, we\'re running a research project on the finance and operations systems that {{industry}} companies like yours use. We would like to include your company.',
-        scriptNote: 'Use their name warmly. This builds immediate rapport and makes transfer more likely.',
+        id: 'got_name', label: 'Thank them — state research purpose',
+        script: '{{receptionist_name}}, thank you so much for taking the time to speak with me today — I really appreciate it. We\'re running a research project on the finance and operations systems that {{industry}} companies like yours use, and we would love to include your company.',
+        scriptNote: 'Use their name warmly. Genuine gratitude builds immediate rapport and makes transfer more likely.',
       },
       {
         id: 'stated_research', label: 'Asked for manager — two minutes',
@@ -81,8 +81,14 @@ const PATHS: Record<string, PathDef> = {
     label: 'WC Decision-Maker', color: '#00bfff',
     points: [
       {
+        id: 'confirm_name', label: 'Confirm name — thank them for their time',
+        script: 'Hello, may I ask who I\'m speaking with? … {{name}}, thank you so much for taking the time to speak with me today — I genuinely appreciate it.',
+        scriptNote: 'If transferred from the receptionist, confirm the name you were given. If they answer directly, ask for their name first.',
+        dataFields: [{ id: 'dm_name', label: 'Decision-Maker Name', type: 'text' }],
+      },
+      {
         id: 'positioned_expert', label: 'Positioned them as the expert',
-        script: 'Thank you so much for taking my call, {{name}}. I really appreciate it. I believe you\'re the best person for me to speak to about this — you know your industry and your role better than anyone else I could ask.',
+        script: 'I believe you\'re the best person for me to speak to about this — you know your industry and your role better than anyone else I could ask.',
       },
       {
         id: 'asked_system', label: 'Asked about current system',
@@ -144,9 +150,15 @@ const PATHS: Record<string, PathDef> = {
     label: 'BC Front Desk', color: '#f59e0b',
     points: [
       {
-        id: 'got_boss_avail', label: 'Got boss availability — when & how to reach',
-        script: 'Good {{time_of_day}}. I\'m {{user_name}} from ICUNI Labs. When is the owner usually in? Is it better to call or come in person?',
-        scriptNote: 'The front desk will almost always connect you to the floor manager but resist connecting to the owner. Accept this.',
+        id: 'greet_name', label: 'Greet warmly — ask their name',
+        script: 'Hello, good {{time_of_day}}. My name is {{user_name}} from ICUNI Labs. May I ask who I\'m speaking with?',
+        scriptNote: 'Start warm — front desk staff are the gatekeepers and deserve the same respect as any professional. A good first impression here opens doors.',
+        dataFields: [{ id: 'frontdesk_name', label: 'Front Desk Name', type: 'text' }],
+      },
+      {
+        id: 'thank_and_ask', label: 'Thank them — ask about owner availability',
+        script: '{{frontdesk_name}}, thank you so much for taking the time to talk to me today — I really appreciate it. I was hoping to have a quick word with the owner. When are they usually around? Would it be better to call or come in person?',
+        scriptNote: 'The front desk will almost always connect you to the floor manager but resist connecting to the owner. Accept this gracefully.',
         dataFields: [
           { id: 'boss_available', label: 'Boss Available When', type: 'text' },
           { id: 'contact_method', label: 'Preferred Method', type: 'select', options: ['phone', 'in_person'] },
@@ -154,7 +166,7 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'asked_floor_mgr', label: 'Asked to speak to floor manager while on the line',
-        script: 'In the meantime, could I speak to the manager on duty for just two minutes?',
+        script: 'That\'s really helpful, thank you. In the meantime, would it be possible to speak to the manager on duty for just two minutes?',
         scriptNote: 'You now have a scheduled attempt for the boss AND immediate access to Mr Cooper.',
       },
       {
@@ -168,8 +180,14 @@ const PATHS: Record<string, PathDef> = {
     label: 'BC Mr Cooper', color: '#ff7a00',
     points: [
       {
+        id: 'confirm_name', label: 'Greet — confirm name — thank them',
+        script: 'Hello, may I ask who I\'m speaking with? … {{name}}, thank you so much for taking the time to speak with me today — I really appreciate it. I\'m {{user_name}} from ICUNI Labs.',
+        scriptNote: 'If transferred from front desk, confirm the name. If you reach them directly, ask first. Always lead with warmth — Mr Cooper is your future advocate.',
+        dataFields: [{ id: 'cooper_name', label: 'Manager Name', type: 'text' }],
+      },
+      {
         id: 'most_time', label: 'Asked what takes the most time in their day',
-        script: 'Hi {{name}}, thanks for taking my call. I\'m {{user_name}} from ICUNI Labs — we build business operations systems. I just have a couple of quick questions about how things run at your {{company}}. What takes the most time in your day?',
+        script: 'We build business operations systems, and I just have a couple of quick questions about how things run at your {{company}}. What takes the most time in your day?',
         scriptNote: 'With Mr Cooper, frame everything around making THEIR job easier. Never mention theft, lost money, or accountability.',
         dataFields: [{ id: 'time_sink', label: 'Biggest Time Sink', type: 'text' }],
       },
@@ -198,8 +216,13 @@ const PATHS: Record<string, PathDef> = {
     label: 'BC Owner', color: '#ef4444',
     points: [
       {
-        id: 'tema_hook', label: 'Tema Harbour hook — "Have you heard about the AI?"',
-        script: 'Good {{time_of_day}}, {{name}}. I\'m {{user_name}} from ICUNI Labs. Can I ask — have you heard about what happened at Tema Harbour with the AI?',
+        id: 'greet_owner', label: 'Greet — confirm name — thank them',
+        script: 'Good {{time_of_day}}. My name is {{user_name}} from ICUNI Labs. May I ask who I\'m speaking with?',
+        dataFields: [{ id: 'owner_name', label: 'Owner Name', type: 'text' }],
+      },
+      {
+        id: 'thank_and_hook', label: 'Thank them — Tema Harbour hook',
+        script: '{{name}}, thank you so much for taking the time to talk to me today — I really appreciate it. Can I ask — have you heard about what happened at Tema Harbour with the AI?',
         scriptNote: 'Let them respond. They might say yes, no, or ask what happened. All reactions are good — it hooks them in.',
       },
       {
