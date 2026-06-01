@@ -30,13 +30,13 @@ const PATHS: Record<string, PathDef> = {
     points: [
       {
         id: 'intro', label: 'Greet warmly — ask their name',
-        script: 'Good {{time_of_day}}. My name is {{user_name}}, {{user_title}} at ICUNI Labs. May I ask who I\'m speaking with?',
+        script: 'Good {{time_of_day}}. My name is {{user_name}}, {{user_title}} at ICUNI Labs. Can I take your name please?',
         dataFields: [{ id: 'receptionist_name', label: 'Receptionist Name', type: 'text' }],
       },
       {
-        id: 'got_name', label: 'Thank them — state research purpose',
-        script: '{{receptionist_name}}, thank you so much for taking the time to speak with me today — I really appreciate it. We\'re running a research project on the operations systems that {{industry}} companies use, and we\'d like to include your company. Could I speak to your operations manager for just two minutes?',
-        scriptNote: 'Use their name warmly. Genuine gratitude builds immediate rapport and makes transfer more likely.',
+        id: 'got_name', label: 'State research purpose — ask for manager',
+        script: 'Hello {{receptionist_name}}, we\'re running a research project on the operations systems that {{industry}} companies use, and we\'d like to include your company. Could I speak to your owner or operations manager for just two minutes?',
+        scriptNote: 'If unavailable: get a specific callback time and confirm it. If they offer to answer: engage, then escalate question difficulty until they defer upward.',
       },
       {
         id: 'if_yes', label: 'If yes — get transferred',
@@ -47,7 +47,7 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'if_unavailable', label: 'If unavailable — get callback time',
-        script: 'No worries at all. When would be a good time to reach them? … If I call back at that time, would they be available? … Great. My name is {{user_name}} from ICUNI Labs. Thank you so much for your help, {{receptionist_name}}.',
+        script: 'No worries at all. When would be a good time to reach them? … If I call back at {{time}}, would they be available? … Great. My name is {{user_name}} from ICUNI Labs. Thank you so much for your help, {{receptionist_name}}.',
         scriptNote: 'Log the callback time. Set your SLA timer. Call back at exactly that time.',
         dataFields: [{ id: 'callback_datetime', label: 'Callback Date/Time', type: 'datetime-local' }],
       },
@@ -59,15 +59,14 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'receptionist_answered', label: 'If receptionist wants to answer — engage then escalate',
-        script: '{{receptionist_name}}, that\'s really helpful — let me ask you a few questions then.',
-        scriptNote: 'Start with easy questions. Escalate difficulty until they defer upward.',
+        scriptNote: 'Do not fight this. Engage them with the same research questions. Start with easy ones, then escalate.',
         responses: [
-          { label: '↗️ Escalate to manager', text: 'I really appreciate you helping, {{receptionist_name}}, but I wouldn\'t want to put you on the spot answering for the manager\'s department — these are really questions only they can answer properly, and I only need about two minutes of their time. Can you please check for me, {{receptionist_name}}?' },
+          { label: '↗️ Escalate to manager', text: 'I really appreciate you helping {{receptionist_name}}, but I wouldn\'t want to put you on the spot answering for the manager\'s department — these are really questions only they can answer properly, and I only need about two minutes of their time. Can you please check for me {{receptionist_name}}?' },
         ],
         dataFields: [
-          { id: 'rc_system_name', label: 'Q1: Do you use a system for operations? Which one?', type: 'text' },
-          { id: 'rc_system_type', label: 'Q1b: Is it custom-built or off-the-shelf?', type: 'select', options: ['custom', 'off_shelf', 'none', 'unsure'] },
-          { id: 'rc_reporting_time', label: 'Q2: How much time does the manager spend on reporting/reconciliation?', type: 'text' },
+          { id: 'rc_system_name', label: 'Q1: Do you use any business operations system for HR/Finance/Operations?', type: 'text' },
+          { id: 'rc_system_type', label: 'Q1b: Is it off the shelf or custom-built?', type: 'select', options: ['custom', 'off_shelf', 'none', 'unsure'] },
+          { id: 'rc_reporting_time', label: 'Q2: How much time does your manager spend on reporting or reconciliation each month, even with that system in place?', type: 'text' },
         ],
       },
     ]
@@ -77,14 +76,10 @@ const PATHS: Record<string, PathDef> = {
     label: 'WC Decision-Maker', color: '#00bfff',
     points: [
       {
-        id: 'confirm_name', label: 'Confirm name — thank them',
-        script: 'Hello, may I ask who I\'m speaking with? … {{name}}, thank you so much for taking the time to speak with me today — I genuinely appreciate it.',
-        scriptNote: 'If transferred from the receptionist, confirm the name you were given. If they answer directly, ask first.',
+        id: 'confirm_name', label: 'Thank them — position as expert',
+        script: 'Thank you for taking my call, {{name}}. Like I explained earlier to {{receptionist_name}}, I am the Lead Researcher at ICUNI Labs and we are running a research on business operations systems for {{contact_role}} specifically. It would only take two minutes, and your expertise would really help us here.',
+        scriptNote: 'Position them as the expert. They know their business better than anyone you could ask. Wait for a reply before starting the questions.',
         dataFields: [{ id: 'dm_name', label: 'Decision-Maker Name', type: 'text' }],
-      },
-      {
-        id: 'positioned_expert', label: 'Positioned them as the expert',
-        script: 'Like I explained earlier to {{receptionist_name}}, I am the {{user_title}} at ICUNI Labs and we are running a research on business operations systems for your department specifically. It would only take two minutes, and your expertise would really help us here.',
       },
       {
         id: 'asked_system', label: 'Q1: Current system',
@@ -152,18 +147,18 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'push_meeting', label: 'Close — 15-min conversation',
-        script: 'I really think you should talk to our team properly. We are notorious for solving pretty much every type of business operations problem. Can I arrange a 15-minute conversation where we listen to the full problem and brainstorm a solution together? If you like what you hear, we\'ll build it. If not, you\'ve spent 15 minutes on a problem that\'s costing you {{annual_cost}} a year. Do you prefer in person or Google Meet on {{day}} at {{time}}?',
-        scriptNote: 'For Professionals: "conversation" or "brainstorm," NEVER "demo." Treat them as a peer.',
+        script: 'I really think you should talk to our team properly. We are notorious for solving pretty much every type of business operations problem. Can I arrange a 15-minute conversation where we listen to the full problem and brainstorm a solution together. If you like what you hear, we\'ll build it. If not, you\'ve spent 15 minutes on a problem that\'s costing you {{cost_amount}} a month. Do you prefer in person or Google Meet tomorrow or {{day}} at {{time}}?',
+        scriptNote: 'For Professionals: it\'s a "conversation" or "brainstorm," never a "demo." They want to be treated as a peer solving a problem, not a target being pitched.',
       },
       {
         id: 'second_push', label: 'Second push — reframe their number',
-        script: 'You mentioned your problem costs you around {{cost_summary}}. What if I told you we could build a system that solves exactly that? It would be worth a 15-minute conversation — in person or Google Meet — to talk it through. No strings. If you like it, we build it. If not, at least you know we\'re here.',
-        scriptNote: 'Only use if the mid-research pivot didn\'t land. This is your final attempt.',
+        script: 'You mentioned {{frustration}} costs you around {{cost_amount}} a month. What if I told you we could build a system that solves exactly that? It would be worth a 15-minute conversation with our team — in person or on Google Meet — to talk it through. No strings. If you like it, we build it. If not, at least you know we\'re here.',
+        scriptNote: 'If the mid-research pivot didn\'t land, finish all the research questions, then try once more at the end — reframing their own number back to them. If they bite: book. If not: drop it and move to research-share exit.',
       },
       {
         id: 'warm_exit', label: 'Warm exit — offer research results',
-        script: 'This has been really helpful, thank you. Would it be alright if I shared the results of our research with you once it\'s done? … Great — what\'s the best email for you?',
-        scriptNote: 'Even with no meeting, you leave with a warm lead. Capture everything.',
+        script: 'This has been really helpful, thank you. Would it be alright if I shared the results of our research with you once it\'s done? ... Great — what\'s the best email for you?',
+        scriptNote: 'Capture name, role, email, direct phone if offered. Log it all. This is a warm lead for the future.',
         dataFields: [
           { id: 'dm_email', label: 'Email Address', type: 'text' },
           { id: 'dm_direct_phone', label: 'Direct Phone (if offered)', type: 'text' },
@@ -182,9 +177,9 @@ const PATHS: Record<string, PathDef> = {
         dataFields: [{ id: 'frontdesk_name', label: 'Front Desk Name', type: 'text' }],
       },
       {
-        id: 'thank_and_ask', label: 'Thank them — ask about owner',
-        script: '{{frontdesk_name}}, thank you so much for taking the time to talk to me today — I really appreciate it. I was hoping to have a quick word with the owner. When are they usually around? Would it be better to call or come in person?',
-        scriptNote: 'The front desk will resist connecting to the owner. Accept this gracefully.',
+        id: 'thank_and_ask', label: 'Ask about owner availability',
+        script: '{{frontdesk_name}}, I was hoping to have a quick word with the owner. When are they usually around? Would it be better to call or come in person?',
+        scriptNote: 'They\'ll push back. Reduce the request: "When is the owner usually in?" Log this information.',
         dataFields: [
           { id: 'boss_available', label: 'Boss Available When', type: 'text' },
           { id: 'contact_method', label: 'Preferred Method', type: 'select', options: ['phone', 'in_person'] },
@@ -192,8 +187,8 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'asked_floor_mgr', label: 'Ask to speak to floor manager',
-        script: 'That\'s really helpful, thank you. In the meantime, would it be possible to speak to the manager on duty for just two minutes?',
-        scriptNote: 'You now have a scheduled attempt for the boss AND immediate access to Mr Cooper.',
+        script: 'In the meantime, could I speak to the manager on duty for just two minutes?',
+        scriptNote: 'The front desk will almost always connect you to the floor manager. They will resist connecting you to the owner. Accept this. You now have a scheduled attempt for the boss and immediate access to Mr Cooper.',
       },
       {
         id: 'connected_owner', label: 'If connected to owner — pivot',
@@ -206,15 +201,10 @@ const PATHS: Record<string, PathDef> = {
     label: 'BC Mr Cooper', color: '#ff7a00',
     points: [
       {
-        id: 'confirm_name', label: 'Greet — confirm name — thank them',
-        script: 'Hello, may I ask who I\'m speaking with? … {{name}}, thank you so much for taking the time to speak with me today — I really appreciate it. I\'m {{user_name}} from ICUNI Labs.',
-        scriptNote: 'Always lead with warmth — Mr Cooper is your future advocate.',
+        id: 'confirm_name', label: 'Greet — introduce and position',
+        script: 'Hi {{name}}, thanks for taking my call. I\'m {{user_name}} from ICUNI Labs — we build business operations systems. I believe you have a lot of expertise in your industry and I just have a couple of quick questions about how things run at your {{company}}.',
+        scriptNote: 'With blue-collar middle management, you are NOT talking about catching thieves or lost money. That is for the owner only. With Mr Cooper, the framing is entirely about making their job easier.',
         dataFields: [{ id: 'cooper_name', label: 'Manager Name', type: 'text' }],
-      },
-      {
-        id: 'position_expertise', label: 'Position their expertise',
-        script: 'We build business operations systems. I believe you have a lot of expertise in your industry and I just have a couple of quick questions about how things run at your {{company}}.',
-        scriptNote: 'Frame everything around making THEIR job easier. Never mention theft, lost money, or accountability.',
       },
       {
         id: 'most_time', label: 'Q1: What wastes the most time?',
@@ -243,9 +233,9 @@ const PATHS: Record<string, PathDef> = {
         dataFields: [{ id: 'system_used', label: 'System Used', type: 'text' }],
       },
       {
-        id: 'challenge', label: 'The challenge — demo together',
+        id: 'challenge', label: 'Present the challenge — demo together',
         script: 'We\'ve built systems for businesses just like yours that handle {{frustration}}. I would like to come and show you what we\'ve got. Would it be possible for us to come in when the boss is available and show both of you together? That way you can see it first-hand and decide together.',
-        scriptNote: 'This makes Mr Cooper the hero who brought the solution. The owner trusts Mr Cooper\'s judgment.',
+        scriptNote: 'This makes Mr Cooper the hero who brought the solution. The owner trusts Mr Cooper\'s judgment, so make Mr Cooper the advocate, not the target.',
       },
     ]
   },
@@ -259,9 +249,9 @@ const PATHS: Record<string, PathDef> = {
         dataFields: [{ id: 'owner_name', label: 'Owner Name', type: 'text' }],
       },
       {
-        id: 'thank_and_hook', label: 'Thank them — Tema Harbour hook',
-        script: '{{name}}, thank you so much for taking the time to talk to me today. Quick question — have you heard about what happened at Tema Harbour with the AI?',
-        scriptNote: 'Let them respond. Yes, no, or "what happened?" All reactions hook them in.',
+        id: 'thank_and_hook', label: 'Tema Harbour hook',
+        script: 'Hi {{name}}, quick question — have you heard about what happened at Tema Harbour with the AI?',
+        scriptNote: 'Let them answer. Yes, no, or "what happened?" All reactions hook them in.',
       },
       {
         id: 'key_number', label: 'Key number: GH₵1.2 billion',
@@ -270,16 +260,17 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'connected_back', label: 'What we do — phone access',
-        script: 'Here is why I called. We build systems like that for businesses here in Accra — print shops, supermarkets, warehouses. The system shows you everything from your phone no matter where you are: what comes in, what goes out, where your money is, what your staff are doing. You do not have to be at the shop every day to know what is happening.',
+        script: 'Here is why I called. We build systems like that for businesses here in Accra — print shops, supermarkets, warehouses. The system shows you everything from your phone no matter where you are: what comes in, what goes out, where your money is, what your staff are doing. You do not have to be at the shop everyday to know what is happening.',
+        scriptNote: 'Let them respond.',
       },
       {
         id: 'drop_by', label: 'The close — 10-minute drop-by',
-        script: 'You know what, let us just come by. We will be in your area on {{day}} anyway. We will come by with a laptop around {{time}} and show you what we built for a business like yours — takes about ten minutes. If you like it, we talk. If you don\'t, no problem, we leave. Sound okay?',
-        scriptNote: '✓ Magic words: "in your area anyway," "ten minutes," "if you don\'t like it we leave." Founder does the drop-by.',
+        script: 'You know what, let us just come by. We will be in your area {{day}} anyway. We will come by with a laptop around {{time}} and show you what we built for a business like yours — takes about ten minutes. If you like it, we talk. If you don\'t, no problem, we leave. Sound okay?',
+        scriptNote: '✓ The magic words: "we\'ll be in your area anyway," "takes about ten minutes," "if you don\'t like it, no problem, we leave." These remove the pressure that makes people say no. The founder does the drop-by, not you. Once they agree, confirm the day and a soft time. Log it. Hand it to the founder.',
       },
       {
         id: 'already_have_system', label: 'If they have a system — probe',
-        script: 'Oh, that\'s great. What system do you use? And who built it for you?',
+        script: 'Oh, that\'s great. What system do you use? and who built it for you?',
         responses: [
           { label: '📱 Phone access', text: 'Does it handle seeing everything from your phone?' },
           { label: '💰 Subscription?', text: 'Quick question — do you pay for it every month, or is it yours?' },
@@ -293,7 +284,7 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'not_interested', label: 'If not interested — exit warm',
-        script: 'No problem at all — honestly refreshing to hear things are running smoothly. Quick thing before I go: what system do you use, and who built it? … Thank you. And if you ever know someone who needs a system, please point them our way — we are the best people for it. Thanks for your time, {{name}}.',
+        script: 'No problem at all — honestly refreshing to hear things are running smoothly. Quick thing before I go: what system do you use, and who built it? ... Thank you. And if you ever know someone who needs a system, please point them our way — we are the best people for it. Thanks for your time.',
         scriptNote: 'Short, gracious. Get competitor info and ask for referral. No begging.',
         dataFields: [
           { id: 'competitor_system_exit', label: 'Competitor System', type: 'text' },
