@@ -88,20 +88,21 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'asked_system', label: 'Q1: Current system',
-        script: 'Do you use a business operations system for your department?',
+        script: 'Do you use a business operations system for your {{contact_role}} department?',
+        scriptNote: 'Replace {{contact_role}} with their specific role (e.g. operations, logistics, finance). If unknown, just say "your department."',
         dataFields: [
           { id: 'system_name', label: 'System Name', type: 'text' },
           { id: 'system_type', label: 'System Type', type: 'select', options: ['custom', 'off_shelf', 'none'] },
           { id: 'system_cost', label: 'System Cost (if known)', type: 'text' },
         ],
         responses: [
-          { label: '✅ Yes — has a system', text: 'Thank you. Is it custom-built for you or off the shelf? … What\'s it called? … Do you know what it cost?' },
-          { label: '❌ No system', text: 'I see. So does that mean you use Excel and WhatsApp for your operations?' },
+          { label: '✅ Yes — has a system', text: 'Thank you. Is it a custom-built for you or off the shelf? … What\'s the system called? … Do you know what it cost?' },
+          { label: '❌ No system', text: 'I see. So, does that mean you use Excel and WhatsApp for your operations?' },
         ],
       },
       {
         id: 'asked_problem', label: 'Q2: Most expensive problem',
-        script: 'This is mostly based on your experience and expertise. What would you say is the most expensive problem, or the most time-consuming workflow, that your company deals with?',
+        script: 'This is mostly based on your experience and expertise. What would you say is the most expensive problem, or most time-consuming workflow, your company deals with?',
         dataFields: [{
           id: 'problem_description', label: 'Problem Description', type: 'textarea',
           suggestions: ['Manual reporting', 'Stock discrepancies', 'Payment reconciliation', 'Staff coordination', 'Client follow-ups', 'Order management'],
@@ -109,13 +110,13 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'put_number', label: 'Q3: Put a number on it',
-        script: 'Roughly how much does that cost you — in cedis or in time?',
+        script: 'Roughly how much does that cost you per month — in cedis or in hours?',
         scriptNote: 'Get a specific number. They can give it per day, week, month, or year — the Pain Point Calculator below converts it all to monthly and annual for you.',
       },
       {
         id: 'run_calculation', label: 'Q3b: Run back the calculation',
-        script: 'So if I understand correctly, that means each month you {{cost_summary}}. Over a year, that\'s {{annual_cost}}.',
-        scriptNote: 'Reflect their number back. Make the cost feel real and tangible. The calculator below does the math automatically.',
+        script: 'So if I understand correctly, if it {{cost_example}}, that means each {{cost_period}} you {{cost_summary}}.',
+        scriptNote: 'Run their number back to them. Example: "if it takes one person three days, or costs you 10,000 cedis per recruitment, that means each month you spend/lose this amount." The Pain Point Calculator auto-fills the math.',
       },
       {
         id: 'read_energy', label: 'Read their energy',
@@ -136,11 +137,12 @@ const PATHS: Record<string, PathDef> = {
       },
       {
         id: 'current_system_helps', label: 'Q4: Does current system help?',
-        script: 'Can I ask — does your current system help you with that specific problem?',
+        script: 'So, can I ask — does your current system help you with that specific problem?',
+        scriptNote: 'Use this version if they said they HAVE a system. If they said they DON\'T have a system, use the "No system" response below instead.',
         responses: [
-          { label: '❌ No', text: 'That\'s what we hear a lot. → PIVOT if not done.' },
-          { label: '🚫 No system', text: 'Do you think a business operations system could solve this? → If they ask HOW, PIVOT.' },
-          { label: '✅ Yes', text: 'Continue to dream system question.' },
+          { label: '❌ No / Not really', text: 'That\'s what we hear a lot. → PIVOT if not already done.' },
+          { label: '🚫 No system (ask this instead)', text: 'Do you think a business operations system could solve this problem? → If they ask HOW, PIVOT.' },
+          { label: '✅ Yes it helps', text: 'Continue to dream system question.' },
         ],
       },
       {
@@ -598,29 +600,43 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   }, [dataCapture.cost_amount, dataCapture.competitor_monthly_cost, painItems])
 
   // ── Template variables — auto-populated from all name fields ──
-  const scriptVars: Record<string, string> = useMemo(() => ({
-    name: contactName || dataCapture.dm_name || dataCapture.cooper_name || dataCapture.owner_name || client?.name || '',
-    company: client?.company || '',
-    industry: client?.industry || 'your',
-    time_of_day: getTimeOfDay(),
-    user_name: user?.name || 'your name',
-    user_title: 'Research Lead',
-    receptionist_name: dataCapture.receptionist_name || dataCapture.frontdesk_name || '',
-    frontdesk_name: dataCapture.frontdesk_name || '',
-    day: outcomeDate || '⟨day⟩',
-    time: outcomeTime || '⟨time⟩',
-    cost_amount: costMath.hasCost ? formatCurrency(costMath.monthly) : '',
-    annual_cost: costMath.hasCost ? formatCurrency(costMath.annual) : '⟨annual cost⟩',
-    cost_summary: (() => {
-      const parts: string[] = []
-      if (costMath.hasCost) parts.push(`spend ${formatCurrency(costMath.monthly)}/month`)
-      if (costMath.hasTime) parts.push(`lose ${costMath.monthlyTimeHours} hours/month`)
-      if (dataCapture.time_estimate && !costMath.hasTime) parts.push(`lose ${dataCapture.time_estimate}`)
-      return parts.length > 0 ? parts.join(' and ') : '⟨cost summary⟩'
-    })(),
-    time_estimate: dataCapture.time_estimate || (costMath.hasTime ? `${costMath.monthlyTimeHours} hours/month` : ''),
-    frustration: dataCapture.frustration || dataCapture.time_sink || '⟨their frustration⟩',
-  }), [contactName, dataCapture, client, user, outcomeDate, outcomeTime, costMath])
+  const scriptVars: Record<string, string> = useMemo(() => {
+    // Build a human-readable cost example from pain items
+    const costExample = painItems.length > 0
+      ? painItems.map(i => i.unit === 'cedis'
+          ? `costs you ${formatCurrency(i.value)} ${FREQ_LABELS[i.freq]}`
+          : `takes ${i.value} ${i.unit} ${FREQ_LABELS[i.freq]}`
+        ).join(', or ')
+      : '⟨their specific example⟩'
+    const costPeriod = costMath.hasCost || costMath.hasTime ? 'month' : '⟨month/year⟩'
+
+    return {
+      name: contactName || dataCapture.dm_name || dataCapture.cooper_name || dataCapture.owner_name || client?.name || '',
+      company: client?.company || '',
+      industry: client?.industry || 'your',
+      contact_role: contactRole || '⟨specific role⟩',
+      time_of_day: getTimeOfDay(),
+      user_name: user?.name || 'your name',
+      user_title: 'Research Lead',
+      receptionist_name: dataCapture.receptionist_name || dataCapture.frontdesk_name || '',
+      frontdesk_name: dataCapture.frontdesk_name || '',
+      day: outcomeDate || '⟨day⟩',
+      time: outcomeTime || '⟨time⟩',
+      cost_amount: costMath.hasCost ? formatCurrency(costMath.monthly) : '',
+      annual_cost: costMath.hasCost ? formatCurrency(costMath.annual) : '⟨annual cost⟩',
+      cost_example: costExample,
+      cost_period: costPeriod,
+      cost_summary: (() => {
+        const parts: string[] = []
+        if (costMath.hasCost) parts.push(`spend ${formatCurrency(costMath.monthly)}/month`)
+        if (costMath.hasTime) parts.push(`lose ${costMath.monthlyTimeHours} hours/month`)
+        if (dataCapture.time_estimate && !costMath.hasTime) parts.push(`lose ${dataCapture.time_estimate}`)
+        return parts.length > 0 ? parts.join(' and ') : '⟨cost summary⟩'
+      })(),
+      time_estimate: dataCapture.time_estimate || (costMath.hasTime ? `${costMath.monthlyTimeHours} hours/month` : ''),
+      frustration: dataCapture.frustration || dataCapture.time_sink || '⟨their frustration⟩',
+    }
+  }, [contactName, contactRole, dataCapture, client, user, outcomeDate, outcomeTime, costMath, painItems])
 
   const startGuide = () => {
     if (!envType || !personaType || !pathId) return
