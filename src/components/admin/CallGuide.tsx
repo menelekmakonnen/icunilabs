@@ -415,19 +415,12 @@ const OUTCOMES: { id: string; label: string; desc: string; hasDatetime?: boolean
 const PERSONAS: Record<string, { id: string; label: string; pathId: string }[]> = {
   white_collar: [
     { id: 'receptionist', label: 'Receptionist', pathId: 'wc_receptionist' },
-    { id: 'buyer_manager', label: 'Buyer-Manager (Decision-Maker)', pathId: 'wc_decision_maker' },
+    { id: 'buyer_manager', label: 'Buyer-Manager / Founder', pathId: 'wc_decision_maker' },
   ],
   blue_collar: [
     { id: 'front_desk', label: 'Front Desk', pathId: 'bc_front_desk' },
     { id: 'mr_cooper', label: 'Mr Cooper (Floor Manager)', pathId: 'bc_mr_cooper' },
     { id: 'owner', label: 'Owner / Trader', pathId: 'bc_owner' },
-  ],
-  hybrid: [
-    { id: 'receptionist', label: 'Receptionist (WC)', pathId: 'wc_receptionist' },
-    { id: 'buyer_manager', label: 'Buyer-Manager (WC)', pathId: 'wc_decision_maker' },
-    { id: 'front_desk', label: 'Front Desk (BC)', pathId: 'bc_front_desk' },
-    { id: 'mr_cooper', label: 'Mr Cooper (BC)', pathId: 'bc_mr_cooper' },
-    { id: 'owner', label: 'Owner (BC)', pathId: 'bc_owner' },
   ],
 }
 
@@ -493,13 +486,13 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   const [outcomeNotes, setOutcomeNotes] = useState('')
   const [callNotes, setCallNotes] = useState('')
   const [nextActionNotes, setNextActionNotes] = useState('')
-  const [contactName, setContactName] = useState(client?.name || '')
+  const [contactName, setContactName] = useState('')
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false)
   const [contactPhone, setContactPhone] = useState(client?.phone || '')
   const [contactRole, setContactRole] = useState('')
   const [saving, setSaving] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
-  const [expandedScripts, setExpandedScripts] = useState<Set<string>>(new Set())
+  const [collapsedScripts, setCollapsedScripts] = useState<Set<string>>(new Set())
   const [activeResponse, setActiveResponse] = useState<Record<string, number>>({})
 
   // ── Pain Point Calculator state ──
@@ -523,11 +516,8 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [phase])
 
-  // Auto-sync contactName when a name field is captured
-  useEffect(() => {
-    const nameVal = dataCapture.dm_name || dataCapture.cooper_name || dataCapture.owner_name || ''
-    if (nameVal && !contactName) setContactName(nameVal)
-  }, [dataCapture.dm_name, dataCapture.cooper_name, dataCapture.owner_name]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Note: contactName is intentionally NOT linked to client?.name
+  // The person on the call may be different from the CRM contact
 
   const currentPath = PATHS[pathId]
   const availablePersonas = envType ? PERSONAS[envType] || [] : []
@@ -602,7 +592,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
     const costPeriod = costMath.hasCost || costMath.hasTime ? 'month' : '⟨month/year⟩'
 
     return {
-      name: contactName || dataCapture.dm_name || dataCapture.cooper_name || dataCapture.owner_name || client?.name || '',
+      name: contactName || dataCapture.dm_name || dataCapture.cooper_name || dataCapture.owner_name || '',
       company: client?.company || '',
       industry: client?.industry || 'your',
       contact_role: contactRole || '⟨specific role⟩',
@@ -635,11 +625,23 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   }
 
   const toggleCheck = (id: string) => {
-    setChecked(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+    setChecked(prev => {
+      const n = new Set(prev)
+      if (n.has(id)) {
+        n.delete(id)
+        // Unchecking re-opens the script
+        setCollapsedScripts(cs => { const ns = new Set(cs); ns.delete(id); return ns })
+      } else {
+        n.add(id)
+        // Checking closes the script
+        setCollapsedScripts(cs => { const ns = new Set(cs); ns.add(id); return ns })
+      }
+      return n
+    })
   }
 
   const toggleScript = (id: string) => {
-    setExpandedScripts(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
+    setCollapsedScripts(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
   }
 
   const updateData = (key: string, value: string) => {
@@ -830,11 +832,14 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
             )}
           </div>
 
-          <p className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-3">Environment Type</p>
+          <p className="text-xs font-bold text-neutral-600 uppercase tracking-wider mb-3">Call Type</p>
           <div className="flex gap-2 mb-5">
-            {[{ id: 'white_collar', label: 'White Collar' }, { id: 'blue_collar', label: 'Blue Collar' }, { id: 'hybrid', label: 'Hybrid' }].map(e => (
+            {[{ id: 'white_collar', label: 'White Collar', desc: 'Professional / Research path' }, { id: 'blue_collar', label: 'Blue Collar', desc: 'Trader / Story path' }].map(e => (
               <button key={e.id} className={`cg-env-btn ${envType === e.id ? 'selected' : ''}`}
-                onClick={() => { setEnvType(e.id); setPersonaType(''); setPathId('') }}>{e.label}</button>
+                onClick={() => { setEnvType(e.id); setPersonaType(''); setPathId('') }}>
+                <span>{e.label}</span>
+                <span className="text-[9px] text-neutral-500 block mt-0.5">{e.desc}</span>
+              </button>
             ))}
           </div>
 
@@ -999,8 +1004,9 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
             <div className="cg-section-body">
               {points.map((p, idx) => {
                 const hasScript = !!(p.script || p.scriptNote || p.responses)
-                const isExpanded = expandedScripts.has(p.id)
                 const isChecked = checked.has(p.id)
+                // Scripts open by default, close when checked off or manually collapsed
+                const isExpanded = hasScript && !collapsedScripts.has(p.id)
                 const showFields = (isChecked || isExpanded) && p.dataFields
 
                 return (
