@@ -225,13 +225,13 @@ export default function CRMSection() {
     })
   }, [filtered, sortConfig])
 
-  // "Others" tab — clients added by other team members (Godmode only)
+  // "Others" tab — contacts added by other team members
   const othersClients = useMemo(() => {
-    if (!isGodmode || !user?.email) return []
+    if (!user?.email) return []
     return activeClients
       .filter((c: any) => c.added_by && c.added_by !== user.email)
       .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-  }, [activeClients, isGodmode, user])
+  }, [activeClients, user])
 
   // Next-action map: client_id → { date, type } for countdown pills
   const { callLogs: allCallLogs } = useAdminStore()
@@ -1073,15 +1073,13 @@ export default function CRMSection() {
               </svg>
               Pipeline
             </button>
-            {isGodmode && (
-              <button onClick={() => setViewMode('others')}
-                className={`crm-view-tab ${viewMode === 'others' ? 'active' : ''}`}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><path d="M20 8v6" /><path d="M23 11h-6" />
-                </svg>
-                Others{othersClients.length > 0 && <span className="text-[9px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded-full ml-1">{othersClients.length}</span>}
-              </button>
-            )}
+            <button onClick={() => setViewMode('others')}
+              className={`crm-view-tab ${viewMode === 'others' ? 'active' : ''}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><path d="M20 8v6" /><path d="M23 11h-6" />
+              </svg>
+              Others{othersClients.length > 0 && <span className="text-[9px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded-full ml-1">{othersClients.length}</span>}
+            </button>
           </div>
           
           <div className="relative w-full sm:w-72 mb-1">
@@ -1272,7 +1270,7 @@ export default function CRMSection() {
         </div>
       </>)}
 
-      {/* ═══ OTHERS VIEW (Godmode only) ═══ */}
+      {/* ═══ OTHERS VIEW ═══ */}
       {viewMode === 'others' && (<>
         <div className="p-3 bg-[#00bfff]/5 border border-[#00bfff]/15 rounded-xl mb-4 flex items-start gap-2.5">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00bfff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
