@@ -2,7 +2,7 @@
  * VercelSidebar — Vercel-inspired navigation sidebar for the Modern admin theme.
  * Uses custom SVG icons from VercelIcons.tsx. Supports collapse, search, and role-based nav.
  */
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useAdminStore, adminActions } from '../../../store/useAdminStore'
 import {
   DashboardIcon, MailIcon, ClientsIcon, ReferralsIcon, InvoicesIcon,
@@ -13,14 +13,16 @@ import {
   PhoneIcon, AnalyticsIcon, MeetingsIcon, NewProjectIcon, ContractsIcon,
 } from './VercelIcons'
 
-interface NavItem {
+export interface NavItem {
   id: string
   label: string
   icon: React.FC<{ className?: string; size?: number }>
   section?: string  // group label
 }
 
-const NAV_ITEMS: NavItem[] = [
+export const SIDEBAR_CONFIG_KEY = 'icuni_sidebar_config'
+
+export const DEFAULT_NAV_ITEMS: NavItem[] = [
   // Overview
   { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, section: 'Overview' },
   { id: 'analytics', label: 'Analytics', icon: AnalyticsIcon },
@@ -29,9 +31,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'calls', label: 'Calls', icon: PhoneIcon },
   { id: 'meetings', label: 'Meetings', icon: MeetingsIcon },
   { id: 'clients', label: 'Clients', icon: ClientsIcon },
-  { id: 'referrals', label: 'Referrals', icon: ReferralsIcon },
   { id: 'invoices', label: 'Invoices', icon: InvoicesIcon },
-  { id: 'sla', label: 'SLA Tracker', icon: SLAIcon },
   // Projects
   { id: 'new-project', label: 'New Project', icon: NewProjectIcon, section: 'Projects' },
   { id: 'contracts', label: 'Contracts', icon: ContractsIcon },
@@ -39,8 +39,10 @@ const NAV_ITEMS: NavItem[] = [
   // Management
   { id: 'users', label: 'Team', icon: TeamIcon, section: 'Management' },
   { id: 'starterclass', label: 'Starterclass', icon: StarterclassIcon },
+  { id: 'careers', label: 'Careers', icon: CareersIcon },
+  { id: 'referrals', label: 'Referrals', icon: ReferralsIcon },
   // Admin
-  { id: 'careers', label: 'Careers', icon: CareersIcon, section: 'Admin' },
+  { id: 'sla', label: 'SLA Tracker', icon: SLAIcon, section: 'Admin' },
   { id: 'logs', label: 'Logs', icon: LogsIcon },
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ]
@@ -77,8 +79,28 @@ export default function VercelSidebar({
 
   const userPerms = user?.permissions || {}
 
+  // Apply saved sidebar config (reorder + rename)
+  const resolvedNav = useMemo(() => {
+    try {
+      const raw = localStorage.getItem(SIDEBAR_CONFIG_KEY)
+      if (!raw) return DEFAULT_NAV_ITEMS
+      const config: { id: string; label: string; section?: string }[] = JSON.parse(raw)
+      // Map saved config onto real items (preserving icons)
+      const iconMap: Record<string, React.FC<{ className?: string; size?: number }>> = {}
+      DEFAULT_NAV_ITEMS.forEach(n => { iconMap[n.id] = n.icon })
+      const result: NavItem[] = config
+        .filter(c => iconMap[c.id])
+        .map(c => ({ id: c.id, label: c.label, icon: iconMap[c.id], section: c.section }))
+      // Add any new default items not in saved config
+      DEFAULT_NAV_ITEMS.forEach(n => {
+        if (!result.find(r => r.id === n.id)) result.push(n)
+      })
+      return result
+    } catch { return DEFAULT_NAV_ITEMS }
+  }, [])
+
   // Filter nav items by role
-  const filteredNav = NAV_ITEMS.filter(item => {
+  const filteredNav = resolvedNav.filter(item => {
     if (role === 'Godmode') return true
     if (item.id === 'users') return isElevated
     if (item.id === 'ecosystem') return isElevated

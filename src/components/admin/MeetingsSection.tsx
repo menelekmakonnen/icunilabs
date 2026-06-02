@@ -11,9 +11,7 @@ const modalCard = 'bg-neutral-950 border border-neutral-800 rounded-2xl p-6 w-fu
 const STAGES = [
   { id: 'booked', label: 'Booked', color: '#00bfff' },
   { id: 'confirmed', label: 'Confirmed', color: '#8b5cf6' },
-  { id: 'prep', label: 'Prep', color: '#f59e0b' },
   { id: 'on_day', label: 'On-Day', color: '#ff7a00' },
-  { id: 'post_meeting', label: 'Post-Meeting', color: '#10b981' },
   { id: 'qualified', label: 'Qualified', color: '#22c55e' },
 ] as const
 
