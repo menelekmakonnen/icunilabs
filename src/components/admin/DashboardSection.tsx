@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
 import {
   Users, FolderOpen, FileText, AlertTriangle, TrendingUp, Flame,
-  Phone, Target, Clock, Calendar, CheckCircle, BarChart3
+  Phone, Target, Clock, Calendar, CheckCircle, BarChart3, Download
 } from 'lucide-react'
 
 const card = 'bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 sm:p-5'
@@ -166,6 +166,35 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
       .sort((a: any, b: any) => new Date(b.call_start).getTime() - new Date(a.call_start).getTime())
       .slice(0, 10),
     [primaryCalls])
+
+  // ── CSV Export for this week's calls ──
+  const weekCalls = useMemo(() =>
+    primaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= weekAgo),
+    [primaryCalls, weekAgo])
+
+  const handleExportWeekCalls = () => {
+    if (!weekCalls.length) return
+    const headers = ['Date', 'Client', 'Caller', 'Outcome', 'Duration (s)', 'Notes']
+    const csv = [
+      headers.join(','),
+      ...weekCalls.map((log: any) => {
+        const clientName = (clients || []).find((c: any) => c.client_id === log.client_id)?.name || log.client_name || ''
+        return [
+          `"${new Date(log.call_start).toISOString()}"`,
+          `"${clientName.replace(/"/g, '""')}"`,
+          `"${(log.caller_name || log.caller_email || '').replace(/"/g, '""')}"`,
+          `"${(OUTCOME_LABELS[log.outcome] || log.outcome || '').replace(/"/g, '""')}"`,
+          log.duration_seconds || 0,
+          `"${(log.call_notes || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`
+        ].join(',')
+      })
+    ].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `icuni_calls_this_week_${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+  }
 
   // ── Pipeline summary ──
   const pipeline = useMemo(() => {
@@ -386,6 +415,9 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
               <Phone className="w-4 h-4 text-[#00bfff]" /> Recent Calls
             </h3>
             <button onClick={() => adminActions.setSection('calls')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">View Logs</button>
+            <button onClick={handleExportWeekCalls} title="Export this week's calls as CSV" className="flex items-center gap-1 text-xs text-neutral-500 hover:text-white cursor-pointer transition-colors">
+              <Download className="w-3.5 h-3.5" />
+            </button>
           </div>
           <div className="space-y-1 max-h-[260px] overflow-y-auto">
             {recentCalls.length === 0 && <p className="text-sm text-neutral-600 py-4 text-center">No recent calls</p>}
