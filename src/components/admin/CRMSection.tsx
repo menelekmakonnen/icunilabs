@@ -32,10 +32,10 @@ function healthStatus(c: any) { if (!c.project_count) return 'inactive'; if (c.o
 const TAG_STYLES: Record<string, string> = { priority:'priority', vip:'vip', new:'new', returning:'returning' }
 
 function stageClass(stage: string): string {
-  if (stage === 'prospect') return 'stage-prospect'
+  if (stage === 'prospect' || stage === 'new_lead') return 'stage-prospect'
   if (stage === 'won') return 'stage-won'
   if (stage === 'disqualified') return 'stage-disqualified'
-  if (['new_lead','contacted','qualified'].includes(stage)) return 'stage-lead'
+  if (['contacted','qualified'].includes(stage)) return 'stage-lead'
   return ''
 }
 
@@ -55,14 +55,19 @@ function PersonAvatar({ name, size = 80 }: { name: string; size?: number }) {
 }
 
 const STAGES = [
-  { id: 'prospect', label: 'Prospect', color: '#64748b', hidden: false },
-  { id: 'new_lead', label: 'New Lead', color: '#00bfff', hidden: false },
+  { id: 'disqualified', label: 'Disqualified', color: '#475569', hidden: false },
+  { id: 'prospect', label: 'Prospect', color: '#64748b', hidden: false, aliases: ['new_lead'] },
   { id: 'contacted', label: 'Contacted', color: '#8b5cf6', hidden: false },
   { id: 'qualified', label: 'Qualified', color: '#f59e0b', hidden: false },
   { id: 'meeting_scheduled', label: 'Meeting', color: '#ff7a00', hidden: false },
   { id: 'won', label: 'Won', color: '#10b981', hidden: false },
-  { id: 'disqualified', label: 'Disqualified', color: '#475569', hidden: true },
 ] as const
+
+/** Normalize stage IDs: new_lead → prospect (merged) */
+function normalizeStage(stage: string): string {
+  if (stage === 'new_lead') return 'prospect'
+  return stage
+}
 
 const EMAIL_TEMPLATES = [
   { id: 'welcome', label: 'Welcome', desc: 'Onboarding welcome' },
@@ -186,7 +191,7 @@ export default function CRMSection() {
 
     // Stage filter (treat 'lost' as alias for 'disqualified')
     if (stageFilter.length > 0) {
-      const clientStage = c.prospect_stage || 'new_lead'
+      const clientStage = normalizeStage(c.prospect_stage || 'new_lead')
       const expandedFilter = stageFilter.includes('disqualified') ? [...stageFilter, 'lost'] : stageFilter
       const expandedStage = clientStage === 'lost' ? 'disqualified' : clientStage
       if (!expandedFilter.includes(expandedStage)) return false
@@ -220,9 +225,9 @@ export default function CRMSection() {
         aVal = (a.added_by || '').toLowerCase()
         bVal = (b.added_by || '').toLowerCase()
       } else if (sortConfig.key === 'pipeline_stage') {
-        const stageOrder = STAGES.map(s => s.id)
-        aVal = stageOrder.indexOf(a.prospect_stage || 'new_lead')
-        bVal = stageOrder.indexOf(b.prospect_stage || 'new_lead')
+        const stageOrder: string[] = STAGES.map(s => s.id)
+        aVal = stageOrder.indexOf(normalizeStage(a.prospect_stage || 'new_lead'))
+        bVal = stageOrder.indexOf(normalizeStage(b.prospect_stage || 'new_lead'))
       } else if (sortConfig.key === 'company') {
         aVal = (a.company || '').toLowerCase()
         bVal = (b.company || '').toLowerCase()
@@ -607,7 +612,7 @@ export default function CRMSection() {
                   <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Pipeline Journey</p>
                   <div className="flex items-center gap-2">
                     {(() => {
-                      const curIdx = STAGES.findIndex(s => s.id === (c.prospect_stage || 'new_lead'))
+                      const curIdx = STAGES.findIndex(s => s.id === normalizeStage(c.prospect_stage || 'new_lead'))
                       const prevStage = curIdx > 0 ? STAGES[curIdx - 1] : null
                       const nextStage = curIdx < STAGES.length - 2 ? STAGES[curIdx + 1] : null
                       return (<>
@@ -629,7 +634,7 @@ export default function CRMSection() {
                 </div>
                 <div className="flex items-center gap-0">
                   {STAGES.filter(s => !s.hidden).map((s, i, arr) => {
-                    const currentIdx = arr.findIndex(st => st.id === (c.prospect_stage || 'new_lead'))
+                    const currentIdx = arr.findIndex(st => st.id === normalizeStage(c.prospect_stage || 'new_lead'))
                     const isActive = i === currentIdx
                     const isPast = i < currentIdx
                     return (
@@ -1287,7 +1292,7 @@ export default function CRMSection() {
                       color: cl.prospect_stage === 'client' ? '#10b981' : cl.prospect_stage === 'qualified' ? '#00bfff' : '#64748b',
                       borderColor: cl.prospect_stage === 'client' ? '#10b98140' : cl.prospect_stage === 'qualified' ? '#00bfff40' : '#64748b30',
                       background: cl.prospect_stage === 'client' ? '#10b98110' : cl.prospect_stage === 'qualified' ? '#00bfff10' : '#64748b08',
-                    }}>{(cl.prospect_stage || 'new_lead').replace(/_/g, ' ')}</span>
+                    }}>{normalizeStage(cl.prospect_stage || 'new_lead').replace(/_/g, ' ')}</span>
                   </button>
                 ))}
               </div>
@@ -1364,7 +1369,11 @@ export default function CRMSection() {
       {viewMode === 'pipeline' && (<>
         <div className="pipeline-scroll flex gap-2 sm:gap-3 overflow-x-auto overflow-y-auto pb-4" style={{ maxHeight: 'calc(100vh - 260px)', minHeight: 300 }}>
           {STAGES.filter(s => !s.hidden).map((stage) => {
-            const stageClients = filtered.filter((c: any) => (c.prospect_stage || 'new_lead') === stage.id)
+            const stageAliases = ('aliases' in stage) ? (stage as any).aliases || [] : []
+            const stageClients = filtered.filter((c: any) => {
+              const cs = c.prospect_stage || 'new_lead'
+              return cs === stage.id || stageAliases.includes(cs)
+            })
             const showBoundary = stage.id === 'meeting_scheduled'
             return (
               <div key={stage.id} className="flex-shrink-0 flex">
@@ -1443,7 +1452,7 @@ export default function CRMSection() {
             <AnimatePresence>
               {othersClients.map((c: any, i: number) => {
                 const displayName = c.name || c.company || c.email || 'Unnamed'
-                const stage = c.prospect_stage || 'new_lead'
+                const stage = normalizeStage(c.prospect_stage || 'new_lead')
                 const stageInfo = STAGES.find(s => s.id === stage)
                 const addedByName = c.added_by ? resolveStaffName(c.added_by) : ''
                 return (
@@ -1547,7 +1556,7 @@ export default function CRMSection() {
           <AnimatePresence>
             {sortedFiltered.map((c: any, i: number) => {
               const displayName = c.name || c.company || c.email || 'Unnamed'
-              const stage = c.prospect_stage || 'new_lead'
+              const stage = normalizeStage(c.prospect_stage || 'new_lead')
               const stageInfo = STAGES.find(s => s.id === stage)
               const addedByName = c.added_by ? resolveStaffName(c.added_by) : ''
 
@@ -1680,7 +1689,7 @@ export default function CRMSection() {
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
                   <span className="flex-1 text-left">{s.label}</span>
                   {stageFilter.includes(s.id) && <CheckCircle className="w-3.5 h-3.5 text-[#00bfff]" />}
-                  <span className="text-[10px] text-neutral-700">{activeClients.filter((c: any) => (c.prospect_stage || 'new_lead') === s.id).length}</span>
+                  <span className="text-[10px] text-neutral-700">{activeClients.filter((c: any) => normalizeStage(c.prospect_stage || 'new_lead') === s.id).length}</span>
                 </button>
               ))}
             </div>
