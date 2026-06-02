@@ -251,6 +251,15 @@ export default function CRMSection() {
     return map
   }, [allCallLogs])
 
+  // Call count per client for card badges
+  const callCountMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    ;(allCallLogs || []).forEach((log: any) => {
+      if (log.client_id) map[log.client_id] = (map[log.client_id] || 0) + 1
+    })
+    return map
+  }, [allCallLogs])
+
   // Live ticker for countdowns
   const [_tick, setTick] = useState(0)
   useEffect(() => {
@@ -524,6 +533,60 @@ export default function CRMSection() {
                   </div>
                 ))}
               </div>
+
+              {/* ── Call Summary Quick Card ── */}
+              {(() => {
+                const calls = clientCallsForActive
+                if (calls.length === 0) return (
+                  <div className="crm-metric !py-3 !px-4 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center">
+                      <Phone className="w-4 h-4 text-neutral-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-neutral-600">No calls recorded yet</p>
+                    </div>
+                    <button onClick={() => setDetailTab('calls')} className="text-[10px] text-[#00bfff] hover:text-white cursor-pointer transition-colors">
+                      Log a Call →
+                    </button>
+                  </div>
+                )
+                const lastCall = calls[0]
+                const outcomeLabels: Record<string, string> = { meeting_booked: 'Meeting Booked', callback_scheduled: 'Callback', interested_will_revert: 'Interested', no_interest: 'No Interest', needs_follow_up: 'Follow-Up', voicemail: 'Voicemail', wrong_number: 'Wrong #', dropby_booked: 'Drop-By', warm_lead: 'Warm Lead' }
+                const outcomeColors: Record<string, string> = { meeting_booked: '#22c55e', callback_scheduled: '#00bfff', interested_will_revert: '#8b5cf6', no_interest: '#6b7280', needs_follow_up: '#f59e0b', voicemail: '#64748b', wrong_number: '#ef4444', dropby_booked: '#ff7a00', warm_lead: '#10b981' }
+                const lastOutcome = lastCall.outcome || ''
+                const dMin = Math.floor(Number(lastCall.duration_seconds || 0) / 60)
+                const dSec = Number(lastCall.duration_seconds || 0) % 60
+                return (
+                  <div className="crm-metric !py-3 !px-4 cursor-pointer hover:border-neutral-700 transition-colors" onClick={() => setDetailTab('calls')}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: `${outcomeColors[lastOutcome] || '#6b7280'}15` }}>
+                          <Phone className="w-3.5 h-3.5" style={{ color: outcomeColors[lastOutcome] || '#6b7280' }} />
+                        </div>
+                        <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Call History</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-white font-bold">{calls.length}</span>
+                      </div>
+                      <span className="text-[10px] text-[#00bfff] hover:text-white transition-colors">View All →</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs">
+                      <div>
+                        <span className="text-neutral-600">Last: </span>
+                        <span className="text-white font-medium">{fmtDate(lastCall.call_start)}</span>
+                      </div>
+                      <div>
+                        <span className="text-neutral-600">Duration: </span>
+                        <span className="text-white">{dMin}:{String(dSec).padStart(2, '0')}</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: `${outcomeColors[lastOutcome] || '#6b7280'}20`, color: outcomeColors[lastOutcome] || '#6b7280' }}>
+                        {outcomeLabels[lastOutcome] || lastOutcome.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    {lastCall.call_notes && (
+                      <p className="text-[11px] text-neutral-400 mt-2 line-clamp-2 italic">"{lastCall.call_notes}"</p>
+                    )}
+                  </div>
+                )
+              })()}
 
               {/* Pipeline Journey Tracker */}
               <div className="crm-metric !py-4 !px-5">
@@ -1494,13 +1557,18 @@ export default function CRMSection() {
                     <p className="text-[11px] text-neutral-500 truncate w-full relative z-10 mt-0.5">{c.company}</p>
                   )}
 
-                  {/* Stage Badge */}
-                  <div className="mt-2 mb-1 relative z-10">
+                  {/* Stage Badge + Call Count */}
+                  <div className="mt-2 mb-1 relative z-10 flex items-center gap-1.5 flex-wrap justify-center">
                     <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full inline-flex items-center gap-1"
                       style={{ color: stageInfo?.color || '#64748b', background: `${stageInfo?.color || '#475569'}15` }}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: stageInfo?.color || '#64748b' }} />
                       {stageInfo?.label || stage}
                     </span>
+                    {callCountMap[c.client_id] > 0 && (
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-400">
+                        <Phone className="w-2.5 h-2.5" /> {callCountMap[c.client_id]}
+                      </span>
+                    )}
                   </div>
 
                   {/* Outstanding */}

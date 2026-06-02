@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { resolveStaffName } from '../../utils/resolveStaffName'
-import { useAdminStore, adminActions } from '../../store/useAdminStore'
+import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
 import { Phone, TrendingUp, Users, Clock, Target, BarChart3, ChevronDown, Download, Calendar, Filter, FileText, Pencil, ArrowRight, Bell, X, AlertTriangle } from 'lucide-react'
 import CallGuide from './CallGuide'
 import '../admin/crm.css'
@@ -35,7 +35,18 @@ function fmtDate(d: string) {
 type DateFilter = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'this_year' | 'all' | 'custom'
 
 export default function CallSection() {
-  const { callLogs, competitorIntel, clients } = useAdminStore()
+  const { callLogs: rawCallLogs, competitorIntel, clients } = useAdminStore()
+  const effectiveUser = useEffectiveUser()
+  const isSalesOnly = effectiveUser?.role === 'Sales'
+
+  // Sales associates only see their own calls; everyone else sees all
+  const callLogs = useMemo(() => {
+    if (!rawCallLogs) return []
+    if (isSalesOnly && effectiveUser?.email) {
+      return rawCallLogs.filter((l: any) => l.caller_email === effectiveUser.email)
+    }
+    return rawCallLogs
+  }, [rawCallLogs, isSalesOnly, effectiveUser?.email])
   const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'competitor' | 'upcoming'>('overview')
   const [dateFilter, setDateFilter] = useState<DateFilter>('this_week')
   const [customStart, setCustomStart] = useState('')
