@@ -133,6 +133,8 @@ export default function CRMSection() {
 
   const effectiveUser = useEffectiveUser()
   const isGodmode = effectiveUser?.role === 'Godmode'
+  const isSalesRole = effectiveUser?.role === 'Sales'
+  const [showAllClients, setShowAllClients] = useState(false)
 
   useEffect(() => { adminActions.loadClients(); adminActions.loadCallLogs({ page_size: 500 }) }, [])
 
@@ -165,7 +167,18 @@ export default function CRMSection() {
 
   const activeFilterCount = (stageFilter.length > 0 ? 1 : 0) + (sourceFilter ? 1 : 0) + (visibilityFilter !== 'all' ? 1 : 0) + (addedByFilter ? 1 : 0) + (metricFilter !== 'all' ? 1 : 0)
 
+  // Early-stage scoping: Sales users only see their own prospect/contacted clients unless toggled
+  const EARLY_STAGES = ['prospect', 'new_lead', 'contacted']
+
   const filtered = activeClients.filter((c: any) => {
+    // Sales scoping: hide other people's early-stage clients unless "Show All" is on
+    if (isSalesRole && !showAllClients) {
+      const stage = (c.prospect_stage || 'new_lead').toLowerCase()
+      if (EARLY_STAGES.includes(stage) && c.added_by && c.added_by !== effectiveUser?.email) {
+        return false
+      }
+    }
+
     // Metric filter logic
     if (metricFilter === 'paying' && !['won', 'client'].includes((c.prospect_stage || '').toLowerCase())) return false
     if (metricFilter === 'pipeline' && ['won', 'disqualified'].includes((c.prospect_stage || '').toLowerCase())) return false
@@ -1637,6 +1650,22 @@ export default function CRMSection() {
                 className="text-[10px] text-red-400 hover:text-red-300 cursor-pointer transition-colors">Clear All</button>
             )}
           </div>
+
+          {/* Show All Clients toggle (Sales only) */}
+          {isSalesRole && (
+            <div className="flex items-center justify-between px-1">
+              <div>
+                <p className="text-xs text-white font-medium">Show All Clients</p>
+                <p className="text-[10px] text-neutral-600">Include prospects added by others</p>
+              </div>
+              <button
+                onClick={() => setShowAllClients(!showAllClients)}
+                className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${showAllClients ? 'bg-[#00bfff]' : 'bg-neutral-700'}`}
+              >
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${showAllClients ? 'translate-x-4' : 'translate-x-0.5'}`} />
+              </button>
+            </div>
+          )}
 
           {/* Stage Filter */}
           <div>

@@ -27,10 +27,10 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: DashboardIcon, section: 'Overview' },
   { id: 'analytics', label: 'Analytics', icon: AnalyticsIcon },
   // Operations
-  { id: 'mail', label: 'Mail Hub', icon: MailIcon, section: 'Operations' },
+  { id: 'clients', label: 'Clients', icon: ClientsIcon, section: 'Operations' },
   { id: 'calls', label: 'Calls', icon: PhoneIcon },
   { id: 'meetings', label: 'Meetings', icon: MeetingsIcon },
-  { id: 'clients', label: 'Clients', icon: ClientsIcon },
+  { id: 'mail', label: 'Mail Hub', icon: MailIcon },
   { id: 'invoices', label: 'Invoices', icon: InvoicesIcon },
   // Projects
   { id: 'new-project', label: 'New Project', icon: NewProjectIcon, section: 'Projects' },
