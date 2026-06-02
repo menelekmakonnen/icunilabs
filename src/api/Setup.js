@@ -266,6 +266,18 @@ function setupSheetHeaders_(ss, sheetName, headers) {
     } else {
         // ── Schema Migration: append any missing columns to existing sheets ──
         var existingHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+        
+        // Rename legacy columns (e.g., data_capture_json → data_capture)
+        var renames = { 'data_capture_json': 'data_capture', 'outcome_details_json': 'outcome_details' };
+        for (var oldName in renames) {
+            var oldIdx = existingHeaders.indexOf(oldName);
+            if (oldIdx >= 0) {
+                sheet.getRange(1, oldIdx + 1).setValue(renames[oldName]);
+                existingHeaders[oldIdx] = renames[oldName]; // update local copy
+                Logger.log('MIGRATION: Renamed column "' + oldName + '" → "' + renames[oldName] + '" in sheet ' + sheetName);
+            }
+        }
+        
         for (var i = 0; i < headers.length; i++) {
             if (existingHeaders.indexOf(headers[i]) === -1) {
                 var newCol = sheet.getLastColumn() + 1;
