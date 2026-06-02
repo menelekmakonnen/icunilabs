@@ -111,7 +111,8 @@ function handleSaveCallLog(payload) {
         payload.call_notes || '', autoAdvanced, nowStr,
         payload.self_image_initial || '', payload.self_image_confirmed || '',
         payload.self_image_pivoted ? 'Yes' : '',
-        payload.contact_name || '', payload.contact_phone || '', payload.contact_role || ''
+        payload.contact_name || '', payload.contact_phone || '', payload.contact_role || '',
+        (payload.transcript || '').substring(0, 50000)
     ]);
 
     // ── Extract competitor intel ──

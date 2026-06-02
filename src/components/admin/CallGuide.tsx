@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { adminActions, useAdminStore } from '../../store/useAdminStore'
-import { X, Check, ChevronDown, ChevronUp, Phone, ArrowRight, BookOpen } from 'lucide-react'
+import { X, Check, ChevronDown, ChevronUp, Phone, ArrowRight, BookOpen, Mic, MicOff } from 'lucide-react'
 import './call-guide.css'
 
 // ═══ TYPES ═══
@@ -492,6 +492,15 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   const [contactRole, setContactRole] = useState('')
   const [saving, setSaving] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+
+  // ── Live Transcript state ──
+  const [transcript, setTranscript] = useState('')
+  const [interimText, setInterimText] = useState('')
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [transcriptLines, setTranscriptLines] = useState<{ time: string; text: string }[]>([])
+  const recognitionRef = useRef<any>(null)
+  const transcriptAreaRef = useRef<HTMLDivElement>(null)
+  const speechSupported = typeof window !== 'undefined' && !!(window as any).webkitSpeechRecognition || !!(window as any).SpeechRecognition
   const [collapsedScripts, setCollapsedScripts] = useState<Set<string>>(new Set())
   const [activeResponse, setActiveResponse] = useState<Record<string, number>>({})
 
@@ -518,6 +527,79 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
 
   // Note: contactName is intentionally NOT linked to client?.name
   // The person on the call may be different from the CRM contact
+
+  // ── SpeechRecognition lifecycle ──
+  const startTranscription = useCallback(() => {
+    if (!speechSupported) return
+    const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition
+    const recognition = new SpeechRecognition()
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.lang = 'en-GH'
+    recognition.maxAlternatives = 1
+
+    recognition.onresult = (event: any) => {
+      let interim = ''
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i]
+        if (result.isFinal) {
+          const text = result[0].transcript.trim()
+          if (text) {
+            const timeStr = formatDuration(Math.floor((Date.now() - new Date(callStart || Date.now()).getTime()) / 1000))
+            setTranscriptLines(prev => [...prev, { time: timeStr, text }])
+            setTranscript(prev => prev + (prev ? '\n' : '') + `[${timeStr}] ${text}`)
+            // Auto-scroll
+            setTimeout(() => {
+              if (transcriptAreaRef.current) {
+                transcriptAreaRef.current.scrollTop = transcriptAreaRef.current.scrollHeight
+              }
+            }, 50)
+          }
+        } else {
+          interim += result[0].transcript
+        }
+      }
+      setInterimText(interim)
+    }
+
+    recognition.onerror = (event: any) => {
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        setIsTranscribing(false)
+      }
+      // Other errors (network, aborted) — auto-restart handled in onend
+    }
+
+    recognition.onend = () => {
+      setInterimText('')
+      // Auto-restart if still supposed to be transcribing
+      if (recognitionRef.current === recognition) {
+        try { recognition.start() } catch (e) { setIsTranscribing(false) }
+      }
+    }
+
+    recognitionRef.current = recognition
+    try {
+      recognition.start()
+      setIsTranscribing(true)
+    } catch (e) {
+      setIsTranscribing(false)
+    }
+  }, [speechSupported, callStart])
+
+  const stopTranscription = useCallback(() => {
+    if (recognitionRef.current) {
+      const ref = recognitionRef.current
+      recognitionRef.current = null // Prevent auto-restart in onend
+      try { ref.stop() } catch (e) {}
+    }
+    setIsTranscribing(false)
+    setInterimText('')
+  }, [])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => { if (recognitionRef.current) { try { recognitionRef.current.stop() } catch (e) {} } }
+  }, [])
 
   const currentPath = PATHS[pathId]
   const availablePersonas = envType ? PERSONAS[envType] || [] : []
@@ -693,6 +775,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
       contact_name: contactName,
       contact_phone: contactPhone,
       contact_role: contactRole,
+      transcript: transcript,
       self_image_initial: computedSelfImage,
       self_image_confirmed: selfImageConfirmed || computedSelfImage,
       self_image_pivoted: pivotHappened,
@@ -1339,7 +1422,90 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
           )}
         </div>
 
-        {/* Section 5: Next Action */}
+        {/* Section 5: Live Transcript */}
+        <div className="cg-section">
+          <div className="cg-section-header" onClick={() => toggleSection('transcript')}>
+            <h3>Live Transcript</h3>
+            <div className="flex items-center gap-2">
+              {isTranscribing && <div className="cg-mic-pulse" />}
+              {transcriptLines.length > 0 && (
+                <span className="cg-section-count">{transcriptLines.length} lines</span>
+              )}
+              {collapsed.transcript ? <ChevronDown className="w-4 h-4 text-neutral-600" /> : <ChevronUp className="w-4 h-4 text-neutral-600" />}
+            </div>
+          </div>
+          {!collapsed.transcript && (
+            <div className="cg-section-body">
+              {!speechSupported ? (
+                <div className="cg-transcript-unsupported">
+                  <MicOff className="w-5 h-5 mx-auto mb-2 opacity-50" />
+                  <p>Voice transcription is not supported in this browser.</p>
+                  <p className="mt-1 text-[10px] text-neutral-600">Use Chrome or Edge for live transcription.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="cg-transcript-header">
+                    <button
+                      onClick={() => isTranscribing ? stopTranscription() : startTranscription()}
+                      className={`cg-mic-btn ${isTranscribing ? 'active' : ''}`}
+                    >
+                      {isTranscribing ? (
+                        <><div className="cg-mic-pulse" /><MicOff className="w-4 h-4" /> Stop Transcribing</>
+                      ) : (
+                        <><Mic className="w-4 h-4" /> Start Transcribing</>
+                      )}
+                    </button>
+                    <span className={`cg-transcript-status ${isTranscribing ? 'listening' : 'idle'}`}>
+                      {isTranscribing ? (
+                        <><div className="cg-mic-pulse" /> Listening</>
+                      ) : (
+                        transcriptLines.length > 0 ? 'Paused' : 'Ready'
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Live transcript lines */}
+                  {(transcriptLines.length > 0 || interimText) && (
+                    <div className="cg-transcript-area" ref={transcriptAreaRef}>
+                      {transcriptLines.map((line, i) => (
+                        <div key={i} className="cg-transcript-line">
+                          <span className="cg-transcript-time">{line.time}</span>
+                          <span className="cg-transcript-text">{line.text}</span>
+                        </div>
+                      ))}
+                      {interimText && (
+                        <div className="cg-transcript-line">
+                          <span className="cg-transcript-time">…</span>
+                          <span className="cg-transcript-text cg-transcript-interim">{interimText}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Editable full transcript */}
+                  {transcriptLines.length > 0 && !isTranscribing && (
+                    <div className="mt-3">
+                      <label className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider block mb-1">Edit Transcript (corrections welcome)</label>
+                      <textarea
+                        className="cg-transcript-edit"
+                        value={transcript}
+                        onChange={e => setTranscript(e.target.value)}
+                        rows={6}
+                        placeholder="Transcript will appear here…"
+                      />
+                    </div>
+                  )}
+
+                  {transcriptLines.length === 0 && !isTranscribing && (
+                    <p className="text-xs text-neutral-600 mt-3">Press "Start Transcribing" to capture your side of the call in real-time.</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Section 6: Next Action */}
         {outcome && (
           <div className="cg-section">
             <div className="cg-section-header"><h3>Next Action</h3></div>

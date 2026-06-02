@@ -147,7 +147,8 @@ function setupSpreadsheets() {
         'next_action', 'next_action_date', 'next_action_notes',
         'call_notes', 'pipeline_auto_advanced', 'created_at',
         'self_image_initial', 'self_image_confirmed', 'self_image_pivoted',
-        'contact_name', 'contact_phone', 'contact_role'
+        'contact_name', 'contact_phone', 'contact_role',
+        'transcript'
     ]);
     setupSheetHeaders_(ssClients, SHEETS.COMPETITOR_INTEL, [
         'intel_id', 'client_id', 'call_id', 'system_name', 'developer_name',

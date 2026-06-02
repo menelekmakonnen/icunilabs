@@ -841,6 +841,19 @@ export default function CallSection() {
                             )
                           })()}
 
+                          {/* ── Transcript ── */}
+                          {log.transcript && (
+                            <div>
+                              <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <svg className="w-3.5 h-3.5 text-[#00bfff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                                Call Transcript
+                              </p>
+                              <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-3 max-h-[300px] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                                <pre className="text-xs text-neutral-300 whitespace-pre-wrap font-[inherit] leading-relaxed m-0">{log.transcript}</pre>
+                              </div>
+                            </div>
+                          )}
+
                           {/* ── Actions ── */}
                           <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/50">
                             {log.client_id && (
