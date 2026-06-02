@@ -18,16 +18,22 @@ import StarterclassSection from './StarterclassSection'
 import CallSection from './CallSection'
 import AnalyticsSection from './AnalyticsSection'
 import VercelAdminShell from './vercel/VercelAdminShell'
+import MeetingsSection from './MeetingsSection'
+import NewProjectSection from './NewProjectSection'
+import ContractsSection from './ContractsSection'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'mail', label: 'Mail', icon: Mail },
   { id: 'calls', label: 'Calls', icon: Phone },
+  { id: 'meetings', label: 'Meetings', icon: Clock },
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'referrals', label: 'Referrals', icon: UserCheck },
   { id: 'invoices', label: 'Invoices', icon: FileText },
   { id: 'sla', label: 'SLA', icon: Clock },
+  { id: 'new-project', label: 'New Project', icon: FolderOpen },
+  { id: 'contracts', label: 'Contracts', icon: Briefcase },
   { id: 'users', label: 'Team', icon: Shield },
   { id: 'ecosystem', label: 'Ecosystem', icon: Globe },
   { id: 'starterclass', label: 'Starterclass', icon: GraduationCap },
@@ -74,9 +80,9 @@ export default function AdminPanel() {
 
   // Department scope mapping (frontend mirror of backend DEPARTMENT_SCOPE)
   const DEPT_SCOPE: Record<string, string[]> = {
-    'Admin':      ['dashboard', 'mail', 'clients', 'referrals', 'invoices', 'sla', 'projects', 'settings'],
-    'Sales':      ['dashboard', 'mail', 'clients', 'referrals'],
-    'Product':    ['dashboard', 'mail', 'projects', 'sla']
+    'Admin':      ['dashboard', 'mail', 'clients', 'meetings', 'referrals', 'invoices', 'sla', 'new-project', 'contracts', 'ecosystem', 'projects', 'settings'],
+    'Sales':      ['dashboard', 'mail', 'clients', 'meetings', 'referrals'],
+    'Product':    ['dashboard', 'mail', 'new-project', 'contracts', 'ecosystem', 'sla']
   }
 
   // Filter nav items based on role + permissions
@@ -138,6 +144,9 @@ export default function AdminPanel() {
       case 'ecosystem': return <EcosystemSection />
       case 'starterclass': return <StarterclassSection />
       case 'calls': return <CallSection />
+      case 'meetings': return <MeetingsSection />
+      case 'new-project': return <NewProjectSection />
+      case 'contracts': return <ContractsSection />
       default: return <DashboardSection />
     }
   }

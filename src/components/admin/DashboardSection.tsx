@@ -43,12 +43,13 @@ interface GrowthDashProps {
 }
 
 function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
-  const { callLogs, clients } = useAdminStore()
+  const { callLogs, clients, meetings } = useAdminStore()
   const [_tick, setTick] = useState(0)
 
   useEffect(() => {
     adminActions.loadCallLogs({ page_size: 500 })
     adminActions.loadClients()
+    adminActions.loadMeetings()
     if (['Godmode', 'SuperAdmin'].includes(role)) adminActions.loadUsers()
   }, [])
 
@@ -190,7 +191,7 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: `Today (${primaryLabel})`, value: primaryMetrics.today, sub: `${primaryMetrics.week} this week`, icon: Phone, color: '#00bfff', nav: 'calls' },
-          { label: 'Meetings Booked', value: primaryMetrics.meetingsWeek, sub: `${primaryMetrics.convRate}% conversion`, icon: Target, color: '#22c55e', nav: 'calls' },
+          { label: 'Meetings Booked', value: (meetings || []).length, sub: `${primaryMetrics.convRate}% call conversion`, icon: Target, color: '#22c55e', nav: 'meetings' },
           { label: 'Avg Call Duration', value: fmtDuration(primaryMetrics.avgDur), sub: 'this week', icon: Clock, color: '#8b5cf6', nav: 'calls' },
           { label: 'Overdue Follow-Ups', value: primaryMetrics.overdue, sub: primaryMetrics.overdue === 0 ? 'All caught up!' : 'Need attention', icon: primaryMetrics.overdue > 0 ? AlertTriangle : CheckCircle, color: primaryMetrics.overdue > 0 ? '#ef4444' : '#22c55e', nav: 'sla' },
         ].map((m, i) => (

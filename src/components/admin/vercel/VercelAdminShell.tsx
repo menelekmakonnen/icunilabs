@@ -28,6 +28,9 @@ import OnboardingChecklist from '../OnboardingChecklist'
 import ReferralPortal from '../../portal/ReferralPortal'
 import ClientPortal from '../../portal/ClientPortal'
 import FloatingCallBubble from '../FloatingCallBubble'
+import MeetingsSection from '../MeetingsSection'
+import NewProjectSection from '../NewProjectSection'
+import ContractsSection from '../ContractsSection'
 
 interface VercelAdminShellProps {
   onSwitchTheme: () => void
@@ -115,6 +118,9 @@ export default function VercelAdminShell({ onSwitchTheme }: VercelAdminShellProp
       case 'profile': return <ProfileSection />
       case 'ecosystem': return <EcosystemSection />
       case 'starterclass': return <StarterclassSection />
+      case 'meetings': return <MeetingsSection />
+      case 'new-project': return <NewProjectSection />
+      case 'contracts': return <ContractsSection />
       default: return <DashboardSection />
     }
   }

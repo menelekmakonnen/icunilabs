@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { Globe, Plus, Archive, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { Globe, Plus, Archive, ChevronDown, ChevronUp, X, Layers } from 'lucide-react'
+import { portfolioProjects } from '../../data/portfolioData'
 
 const statusColor = (s: string) => {
   if (s === 'active') return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20'
@@ -21,16 +22,17 @@ const techBadge = (stack: string) => {
 }
 
 export default function EcosystemSection() {
-  const { projectRegistry, loading } = useAdminStore()
+  const { projectRegistry, projects, loading } = useAdminStore()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [newFeatureKey, setNewFeatureKey] = useState('')
   const [showAddProject, setShowAddProject] = useState(false)
   const [newProject, setNewProject] = useState({ name: '', description: '', url: '', tech_stack: '', owner: '' })
   const [busy, setBusy] = useState(false)
+  const [activeTab, setActiveTab] = useState<'registry' | 'client_projects' | 'portfolio'>('registry')
 
   const isOwner = useAdminStore().user?.role === 'Godmode'
 
-  useEffect(() => { adminActions.loadProjectRegistry() }, [])
+  useEffect(() => { adminActions.loadProjectRegistry(); adminActions.loadProjects() }, [])
 
   const toggleFeature = async (projectId: string, key: string, current: boolean) => {
     setBusy(true)
@@ -71,6 +73,12 @@ export default function EcosystemSection() {
   const activeProjects = projectRegistry.filter((p: any) => p.status !== 'archived')
   const archivedProjects = projectRegistry.filter((p: any) => p.status === 'archived')
 
+  const TABS = [
+    { id: 'registry' as const, label: 'Registry', count: activeProjects.length },
+    { id: 'client_projects' as const, label: 'Client Projects', count: (projects || []).length },
+    { id: 'portfolio' as const, label: 'Portfolio', count: portfolioProjects?.length || 0 },
+  ]
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -82,7 +90,7 @@ export default function EcosystemSection() {
           </h2>
           <p className="text-sm text-neutral-500 mt-1">{activeProjects.length} active projects under management</p>
         </div>
-        {isOwner && (
+        {isOwner && activeTab === 'registry' && (
           <button onClick={() => setShowAddProject(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-cyan-600 text-white rounded-lg text-sm font-bold hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all cursor-pointer">
             <Plus className="w-4 h-4" />Register Project
@@ -90,6 +98,21 @@ export default function EcosystemSection() {
         )}
       </div>
 
+      {/* Subtabs */}
+      <div className="flex items-center gap-1 border-b border-neutral-800 -mx-1">
+        {TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            className={`relative px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors ${activeTab === tab.id ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'}`}>
+            {tab.label}
+            <span className="ml-1.5 text-[10px] text-neutral-600">{tab.count}</span>
+            {activeTab === tab.id && <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-[#00bfff] rounded-full" />}
+          </button>
+        ))}
+      </div>
+
+      {/* ─── TAB: Registry ─── */}
+      {activeTab === 'registry' && (
+        <>
       {/* Project Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {activeProjects.map((project: any) => {
@@ -235,6 +258,76 @@ export default function EcosystemSection() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+        </>
+      )}
+
+      {/* ─── TAB: Client Projects ─── */}
+      {activeTab === 'client_projects' && (
+        <div className="space-y-4">
+          {(projects || []).length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-neutral-600">
+              <Layers className="w-8 h-8 mb-3 opacity-30" />
+              <p className="text-sm">No client projects yet</p>
+              <p className="text-xs mt-1">Projects created from the New Project page appear here</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {(projects || []).map((p: any) => (
+                <div key={p.project_id || p.id} className="p-4 rounded-xl bg-neutral-900/40 border border-neutral-800 hover:border-neutral-700 transition-all">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-bold text-white">{p.title}</h4>
+                    <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border
+                      ${p.status === 'completed' ? 'text-emerald-400 border-emerald-400/20 bg-emerald-400/5' :
+                        p.status === 'in_progress' ? 'text-amber-400 border-amber-400/20 bg-amber-400/5' :
+                        'text-neutral-400 border-neutral-700 bg-neutral-800'}`}>
+                      {p.status || 'New'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-neutral-500">
+                    {p.client_id && <span>Client: {p.client_id}</span>}
+                    {p.type && <span>Type: {p.type}</span>}
+                    {p.estimated_cost && <span>Est: GH₵{Number(p.estimated_cost).toLocaleString()}</span>}
+                  </div>
+                  {p.description && <p className="text-xs text-neutral-600 mt-2 line-clamp-2">{p.description}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── TAB: Portfolio ─── */}
+      {activeTab === 'portfolio' && (
+        <div className="space-y-4">
+          {!portfolioProjects || portfolioProjects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-neutral-600">
+              <Globe className="w-8 h-8 mb-3 opacity-30" />
+              <p className="text-sm">No portfolio projects</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {portfolioProjects.map((p: any, i: number) => (
+                <div key={p.id || i} className="group rounded-xl bg-neutral-900/40 border border-neutral-800 overflow-hidden hover:border-neutral-700 transition-all">
+                  {p.thumbnail && (
+                    <div className="h-36 overflow-hidden bg-neutral-950">
+                      <img src={p.thumbnail} alt={p.title} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  )}
+                  <div className="p-4">
+                    <h4 className="text-sm font-bold text-white mb-1">{p.title}</h4>
+                    <p className="text-xs text-neutral-500 line-clamp-2 mb-2">{p.description || p.subtitle || ''}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {(p.technologies || p.tech || []).map((t: string) => (
+                        <span key={t} className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

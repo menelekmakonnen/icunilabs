@@ -331,4 +331,33 @@ export function AnalyticsIcon({ className, size = 18 }: IconProps) {
   )
 }
 
+export function MeetingsIcon({ className, size = 18 }: IconProps) {
+  return (
+    <svg {...d(size)} className={className} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M16 2v4M8 2v4M3 10h18" />
+      <circle cx="12" cy="16" r="2" />
+      <path d="M12 14v2l1.5 1" />
+    </svg>
+  )
+}
 
+export function NewProjectIcon({ className, size = 18 }: IconProps) {
+  return (
+    <svg {...d(size)} className={className} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" />
+      <path d="M14 2v6h6" />
+      <path d="M12 13v4M10 15h4" />
+    </svg>
+  )
+}
+
+export function ContractsIcon({ className, size = 18 }: IconProps) {
+  return (
+    <svg {...d(size)} className={className} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+      <rect x="8" y="2" width="8" height="4" rx="1" />
+      <path d="M9 14l2 2 4-4" />
+    </svg>
+  )
+}

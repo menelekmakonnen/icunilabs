@@ -10,7 +10,7 @@ import {
   LogsIcon, SettingsIcon, SearchIcon, LogoutIcon,
   SidebarCollapseIcon, SidebarExpandIcon, ThemeIcon,
   OnboardingIcon, ICUNILogo, SunIcon, MoonIcon,
-  PhoneIcon, AnalyticsIcon,
+  PhoneIcon, AnalyticsIcon, MeetingsIcon, NewProjectIcon, ContractsIcon,
 } from './VercelIcons'
 
 interface NavItem {
@@ -27,15 +27,18 @@ const NAV_ITEMS: NavItem[] = [
   // Operations
   { id: 'mail', label: 'Mail Hub', icon: MailIcon, section: 'Operations' },
   { id: 'calls', label: 'Calls', icon: PhoneIcon },
+  { id: 'meetings', label: 'Meetings', icon: MeetingsIcon },
   { id: 'clients', label: 'Clients', icon: ClientsIcon },
   { id: 'referrals', label: 'Referrals', icon: ReferralsIcon },
   { id: 'invoices', label: 'Invoices', icon: InvoicesIcon },
   { id: 'sla', label: 'SLA Tracker', icon: SLAIcon },
+  // Projects
+  { id: 'new-project', label: 'New Project', icon: NewProjectIcon, section: 'Projects' },
+  { id: 'contracts', label: 'Contracts', icon: ContractsIcon },
+  { id: 'ecosystem', label: 'Ecosystem', icon: EcosystemIcon },
   // Management
   { id: 'users', label: 'Team', icon: TeamIcon, section: 'Management' },
-  { id: 'ecosystem', label: 'Ecosystem', icon: EcosystemIcon },
   { id: 'starterclass', label: 'Starterclass', icon: StarterclassIcon },
-  { id: 'projects', label: 'Projects', icon: ProjectsIcon },
   // Admin
   { id: 'careers', label: 'Careers', icon: CareersIcon, section: 'Admin' },
   { id: 'logs', label: 'Logs', icon: LogsIcon },
@@ -67,9 +70,9 @@ export default function VercelSidebar({
 
   // Department scope mapping
   const DEPT_SCOPE: Record<string, string[]> = {
-    'Admin': ['dashboard', 'mail', 'clients', 'calls', 'referrals', 'invoices', 'sla', 'projects', 'settings'],
-    'Sales': ['dashboard', 'analytics', 'mail', 'clients', 'calls', 'sla'],
-    'Product': ['dashboard', 'mail', 'projects', 'sla'],
+    'Admin': ['dashboard', 'mail', 'clients', 'calls', 'meetings', 'referrals', 'invoices', 'sla', 'new-project', 'contracts', 'ecosystem', 'settings'],
+    'Sales': ['dashboard', 'analytics', 'mail', 'clients', 'calls', 'meetings', 'sla'],
+    'Product': ['dashboard', 'mail', 'new-project', 'contracts', 'ecosystem', 'sla'],
   }
 
   const userPerms = user?.permissions || {}
