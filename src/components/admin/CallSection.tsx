@@ -709,7 +709,23 @@ export default function CallSection() {
                       </div>
                       
                       {isExpanded && (
-                        <div className="pb-4 pt-2 pl-12 pr-4 text-sm text-neutral-400 space-y-3 bg-neutral-900/10">
+                        <div className="pb-4 pt-2 pl-4 sm:pl-12 pr-4 text-sm text-neutral-400 space-y-4 bg-neutral-900/10">
+                          {/* ── Call Metadata Bar ── */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {log.contact_name && (
+                              <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-2"><p className="text-[9px] text-neutral-600 uppercase tracking-wider">Contact Name</p><p className="text-xs text-white font-medium mt-0.5">{log.contact_name}</p></div>
+                            )}
+                            {log.contact_phone && (
+                              <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-2"><p className="text-[9px] text-neutral-600 uppercase tracking-wider">Phone</p><p className="text-xs text-white font-medium mt-0.5">{log.contact_phone}</p></div>
+                            )}
+                            {log.environment_type && (
+                              <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-2"><p className="text-[9px] text-neutral-600 uppercase tracking-wider">Call Type</p><p className="text-xs text-white font-medium mt-0.5 capitalize">{log.environment_type.replace(/_/g, ' ')}</p></div>
+                            )}
+                            {log.self_image_confirmed && (
+                              <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-2"><p className="text-[9px] text-neutral-600 uppercase tracking-wider">Self-Image</p><p className={`text-xs font-bold mt-0.5 ${log.self_image_confirmed === 'professional' ? 'text-[#8b5cf6]' : 'text-[#f59e0b]'}`}>{log.self_image_confirmed === 'professional' ? 'Professional' : 'Trader'}</p></div>
+                            )}
+                          </div>
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">Call Notes</p>
@@ -744,15 +760,94 @@ export default function CallSection() {
                                   </p>
                                 </div>
                               )}
-
-                              <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/50 mt-2">
-                                {log.client_id && (
-                                  <button onClick={(e) => handleEditClient(log.client_id, e)} className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-[#00bfff] transition-colors py-1 px-2 rounded hover:bg-neutral-800">
-                                    <Pencil className="w-3.5 h-3.5" /> Edit Client
-                                  </button>
-                                )}
-                              </div>
                             </div>
+                          </div>
+
+                          {/* ── Data Captured ── */}
+                          {(() => {
+                            let dc: Record<string, any> = {}
+                            try { dc = typeof log.data_capture === 'string' ? JSON.parse(log.data_capture) : (log.data_capture || {}) } catch {}
+                            const entries = Object.entries(dc).filter(([, v]) => v)
+                            if (entries.length === 0) return null
+                            return (
+                              <div>
+                                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Data Captured During Call</p>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                  {entries.map(([k, v]) => (
+                                    <div key={k} className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-2.5">
+                                      <p className="text-[9px] text-neutral-600 uppercase tracking-wider">{k.replace(/_/g, ' ')}</p>
+                                      <p className="text-xs text-white mt-0.5 font-medium">{String(v)}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          })()}
+
+                          {/* ── Outcome Details ── */}
+                          {(() => {
+                            let od: Record<string, any> = {}
+                            try { od = typeof log.outcome_details === 'string' ? JSON.parse(log.outcome_details) : (log.outcome_details || {}) } catch {}
+                            if (!od.date && !od.notes && !od.time) return null
+                            return (
+                              <div>
+                                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Outcome Details</p>
+                                <div className="bg-neutral-900/50 border border-neutral-800 rounded-lg p-3">
+                                  {od.date && <p className="text-xs text-white"><span className="text-neutral-600 mr-1">Date:</span>{od.date}{od.time ? ` at ${od.time}` : ''}</p>}
+                                  {od.notes && <p className="text-xs text-neutral-300 mt-1"><span className="text-neutral-600 mr-1">Notes:</span>{od.notes}</p>}
+                                </div>
+                              </div>
+                            )
+                          })()}
+
+                          {/* ── Cost/Pain Math ── */}
+                          {(() => {
+                            let cm: Record<string, any> = {}
+                            try { cm = typeof log.cost_math === 'string' ? JSON.parse(log.cost_math) : (log.cost_math || {}) } catch {}
+                            if (!cm.monthly && !cm.annual && !cm.monthlyTimeHours) return null
+                            return (
+                              <div>
+                                <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                  <svg className="w-3.5 h-3.5 text-[#ff7a00]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                                  Pain Point Math
+                                </p>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                  {cm.monthly > 0 && (
+                                    <div className="bg-[#ff7a00]/5 border border-[#ff7a00]/15 rounded-lg p-2.5">
+                                      <p className="text-[9px] text-neutral-600 uppercase">Monthly Cost</p>
+                                      <p className="text-sm text-[#ff7a00] font-bold mt-0.5">GH₵{Number(cm.monthly).toLocaleString()}</p>
+                                    </div>
+                                  )}
+                                  {cm.annual > 0 && (
+                                    <div className="bg-red-500/5 border border-red-500/15 rounded-lg p-2.5">
+                                      <p className="text-[9px] text-neutral-600 uppercase">Annual Cost</p>
+                                      <p className="text-sm text-red-400 font-bold mt-0.5">GH₵{Number(cm.annual).toLocaleString()}</p>
+                                    </div>
+                                  )}
+                                  {cm.monthlyTimeHours > 0 && (
+                                    <div className="bg-amber-500/5 border border-amber-500/15 rounded-lg p-2.5">
+                                      <p className="text-[9px] text-neutral-600 uppercase">Monthly Hours Lost</p>
+                                      <p className="text-sm text-amber-400 font-bold mt-0.5">{cm.monthlyTimeHours}h</p>
+                                    </div>
+                                  )}
+                                  {cm.annualTimeHours > 0 && (
+                                    <div className="bg-amber-500/5 border border-amber-500/15 rounded-lg p-2.5">
+                                      <p className="text-[9px] text-neutral-600 uppercase">Annual Hours Lost</p>
+                                      <p className="text-sm text-amber-400 font-bold mt-0.5">{cm.annualTimeHours}h</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })()}
+
+                          {/* ── Actions ── */}
+                          <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/50">
+                            {log.client_id && (
+                              <button onClick={(e) => handleEditClient(log.client_id, e)} className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-[#00bfff] transition-colors py-1 px-2 rounded hover:bg-neutral-800">
+                                <Pencil className="w-3.5 h-3.5" /> View Client
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}
