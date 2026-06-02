@@ -40,25 +40,66 @@ const COLORS = ['#00bfff','#8b5cf6','#ff7a00','#10b981','#ef4444','#f59e0b','#ec
 function getColor(name: string) { let h = 0; for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h << 5) - h); return COLORS[Math.abs(h) % COLORS.length] }
 
 export default function MeetingsSection() {
-  const { meetings, clients, users, loading } = useAdminStore()
+  const { meetings, clients, users, callLogs } = useAdminStore()
   const effectiveUser = useEffectiveUser()
   const [activeMeeting, setActiveMeeting] = useState<any>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => { adminActions.loadMeetings(); adminActions.loadClients(); adminActions.loadUsers() }, [])
+  useEffect(() => { adminActions.loadMeetings(); adminActions.loadClients(); adminActions.loadUsers(); adminActions.loadCallLogs({ page_size: 500 }) }, [])
 
-  // Group meetings by stage
+  // Build client lookup
+  const clientMap = useMemo(() => {
+    const m: Record<string, any> = {}
+    ;(clients || []).forEach((c: any) => { m[c.client_id] = c })
+    return m
+  }, [clients])
+
+  // Derive "inferred" meetings from call logs with outcome=meeting_booked
+  // that don't have a formal meeting entry
+  const inferredMeetings = useMemo(() => {
+    const formalClientIds = new Set((meetings || []).map((m: any) => m.client_id))
+    const weekAgo = Date.now() - 7 * 86400000
+    return (callLogs || [])
+      .filter((l: any) =>
+        l.outcome === 'meeting_booked' &&
+        !formalClientIds.has(l.client_id) &&
+        new Date(l.call_start || l.created_at || 0).getTime() >= weekAgo
+      )
+      .map((l: any) => {
+        const client = clientMap[l.client_id] || {}
+        return {
+          meeting_id: `call-${l.call_id}`,
+          client_id: l.client_id,
+          client_name: client.name || l.client_name || 'Unknown',
+          client_company: client.company || l.client_company || '',
+          date: l.next_action_date || '',
+          time: '',
+          type: 'online',
+          location_or_link: '',
+          booked_by: l.caller_email || '',
+          stage: 'booked',
+          _inferred: true, // flag so we know it's from a call log
+          attendees: [],
+          created_at: l.call_start || l.created_at,
+        }
+      })
+  }, [callLogs, meetings, clientMap])
+
+  // Group meetings by stage (including inferred)
+  const allMeetings = useMemo(() => [...(meetings || []), ...inferredMeetings], [meetings, inferredMeetings])
+
   const grouped = useMemo(() => {
     const map: Record<string, any[]> = {}
     STAGES.forEach(s => { map[s.id] = [] })
-    ;(meetings || []).forEach((m: any) => {
+    allMeetings.forEach((m: any) => {
       const stage = m.stage || 'booked'
       if (map[stage]) map[stage].push(m)
       else map.booked.push(m)
     })
     return map
-  }, [meetings])
+  }, [allMeetings])
+
 
   // ─── CREATE MEETING MODAL ───
   const [form, setForm] = useState({ client_id: '', date: '', time: '', type: 'online' as 'online' | 'in_person', location_or_link: '', attendees: [] as { name: string; email: string; role: string }[] })
@@ -128,6 +169,7 @@ export default function MeetingsSection() {
                   <motion.div key={m.meeting_id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
                     className="mtg-card" onClick={() => setActiveMeeting(m)}>
                     {m.attendance && m.attendance !== 'pending' && <div className={`mtg-card__attendance mtg-card__attendance--${m.attendance}`} />}
+                    {m._inferred && <div className="text-[8px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded mb-1.5 w-fit uppercase tracking-wider">From Call</div>}
                     <div className="mtg-card__client">
                       <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
                         style={{ background: `${getColor(m.client_name || '')}20`, color: getColor(m.client_name || '') }}>
@@ -137,10 +179,10 @@ export default function MeetingsSection() {
                     </div>
                     {m.client_company && <div className="mtg-card__company">{m.client_company}</div>}
                     <div className="mtg-card__row">
-                      <Calendar /> {fmtDate(m.date)}
+                      <Calendar /> {m.date ? fmtDate(m.date) : <span className="text-neutral-600 italic">TBD</span>}
                     </div>
                     <div className="mtg-card__row">
-                      <Clock /> {fmtTime(m.time)}
+                      <Clock /> {m.time ? fmtTime(m.time) : <span className="text-neutral-600 italic">TBD</span>}
                     </div>
                     <div className="mt-2">
                       <span className={`mtg-card__type mtg-card__type--${m.type}`}>
@@ -253,7 +295,7 @@ export default function MeetingsSection() {
 // ════════════════════════════════════════════════════════
 // MEETING DETAIL DRAWER
 // ════════════════════════════════════════════════════════
-function MeetingDrawer({ meeting, onClose, users, effectiveUser }: { meeting: any; onClose: () => void; users: any[]; effectiveUser: any }) {
+function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effectiveUser }: { meeting: any; onClose: () => void; users: any[]; effectiveUser: any }) {
   const [m, setM] = useState(meeting)
   const [busy, setBusy] = useState(false)
   const [prepNotes, setPrepNotes] = useState(meeting.prep_notes || '')

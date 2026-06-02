@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
+import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import { ArrowLeft, Plus, FileText, Check, DollarSign } from 'lucide-react'
 import InvoiceBuilder from './InvoiceBuilder'
 
@@ -9,8 +9,7 @@ const btnPrimary = 'px-4 py-2.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] tex
 const PROJECT_TYPES = ['Website', 'Web App', 'Mobile App', 'CRM', 'Operations System', 'Inventory System', 'POS System', 'Custom Software', 'Automation', 'Other']
 
 export default function NewProjectSection() {
-  const { clients, loading } = useAdminStore()
-  const effectiveUser = useEffectiveUser()
+  const { clients } = useAdminStore()
   const [step, setStep] = useState<'details' | 'invoice'>('details')
   const [busy, setBusy] = useState(false)
   const [created, setCreated] = useState(false)

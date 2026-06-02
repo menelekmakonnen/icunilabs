@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { useAdminStore, adminActions } from '../../../store/useAdminStore'
 import {
   DashboardIcon, MailIcon, ClientsIcon, ReferralsIcon, InvoicesIcon,
-  SLAIcon, TeamIcon, EcosystemIcon, StarterclassIcon, ProjectsIcon, CareersIcon,
+  SLAIcon, TeamIcon, EcosystemIcon, StarterclassIcon, CareersIcon,
   LogsIcon, SettingsIcon, SearchIcon, LogoutIcon,
   SidebarCollapseIcon, SidebarExpandIcon, ThemeIcon,
   OnboardingIcon, ICUNILogo, SunIcon, MoonIcon,
