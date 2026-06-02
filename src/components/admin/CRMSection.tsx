@@ -786,6 +786,81 @@ export default function CRMSection() {
                   </div>
                 ))}
               </div>
+
+              {/* ── Call Intelligence Summaries ── */}
+              {clientCalls.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-3 pt-3 border-t border-neutral-800">
+                    <Phone className="w-4 h-4 text-emerald-500" />
+                    <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Call Intelligence ({clientCalls.length})</p>
+                  </div>
+                  <div className="space-y-3">
+                    {clientCalls.map((call: any) => {
+                      let dc: Record<string, any> = {}
+                      try { dc = typeof call.data_capture === 'string' ? JSON.parse(call.data_capture) : (call.data_capture || {}) } catch {}
+                      const costMath = dc._cost_math || {}
+                      const entries = Object.entries(dc).filter(([k, v]) => v && !k.startsWith('_'))
+                      const outcomeLabels: Record<string, string> = { meeting_booked: 'Meeting Booked', callback_scheduled: 'Callback Scheduled', interested_will_revert: 'Interested', no_interest: 'No Interest', dropby_booked: 'Drop-By Booked', warm_lead: 'Warm Lead', disqualified_early: 'Disqualified' }
+                      const dMin = Math.floor(Number(call.duration_seconds || 0) / 60)
+                      const dSec = Number(call.duration_seconds || 0) % 60
+
+                      return (
+                        <div key={call.call_id} className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Phone className="w-3.5 h-3.5 text-emerald-500" />
+                              <span className="text-xs text-white font-medium">{fmtDate(call.call_start)}</span>
+                              <span className="text-[10px] text-neutral-600">{dMin}:{String(dSec).padStart(2, '0')}</span>
+                            </div>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${call.outcome === 'meeting_booked' ? 'bg-emerald-500/15 text-emerald-400' : call.outcome === 'no_interest' ? 'bg-red-500/15 text-red-400' : 'bg-neutral-800 text-neutral-400'}`}>
+                              {outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || '—'}
+                            </span>
+                          </div>
+
+                          {/* Call notes */}
+                          {call.call_notes && <p className="text-xs text-neutral-300 mb-2 whitespace-pre-wrap">{call.call_notes}</p>}
+
+                          {/* Data captured grid */}
+                          {entries.length > 0 && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-2">
+                              {entries.map(([k, v]) => (
+                                <div key={k} className="bg-neutral-800/50 rounded-lg px-2 py-1.5">
+                                  <p className="text-[8px] text-neutral-600 uppercase tracking-wider">{k.replace(/_/g, ' ')}</p>
+                                  <p className="text-[11px] text-white font-medium">{String(v)}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Pain math */}
+                          {(costMath.monthly > 0 || costMath.annual > 0 || costMath.monthlyTimeHours > 0) && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {costMath.monthly > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ff7a00]/10 text-[#ff7a00] font-bold">GH₵{Number(costMath.monthly).toLocaleString()}/mo</span>}
+                              {costMath.annual > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-bold">GH₵{Number(costMath.annual).toLocaleString()}/yr</span>}
+                              {costMath.monthlyTimeHours > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-bold">{costMath.monthlyTimeHours}h/mo lost</span>}
+                            </div>
+                          )}
+
+                          {/* Next action */}
+                          {call.next_action && (
+                            <div className="bg-emerald-500/5 border border-emerald-500/15 rounded-lg p-2 mt-1">
+                              <p className="text-[10px] text-emerald-400 font-bold">{call.next_action}</p>
+                              {call.next_action_date && <p className="text-[10px] text-neutral-500 mt-0.5">{call.next_action_date}</p>}
+                            </div>
+                          )}
+
+                          {/* Metadata footer */}
+                          <div className="flex items-center gap-3 mt-2 text-[10px] text-neutral-600">
+                            {call.caller_name && <span>By {call.caller_name}</span>}
+                            {call.path_loaded && <span>{call.path_loaded.replace(/_/g, ' ')}</span>}
+                            {call.self_image_confirmed && <span className={call.self_image_confirmed === 'professional' ? 'text-[#8b5cf6]' : 'text-[#f59e0b]'}>{call.self_image_confirmed === 'professional' ? 'Professional' : 'Trader'}</span>}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
