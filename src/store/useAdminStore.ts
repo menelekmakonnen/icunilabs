@@ -214,6 +214,14 @@ export function useAdminStore() {
   return useSyncExternalStore(subscribeAdmin, getAdminState)
 }
 
+/** Returns the impersonated user when active, otherwise the logged-in user.
+ *  Use for data scoping (whose calls/clients to show) and UI visibility (role-based views).
+ *  For write permissions and destructive actions, use `useAdminStore().user` instead. */
+export function useEffectiveUser() {
+  const { user, impersonating } = useAdminStore()
+  return impersonating || user
+}
+
 const ALLOWED_ROLES = ['Godmode', 'SuperAdmin', 'Admin', 'Sales', 'Product']
 
 export const adminActions = {

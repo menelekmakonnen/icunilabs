@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { useAdminStore, adminActions } from '../../store/useAdminStore'
+import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
 import {
   Users, FolderOpen, FileText, AlertTriangle, TrendingUp, Flame,
   Phone, Target, Clock, Calendar, CheckCircle, BarChart3
@@ -673,13 +673,14 @@ function AdminOverviewDashboard() {
 
 export default function DashboardSection() {
   const { user } = useAdminStore()
-  const role = user?.role || ''
+  const effectiveUser = useEffectiveUser()
+  const role = effectiveUser?.role || ''
   const showGrowthDash = ['Sales', 'Admin', 'SuperAdmin', 'Godmode'].includes(role)
 
   return (
     <div className="space-y-6">
       {showGrowthDash ? (
-        <GrowthCommandCenter role={role} userEmail={user?.email || ''} userName={user?.name || 'there'} />
+        <GrowthCommandCenter role={role} userEmail={effectiveUser?.email || ''} userName={effectiveUser?.name || 'there'} />
       ) : (
         <>
           <div>

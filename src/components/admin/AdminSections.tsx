@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { useAdminStore, adminActions } from '../../store/useAdminStore'
+import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
 import DataTable from './DataTable'
 import RichEditor from './RichEditor'
 import LivePreview from './LivePreview'
@@ -303,10 +303,11 @@ import InvoiceBuilder from './InvoiceBuilder'
 type InvoiceTab = 'list' | 'builder'
 
 export function InvoicesSection() {
-  const { invoices, loading, activeInvoiceHTML, user } = useAdminStore()
+  const { invoices, loading, activeInvoiceHTML } = useAdminStore()
   const [showPayment, setShowPayment] = useState<any>(null)
   const [payForm, setPayForm] = useState({ amount: '', method: 'MoMo', reference: '' })
-  const isGodmode = user?.role?.toLowerCase() === 'godmode'
+  const effectiveUser = useEffectiveUser()
+  const isGodmode = effectiveUser?.role?.toLowerCase() === 'godmode'
   const [invTab, setInvTab] = useState<InvoiceTab>('list')
 
   useEffect(() => { adminActions.loadInvoices() }, [])

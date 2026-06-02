@@ -3,7 +3,7 @@
  * For Sales/Growth execs: shows Growth Team Performance dashboard instead.
  */
 import { useEffect, useState, useMemo } from 'react'
-import { useAdminStore, adminActions } from '../../store/useAdminStore'
+import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
 import { Clock, AlertTriangle, CheckCircle, Shield, ChevronDown, Pause, Eye, BarChart3, Filter, Phone, Users, Target, TrendingUp, Calendar } from 'lucide-react'
 import DataTable from './DataTable'
 
@@ -382,9 +382,10 @@ export default function SLASection() {
   const [groupByStep, setGroupByStep] = useState(false)
   const [_tick, setTick] = useState(0)
 
-  const role = user?.role || ''
+  const effectiveUser = useEffectiveUser()
+  const role = effectiveUser?.role || ''
   const isSales = role === 'Sales'
-  const canSnooze = ['Godmode', 'SuperAdmin', 'Admin'].includes(role)
+  const canSnooze = ['Godmode', 'SuperAdmin', 'Admin'].includes(user?.role || '') // real user for write perms
 
   useEffect(() => {
     if (!isSales) {

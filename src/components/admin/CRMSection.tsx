@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
-import { useAdminStore, adminActions } from '../../store/useAdminStore'
+import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
 import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, ChevronDown, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone, ArrowUp, ArrowDown, Filter, SlidersHorizontal, PhoneCall, Clock } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { personas } from '../../data/personaData'
@@ -130,7 +130,8 @@ export default function CRMSection() {
   const [clientCalls, setClientCalls] = useState<any[]>([])
   const [expandedCalls, setExpandedCalls] = useState<Set<string>>(new Set())
 
-  const isGodmode = user?.role === 'Godmode'
+  const effectiveUser = useEffectiveUser()
+  const isGodmode = effectiveUser?.role === 'Godmode'
 
   useEffect(() => { adminActions.loadClients(); adminActions.loadCallLogs() }, [])
 
@@ -229,9 +230,9 @@ export default function CRMSection() {
   const othersClients = useMemo(() => {
     if (!user?.email) return []
     return activeClients
-      .filter((c: any) => c.added_by && c.added_by !== user.email)
+      .filter((c: any) => c.added_by && c.added_by !== effectiveUser?.email)
       .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
-  }, [activeClients, user])
+  }, [activeClients, effectiveUser])
 
   // Next-action map: client_id → { date, type } for countdown pills
   const { callLogs: allCallLogs } = useAdminStore()
