@@ -797,7 +797,7 @@ export default function CRMSection() {
                   <div className="space-y-3">
                     {clientCalls.map((call: any) => {
                       let dc: Record<string, any> = {}
-                      try { dc = typeof call.data_capture === 'string' ? JSON.parse(call.data_capture) : (call.data_capture || {}) } catch {}
+                      try { const raw = call.data_capture || call.data_capture_json; dc = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch {}
                       const costMath = dc._cost_math || {}
                       const entries = Object.entries(dc).filter(([k, v]) => v && !k.startsWith('_'))
                       const outcomeLabels: Record<string, string> = { meeting_booked: 'Meeting Booked', callback_scheduled: 'Callback Scheduled', interested_will_revert: 'Interested', no_interest: 'No Interest', dropby_booked: 'Drop-By Booked', warm_lead: 'Warm Lead', disqualified_early: 'Disqualified' }
@@ -970,9 +970,9 @@ export default function CRMSection() {
                 const outcomeLabel = outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || '—'
 
                 let dataCapture: Record<string, any> = {}
-                try { dataCapture = typeof call.data_capture === 'string' ? JSON.parse(call.data_capture) : (call.data_capture || {}) } catch {}
+                try { const raw = call.data_capture || call.data_capture_json; dataCapture = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch {}
                 let outcomeDetails: Record<string, any> = {}
-                try { outcomeDetails = typeof call.outcome_details === 'string' ? JSON.parse(call.outcome_details) : (call.outcome_details || {}) } catch {}
+                try { const raw2 = call.outcome_details || call.outcome_details_json; outcomeDetails = typeof raw2 === 'string' ? JSON.parse(raw2) : (raw2 || {}) } catch {}
                 let tpChecked: string[] = []
                 try { tpChecked = typeof call.talking_points_checked === 'string' ? JSON.parse(call.talking_points_checked) : (call.talking_points_checked || []) } catch {}
                 let tpSkipped: string[] = []

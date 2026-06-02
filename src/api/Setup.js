@@ -143,9 +143,11 @@ function setupSpreadsheets() {
         'environment_type', 'persona_type', 'path_loaded', 'path_switched_to',
         'call_start', 'call_end', 'duration_seconds',
         'talking_points_checked', 'talking_points_skipped', 'talking_points_total',
-        'data_capture_json', 'outcome', 'outcome_details_json',
+        'data_capture', 'outcome', 'outcome_details',
         'next_action', 'next_action_date', 'next_action_notes',
-        'call_notes', 'pipeline_auto_advanced', 'created_at'
+        'call_notes', 'pipeline_auto_advanced', 'created_at',
+        'self_image_initial', 'self_image_confirmed', 'self_image_pivoted',
+        'contact_name', 'contact_phone', 'contact_role'
     ]);
     setupSheetHeaders_(ssClients, SHEETS.COMPETITOR_INTEL, [
         'intel_id', 'client_id', 'call_id', 'system_name', 'developer_name',

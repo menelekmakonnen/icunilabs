@@ -766,7 +766,7 @@ export default function CallSection() {
                           {/* ── Data Captured ── */}
                           {(() => {
                             let dc: Record<string, any> = {}
-                            try { dc = typeof log.data_capture === 'string' ? JSON.parse(log.data_capture) : (log.data_capture || {}) } catch {}
+                            try { const raw = log.data_capture || log.data_capture_json; dc = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch {}
                             const entries = Object.entries(dc).filter(([, v]) => v)
                             if (entries.length === 0) return null
                             return (
@@ -787,7 +787,7 @@ export default function CallSection() {
                           {/* ── Outcome Details ── */}
                           {(() => {
                             let od: Record<string, any> = {}
-                            try { od = typeof log.outcome_details === 'string' ? JSON.parse(log.outcome_details) : (log.outcome_details || {}) } catch {}
+                            try { const raw = log.outcome_details || log.outcome_details_json; od = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch {}
                             if (!od.date && !od.notes && !od.time) return null
                             return (
                               <div>

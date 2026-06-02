@@ -110,7 +110,8 @@ function handleSaveCallLog(payload) {
         payload.next_action || '', payload.next_action_date || '', payload.next_action_notes || '',
         payload.call_notes || '', autoAdvanced, nowStr,
         payload.self_image_initial || '', payload.self_image_confirmed || '',
-        payload.self_image_pivoted ? 'Yes' : ''
+        payload.self_image_pivoted ? 'Yes' : '',
+        payload.contact_name || '', payload.contact_phone || '', payload.contact_role || ''
     ]);
 
     // ── Extract competitor intel ──
