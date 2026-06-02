@@ -189,13 +189,14 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
       {/* ── Primary Metric Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: `Today (${primaryLabel})`, value: primaryMetrics.today, sub: `${primaryMetrics.week} this week`, icon: Phone, color: '#00bfff' },
-          { label: 'Meetings Booked', value: primaryMetrics.meetingsWeek, sub: `${primaryMetrics.convRate}% conversion`, icon: Target, color: '#22c55e' },
-          { label: 'Avg Call Duration', value: fmtDuration(primaryMetrics.avgDur), sub: 'this week', icon: Clock, color: '#8b5cf6' },
-          { label: 'Overdue Follow-Ups', value: primaryMetrics.overdue, sub: primaryMetrics.overdue === 0 ? 'All caught up!' : 'Need attention', icon: primaryMetrics.overdue > 0 ? AlertTriangle : CheckCircle, color: primaryMetrics.overdue > 0 ? '#ef4444' : '#22c55e' },
+          { label: `Today (${primaryLabel})`, value: primaryMetrics.today, sub: `${primaryMetrics.week} this week`, icon: Phone, color: '#00bfff', nav: 'calls' },
+          { label: 'Meetings Booked', value: primaryMetrics.meetingsWeek, sub: `${primaryMetrics.convRate}% conversion`, icon: Target, color: '#22c55e', nav: 'calls' },
+          { label: 'Avg Call Duration', value: fmtDuration(primaryMetrics.avgDur), sub: 'this week', icon: Clock, color: '#8b5cf6', nav: 'calls' },
+          { label: 'Overdue Follow-Ups', value: primaryMetrics.overdue, sub: primaryMetrics.overdue === 0 ? 'All caught up!' : 'Need attention', icon: primaryMetrics.overdue > 0 ? AlertTriangle : CheckCircle, color: primaryMetrics.overdue > 0 ? '#ef4444' : '#22c55e', nav: 'sla' },
         ].map((m, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className="relative bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 overflow-hidden group hover:border-neutral-700 transition-all">
+            onClick={() => adminActions.setSection(m.nav)}
+            className="relative bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 overflow-hidden group hover:border-neutral-700 transition-all cursor-pointer">
             <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity" style={{ background: `linear-gradient(135deg, ${m.color} 0%, transparent 100%)` }} />
             <div className="relative z-[1]">
               <div className="flex items-center gap-2 mb-2">
@@ -271,7 +272,11 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
                     className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-neutral-800/30 ${
                       isOverdue ? 'border-red-500/30 bg-red-500/[0.04]' : isToday ? 'border-[#00bfff]/20 bg-[#00bfff]/[0.03]' : 'border-transparent'
                     }`}
-                    onClick={() => adminActions.setSection('calls')}>
+                    onClick={() => {
+                      const client = clients.find((c: any) => c.client_id === l.client_id)
+                      if (client) adminActions.setActiveClientOptimistic(client)
+                      adminActions.setSection('clients')
+                    }}>
                     <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isOverdue ? 'animate-pulse' : ''}`}
                       style={{ background: isOverdue ? 'rgba(239,68,68,0.15)' : `${OUTCOME_COLORS[l.outcome] || '#6b7280'}15` }}>
                       {isOverdue
@@ -388,7 +393,12 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
               const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || 'Unknown'
               const color = OUTCOME_COLORS[l.outcome] || '#6b7280'
               return (
-                <div key={l.call_id || i} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-neutral-800/30 transition-colors">
+                <div key={l.call_id || i} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-neutral-800/30 transition-colors cursor-pointer"
+                  onClick={() => {
+                    const client = clients.find((c: any) => c.client_id === l.client_id)
+                    if (client) adminActions.setActiveClientOptimistic(client)
+                    adminActions.setSection('clients')
+                  }}>
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
                   <span className="text-sm text-neutral-300 truncate flex-1">{clientName}</span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase" style={{ color, background: `${color}15` }}>
@@ -455,12 +465,12 @@ function AdminOverviewDashboard() {
   const pipelineCount = allContacts.length - payingClients
 
   const stats = [
-    { label: 'Paying Clients', value: payingClients, icon: Users, color: '#10b981' },
-    { label: 'In Pipeline', value: pipelineCount, icon: TrendingUp, color: '#00bfff' },
-    { label: 'Active Projects', value: activeProjects, icon: FolderOpen, color: '#ff7a00' },
-    { label: 'Pending Invoices', value: pendingInvoices, icon: FileText, color: '#d97706' },
-    { label: 'Total Revenue', value: `GH\u20B5${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: '#10b981' },
-    { label: 'SLA Breaches', value: breached, icon: AlertTriangle, color: breached > 0 ? '#ef4444' : '#22c55e' },
+    { label: 'Paying Clients', value: payingClients, icon: Users, color: '#10b981', nav: 'clients' },
+    { label: 'In Pipeline', value: pipelineCount, icon: TrendingUp, color: '#00bfff', nav: 'clients' },
+    { label: 'Active Projects', value: activeProjects, icon: FolderOpen, color: '#ff7a00', nav: 'projects' },
+    { label: 'Pending Invoices', value: pendingInvoices, icon: FileText, color: '#d97706', nav: 'invoices' },
+    { label: 'Total Revenue', value: `GH\u20B5${totalRevenue.toLocaleString()}`, icon: TrendingUp, color: '#10b981', nav: 'invoices' },
+    { label: 'SLA Breaches', value: breached, icon: AlertTriangle, color: breached > 0 ? '#ef4444' : '#22c55e', nav: 'sla' },
   ]
 
   return (
@@ -470,7 +480,8 @@ function AdminOverviewDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {stats.map((st, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            className={`${card} hover:border-neutral-700 transition-colors`}>
+            onClick={() => adminActions.setSection(st.nav)}
+            className={`${card} hover:border-neutral-700 transition-colors cursor-pointer`}>
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${st.color}15` }}>
                 <st.icon className="w-4.5 h-4.5" style={{ color: st.color }} />
@@ -534,7 +545,8 @@ function AdminOverviewDashboard() {
                   { label: 'Awaiting', value: awaitingContact, color: '#64748b' },
                   { label: 'Qualified', value: qualified, color: '#f59e0b' },
                 ].map((m, i) => (
-                  <div key={i} className="text-center p-2 bg-neutral-900/50 rounded-lg border border-neutral-800/50">
+                  <div key={i} className="text-center p-2 bg-neutral-900/50 rounded-lg border border-neutral-800/50 cursor-pointer hover:border-neutral-700 transition-colors"
+                    onClick={() => adminActions.setSection('clients')}>
                     <div className="text-lg font-bold" style={{ color: m.color }}>{m.value}</div>
                     <div className="text-[9px] text-neutral-600 uppercase tracking-wider">{m.label}</div>
                   </div>
@@ -585,10 +597,13 @@ function AdminOverviewDashboard() {
             <div className="space-y-2">
               {recentProspects.map((c: any) => (
                 <div key={c.client_id} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-neutral-800/30 transition-colors cursor-pointer"
-                  onClick={() => adminActions.setSection('clients')}>
+                  onClick={() => {
+                    adminActions.setActiveClientOptimistic(c)
+                    adminActions.setSection('clients')
+                  }}>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white"
                     style={{ background: STAGE_COLORS[c.prospect_stage] || '#475569' }}>
-                    {(c.name || '?').charAt(0)}
+                    {((c.name || c.company || 'U').match(/[a-zA-Z]/) || ['•'])[0].toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-white font-medium truncate">{c.name}</div>
@@ -605,14 +620,18 @@ function AdminOverviewDashboard() {
         </div>
 
         <div className={card}>
-          <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-3">SLA Health</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider">SLA Health</h3>
+            <button onClick={() => adminActions.setSection('sla')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">View All</button>
+          </div>
           <div className="space-y-2 max-h-[250px] overflow-y-auto">
             {s.slaStatuses.length === 0 && <p className="text-sm text-neutral-600 py-4 text-center">No active SLAs</p>}
             {s.slaStatuses.slice(0, 8).map((sla: any, i: number) => {
               const pct = Math.min(Math.round((sla.severity || 0) * 100), 150)
               const color = pct >= 100 ? '#ef4444' : pct >= 75 ? '#d97706' : '#22c55e'
               return (
-                <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-800/50">
+                <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-800/50 cursor-pointer transition-colors"
+                  onClick={() => adminActions.setSection('sla')}>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-white font-medium truncate">{sla.title}</div>
                     <div className="text-xs text-neutral-500">{sla.step_name} — {Math.round(sla.elapsed / 60)}h elapsed</div>
