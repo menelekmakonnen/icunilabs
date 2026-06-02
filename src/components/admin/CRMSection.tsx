@@ -127,13 +127,13 @@ export default function CRMSection() {
   const [projectForm, setProjectForm] = useState({ title:'', type:'Website', estimated_cost:'', description:'', est_completion:'' })
   const [busyProject, setBusyProject] = useState(false)
   const [showLinkExtractor, setShowLinkExtractor] = useState(false)
-  const [clientCalls, setClientCalls] = useState<any[]>([])
+  // clientCalls is now derived reactively via clientCallsForActive (see below openClient)
   const [expandedCalls, setExpandedCalls] = useState<Set<string>>(new Set())
 
   const effectiveUser = useEffectiveUser()
   const isGodmode = effectiveUser?.role === 'Godmode'
 
-  useEffect(() => { adminActions.loadClients(); adminActions.loadCallLogs() }, [])
+  useEffect(() => { adminActions.loadClients(); adminActions.loadCallLogs({ page_size: 500 }) }, [])
 
   // Close call picker on click outside
   useEffect(() => {
@@ -260,7 +260,6 @@ export default function CRMSection() {
   const openClient = async (c: any) => {
     setDetailTab('overview')
     setEditing(false)
-    setClientCalls([])
     setExpandedCalls(new Set())
     // Show the client immediately from local data (optimistic)
     adminActions.setActiveClientOptimistic(c)
@@ -269,15 +268,20 @@ export default function CRMSection() {
       // Fetch fresh data in background
       adminActions.getClient(c.client_id).then(() => setBusyOpen(null))
       adminActions.getClientActivity(c.client_id)
-      // Fetch calls for this client
-      adminActions.loadCallLogs({ client_id: c.client_id }).then((res: any) => {
-        setClientCalls(res?.logs || [])
-      })
     } catch (err) {
       console.error('Failed to open client:', err)
       setBusyOpen(null)
     }
   }
+
+  // Derive client calls from global callLogs (reactive — updates when callLogs change)
+  const clientCallsForActive = useMemo(() => {
+    if (!activeClient?.client_id) return []
+    return (allCallLogs || [])
+      .filter((l: any) => l.client_id === activeClient.client_id)
+      .sort((a: any, b: any) => new Date(b.call_start || b.created_at || 0).getTime() - new Date(a.call_start || a.created_at || 0).getTime())
+  }, [allCallLogs, activeClient])
+
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -387,7 +391,7 @@ export default function CRMSection() {
       { id: 'overview', label: 'Overview' },
       { id: 'projects', label: `Projects (${c.projects?.length || 0})` },
       { id: 'invoices', label: `Invoices (${c.invoices?.length || 0})` },
-      { id: 'calls', label: `Calls (${clientCalls.length})` },
+      { id: 'calls', label: `Calls (${clientCallsForActive.length})` },
       { id: 'notes', label: `Notes (${c.notes_list?.length || 0})` },
       { id: 'activity', label: 'Activity' },
       { id: 'email', label: 'Email' },
@@ -789,14 +793,14 @@ export default function CRMSection() {
               </div>
 
               {/* ── Call Intelligence Summaries ── */}
-              {clientCalls.length > 0 && (
+              {clientCallsForActive.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3 pt-3 border-t border-neutral-800">
                     <Phone className="w-4 h-4 text-emerald-500" />
-                    <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Call Intelligence ({clientCalls.length})</p>
+                    <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Call Intelligence ({clientCallsForActive.length})</p>
                   </div>
                   <div className="space-y-3">
-                    {clientCalls.map((call: any) => {
+                    {clientCallsForActive.map((call: any) => {
                       let dc: Record<string, any> = {}
                       try { const raw = call.data_capture || call.data_capture_json; dc = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch {}
                       const costMath = dc._cost_math || {}
@@ -935,13 +939,13 @@ export default function CRMSection() {
 
           {detailTab === 'calls' && (
             <div className="crm-fade-in space-y-3">
-              {clientCalls.length === 0 ? (
+              {clientCallsForActive.length === 0 ? (
                 <div className="text-center py-16">
                   <PhoneCall className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
                   <p className="text-neutral-600 text-sm">No calls recorded yet</p>
                   <p className="text-neutral-700 text-xs mt-1">Use the Call Guide to log calls with this client</p>
                 </div>
-              ) : clientCalls.map((call: any) => {
+              ) : clientCallsForActive.map((call: any) => {
                 const isExpanded = expandedCalls.has(call.call_id)
                 const toggleCall = () => {
                   setExpandedCalls(prev => {

@@ -154,6 +154,14 @@ function setupSpreadsheets() {
         'intel_id', 'client_id', 'call_id', 'system_name', 'developer_name',
         'industry', 'is_custom', 'cost_estimate', 'notes', 'created_at'
     ]);
+    setupSheetHeaders_(ssClients, SHEETS.MEETINGS, [
+        'meeting_id', 'client_id', 'date', 'time', 'type',
+        'location_or_link', 'booked_by', 'attendees_json',
+        'stage', 'confirmation_sent', 'confirmation_template',
+        'reminder_sent', 'prep_notes', 'demo_checklist_json',
+        'attendance', 'post_meeting_notes', 'qualification_result',
+        'created_at', 'updated_at'
+    ]);
 
     // ── 5. Referrals ──
     var ssReferrals = createOrGetSS('ICUNI Labs — Referrals');

@@ -148,6 +148,12 @@ var ACTION_MAP = {
     completeFollowUp: handleCompleteFollowUp,
     getSlaNotifications: handleGetSlaNotifications,
     dismissSlaNotification: handleDismissSlaNotification,
+
+    // ── Meetings ──
+    getMeetings: handleGetMeetings, createMeeting: handleCreateMeeting,
+    updateMeeting: handleUpdateMeeting, deleteMeeting: handleDeleteMeeting,
+    sendMeetingConfirmation: handleSendMeetingConfirmation,
+    qualifyMeeting: handleQualifyMeeting,
 };
 
 // ═══════════════════════════════════════════════════════════

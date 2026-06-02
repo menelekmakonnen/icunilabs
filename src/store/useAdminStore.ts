@@ -66,6 +66,9 @@ interface AdminState {
   callAnalytics: any | null
   competitorIntel: any[]
 
+  // Meetings
+  meetings: any[]
+
   // ICUNI Ecosystem
   projectRegistry: any[]
   impersonationToken: string | null
@@ -185,6 +188,7 @@ let state: AdminState = {
   callLogs: [],
   callAnalytics: null,
   competitorIntel: [],
+  meetings: [],
   projectRegistry: [],
   impersonationToken: null,
   inbox: [],
@@ -1220,8 +1224,9 @@ export const adminActions = {
     try {
       const result = await apiPost('getCallLogs', { token: state.token, ...(filters || {}) })
       const logs = result?.logs || result || []
-      // Never wipe populated call logs with an empty/failed response
-      if (Array.isArray(logs) && (logs.length > 0 || state.callLogs.length === 0)) {
+      // Only update global store when loading unfiltered data (no client_id/caller_email filter)
+      const isFiltered = filters && (filters.client_id || filters.caller_email)
+      if (!isFiltered && Array.isArray(logs) && (logs.length > 0 || state.callLogs.length === 0)) {
         setState({ callLogs: logs })
       }
       return result
@@ -1414,6 +1419,73 @@ export const adminActions = {
     } catch (err: any) {
       setState({ error: err.message })
       return null
+    }
+  },
+
+  // ── Meetings ──
+  loadMeetings: async () => {
+    try {
+      const result = await apiPost('getMeetings', { token: state.token })
+      setState({ meetings: result?.meetings || [] })
+      return result?.meetings || []
+    } catch (err: any) { setState({ error: err.message }); return [] }
+  },
+
+  createMeeting: async (data: Record<string, any>) => {
+    setState({ loading: true, error: null })
+    try {
+      const result = await apiPost('createMeeting', { token: state.token, ...data })
+      await adminActions.loadMeetings()
+      setState({ loading: false })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return null
+    }
+  },
+
+  updateMeeting: async (meeting_id: string, data: Record<string, any>) => {
+    try {
+      await apiPost('updateMeeting', { token: state.token, meeting_id, ...data })
+      await adminActions.loadMeetings()
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  deleteMeeting: async (meeting_id: string) => {
+    try {
+      await apiPost('deleteMeeting', { token: state.token, meeting_id })
+      await adminActions.loadMeetings()
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  sendMeetingConfirmation: async (meeting_id: string, template_id?: string) => {
+    try {
+      await apiPost('sendMeetingConfirmation', { token: state.token, meeting_id, template_id })
+      await adminActions.loadMeetings()
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  qualifyMeeting: async (meeting_id: string, result: string, notes?: string) => {
+    try {
+      await apiPost('qualifyMeeting', { token: state.token, meeting_id, result, notes })
+      await adminActions.loadMeetings()
+      await adminActions.loadClients()
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
     }
   },
 }

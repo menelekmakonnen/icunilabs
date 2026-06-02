@@ -47,6 +47,7 @@ var SHEETS = {
     PAYMENTS:      'Payments',
     CALL_LOGS:     'Call_Logs',
     COMPETITOR_INTEL: 'Competitor_Intel',
+    MEETINGS:       'Meetings',
 
     // Referrals
     REFERRERS:     'Referrers',
@@ -138,9 +139,9 @@ var CONSOLE_ROLES = [ROLES.GODMODE, ROLES.SUPERADMIN, ROLES.ADMIN, ROLES.SALES, 
 
 // Department-scoped section access (SuperAdmin and Godmode get everything)
 var DEPARTMENT_SCOPE = {
-    'Admin':      ['dashboard', 'clients', 'projects', 'invoices', 'sla', 'careers', 'referrals', 'logs', 'settings'],
-    'Sales':      ['dashboard', 'clients', 'referrals', 'careers'],
-    'Product':    ['dashboard', 'projects', 'sla', 'logs']
+    'Admin':      ['dashboard', 'clients', 'projects', 'invoices', 'sla', 'careers', 'referrals', 'logs', 'settings', 'meetings'],
+    'Sales':      ['dashboard', 'clients', 'referrals', 'careers', 'meetings'],
+    'Product':    ['dashboard', 'projects', 'sla', 'logs', 'meetings']
 };
 
 // ─── PROJECT STEPS ───────────────────────────────────────
