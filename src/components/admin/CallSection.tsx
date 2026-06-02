@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import { resolveStaffName } from '../../utils/resolveStaffName'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import { Phone, TrendingUp, Users, Clock, Target, BarChart3, ChevronDown, Download, Calendar, Filter, FileText, Pencil, ArrowRight, Bell, X, AlertTriangle } from 'lucide-react'
 import CallGuide from './CallGuide'
@@ -444,7 +445,7 @@ export default function CallSection() {
                       <div key={i} className="flex items-center justify-between py-2 border-b border-neutral-800/50 last:border-0">
                         <div className="flex items-center gap-3">
                           <span className={`w-5 h-5 rounded flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500/20 text-amber-400' : i === 1 ? 'bg-neutral-300/20 text-neutral-300' : i === 2 ? 'bg-orange-500/20 text-orange-400' : 'text-neutral-600'}`}>{i + 1}</span>
-                          <span className="text-sm text-white font-medium">{c.name.split('@')[0]}</span>
+                          <span className="text-sm text-white font-medium">{resolveStaffName(c.name)}</span>
                         </div>
                         <div className="flex items-center gap-4 text-xs">
                           <span className="text-neutral-500"><span className="text-white">{c.calls}</span> calls</span>

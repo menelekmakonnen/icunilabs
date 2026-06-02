@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
+import { resolveStaffName } from '../../utils/resolveStaffName'
 import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
 import { ArrowLeft, Search, X, MessageSquare, FolderOpen, FileText, CheckCircle, Send, Mail, ChevronRight, ChevronLeft, ChevronDown, Pencil, Trash2, Save, MapPin, Globe, Lock, Phone, ArrowUp, ArrowDown, Filter, SlidersHorizontal, PhoneCall, Clock } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -606,7 +607,7 @@ export default function CRMSection() {
                         <span className="text-[10px] text-neutral-600">{c.self_image === 'professional' ? 'Research-First' : 'Story-First'}</span>
                       </p>
                     )}
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Added By:</span>{c.added_by ? c.added_by.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : <span className="text-neutral-700 italic">Legacy entry</span>}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Added By:</span>{c.added_by ? resolveStaffName(c.added_by) : <span className="text-neutral-700 italic">Legacy entry</span>}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Client Since:</span>{fmtDate(c.created_at)}</p>
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Last Activity:</span>{fmtDate(c.last_activity)}</p>
                   </div>
@@ -998,7 +999,7 @@ export default function CRMSection() {
                           </div>
                           <div className="flex items-center gap-3 mt-0.5 text-[11px] text-neutral-500">
                             <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{durationStr}</span>
-                            <span>{call.caller_name || call.caller_email?.split('@')[0] || '—'}</span>
+                            <span>{call.caller_name || (call.caller_email ? resolveStaffName(call.caller_email) : '—')}</span>
                             {call.path_loaded && <span className="text-neutral-600">{call.path_loaded.replace(/_/g, ' ')}</span>}
                           </div>
                         </div>
@@ -1318,7 +1319,7 @@ export default function CRMSection() {
                       </div>
                       {c.added_by && (
                         <p className="text-[9px] text-neutral-700 mt-1 truncate">
-                          Added by {c.added_by.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                          Added by {resolveStaffName(c.added_by)}
                         </p>
                       )}
                       <div className="mt-2 flex items-center gap-1">
@@ -1368,7 +1369,7 @@ export default function CRMSection() {
                 const displayName = c.name || c.company || c.email || 'Unnamed'
                 const stage = c.prospect_stage || 'new_lead'
                 const stageInfo = STAGES.find(s => s.id === stage)
-                const addedByName = c.added_by ? c.added_by.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : ''
+                const addedByName = c.added_by ? resolveStaffName(c.added_by) : ''
                 return (
                   <motion.div key={c.client_id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                     transition={{ delay: Math.min(i * 0.02, 0.4), duration: 0.3 }} onClick={() => openClient(c)}
@@ -1472,7 +1473,7 @@ export default function CRMSection() {
               const displayName = c.name || c.company || c.email || 'Unnamed'
               const stage = c.prospect_stage || 'new_lead'
               const stageInfo = STAGES.find(s => s.id === stage)
-              const addedByName = c.added_by ? c.added_by.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) : ''
+              const addedByName = c.added_by ? resolveStaffName(c.added_by) : ''
 
               return (
                 <motion.div key={c.client_id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
@@ -1621,7 +1622,7 @@ export default function CRMSection() {
                 className="w-full px-2.5 py-1.5 bg-neutral-900 border border-neutral-700 rounded-lg text-xs text-white cursor-pointer focus:outline-none focus:border-[#00bfff]">
                 <option value="">All Team Members</option>
                 {allAddedBy.map(a => (
-                  <option key={a} value={a}>{a.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</option>
+                  <option key={a} value={a}>{resolveStaffName(a)}</option>
                 ))}
               </select>
             </div>

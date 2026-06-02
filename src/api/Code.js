@@ -370,7 +370,7 @@ function handleJobQualificationLegacy(payload) {
             sendEmail_({
                 to: email,
                 subject: 'Application Complete — ICUNI Labs',
-                htmlBody: buildBrandedEmail_(payload.name || email.split('@')[0],
+                htmlBody: buildBrandedEmail_(payload.name || resolveStaffName_(email),
                     'Application Complete',
                     'You\'ve successfully completed your application for <strong>' + jobTitle + '</strong> at ICUNI Labs.<br><br>' +
                     'Our team will review everything and get back to you within <strong>48 hours</strong>.<br><br>' +

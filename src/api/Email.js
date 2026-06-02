@@ -437,7 +437,7 @@ function handleSendBrandedEmail(payload) {
     for (var i = 0; i < recipients.length; i++) {
         var r = recipients[i];
         var email = r.email;
-        var name = r.name || email.split('@')[0];
+        var name = r.name || resolveStaffName_(email);
 
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             failed++;

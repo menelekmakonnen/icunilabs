@@ -478,7 +478,7 @@ function handleCreateAdmin(payload) {
     var userId = generateId_('USR');
     var jobTitle = payload.job_title || 'Operations Assistant';
     appendRow_(SHEETS.USERS, [
-        userId, email.split('@')[0], email, '', targetRole,
+        userId, payload.name || resolveStaffName_(email), email, '', targetRole,
         'Active', '', '',  // no password, no pin — they use OTP first
         true, true, now_(), '', '', true, '', '',
         JSON.stringify(defaultPerms), jobTitle, companyEmail
@@ -492,14 +492,14 @@ function handleCreateAdmin(payload) {
         var otp = generateSecureOTP_();
         var cache = CacheService.getScriptCache();
         cache.put('otp_' + email, JSON.stringify({
-            otp: otp, email: email, user_id: userId, name: email.split('@')[0], role: targetRole,
+            otp: otp, email: email, user_id: userId, name: payload.name || resolveStaffName_(email), role: targetRole,
             attempts: 0, created: now_()
         }), OTP_TTL_SECONDS);
 
         sendEmail_({
             to: email,
             subject: 'Welcome to ICUNI Labs — Your Admin Account',
-            htmlBody: buildAdminWelcomeEmail_(email.split('@')[0], otp, companyEmail),
+            htmlBody: buildAdminWelcomeEmail_(payload.name || resolveStaffName_(email), otp, companyEmail),
             from: 'hello@icuni.org'
         });
         emailSent = true;

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { resolveStaffName } from '../../utils/resolveStaffName'
 import { adminActions } from '../../store/useAdminStore'
 import { X, Search, Check, AlertTriangle, ExternalLink, MapPin } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -521,7 +522,7 @@ export default function LinkExtractor({ onClose, onOpenClient }: Props) {
                             {dupResult.existingClient.phone && ` · ${dupResult.existingClient.phone}`}
                             <br />
                             Stage: {dupResult.existingClient.prospect_stage?.replace(/_/g, ' ') || 'Unknown'}
-                            {dupResult.existingClient.added_by && ` · Added by ${dupResult.existingClient.added_by.split('@')[0]}`}
+                            {dupResult.existingClient.added_by && ` · Added by ${resolveStaffName(dupResult.existingClient.added_by)}`}
                           </p>
                           {onOpenClient && (
                             <button

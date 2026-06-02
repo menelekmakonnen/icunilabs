@@ -254,6 +254,36 @@ function formatDateGhana_(date) {
     return Utilities.formatDate(date || new Date(), 'Africa/Accra', 'yyyy-MM-dd HH:mm:ss');
 }
 
+/**
+ * Resolve a staff member's full name from their email address.
+ * Looks up the Users sheet by email (primary or company_email).
+ * Falls back to a title-cased version of the email prefix ONLY if no match.
+ * Caches results per-request so repeated lookups are free.
+ */
+var _staffNameCache = {};
+function resolveStaffName_(email) {
+    if (!email) return 'Unknown';
+    email = email.toString().trim().toLowerCase();
+    if (_staffNameCache[email]) return _staffNameCache[email];
+    try {
+        var users = sheetToObjects_(SHEETS.USERS);
+        for (var i = 0; i < users.length; i++) {
+            var u = users[i];
+            if ((u.email && u.email.toString().toLowerCase().trim() === email) ||
+                (u.company_email && u.company_email.toString().toLowerCase().trim() === email)) {
+                if (u.name && u.name.toString().trim()) {
+                    _staffNameCache[email] = u.name.toString().trim();
+                    return _staffNameCache[email];
+                }
+            }
+        }
+    } catch(e) { /* best-effort — don't crash on name lookup failure */ }
+    // Fallback: title-case the email prefix (e.g. john.doe → John Doe)
+    var fallback = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+    _staffNameCache[email] = fallback;
+    return fallback;
+}
+
 // ─── DRIVE HELPERS ───────────────────────────────────────
 function getOrCreateFolder_(parent, name) {
     var folders = parent.getFoldersByName(name);

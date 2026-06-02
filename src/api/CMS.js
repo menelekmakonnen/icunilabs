@@ -436,7 +436,7 @@ function handleSendApplicantEmail(payload) {
     for (var i = 0; i < recipients.length; i++) {
         var r = recipients[i];
         var email = r.email;
-        var name = r.name || email.split('@')[0];
+        var name = r.name || resolveStaffName_(email);
 
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             failed++;
@@ -850,7 +850,7 @@ function handleSendReferrerEmail(payload) {
     for (var i = 0; i < recipients.length; i++) {
         var r = recipients[i];
         var email = r.email;
-        var name = r.name || email.split('@')[0];
+        var name = r.name || resolveStaffName_(email);
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { failed++; errors.push(email + ': invalid email'); continue; }
         var tpl = buildReferrerTemplate_(name, template, payload.extras || {});
         var finalHtml = payload.rawHtml || buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts);
@@ -1223,7 +1223,7 @@ function handleSendClientEmail(payload) {
     for (var i = 0; i < recipients.length; i++) {
         var r = recipients[i];
         var email = r.email;
-        var name = r.name || email.split('@')[0];
+        var name = r.name || resolveStaffName_(email);
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { failed++; errors.push(email + ': invalid email'); continue; }
         var tpl = buildClientTemplate_(name, template, payload.extras || {});
         var finalHtml = payload.rawHtml || buildBrandedEmail_(name, tpl.title, tpl.body, tpl.opts);

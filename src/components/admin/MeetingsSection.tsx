@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
+import { resolveStaffName } from '../../utils/resolveStaffName'
 import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
 import { Calendar, Clock, MapPin, Video, Users, Plus, X, Send, Check, ChevronRight, Trash2, FileText, ArrowLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -188,7 +189,7 @@ export default function MeetingsSection() {
                       </span>
                     </div>
                     <div className="mtg-card__booker">
-                      Booked by {(m.booked_by || '').split('@')[0]}
+                      Booked by {resolveStaffName(m.booked_by || '')}
                     </div>
                   </motion.div>
                 ))}
@@ -471,7 +472,7 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
             </div>
             <div className="mtg-field-group">
               <div className="mtg-field-label">Booked By</div>
-              <div className="mtg-field-value text-xs">{(m.booked_by || '').split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</div>
+              <div className="mtg-field-value text-xs">{resolveStaffName(m.booked_by || '')}</div>
             </div>
           </div>
 
