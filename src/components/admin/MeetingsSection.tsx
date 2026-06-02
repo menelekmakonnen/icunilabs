@@ -300,6 +300,10 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
   const [busy, setBusy] = useState(false)
   const [prepNotes, setPrepNotes] = useState(meeting.prep_notes || '')
   const [postNotes, setPostNotes] = useState(meeting.post_meeting_notes || '')
+  const [editDate, setEditDate] = useState(meeting.date || '')
+  const [editTime, setEditTime] = useState(meeting.time || '')
+  const [dateTimeDirty, setDateTimeDirty] = useState(false)
+  const [confirmSent, setConfirmSent] = useState(false)
   const [checklist, setChecklist] = useState<{ item: string; checked: boolean }[]>(() => {
     try { return meeting.demo_checklist?.length ? meeting.demo_checklist : [
       { item: 'Introduction & rapport', checked: false },
@@ -316,6 +320,10 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
     setM(meeting)
     setPrepNotes(meeting.prep_notes || '')
     setPostNotes(meeting.post_meeting_notes || '')
+    setEditDate(meeting.date || '')
+    setEditTime(meeting.time || '')
+    setDateTimeDirty(false)
+    setConfirmSent(false)
     try { if (meeting.demo_checklist?.length) setChecklist(meeting.demo_checklist) } catch {}
   }, [meeting])
 
@@ -328,10 +336,25 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
     setBusy(false)
   }
 
+  const saveDateTime = async () => {
+    setBusy(true)
+    await adminActions.updateMeeting(m.meeting_id, { date: editDate, time: editTime })
+    setM((prev: any) => ({ ...prev, date: editDate, time: editTime }))
+    setDateTimeDirty(false)
+    setBusy(false)
+  }
+
   const sendConfirmation = async () => {
     setBusy(true)
+    // Save any pending date/time changes first
+    if (dateTimeDirty) {
+      await adminActions.updateMeeting(m.meeting_id, { date: editDate, time: editTime })
+      setM((prev: any) => ({ ...prev, date: editDate, time: editTime }))
+      setDateTimeDirty(false)
+    }
     await adminActions.sendMeetingConfirmation(m.meeting_id)
-    setM((prev: any) => ({ ...prev, stage: 'confirmed', confirmation_sent: true }))
+    setM((prev: any) => ({ ...prev, confirmation_sent: true }))
+    setConfirmSent(true)
     setBusy(false)
   }
 
@@ -424,15 +447,19 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
 
         {/* Body */}
         <div className="mtg-drawer__body">
-          {/* Meeting Info */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          {/* Meeting Info — Editable Date/Time */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="mtg-field-group">
               <div className="mtg-field-label">Date</div>
-              <div className="mtg-field-value flex items-center gap-2"><Calendar className="w-3.5 h-3.5 text-neutral-600" /> {fmtDate(m.date)}</div>
+              <input type="date" value={editDate}
+                onChange={e => { setEditDate(e.target.value); setDateTimeDirty(true) }}
+                className={inputCls + ' text-xs'} />
             </div>
             <div className="mtg-field-group">
               <div className="mtg-field-label">Time</div>
-              <div className="mtg-field-value flex items-center gap-2"><Clock className="w-3.5 h-3.5 text-neutral-600" /> {fmtTime(m.time)}</div>
+              <input type="time" value={editTime}
+                onChange={e => { setEditTime(e.target.value); setDateTimeDirty(true) }}
+                className={inputCls + ' text-xs'} />
             </div>
             <div className="mtg-field-group">
               <div className="mtg-field-label">{m.type === 'online' ? 'Link' : 'Location'}</div>
@@ -448,6 +475,21 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
               <div className="mtg-field-label">Booked By</div>
               <div className="mtg-field-value text-xs">{(m.booked_by || '').split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}</div>
             </div>
+          </div>
+
+          {/* Save date/time + Send Confirmation — always visible */}
+          <div className="flex flex-wrap items-center gap-2 mb-6">
+            {dateTimeDirty && (
+              <button onClick={saveDateTime} disabled={busy} className="mtg-btn mtg-btn--ghost text-xs">
+                {busy ? 'Saving...' : 'Save Date/Time'}
+              </button>
+            )}
+            <button onClick={sendConfirmation} disabled={busy || (!editDate && !editTime)} className="mtg-btn mtg-btn--primary text-xs">
+              <Send className="w-3.5 h-3.5" /> {busy ? 'Sending...' : confirmSent || m.confirmation_sent ? 'Resend Confirmation' : 'Send Confirmation Email'}
+            </button>
+            {(confirmSent || m.confirmation_sent) && (
+              <span className="text-[10px] text-emerald-400 flex items-center gap-1"><Check className="w-3 h-3" /> Sent from labs@icuni.org</span>
+            )}
           </div>
 
           {/* Attendees */}
@@ -470,13 +512,13 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
 
           {/* ── STAGE-SPECIFIC CONTENT ── */}
 
-          {/* BOOKED: Send confirmation */}
+          {/* BOOKED: Advance to confirmed */}
           {m.stage === 'booked' && (
             <div className="p-4 rounded-xl bg-[#00bfff]/5 border border-[#00bfff]/10 mb-4">
-              <p className="text-xs text-[#00bfff] font-bold mb-2">📩 Send Confirmation</p>
-              <p className="text-xs text-neutral-400 mb-3">Send a branded confirmation email to the client and attendees with meeting details.</p>
-              <button onClick={sendConfirmation} disabled={busy} className="mtg-btn mtg-btn--primary text-xs">
-                <Send className="w-3.5 h-3.5" /> {busy ? 'Sending...' : 'Send Confirmation & Advance'}
+              <p className="text-xs text-[#00bfff] font-bold mb-2">Next Step</p>
+              <p className="text-xs text-neutral-400 mb-3">Once confirmed with the client, advance this meeting to the next stage.</p>
+              <button onClick={() => advanceStage('confirmed')} disabled={busy} className="mtg-btn mtg-btn--primary text-xs">
+                Mark as Confirmed
               </button>
             </div>
           )}

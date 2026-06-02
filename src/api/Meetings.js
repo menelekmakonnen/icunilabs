@@ -237,18 +237,18 @@ function handleSendMeetingConfirmation(payload) {
         }
     });
 
-    // Update meeting record
-    updateRow_(SHEETS.MEETINGS, meeting._rowIndex, {
+    // Update meeting record (don't auto-advance stage — confirmation can be sent/resent at any stage)
+    var confUpdates = {
         confirmation_sent: true,
         confirmation_template: payload.template_id || 'default',
-        stage: 'confirmed',
         updated_at: now_()
-    });
+    };
+    updateRow_(SHEETS.MEETINGS, meeting._rowIndex, confUpdates);
 
     logAction_(auth.user.user_id || auth.user.id, auth.user.name, 'MEETING_CONFIRMED',
         'Sent confirmation for meeting ' + payload.meeting_id);
 
-    return successResponse_(null, 'Confirmation sent and meeting advanced to Confirmed.');
+    return successResponse_(null, 'Confirmation email sent from labs@icuni.org.');
 }
 
 // ═══════════════════════════════════════════════════════════
