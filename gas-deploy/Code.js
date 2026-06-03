@@ -140,6 +140,12 @@ var ACTION_MAP = {
 
     // ── Analytics ──
     trackEvent: handleTrackEvent, getAnalytics: handleGetAnalytics,
+
+    // ── Calendar ──
+    createCalendarEvent: handleCreateCalendarEvent,
+    confirmCalendarEvent: handleConfirmCalendarEvent,
+    getAvailableSlots: handleGetAvailableSlots,
+    deleteCalendarEvent: handleDeleteCalendarEvent,
 };
 
 // ═══════════════════════════════════════════════════════════

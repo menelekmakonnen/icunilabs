@@ -1488,4 +1488,43 @@ export const adminActions = {
       return false
     }
   },
+
+  // ── Calendar Integration ──
+  createCalendarEvent: async (data: Record<string, any>) => {
+    try {
+      return await apiPost('createCalendarEvent', { token: state.token, ...data })
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  confirmCalendarEvent: async (data: Record<string, any>) => {
+    try {
+      return await apiPost('confirmCalendarEvent', { token: state.token, ...data })
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  getAvailableSlots: async (type: string = 'online') => {
+    try {
+      const result = await apiPost('getAvailableSlots', { token: state.token, type })
+      return result?.slots || []
+    } catch (err: any) {
+      setState({ error: err.message })
+      return []
+    }
+  },
+
+  deleteCalendarEvent: async (eventId: string) => {
+    try {
+      await apiPost('deleteCalendarEvent', { token: state.token, event_id: eventId })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
 }

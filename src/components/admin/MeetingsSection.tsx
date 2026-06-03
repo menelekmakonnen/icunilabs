@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { resolveStaffName } from '../../utils/resolveStaffName'
 import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
-import { Calendar, Clock, MapPin, Video, Users, Plus, X, Send, Check, ChevronRight, Trash2, FileText, ArrowLeft } from 'lucide-react'
+import { Calendar, Clock, MapPin, Video, Users, Plus, X, Send, Check, ChevronRight, Trash2, FileText, ArrowLeft, Mail } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './meetings.css'
 
@@ -41,6 +41,7 @@ function getColor(name: string) { let h = 0; for (let i = 0; i < (name||'').leng
 export default function MeetingsSection() {
   const { meetings, clients, users, callLogs } = useAdminStore()
   const effectiveUser = useEffectiveUser()
+  const [activeTab, setActiveTab] = useState<'pipeline' | 'calendar'>('pipeline')
   const [activeMeeting, setActiveMeeting] = useState<any>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -101,7 +102,7 @@ export default function MeetingsSection() {
 
 
   // ─── CREATE MEETING MODAL ───
-  const [form, setForm] = useState({ client_id: '', date: '', time: '', type: 'online' as 'online' | 'in_person', location_or_link: '', attendees: [] as { name: string; email: string; role: string }[] })
+  const [form, setForm] = useState({ client_id: '', client_email: '', date: '', time: '', type: 'online' as 'online' | 'in_person', location_or_link: '', attendees: [] as { name: string; email: string; role: string }[] })
 
   const openCreate = () => {
     // Pre-populate with founder
@@ -110,7 +111,7 @@ export default function MeetingsSection() {
       { name: founderUser?.name || FOUNDER_NAME, email: FOUNDER_EMAIL, role: 'Founder' },
       ...((users || []).filter((u: any) => u.role === 'Product' && u.email !== FOUNDER_EMAIL).slice(0, 1).map((u: any) => ({ name: u.name, email: u.email, role: 'Developer' })))
     ]
-    setForm({ client_id: '', date: '', time: '', type: 'online', location_or_link: '', attendees: defaultAttendees })
+    setForm({ client_id: '', client_email: '', date: '', time: '', type: 'online', location_or_link: '', attendees: defaultAttendees })
     setShowCreate(true)
   }
 
@@ -138,19 +139,39 @@ export default function MeetingsSection() {
     updateAttendee(i, 'email', email)
   }
 
+  // Auto-fill email when client is selected in create form
+  const handleClientSelect = (clientId: string) => {
+    const c = clientMap[clientId]
+    setForm(f => ({ ...f, client_id: clientId, client_email: c?.email || c?.contact_email || '' }))
+  }
+
   return (
     <div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
         <div>
           <h2 className="text-lg font-bold text-white">Meetings</h2>
-          <p className="text-xs text-neutral-500">Meeting lifecycle — from booking to qualification</p>
+          <div className="flex items-center gap-1 mt-2">
+            <button onClick={() => setActiveTab('pipeline')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                activeTab === 'pipeline' ? 'bg-[#00bfff]/10 text-[#00bfff] border border-[#00bfff]/20' : 'text-neutral-500 hover:text-white border border-transparent'
+              }`}>Pipeline</button>
+            <button onClick={() => setActiveTab('calendar')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                activeTab === 'calendar' ? 'bg-[#8b5cf6]/10 text-[#8b5cf6] border border-[#8b5cf6]/20' : 'text-neutral-500 hover:text-white border border-transparent'
+              }`}>Calendar Sync</button>
+          </div>
         </div>
-        <button onClick={openCreate} className="mtg-btn mtg-btn--primary">
-          <Plus className="w-4 h-4" /> Book Meeting
-        </button>
+        {activeTab === 'pipeline' && (
+          <button onClick={openCreate} className="mtg-btn mtg-btn--primary">
+            <Plus className="w-4 h-4" /> Book Meeting
+          </button>
+        )}
       </div>
 
+      {/* ═══ PIPELINE TAB ═══ */}
+      {activeTab === 'pipeline' && (
+        <>
       {/* Kanban Board */}
       <div className="mtg-board">
         {STAGES.map(stage => (
@@ -164,7 +185,10 @@ export default function MeetingsSection() {
             </div>
             <div className="mtg-col-body">
               <AnimatePresence>
-                {(grouped[stage.id] || []).map((m: any) => (
+                {(grouped[stage.id] || []).map((m: any) => {
+                  const mClient = clientMap[m.client_id]
+                  const mEmail = m.client_email || mClient?.email || mClient?.contact_email || ''
+                  return (
                   <motion.div key={m.meeting_id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
                     className="mtg-card" onClick={() => setActiveMeeting(m)}>
                     {m.attendance && m.attendance !== 'pending' && <div className={`mtg-card__attendance mtg-card__attendance--${m.attendance}`} />}
@@ -177,6 +201,11 @@ export default function MeetingsSection() {
                       {m.client_name || 'Unknown'}
                     </div>
                     {m.client_company && <div className="mtg-card__company">{m.client_company}</div>}
+                    {mEmail && (
+                      <div className="mtg-card__row" style={{ color: '#8b5cf6' }}>
+                        <Mail className="w-3 h-3" /> <span className="truncate text-[10px]">{mEmail}</span>
+                      </div>
+                    )}
                     <div className="mtg-card__row">
                       <Calendar /> {m.date ? fmtDate(m.date) : <span className="text-neutral-600 italic">TBD</span>}
                     </div>
@@ -192,7 +221,8 @@ export default function MeetingsSection() {
                       Booked by {resolveStaffName(m.booked_by || '')}
                     </div>
                   </motion.div>
-                ))}
+                  )
+                })}
               </AnimatePresence>
               {(!grouped[stage.id] || grouped[stage.id].length === 0) && (
                 <div className="mtg-empty">
@@ -208,9 +238,65 @@ export default function MeetingsSection() {
       {/* Detail Drawer */}
       <AnimatePresence>
         {activeMeeting && (
-          <MeetingDrawer meeting={activeMeeting} onClose={() => setActiveMeeting(null)} users={users} effectiveUser={effectiveUser} />
+          <MeetingDrawer meeting={activeMeeting} onClose={() => setActiveMeeting(null)} users={users} effectiveUser={effectiveUser} clientMap={clientMap} />
         )}
       </AnimatePresence>
+        </>
+      )}
+
+      {/* ═══ CALENDAR SYNC TAB ═══ */}
+      {activeTab === 'calendar' && (
+        <div className="space-y-4">
+          <div className="p-6 rounded-2xl bg-neutral-950 border border-neutral-800">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-[#8b5cf6]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Google Calendar Integration</h3>
+                <p className="text-[10px] text-neutral-500">Sync confirmed meetings with the ICUNI Labs team calendar</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+                <span className="text-xs text-neutral-300 flex-1">Connected to ICUNI Labs shared calendar</span>
+                <span className="text-[10px] text-emerald-400 font-bold">Active</span>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#00bfff]/5 border border-[#00bfff]/10">
+                <p className="text-xs text-[#00bfff] font-bold mb-2">How it works</p>
+                <ul className="space-y-2">
+                  <li className="text-xs text-neutral-400 flex items-start gap-2">
+                    <span className="text-[#00bfff] font-bold mt-0.5">1.</span>
+                    When a salesperson books a meeting on a call, it's added to the <strong className="text-white">ICUNI Labs calendar only</strong>.
+                  </li>
+                  <li className="text-xs text-neutral-400 flex items-start gap-2">
+                    <span className="text-[#00bfff] font-bold mt-0.5">2.</span>
+                    When the meeting moves to <strong className="text-white">Confirmed</strong>, an invite is sent to <strong className="text-white">both parties</strong>.
+                  </li>
+                  <li className="text-xs text-neutral-400 flex items-start gap-2">
+                    <span className="text-[#00bfff] font-bold mt-0.5">3.</span>
+                    For online meetings, a <strong className="text-white">Google Meet link</strong> is auto-created and sent to everyone.
+                  </li>
+                </ul>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">In-Person Slots</p>
+                  <p className="text-xs text-white font-bold">11:30 AM — 5:00 PM</p>
+                </div>
+                <div className="p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Online Slots</p>
+                  <p className="text-xs text-white font-bold">11:00 AM — 3:30 PM</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Meeting Modal */}
       {showCreate && (
@@ -224,12 +310,18 @@ export default function MeetingsSection() {
               {/* Client */}
               <div>
                 <label className="text-xs text-neutral-500 mb-1 block">Client *</label>
-                <select value={form.client_id} onChange={e => setForm({ ...form, client_id: e.target.value })} className={inputCls} required>
+                <select value={form.client_id} onChange={e => handleClientSelect(e.target.value)} className={inputCls} required>
                   <option value="">— Select client —</option>
                   {(clients || []).filter((c: any) => c.status !== 'deleted').map((c: any) => (
                     <option key={c.client_id} value={c.client_id}>{c.name}{c.company ? ` (${c.company})` : ''}</option>
                   ))}
                 </select>
+              </div>
+              {/* Client Email */}
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Client Email <span className="text-neutral-600">(optional)</span></label>
+                <input type="email" value={form.client_email} onChange={e => setForm({ ...form, client_email: e.target.value })} className={inputCls}
+                  placeholder="client@example.com" />
               </div>
               {/* Date & Time */}
               <div className="grid grid-cols-2 gap-3">
@@ -294,7 +386,7 @@ export default function MeetingsSection() {
 // ════════════════════════════════════════════════════════
 // MEETING DETAIL DRAWER
 // ════════════════════════════════════════════════════════
-function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effectiveUser }: { meeting: any; onClose: () => void; users: any[]; effectiveUser: any }) {
+function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effectiveUser, clientMap }: { meeting: any; onClose: () => void; users: any[]; effectiveUser: any; clientMap: Record<string, any> }) {
   const [m, setM] = useState(meeting)
   const [busy, setBusy] = useState(false)
   const [prepNotes, setPrepNotes] = useState(meeting.prep_notes || '')
@@ -331,6 +423,39 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
   const advanceStage = async (targetStage: string) => {
     setBusy(true)
     await adminActions.updateMeeting(m.meeting_id, { stage: targetStage })
+
+    // Trigger calendar event on confirmation
+    if (targetStage === 'confirmed') {
+      const client = clientMap?.[m.client_id]
+      const clientEmail = m.client_email || client?.email || client?.contact_email || ''
+      try {
+        const result = await adminActions.confirmCalendarEvent({
+          meeting_id: m.meeting_id,
+          client_name: m.client_name || client?.name || 'Client',
+          client_email: clientEmail,
+          date: editDate || m.date,
+          time: editTime || m.time,
+          type: m.type || 'online',
+          location_or_link: m.location_or_link || '',
+          event_id: m.calendar_event_id || '',
+          booked_by_email: m.booked_by || '',
+        })
+        if (result?.meet_link) {
+          // Update meeting with the Meet link
+          await adminActions.updateMeeting(m.meeting_id, { location_or_link: result.meet_link, calendar_event_id: result.event_id })
+          setM((prev: any) => ({ ...prev, location_or_link: result.meet_link, calendar_event_id: result.event_id, stage: targetStage }))
+          setBusy(false)
+          return
+        }
+        if (result?.event_id) {
+          await adminActions.updateMeeting(m.meeting_id, { calendar_event_id: result.event_id })
+        }
+      } catch (e) {
+        // Calendar sync is best-effort, don't block stage advancement
+        console.warn('Calendar sync failed:', e)
+      }
+    }
+
     setM((prev: any) => ({ ...prev, stage: targetStage }))
     setBusy(false)
   }
@@ -446,6 +571,17 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
 
         {/* Body */}
         <div className="mtg-drawer__body">
+          {/* Client Contact Info */}
+          {(() => {
+            const client = clientMap?.[m.client_id]
+            const email = m.client_email || client?.email || client?.contact_email || ''
+            return email ? (
+              <div className="flex items-center gap-2 mb-4 p-2.5 rounded-xl bg-[#8b5cf6]/5 border border-[#8b5cf6]/10">
+                <Mail className="w-3.5 h-3.5 text-[#8b5cf6] flex-shrink-0" />
+                <a href={`mailto:${email}`} className="text-xs text-[#8b5cf6] hover:text-white transition-colors break-all">{email}</a>
+              </div>
+            ) : null
+          })()}
           {/* Meeting Info — Editable Date/Time */}
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="mtg-field-group">
@@ -461,7 +597,20 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
                 className={inputCls + ' text-xs'} />
             </div>
             <div className="mtg-field-group">
-              <div className="mtg-field-label">{m.type === 'online' ? 'Link' : 'Location'}</div>
+              <div className="mtg-field-label">Type</div>
+              <div className="flex gap-1.5">
+                <button onClick={async () => { await adminActions.updateMeeting(m.meeting_id, { type: 'online' }); setM((p: any) => ({ ...p, type: 'online' })) }}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                    m.type === 'online' ? 'bg-[#00bfff]/10 text-[#00bfff] border border-[#00bfff]/20' : 'bg-neutral-900/50 text-neutral-500 border border-neutral-800 hover:text-white'
+                  }`}><Video className="w-3 h-3" /> Online</button>
+                <button onClick={async () => { await adminActions.updateMeeting(m.meeting_id, { type: 'in_person' }); setM((p: any) => ({ ...p, type: 'in_person' })) }}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
+                    m.type === 'in_person' ? 'bg-[#ff7a00]/10 text-[#ff7a00] border border-[#ff7a00]/20' : 'bg-neutral-900/50 text-neutral-500 border border-neutral-800 hover:text-white'
+                  }`}><MapPin className="w-3 h-3" /> In-Person</button>
+              </div>
+            </div>
+            <div className="mtg-field-group">
+              <div className="mtg-field-label">{m.type === 'online' ? 'Meeting Link' : 'Address'}</div>
               <div className="mtg-field-value">
                 {m.location_or_link
                   ? m.type === 'online'

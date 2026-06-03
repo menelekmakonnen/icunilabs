@@ -3,7 +3,8 @@
  * All charts are vanilla Canvas/SVG — zero charting dependencies.
  */
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { useAdminStore, adminActions } from '../../store/useAdminStore'
+import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
+import { resolveStaffName } from '../../utils/resolveStaffName'
 import './analytics.css'
 
 // ── Helpers ───────────────────────────────────────────────
@@ -447,16 +448,186 @@ function Sparkline({ values, color = '#00bfff' }: { values: number[]; color?: st
 
 
 // ═══════════════════════════════════════════════════════════
+// SALES / JOB ANALYTICS COMPONENT
+// ═══════════════════════════════════════════════════════════
+function SalesAnalytics({ callLogs, userEmail, userName }: { callLogs: any[]; userEmail?: string; userName?: string }) {
+  const logs = userEmail ? callLogs.filter((l: any) => l.caller_email === userEmail) : callLogs
+  const totalCalls = logs.length
+  const meetingsBooked = logs.filter((l: any) => l.outcome === 'meeting_booked').length
+  const conversionRate = totalCalls > 0 ? Math.round((meetingsBooked / totalCalls) * 100) : 0
+  const totalDuration = logs.reduce((s: number, l: any) => s + (l.duration_seconds || 0), 0)
+  const avgDuration = totalCalls > 0 ? Math.round(totalDuration / totalCalls) : 0
+
+  // Outcome distribution
+  const outcomeCounts: Record<string, number> = {}
+  logs.forEach((l: any) => { const o = l.outcome || 'unknown'; outcomeCounts[o] = (outcomeCounts[o] || 0) + 1 })
+  const outcomeData = Object.entries(outcomeCounts).map(([label, value]) => ({ label: label.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), value }))
+    .sort((a, b) => b.value - a.value)
+  const outcomeColors = ['#00bfff', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ff7a00']
+
+  // Path usage
+  const pathCounts: Record<string, number> = {}
+  logs.forEach((l: any) => { const p = l.path_loaded || 'unknown'; pathCounts[p] = (pathCounts[p] || 0) + 1 })
+  const pathData = Object.entries(pathCounts).sort((a, b) => b[1] - a[1])
+  const pathMax = pathData.length > 0 ? pathData[0][1] : 1
+  const pathLabels: Record<string, string> = {
+    wc_receptionist: 'WC Receptionist', wc_decision_maker: 'WC Decision-Maker',
+    bc_front_desk: 'BC Front Desk', bc_mr_cooper: 'BC Mr Cooper', bc_owner: 'BC Owner',
+  }
+
+  // Environment type breakdown
+  const envCounts: Record<string, number> = {}
+  logs.forEach((l: any) => { const e = l.environment_type || 'unknown'; envCounts[e] = (envCounts[e] || 0) + 1 })
+  const envData = Object.entries(envCounts).map(([label, value]) => ({
+    label: label === 'white_collar' ? 'White Collar' : label === 'blue_collar' ? 'Blue Collar' : label.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+    value
+  }))
+
+  // Checklist completion average
+  const withChecklist = logs.filter((l: any) => l.talking_points_total > 0)
+  const avgChecklist = withChecklist.length > 0
+    ? Math.round(withChecklist.reduce((s: number, l: any) => s + ((l.talking_points_checked?.length || 0) / l.talking_points_total) * 100, 0) / withChecklist.length)
+    : 0
+
+  // Daily trend (last 14 days)
+  const now = new Date()
+  const dailyCalls: { date: string; count: number }[] = []
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now); d.setDate(d.getDate() - i)
+    const dateStr = d.toISOString().split('T')[0]
+    const count = logs.filter((l: any) => (l.call_start || l.created_at || '').startsWith(dateStr)).length
+    dailyCalls.push({ date: dateStr, count })
+  }
+
+  return (
+    <div className="analytics-dash">
+      {userName && (
+        <div className="flex items-center gap-2 mb-4 p-3 rounded-xl bg-[#8b5cf6]/5 border border-[#8b5cf6]/10">
+          <div className="w-8 h-8 rounded-full bg-[#8b5cf6]/15 flex items-center justify-center text-xs font-bold text-[#8b5cf6]">
+            {(userName || '').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white">{userName}</p>
+            <p className="text-[10px] text-neutral-500">{userEmail}</p>
+          </div>
+        </div>
+      )}
+
+      {/* KPI Cards */}
+      <div className="an-kpi-grid">
+        <div className="an-kpi">
+          <div className="an-kpi-label">Total Calls</div>
+          <div className="an-kpi-value">{fmtNum(totalCalls)}</div>
+          <div className="an-kpi-delta neutral">All time</div>
+        </div>
+        <div className="an-kpi">
+          <div className="an-kpi-label">Meetings Booked</div>
+          <div className="an-kpi-value">{meetingsBooked}</div>
+          <div className={`an-kpi-delta ${meetingsBooked > 0 ? 'up' : 'neutral'}`}>
+            {conversionRate}% conversion
+          </div>
+        </div>
+        <div className="an-kpi">
+          <div className="an-kpi-label">Avg Duration</div>
+          <div className="an-kpi-value">{fmtDuration(avgDuration)}</div>
+          <div className="an-kpi-delta neutral">Per call</div>
+        </div>
+        <div className="an-kpi">
+          <div className="an-kpi-label">Checklist %</div>
+          <div className="an-kpi-value">{avgChecklist}%</div>
+          <div className="an-kpi-delta neutral">Avg completion</div>
+        </div>
+      </div>
+
+      {/* Charts Row */}
+      <div className="an-charts-grid">
+        {/* Outcome Breakdown */}
+        <div className="an-card">
+          <div className="an-card-header">
+            <div className="an-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              Call Outcomes
+            </div>
+          </div>
+          {outcomeData.length > 0
+            ? <DonutChart data={outcomeData} colors={outcomeColors} />
+            : <div className="an-empty"><div className="an-empty-text">No call data</div></div>
+          }
+        </div>
+
+        {/* Environment Types */}
+        <div className="an-card">
+          <div className="an-card-header">
+            <div className="an-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+              Prospect Types
+            </div>
+          </div>
+          {envData.length > 0
+            ? <DonutChart data={envData} colors={['#00bfff', '#ff7a00', '#10b981']} />
+            : <div className="an-empty"><div className="an-empty-text">No environment data</div></div>
+          }
+        </div>
+      </div>
+
+      {/* Call Paths */}
+      <div className="an-card">
+        <div className="an-card-header">
+          <div className="an-card-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Call Guide Paths Used
+          </div>
+          <span className="an-card-badge" style={{ color: '#00bfff', background: 'rgba(0,191,255,0.1)' }}>{pathData.length} paths</span>
+        </div>
+        {pathData.length > 0 ? (
+          <div>
+            {pathData.map(([path, count], i) => (
+              <div key={path} className="an-bar-row">
+                <div className="an-bar-label">{pathLabels[path] || path}</div>
+                <div className="an-bar-track">
+                  <div className="an-bar-fill" style={{
+                    width: `${(count / pathMax) * 100}%`,
+                    background: outcomeColors[i % outcomeColors.length],
+                  }} />
+                </div>
+                <div className="an-bar-value">{count}</div>
+              </div>
+            ))}
+          </div>
+        ) : <div className="an-empty"><div className="an-empty-text">No path data</div></div>}
+      </div>
+
+      {/* Daily Trend */}
+      {dailyCalls.some(d => d.count > 0) && (
+        <div className="an-card">
+          <div className="an-card-header">
+            <div className="an-card-title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 6-6"/></svg>
+              Calls (Last 14 Days)
+            </div>
+          </div>
+          <Sparkline values={dailyCalls.map(d => d.count)} color="#00bfff" />
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════
 
 export default function AnalyticsSection() {
-  const { analyticsData } = useAdminStore()
+  const { analyticsData, callLogs: rawCallLogs, users } = useAdminStore()
+  const effectiveUser = useEffectiveUser()
+  const isGodMode = effectiveUser?.role === 'Godmode' || effectiveUser?.role === 'SuperAdmin'
   const [loading, setLoading] = useState(true)
   const [datePreset, setDatePreset] = useState<DatePreset>('30d')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [selectedPage, setSelectedPage] = useState<string | null>(null)
+  const [selectedStaffEmail, setSelectedStaffEmail] = useState<string>('')
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -467,9 +638,11 @@ export default function AnalyticsSection() {
       const range = getDateRange(datePreset)
       filters = { from_date: range.from, to_date: range.to }
     }
-    await adminActions.loadAnalytics(filters)
+    if (isGodMode) await adminActions.loadAnalytics(filters)
+    await adminActions.loadCallLogs({ page_size: 500 })
+    await adminActions.loadUsers()
     setLoading(false)
-  }, [datePreset, customFrom, customTo])
+  }, [datePreset, customFrom, customTo, isGodMode])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -514,6 +687,7 @@ export default function AnalyticsSection() {
   return (
     <div className="analytics-dash">
       {/* ── Filter Bar ─────────────────────────────── */}
+      {isGodMode && (
       <div className="an-filter-bar">
         <select value={datePreset} onChange={e => setDatePreset(e.target.value as DatePreset)}>
           <option value="today">Today</option>
@@ -544,12 +718,19 @@ export default function AnalyticsSection() {
           >↻ Refresh</button>
         </div>
       </div>
+      )}
 
       {loading && (
         <div className="an-loading"><div className="an-loading-spinner" /></div>
       )}
 
-      {!loading && (
+      {/* ═══ NON-GODMODE: Show only job analytics ═══ */}
+      {!isGodMode && !loading && (
+        <SalesAnalytics callLogs={rawCallLogs || []} userEmail={effectiveUser?.email} />
+      )}
+
+      {/* ═══ GODMODE: Site analytics + team job analytics ═══ */}
+      {isGodMode && !loading && (
         <>
           {/* ── KPI Hero Cards ───────────────────────── */}
           <div className="an-kpi-grid">
@@ -807,6 +988,35 @@ export default function AnalyticsSection() {
           <div style={{ textAlign: 'center', padding: '16px 0', color: '#2a2a2a', fontSize: 11 }}>
             {d.total_events || 0} total events tracked
           </div>
+
+          {/* ═══ TEAM JOB ANALYTICS (GodMode) ═══ */}
+          <div className="an-card" style={{ marginTop: 16 }}>
+            <div className="an-card-header">
+              <div className="an-card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Team Job Analytics
+              </div>
+              <select
+                value={selectedStaffEmail}
+                onChange={e => setSelectedStaffEmail(e.target.value)}
+                style={{
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 8, color: '#fff', padding: '4px 10px', fontSize: 11,
+                  fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                <option value="">All Staff</option>
+                {(users || []).filter((u: any) => u.status === 'Active' && u.role === 'Sales').map((u: any) => (
+                  <option key={u.email} value={u.email}>{resolveStaffName(u.email)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <SalesAnalytics
+            callLogs={rawCallLogs || []}
+            userEmail={selectedStaffEmail || undefined}
+            userName={selectedStaffEmail ? resolveStaffName(selectedStaffEmail) : undefined}
+          />
         </>
       )}
     </div>

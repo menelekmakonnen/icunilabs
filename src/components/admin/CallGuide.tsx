@@ -460,8 +460,11 @@ interface CallGuideProps {
 export default function CallGuide({ client, onClose, onMinimise }: CallGuideProps) {
   const { user } = useAdminStore()
 
+  // Mic consent gate — check localStorage on mount
+  const hasConsent = typeof window !== 'undefined' && localStorage.getItem('icuni_mic_consent') === 'yes'
+
   // Classification state
-  const [phase, setPhase] = useState<'classify' | 'guide'>('classify')
+  const [phase, setPhase] = useState<'consent' | 'classify' | 'guide'>(hasConsent ? 'classify' : 'consent')
   const [envType, setEnvType] = useState<string>('')
   const [personaType, setPersonaType] = useState<string>('')
   const [pathId, setPathId] = useState<string>('')
@@ -791,6 +794,68 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   }
 
   const toggleSection = (id: string) => setCollapsed(p => ({ ...p, [id]: !p[id] }))
+
+  // ═══ MIC CONSENT PHASE ═══
+  if (phase === 'consent') {
+    return (
+      <div className="cg-classify-modal" onClick={onClose}>
+        <div className="cg-classify-card" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+          <div className="flex flex-col items-center text-center mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-[#00bfff]/10 border border-[#00bfff]/20 flex items-center justify-center mb-4">
+              <Mic className="w-7 h-7 text-[#00bfff]" />
+            </div>
+            <h2 className="text-lg font-bold text-white mb-1">Call Transcription</h2>
+            <p className="text-xs text-neutral-500">Before you start your first call</p>
+          </div>
+
+          <div className="space-y-3 mb-6">
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <p className="text-xs text-neutral-300 leading-relaxed">
+                Our system will <strong className="text-white">transcribe your portion</strong> of the call for quality assurance and training purposes.
+              </p>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <p className="text-xs text-neutral-300 leading-relaxed">
+                Your <strong className="text-white">voice will not be stored</strong> on our system &mdash; only the transcribed words.
+              </p>
+            </div>
+            <div className="flex items-start gap-3 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <p className="text-xs text-neutral-300 leading-relaxed">
+                <strong className="text-white">Nothing is recorded</strong> after you click to end the call on our portal.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <button onClick={onClose}
+              className="flex-1 py-3 rounded-xl font-bold text-sm bg-neutral-800 border border-neutral-700 text-neutral-400 cursor-pointer hover:bg-neutral-700 hover:text-white transition-all">
+              Decline
+            </button>
+            <button onClick={() => {
+              localStorage.setItem('icuni_mic_consent', 'yes')
+              setPhase('classify')
+            }}
+              className="flex-[2] py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white cursor-pointer hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all">
+              I Agree &mdash; Continue
+            </button>
+          </div>
+
+          <p className="text-[10px] text-neutral-600 text-center mt-3">
+            You will only see this once. Your browser will then ask for microphone access.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   // ═══ CLASSIFICATION PHASE ═══
   if (phase === 'classify') {
