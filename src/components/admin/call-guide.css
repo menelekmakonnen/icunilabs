@@ -970,6 +970,35 @@
    LIVE TRANSCRIPT
    ═══════════════════════════════════════════════════════════ */
 
+/* Mic toggle in guide header */
+.cg-mic-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+  transition: all 0.2s;
+}
+.cg-mic-header-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+.cg-mic-header-btn.active {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.12);
+}
+.cg-mic-header-btn.active:hover {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
 /* Mic toggle button */
 .cg-mic-btn {
   display: inline-flex;

@@ -46,6 +46,28 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
   const { callLogs, clients } = useAdminStore()
   const [_tick, setTick] = useState(0)
 
+  // ── Persistent date filter ──
+  type DateFilter = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_year' | 'last_year'
+  const DATE_FILTER_OPTIONS: { id: DateFilter; label: string }[] = [
+    { id: 'today', label: 'Today' },
+    { id: 'yesterday', label: 'Yesterday' },
+    { id: 'this_week', label: 'This Week' },
+    { id: 'last_week', label: 'Last Week' },
+    { id: 'this_month', label: 'This Month' },
+    { id: 'last_month', label: 'Last Month' },
+    { id: 'this_year', label: 'This Year' },
+    { id: 'last_year', label: 'Last Year' },
+  ]
+
+  const [dateFilter, setDateFilter] = useState<DateFilter>(() => {
+    try { return (localStorage.getItem('icuni_dash_date_filter') as DateFilter) || 'this_week' } catch { return 'this_week' }
+  })
+
+  // Persist filter selection
+  useEffect(() => {
+    try { localStorage.setItem('icuni_dash_date_filter', dateFilter) } catch {}
+  }, [dateFilter])
+
   useEffect(() => {
     adminActions.loadCallLogs({ page_size: 500 })
     adminActions.loadClients()
@@ -59,16 +81,64 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
   }, [])
 
   const now = Date.now()
-  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
-  const weekAgo = now - 7 * 86400000
-  const monthAgo = now - 30 * 86400000
+
+  // ── Date range computation ──
+  const { rangeStart, rangeEnd, rangeLabel } = useMemo(() => {
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay() // Mon=1
+    let start: Date, end: Date, label: string
+
+    switch (dateFilter) {
+      case 'today':
+        start = new Date(today); end = new Date(today); end.setHours(23, 59, 59, 999)
+        label = 'Today'; break
+      case 'yesterday': {
+        start = new Date(today); start.setDate(start.getDate() - 1)
+        end = new Date(start); end.setHours(23, 59, 59, 999)
+        label = 'Yesterday'; break
+      }
+      case 'this_week': {
+        start = new Date(today); start.setDate(start.getDate() - (dayOfWeek - 1))
+        end = new Date(today); end.setHours(23, 59, 59, 999)
+        label = 'This Week'; break
+      }
+      case 'last_week': {
+        start = new Date(today); start.setDate(start.getDate() - (dayOfWeek - 1) - 7)
+        end = new Date(start); end.setDate(end.getDate() + 6); end.setHours(23, 59, 59, 999)
+        label = 'Last Week'; break
+      }
+      case 'this_month': {
+        start = new Date(today.getFullYear(), today.getMonth(), 1)
+        end = new Date(today); end.setHours(23, 59, 59, 999)
+        label = 'This Month'; break
+      }
+      case 'last_month': {
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+        end = new Date(today.getFullYear(), today.getMonth(), 0); end.setHours(23, 59, 59, 999)
+        label = 'Last Month'; break
+      }
+      case 'this_year': {
+        start = new Date(today.getFullYear(), 0, 1)
+        end = new Date(today); end.setHours(23, 59, 59, 999)
+        label = 'This Year'; break
+      }
+      case 'last_year': {
+        start = new Date(today.getFullYear() - 1, 0, 1)
+        end = new Date(today.getFullYear() - 1, 11, 31); end.setHours(23, 59, 59, 999)
+        label = 'Last Year'; break
+      }
+      default:
+        start = new Date(today); start.setDate(start.getDate() - (dayOfWeek - 1))
+        end = new Date(today); end.setHours(23, 59, 59, 999)
+        label = 'This Week'
+    }
+    return { rangeStart: start.getTime(), rangeEnd: end.getTime(), rangeLabel: label }
+  }, [dateFilter])
 
   // ── Scope logic ──
-  // Sales/Admin: "My Calls" primary, "My Team Average" secondary
-  // SuperAdmin: "My Calls" primary, "My Team's Calls" secondary (all calls)
-  // Godmode: "All Calls" primary, "My Calls" secondary
   const isGodmode = role === 'Godmode'
   const isSuperAdmin = role === 'SuperAdmin'
+  const isSales = role === 'Sales'
 
   const myCalls = useMemo(() =>
     (callLogs || []).filter((l: any) => l.caller_email === userEmail),
@@ -79,105 +149,100 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
   const primaryCalls = isGodmode ? allCalls : myCalls
   const primaryLabel = isGodmode ? 'All Calls' : 'My Calls'
 
-  // ── Primary metrics ──
+  // ── Filter calls by selected date range ──
+  const filteredPrimary = useMemo(() =>
+    primaryCalls.filter((l: any) => {
+      const t = new Date(l.call_start).getTime()
+      return t >= rangeStart && t <= rangeEnd
+    }), [primaryCalls, rangeStart, rangeEnd])
+
+  // ── Primary metrics (based on selected date range) ──
   const primaryMetrics = useMemo(() => {
-    const today = primaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= todayStart.getTime())
-    const week = primaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= weekAgo)
-    const month = primaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= monthAgo)
-    const meetingsWeek = week.filter((l: any) => l.outcome === 'meeting_booked')
-    const totalDurWeek = week.reduce((s: number, l: any) => s + Number(l.duration_seconds || 0), 0)
-    const avgDur = week.length > 0 ? Math.round(totalDurWeek / week.length) : 0
-    const convRate = week.length > 0 ? Math.round((meetingsWeek.length / week.length) * 100) : 0
-    // Overdue follow-ups
+    const calls = filteredPrimary
+    const meetings = calls.filter((l: any) => l.outcome === 'meeting_booked')
+    const totalDur = calls.reduce((s: number, l: any) => s + Number(l.duration_seconds || 0), 0)
+    const avgDur = calls.length > 0 ? Math.round(totalDur / calls.length) : 0
+    const convRate = calls.length > 0 ? Math.round((meetings.length / calls.length) * 100) : 0
+    // Overdue follow-ups (always real-time, not range-dependent)
     const overdue = primaryCalls.filter((l: any) =>
       l.next_action_date && new Date(l.next_action_date).getTime() < now &&
       ['callback_scheduled', 'needs_follow_up', 'meeting_booked'].includes(l.outcome)
     ).length
     return {
-      today: today.length, week: week.length, month: month.length,
-      meetingsWeek: meetingsWeek.length, convRate, avgDur, overdue,
+      calls: calls.length, meetings: meetings.length, convRate, avgDur, overdue,
     }
-  }, [primaryCalls, _tick])
+  }, [filteredPrimary, primaryCalls, _tick])
 
   // ── Secondary scope (team avg or team calls) ──
   const secondaryLabel = isGodmode ? 'My Calls' : isSuperAdmin ? "Team's Calls" : 'Team Average'
   const secondaryCalls = isGodmode ? myCalls : allCalls
 
-  const secondaryMetrics = useMemo(() => {
-    const week = secondaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= weekAgo)
-    const meetingsWeek = week.filter((l: any) => l.outcome === 'meeting_booked')
+  const filteredSecondary = useMemo(() =>
+    secondaryCalls.filter((l: any) => {
+      const t = new Date(l.call_start).getTime()
+      return t >= rangeStart && t <= rangeEnd
+    }), [secondaryCalls, rangeStart, rangeEnd])
 
-    if (isGodmode) {
-      // For Godmode secondary = my calls
-      return { week: week.length, meetingsWeek: meetingsWeek.length, convRate: week.length > 0 ? Math.round((meetingsWeek.length / week.length) * 100) : 0 }
-    }
-    if (isSuperAdmin) {
-      // SuperAdmin sees team totals
-      return { week: week.length, meetingsWeek: meetingsWeek.length, convRate: week.length > 0 ? Math.round((meetingsWeek.length / week.length) * 100) : 0 }
+  const secondaryMetrics = useMemo(() => {
+    const calls = filteredSecondary
+    const meetings = calls.filter((l: any) => l.outcome === 'meeting_booked')
+
+    if (isGodmode || isSuperAdmin) {
+      return { calls: calls.length, meetings: meetings.length, convRate: calls.length > 0 ? Math.round((meetings.length / calls.length) * 100) : 0 }
     }
     // Admin/Sales: team average
-    const execs = new Set((week).map((l: any) => l.caller_email))
+    const execs = new Set(calls.map((l: any) => l.caller_email))
     const execCount = Math.max(execs.size, 1)
     return {
-      week: Math.round(week.length / execCount),
-      meetingsWeek: Math.round(meetingsWeek.length / execCount),
-      convRate: week.length > 0 ? Math.round((meetingsWeek.length / week.length) * 100) : 0,
+      calls: Math.round(calls.length / execCount),
+      meetings: Math.round(meetings.length / execCount),
+      convRate: calls.length > 0 ? Math.round((meetings.length / calls.length) * 100) : 0,
     }
-  }, [secondaryCalls, _tick])
+  }, [filteredSecondary, _tick])
 
   // ── Today's schedule (upcoming callbacks/meetings + OVERDUE backlog) ──
   const upcomingActions = useMemo(() => {
     const source = isGodmode ? allCalls : myCalls
     const withAction = source.filter((l: any) => {
       if (!l.next_action_date) return false
-      // Include both future AND past-due follow-ups that need actioning
       return ['callback_scheduled', 'needs_follow_up', 'meeting_booked'].includes(l.outcome)
     })
-    // Sort: overdue items first (most overdue at top), then future by soonest
     return withAction.sort((a: any, b: any) => {
       const aTime = new Date(a.next_action_date).getTime()
       const bTime = new Date(b.next_action_date).getTime()
       const aOverdue = aTime < now
       const bOverdue = bTime < now
-      // Overdue items come first
       if (aOverdue && !bOverdue) return -1
       if (!aOverdue && bOverdue) return 1
-      // Among overdue: most overdue first (smallest time = oldest)
       if (aOverdue && bOverdue) return aTime - bTime
-      // Among future: soonest first
       return aTime - bTime
     }).slice(0, 15)
   }, [myCalls, allCalls, _tick])
 
-  // ── Outcome distribution this week ──
+  // ── Outcome distribution for selected range ──
   const outcomeDist = useMemo(() => {
-    const week = primaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= weekAgo)
     const map: Record<string, number> = {}
-    week.forEach((l: any) => {
+    filteredPrimary.forEach((l: any) => {
       const o = l.outcome || 'unknown'
       map[o] = (map[o] || 0) + 1
     })
     return Object.entries(map).sort((a, b) => b[1] - a[1])
-  }, [primaryCalls, _tick])
+  }, [filteredPrimary])
 
-  // ── Recent calls ──
+  // ── Recent calls (from selected range) ──
   const recentCalls = useMemo(() =>
-    primaryCalls
+    filteredPrimary
       .sort((a: any, b: any) => new Date(b.call_start).getTime() - new Date(a.call_start).getTime())
       .slice(0, 10),
-    [primaryCalls])
+    [filteredPrimary])
 
-  // ── CSV Export for this week's calls ──
-  const weekCalls = useMemo(() =>
-    primaryCalls.filter((l: any) => new Date(l.call_start).getTime() >= weekAgo),
-    [primaryCalls, weekAgo])
-
-  const handleExportWeekCalls = () => {
-    if (!weekCalls.length) return
+  // ── CSV Export for selected date range ──
+  const handleExportCalls = () => {
+    if (!filteredPrimary.length) return
     const headers = ['Date', 'Client', 'Caller', 'Outcome', 'Duration (s)', 'Notes']
     const csv = [
       headers.join(','),
-      ...weekCalls.map((log: any) => {
+      ...filteredPrimary.map((log: any) => {
         const clientName = (clients || []).find((c: any) => c.client_id === log.client_id)?.name || log.client_name || ''
         return [
           `"${new Date(log.call_start).toISOString()}"`,
@@ -192,7 +257,7 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `icuni_calls_this_week_${new Date().toISOString().slice(0, 10)}.csv`
+    link.download = `icuni_calls_${dateFilter}_${new Date().toISOString().slice(0, 10)}.csv`
     link.click()
   }
 
@@ -207,20 +272,41 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
     return stages
   }, [clients, userEmail])
 
+  // Role-aware greeting
+  const greeting = isGodmode
+    ? `Welcome back, ${userName} — here's the team's call performance`
+    : isSales
+    ? `Welcome back, ${userName} — here's your call performance`
+    : `Welcome back, ${userName} — here's your call performance`
+
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-black text-white">Growth Command Center</h2>
-        <p className="text-sm text-neutral-500 mt-1">Welcome back, {userName} — here's your call performance</p>
+      {/* Header + Date Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-black text-white">Growth Command Center</h2>
+          <p className="text-sm text-neutral-500 mt-1">{greeting}</p>
+        </div>
+        <div className="flex items-center gap-1 bg-neutral-900/60 border border-neutral-800 rounded-xl p-1 overflow-x-auto scrollbar-hide">
+          {DATE_FILTER_OPTIONS.map(opt => (
+            <button key={opt.id} onClick={() => setDateFilter(opt.id)}
+              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                dateFilter === opt.id
+                  ? 'bg-[#00bfff] text-white shadow-[0_0_12px_rgba(0,191,255,0.3)]'
+                  : 'text-neutral-500 hover:text-white hover:bg-neutral-800'
+              }`}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Primary Metric Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: `Today (${primaryLabel})`, value: primaryMetrics.today, sub: `${primaryMetrics.week} this week`, icon: Phone, color: '#00bfff', nav: 'calls' },
-          { label: 'Meetings Booked', value: primaryMetrics.meetingsWeek, sub: `${primaryMetrics.convRate}% conversion`, icon: Target, color: '#22c55e', nav: 'meetings' },
-          { label: 'Avg Call Duration', value: fmtDuration(primaryMetrics.avgDur), sub: 'this week', icon: Clock, color: '#8b5cf6', nav: 'calls' },
+          { label: `${primaryLabel} (${rangeLabel})`, value: primaryMetrics.calls, sub: `${primaryMetrics.meetings} meeting${primaryMetrics.meetings !== 1 ? 's' : ''} booked`, icon: Phone, color: '#00bfff', nav: 'calls' },
+          { label: 'Meetings Booked', value: primaryMetrics.meetings, sub: `${primaryMetrics.convRate}% conversion`, icon: Target, color: '#22c55e', nav: 'meetings' },
+          { label: 'Avg Call Duration', value: fmtDuration(primaryMetrics.avgDur), sub: rangeLabel.toLowerCase(), icon: Clock, color: '#8b5cf6', nav: 'calls' },
           { label: 'Overdue Follow-Ups', value: primaryMetrics.overdue, sub: primaryMetrics.overdue === 0 ? 'All caught up!' : 'Need attention', icon: primaryMetrics.overdue > 0 ? AlertTriangle : CheckCircle, color: primaryMetrics.overdue > 0 ? '#ef4444' : '#22c55e', nav: 'sla' },
         ].map((m, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
@@ -250,16 +336,16 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
           </div>
           <div>
             <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">{secondaryLabel}</span>
-            <p className="text-[10px] text-neutral-600">This week comparison</p>
+            <p className="text-[10px] text-neutral-600">{rangeLabel} comparison</p>
           </div>
         </div>
         <div className="flex items-center gap-6 text-xs">
           <div className="text-center">
-            <p className="text-white font-bold text-lg">{secondaryMetrics.week}</p>
+            <p className="text-white font-bold text-lg">{secondaryMetrics.calls}</p>
             <p className="text-[9px] text-neutral-600 uppercase">Calls</p>
           </div>
           <div className="text-center">
-            <p className="text-emerald-400 font-bold text-lg">{secondaryMetrics.meetingsWeek}</p>
+            <p className="text-emerald-400 font-bold text-lg">{secondaryMetrics.meetings}</p>
             <p className="text-[9px] text-neutral-600 uppercase">Meetings</p>
           </div>
           <div className="text-center">
@@ -347,10 +433,10 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
         {/* Outcome Distribution */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className={card}>
           <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-[#ff7a00]" /> Outcomes This Week
+            <BarChart3 className="w-4 h-4 text-[#ff7a00]" /> Outcomes — {rangeLabel}
           </h3>
           {outcomeDist.length === 0 ? (
-            <p className="text-sm text-neutral-600 py-4 text-center">No calls this week</p>
+            <p className="text-sm text-neutral-600 py-4 text-center">No calls in this period</p>
           ) : (
             <div className="space-y-2.5">
               {outcomeDist.map(([outcome, count]) => {
@@ -414,13 +500,15 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
             <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
               <Phone className="w-4 h-4 text-[#00bfff]" /> Recent Calls
             </h3>
-            <button onClick={() => adminActions.setSection('calls')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">View Logs</button>
-            <button onClick={handleExportWeekCalls} title="Export this week's calls as CSV" className="flex items-center gap-1 text-xs text-neutral-500 hover:text-white cursor-pointer transition-colors">
-              <Download className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => adminActions.setSection('calls')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">View Logs</button>
+              <button onClick={handleExportCalls} title={`Export ${rangeLabel.toLowerCase()} calls as CSV`} className="flex items-center gap-1 text-xs text-neutral-500 hover:text-white cursor-pointer transition-colors">
+                <Download className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
           <div className="space-y-1 max-h-[260px] overflow-y-auto">
-            {recentCalls.length === 0 && <p className="text-sm text-neutral-600 py-4 text-center">No recent calls</p>}
+            {recentCalls.length === 0 && <p className="text-sm text-neutral-600 py-4 text-center">No calls in this period</p>}
             {recentCalls.map((l: any, i: number) => {
               const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || 'Unknown'
               const color = OUTCOME_COLORS[l.outcome] || '#6b7280'

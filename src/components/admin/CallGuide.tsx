@@ -521,6 +521,10 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
     if (phase === 'guide' && !timerRef.current) {
       setCallStart(new Date().toISOString())
       timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
+      // Auto-start transcription when guide opens
+      if (speechSupported && !isTranscribing) {
+        setTimeout(() => startTranscription(), 300)
+      }
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [phase])
@@ -962,6 +966,21 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Mic toggle */}
+          {speechSupported && (
+            <button
+              onClick={() => isTranscribing ? stopTranscription() : startTranscription()}
+              className={`cg-mic-header-btn ${isTranscribing ? 'active' : ''}`}
+              title={isTranscribing ? 'Stop transcribing' : 'Start transcribing'}
+            >
+              {isTranscribing ? (
+                <><div className="cg-mic-pulse" /><MicOff className="w-3.5 h-3.5" /></>
+              ) : (
+                <Mic className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline text-[10px]">{isTranscribing ? 'Mic On' : 'Mic Off'}</span>
+            </button>
+          )}
           {/* Self-image pivot trigger */}
           <button
             onClick={() => setShowPivotCard(!showPivotCard)}
@@ -1422,89 +1441,56 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
           )}
         </div>
 
-        {/* Section 5: Live Transcript */}
-        <div className="cg-section">
-          <div className="cg-section-header" onClick={() => toggleSection('transcript')}>
-            <h3>Live Transcript</h3>
-            <div className="flex items-center gap-2">
-              {isTranscribing && <div className="cg-mic-pulse" />}
-              {transcriptLines.length > 0 && (
-                <span className="cg-section-count">{transcriptLines.length} lines</span>
-              )}
-              {collapsed.transcript ? <ChevronDown className="w-4 h-4 text-neutral-600" /> : <ChevronUp className="w-4 h-4 text-neutral-600" />}
+        {/* Live Transcript — compact inline panel */}
+        {speechSupported && (transcriptLines.length > 0 || isTranscribing) && (
+          <div className="cg-section">
+            <div className="cg-section-header" onClick={() => toggleSection('transcript')}>
+              <h3 className="flex items-center gap-2">
+                {isTranscribing && <div className="cg-mic-pulse" />}
+                Live Transcript
+              </h3>
+              <div className="flex items-center gap-2">
+                {transcriptLines.length > 0 && (
+                  <span className="cg-section-count">{transcriptLines.length} lines</span>
+                )}
+                {collapsed.transcript ? <ChevronDown className="w-4 h-4 text-neutral-600" /> : <ChevronUp className="w-4 h-4 text-neutral-600" />}
+              </div>
             </div>
-          </div>
-          {!collapsed.transcript && (
-            <div className="cg-section-body">
-              {!speechSupported ? (
-                <div className="cg-transcript-unsupported">
-                  <MicOff className="w-5 h-5 mx-auto mb-2 opacity-50" />
-                  <p>Voice transcription is not supported in this browser.</p>
-                  <p className="mt-1 text-[10px] text-neutral-600">Use Chrome or Edge for live transcription.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="cg-transcript-header">
-                    <button
-                      onClick={() => isTranscribing ? stopTranscription() : startTranscription()}
-                      className={`cg-mic-btn ${isTranscribing ? 'active' : ''}`}
-                    >
-                      {isTranscribing ? (
-                        <><div className="cg-mic-pulse" /><MicOff className="w-4 h-4" /> Stop Transcribing</>
-                      ) : (
-                        <><Mic className="w-4 h-4" /> Start Transcribing</>
-                      )}
-                    </button>
-                    <span className={`cg-transcript-status ${isTranscribing ? 'listening' : 'idle'}`}>
-                      {isTranscribing ? (
-                        <><div className="cg-mic-pulse" /> Listening</>
-                      ) : (
-                        transcriptLines.length > 0 ? 'Paused' : 'Ready'
-                      )}
-                    </span>
+            {!collapsed.transcript && (
+              <div className="cg-section-body">
+                {(transcriptLines.length > 0 || interimText) && (
+                  <div className="cg-transcript-area" ref={transcriptAreaRef}>
+                    {transcriptLines.map((line, i) => (
+                      <div key={i} className="cg-transcript-line">
+                        <span className="cg-transcript-time">{line.time}</span>
+                        <span className="cg-transcript-text">{line.text}</span>
+                      </div>
+                    ))}
+                    {interimText && (
+                      <div className="cg-transcript-line">
+                        <span className="cg-transcript-time">…</span>
+                        <span className="cg-transcript-text cg-transcript-interim">{interimText}</span>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Live transcript lines */}
-                  {(transcriptLines.length > 0 || interimText) && (
-                    <div className="cg-transcript-area" ref={transcriptAreaRef}>
-                      {transcriptLines.map((line, i) => (
-                        <div key={i} className="cg-transcript-line">
-                          <span className="cg-transcript-time">{line.time}</span>
-                          <span className="cg-transcript-text">{line.text}</span>
-                        </div>
-                      ))}
-                      {interimText && (
-                        <div className="cg-transcript-line">
-                          <span className="cg-transcript-time">…</span>
-                          <span className="cg-transcript-text cg-transcript-interim">{interimText}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Editable full transcript */}
-                  {transcriptLines.length > 0 && !isTranscribing && (
-                    <div className="mt-3">
-                      <label className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider block mb-1">Edit Transcript (corrections welcome)</label>
-                      <textarea
-                        className="cg-transcript-edit"
-                        value={transcript}
-                        onChange={e => setTranscript(e.target.value)}
-                        rows={6}
-                        placeholder="Transcript will appear here…"
-                      />
-                    </div>
-                  )}
-
-                  {transcriptLines.length === 0 && !isTranscribing && (
-                    <p className="text-xs text-neutral-600 mt-3">Press "Start Transcribing" to capture your side of the call in real-time.</p>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-        </div>
-
+                )}
+                {/* Editable full transcript */}
+                {transcriptLines.length > 0 && !isTranscribing && (
+                  <div className="mt-3">
+                    <label className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider block mb-1">Edit Transcript (corrections welcome)</label>
+                    <textarea
+                      className="cg-transcript-edit"
+                      value={transcript}
+                      onChange={e => setTranscript(e.target.value)}
+                      rows={6}
+                      placeholder="Transcript will appear here…"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         {/* Section 6: Next Action */}
         {outcome && (
           <div className="cg-section">
