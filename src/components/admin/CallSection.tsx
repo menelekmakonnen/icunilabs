@@ -743,6 +743,17 @@ export default function CallSection() {
                               <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">Call Notes</p>
                               <p className="bg-neutral-900/50 p-3 rounded border border-neutral-800 text-white whitespace-pre-wrap">{log.call_notes || <span className="italic text-neutral-600">No notes recorded</span>}</p>
                             </div>
+                            {log.transcript && (
+                              <div>
+                                <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                                  Call Transcript
+                                </p>
+                                <div className="bg-neutral-900/50 p-3 rounded border border-neutral-800 max-h-48 overflow-y-auto">
+                                  <pre className="text-[11px] text-neutral-300 whitespace-pre-wrap font-mono leading-relaxed">{log.transcript}</pre>
+                                </div>
+                              </div>
+                            )}
                             <div className="space-y-3">
                               {log.next_action && (
                                 <div className="bg-emerald-500/5 border border-emerald-500/10 p-3 rounded">

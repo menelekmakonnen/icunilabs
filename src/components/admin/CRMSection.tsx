@@ -907,6 +907,19 @@ export default function CRMSection() {
                           {/* Call notes */}
                           {call.call_notes && <p className="text-xs text-neutral-300 mb-2 whitespace-pre-wrap">{call.call_notes}</p>}
 
+                          {/* Call transcript */}
+                          {call.transcript && (
+                            <details className="mb-2">
+                              <summary className="text-[10px] text-[#00bfff] cursor-pointer hover:text-white transition-colors flex items-center gap-1">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                                View Transcript
+                              </summary>
+                              <div className="mt-1.5 bg-neutral-800/50 p-2.5 rounded-lg border border-neutral-700/50 max-h-32 overflow-y-auto">
+                                <pre className="text-[10px] text-neutral-400 whitespace-pre-wrap font-mono leading-relaxed">{call.transcript}</pre>
+                              </div>
+                            </details>
+                          )}
+
                           {/* Data captured grid */}
                           {entries.length > 0 && (
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-2">
@@ -1175,6 +1188,19 @@ export default function CRMSection() {
                           <div>
                             <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">Call Notes</p>
                             <p className="text-xs text-neutral-400 whitespace-pre-wrap leading-relaxed">{call.call_notes}</p>
+                          </div>
+                        )}
+
+                        {/* Call Transcript */}
+                        {call.transcript && (
+                          <div>
+                            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+                              Call Transcript
+                            </p>
+                            <div className="bg-neutral-900/50 p-3 rounded-lg border border-neutral-800 max-h-48 overflow-y-auto">
+                              <pre className="text-[11px] text-neutral-400 whitespace-pre-wrap font-mono leading-relaxed">{call.transcript}</pre>
+                            </div>
                           </div>
                         )}
                       </div>

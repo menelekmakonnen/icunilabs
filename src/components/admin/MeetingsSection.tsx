@@ -465,12 +465,13 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
     await adminActions.updateMeeting(m.meeting_id, { date: editDate, time: editTime })
     setM((prev: any) => ({ ...prev, date: editDate, time: editTime }))
     setDateTimeDirty(false)
+    await adminActions.loadMeetings() // Refresh Kanban cards
     setBusy(false)
   }
 
   const sendConfirmation = async () => {
     setBusy(true)
-    // Save any pending date/time changes first
+    // Always save any pending date/time changes first
     if (dateTimeDirty) {
       await adminActions.updateMeeting(m.meeting_id, { date: editDate, time: editTime })
       setM((prev: any) => ({ ...prev, date: editDate, time: editTime }))
@@ -479,6 +480,7 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
     await adminActions.sendMeetingConfirmation(m.meeting_id)
     setM((prev: any) => ({ ...prev, confirmation_sent: true }))
     setConfirmSent(true)
+    await adminActions.loadMeetings() // Refresh Kanban cards
     setBusy(false)
   }
 
@@ -625,7 +627,7 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
             </div>
           </div>
 
-          {/* Save date/time + Send Confirmation — always visible */}
+          {/* Save date/time + Send Confirmation */}
           <div className="flex flex-wrap items-center gap-2 mb-6">
             {dateTimeDirty && (
               <button onClick={saveDateTime} disabled={busy} className="mtg-btn mtg-btn--ghost text-xs">
@@ -633,7 +635,11 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
               </button>
             )}
             <button onClick={sendConfirmation} disabled={busy || (!editDate && !editTime)} className="mtg-btn mtg-btn--primary text-xs">
-              <Send className="w-3.5 h-3.5" /> {busy ? 'Sending...' : confirmSent || m.confirmation_sent ? 'Resend Confirmation' : 'Send Confirmation Email'}
+              <Send className="w-3.5 h-3.5" /> {busy ? 'Sending...' : confirmSent || m.confirmation_sent
+                ? 'Resend Confirmation'
+                : dateTimeDirty
+                  ? 'Update & Send Email'
+                  : 'Send Confirmation Email'}
             </button>
             {(confirmSent || m.confirmation_sent) && (
               <span className="text-[10px] text-emerald-400 flex items-center gap-1"><Check className="w-3 h-3" /> Sent from labs@icuni.org</span>
