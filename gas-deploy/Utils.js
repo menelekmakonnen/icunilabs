@@ -221,7 +221,12 @@ function updateRow_(sheetName, rowIndex, updates) {
     for (var key in updates) {
         var colIdx = headers.indexOf(key);
         if (colIdx >= 0) {
-            sheet.getRange(rowIndex, colIdx + 1).setValue(updates[key]);
+            var cell = sheet.getRange(rowIndex, colIdx + 1);
+            // Force plain text for time-like fields to prevent Sheets date auto-format
+            if (key === 'time') {
+                cell.setNumberFormat('@');
+            }
+            cell.setValue(updates[key]);
         } else {
             Logger.log('updateRow_ WARNING: column "' + key + '" not found in sheet ' + sheetName + '. Headers: ' + headers.join(', '));
         }

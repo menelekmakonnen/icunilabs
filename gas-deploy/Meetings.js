@@ -16,7 +16,10 @@ function handleGetMeetings(payload) {
 
     // Filter out regressed AND cancelled meetings (they're no longer active)
     if (!payload.include_regressed) {
-        meetings = meetings.filter(function(m) { return m.stage !== 'regressed' && m.stage !== 'cancelled'; });
+        meetings = meetings.filter(function(m) {
+            var stage = String(m.stage || '').trim().toLowerCase();
+            return stage !== 'regressed' && stage !== 'cancelled';
+        });
     }
 
     // Filter by client if specified
@@ -72,6 +75,12 @@ function handleCreateMeeting(payload) {
         '', '', // result, result_notes
         nowStr, nowStr
     ]);
+
+    // Force the time column (col 8) to plain text to prevent Sheets auto-format
+    var meetingSheet = getSheetByName_(SHEETS.MEETINGS);
+    var lastRow = meetingSheet.getLastRow();
+    meetingSheet.getRange(lastRow, 8).setNumberFormat('@');
+    invalidateSheetCache_(SHEETS.MEETINGS);
 
     logAction_(auth.user.user_id, auth.user.name, 'MEETING_CREATED', clientName + ' — ' + (payload.date || 'TBD'));
 

@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { resolveStaffName } from '../../utils/resolveStaffName'
 import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
-import { Phone, TrendingUp, Users, Clock, Target, BarChart3, ChevronDown, Download, Calendar, Filter, FileText, Pencil, ArrowRight, Bell, X, AlertTriangle } from 'lucide-react'
+import { Phone, TrendingUp, Users, Clock, Target, BarChart3, ChevronDown, Download, Calendar, Filter, FileText, Pencil, ArrowRight, Bell, X, AlertTriangle, MessageSquareText } from 'lucide-react'
 import CallGuide from './CallGuide'
 import '../admin/crm.css'
 
@@ -35,7 +35,7 @@ function fmtDate(d: string) {
 type DateFilter = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'this_year' | 'all' | 'custom'
 
 export default function CallSection() {
-  const { callLogs: rawCallLogs, competitorIntel, clients } = useAdminStore()
+  const { callLogs: rawCallLogs, clients } = useAdminStore()
   const effectiveUser = useEffectiveUser()
   const isSalesOnly = effectiveUser?.role === 'Sales'
 
@@ -47,7 +47,7 @@ export default function CallSection() {
     }
     return rawCallLogs
   }, [rawCallLogs, isSalesOnly, effectiveUser?.email])
-  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'competitor' | 'upcoming'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'logs' | 'transcripts' | 'upcoming'>('overview')
   const [dateFilter, setDateFilter] = useState<DateFilter>('this_week')
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
@@ -422,9 +422,9 @@ export default function CallSection() {
       <div className="flex gap-1 mb-4 sm:mb-6 border-b border-neutral-800 overflow-x-auto scrollbar-hide">
         {[
           { id: 'overview', label: 'Overview', icon: BarChart3 },
-          { id: 'upcoming', label: `Upcoming (${upcomingCalls.length})`, icon: Bell },
           { id: 'logs', label: `Call Logs (${filteredLogs.length})`, icon: FileText },
-          { id: 'competitor', label: 'Competitor Intel', icon: TrendingUp }
+          { id: 'transcripts', label: 'Transcripts', icon: MessageSquareText },
+          { id: 'upcoming', label: `Callbacks (${upcomingCalls.length})`, icon: Bell }
         ].map(t => (
           <button
             key={t.id}
@@ -946,44 +946,52 @@ export default function CallSection() {
           </div>
         )}
 
-        {activeTab === 'competitor' && (
-          <div className="crm-fade-in crm-metric">
+        {activeTab === 'transcripts' && (
+          <div className="crm-fade-in space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-[#ff7a00]" />
-              <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Competitor Intelligence Database</p>
+              <MessageSquareText className="w-4 h-4 text-[#8b5cf6]" />
+              <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Call Transcripts</p>
             </div>
-            {competitorIntel.length > 0 ? (
-              <div className="overflow-x-auto rounded-lg border border-neutral-800 -mx-1">
-                <table className="w-full text-sm text-left" style={{ minWidth: 520 }}>
-                  <thead className="bg-neutral-900/80 text-[10px] uppercase tracking-wider text-neutral-500 border-b border-neutral-800">
-                    <tr>
-                      <th className="px-4 py-3 font-bold">System Name</th>
-                      <th className="px-4 py-3 font-bold">Developer</th>
-                      <th className="px-4 py-3 font-bold text-center">Encounters</th>
-                      <th className="px-4 py-3 font-bold">Industries</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-800/50">
-                    {competitorIntel.map((c: any, i: number) => (
-                      <tr key={i} className="hover:bg-neutral-900/30 transition-colors">
-                        <td className="px-4 py-3 text-white font-medium">{c.system_name}</td>
-                        <td className="px-4 py-3 text-neutral-400">{c.developer || '—'}</td>
-                        <td className="px-4 py-3 text-center text-[#00bfff] font-bold">{c.count}</td>
-                        <td className="px-4 py-3 text-neutral-500">
-                          <div className="flex flex-wrap gap-1">
-                            {(c.industries || []).map((ind: string) => (
-                              <span key={ind} className="bg-neutral-800 px-2 py-0.5 rounded text-[10px]">{ind}</span>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-neutral-600 text-sm py-4">No competitor intelligence gathered yet.</p>
-            )}
+            {(() => {
+              const logsWithTranscript = filteredLogs.filter((l: any) => l.transcript && String(l.transcript).trim())
+              if (logsWithTranscript.length === 0) return (
+                <div className="text-center py-12">
+                  <MessageSquareText className="w-8 h-8 text-neutral-700 mx-auto mb-3" />
+                  <p className="text-neutral-500 text-sm">No transcripts recorded yet.</p>
+                  <p className="text-neutral-600 text-xs mt-1">Transcripts are saved automatically from call recordings.</p>
+                </div>
+              )
+              return logsWithTranscript.map((log: any) => (
+                <div key={log.call_id} className="p-4 rounded-xl bg-neutral-950 border border-neutral-800">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 flex items-center justify-center">
+                        <Phone className="w-4 h-4 text-[#8b5cf6]" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-white">{log.client_name || 'Unknown'}</p>
+                        <p className="text-[10px] text-neutral-500">
+                          {log.client_company ? log.client_company + ' · ' : ''}
+                          {log.call_start ? new Date(log.call_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                          {log.call_start ? ' at ' + new Date(log.call_start).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {log.call_type && (
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${log.call_type === 'conversation' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-neutral-800 text-neutral-400 border border-neutral-700'}`}>
+                          {log.call_type === 'conversation' ? '💬 Conversation' : '📞 Attempt'}
+                        </span>
+                      )}
+                      <span className="text-[10px] text-neutral-600">by {resolveStaffName(log.caller_email || '')}</span>
+                    </div>
+                  </div>
+                  <div className="bg-neutral-900/60 border border-neutral-800 rounded-lg p-4">
+                    <pre className="text-xs text-neutral-300 whitespace-pre-wrap font-[inherit] leading-relaxed m-0">{log.transcript}</pre>
+                  </div>
+                </div>
+              ))
+            })()}
           </div>
         )}
       </div>
