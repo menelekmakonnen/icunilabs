@@ -21,7 +21,11 @@ const FOUNDER_NAME = 'Menelek Makonnen'
 
 function fmtDate(d: string) {
   if (!d) return '—'
-  try { return new Date(d + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) } catch { return d }
+  try {
+    const clean = d.split(' at ')[0].split('T')[0].trim()
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(clean)) return d
+    return new Date(clean + 'T00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+  } catch { return d }
 }
 function fmtTime(t: string) {
   if (!t) return ''
@@ -77,13 +81,23 @@ export default function MeetingsSection() {
       )
       .map((l: any) => {
         const client = clientMap[l.client_id] || {}
+        const rawDate = l.next_action_date || ''
+        let parsedDate = ''
+        let parsedTime = ''
+        if (rawDate.includes(' at ')) {
+          const parts = rawDate.split(' at ')
+          parsedDate = parts[0].trim()
+          parsedTime = parts[1]?.trim() || ''
+        } else {
+          parsedDate = rawDate.split('T')[0] || ''
+        }
         return {
           meeting_id: `call-${l.call_id}`,
           client_id: l.client_id,
           client_name: client.name || l.client_name || 'Unknown',
           client_company: client.company || l.client_company || '',
-          date: l.next_action_date || '',
-          time: '',
+          date: parsedDate,
+          time: parsedTime,
           type: 'online',
           location_or_link: '',
           booked_by: l.caller_email || '',
@@ -586,12 +600,40 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
           {(() => {
             const client = clientMap?.[m.client_id]
             const email = m.client_email || client?.email || client?.contact_email || ''
-            return email ? (
-              <div className="flex items-center gap-2 mb-4 p-2.5 rounded-xl bg-[#8b5cf6]/5 border border-[#8b5cf6]/10">
-                <Mail className="w-3.5 h-3.5 text-[#8b5cf6] flex-shrink-0" />
-                <a href={`mailto:${email}`} className="text-xs text-[#8b5cf6] hover:text-white transition-colors break-all">{email}</a>
+            return (
+              <div className="mb-4">
+                <div className="mtg-field-label flex items-center gap-1.5 mb-1">
+                  <Mail className="w-3 h-3 text-[#8b5cf6]" /> Client Email
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    defaultValue={email}
+                    placeholder="Enter client email…"
+                    className={inputCls + ' text-xs flex-1'}
+                    onBlur={async (e) => {
+                      const newEmail = e.target.value.trim()
+                      if (newEmail && newEmail !== email) {
+                        setBusy(true)
+                        // Save to meeting
+                        await adminActions.updateMeeting(m.meeting_id, { client_email: newEmail })
+                        // Also update the client record if this client exists
+                        if (m.client_id && !m.client_id.startsWith('call-')) {
+                          await adminActions.updateClient(m.client_id, { email: newEmail })
+                        }
+                        setM((prev: any) => ({ ...prev, client_email: newEmail }))
+                        setBusy(false)
+                      }
+                    }}
+                  />
+                  {email && (
+                    <a href={`mailto:${email}`} className="px-2 py-1.5 rounded-lg bg-[#8b5cf6]/10 text-[#8b5cf6] hover:bg-[#8b5cf6]/20 transition-colors flex items-center">
+                      <Send className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
               </div>
-            ) : null
+            )
           })()}
           {/* Meeting Info — Editable Date/Time */}
           <div className="grid grid-cols-2 gap-4 mb-4">
