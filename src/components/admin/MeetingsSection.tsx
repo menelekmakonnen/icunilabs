@@ -46,7 +46,16 @@ export default function MeetingsSection() {
   const [showCreate, setShowCreate] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => { adminActions.loadMeetings(); adminActions.loadClients(); adminActions.loadUsers(); adminActions.loadCallLogs({ page_size: 500 }) }, [])
+  useEffect(() => {
+    adminActions.loadMeetings()
+    adminActions.loadClients()
+    adminActions.loadUsers()
+    // Only load recent call logs for inferred meetings if not already loaded
+    if (!callLogs || callLogs.length === 0) {
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]
+      adminActions.loadCallLogs({ page_size: 50, from_date: weekAgo })
+    }
+  }, [])
 
   // Build client lookup
   const clientMap = useMemo(() => {

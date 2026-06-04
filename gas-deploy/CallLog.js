@@ -99,7 +99,6 @@ function handleSaveCallLog(payload) {
         updateRow_(SHEETS.CLIENTS, client._rowIndex, contactUpdates);
     }
 
-    // ── Write call log ──
     appendRow_(SHEETS.CALL_LOGS, [
         callId, clientId, auth.user.email, auth.user.name,
         payload.environment_type || '', payload.persona_type || '',
@@ -110,7 +109,8 @@ function handleSaveCallLog(payload) {
         payload.next_action || '', payload.next_action_date || '', payload.next_action_notes || '',
         payload.call_notes || '', autoAdvanced, nowStr,
         payload.self_image_initial || '', payload.self_image_confirmed || '',
-        payload.self_image_pivoted ? 'Yes' : ''
+        payload.self_image_pivoted ? 'Yes' : '',
+        payload.transcript || ''
     ]);
 
     // ── Extract competitor intel ──
