@@ -47,6 +47,8 @@ var SHEETS = {
     PAYMENTS:      'Payments',
     CALL_LOGS:     'Call_Logs',
     COMPETITOR_INTEL: 'Competitor_Intel',
+    MEETINGS:      'Meetings',
+    CLIENT_CONTACTS: 'Client_Contacts',
 
     // Referrals
     REFERRERS:     'Referrers',

@@ -62,7 +62,8 @@ function getSheetByName_(sheetName) {
     }
     // Clients
     else if ([SHEETS.CLIENTS, SHEETS.CLIENT_PROJECTS, SHEETS.CLIENT_NOTES, SHEETS.INVOICES,
-              SHEETS.INVOICE_ITEMS, SHEETS.PAYMENTS, SHEETS.CALL_LOGS, SHEETS.COMPETITOR_INTEL].indexOf(sheetName) >= 0) {
+              SHEETS.INVOICE_ITEMS, SHEETS.PAYMENTS, SHEETS.CALL_LOGS, SHEETS.COMPETITOR_INTEL,
+              SHEETS.MEETINGS, SHEETS.CLIENT_CONTACTS].indexOf(sheetName) >= 0) {
         ssGetter = getClientsSS_;
     }
     // Referrals
@@ -238,6 +239,15 @@ function ensureSheet_(sheetName, headers) {
         sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
     }
     return sheet;
+}
+
+/**
+ * Delete a row by row index.
+ */
+function deleteRow_(sheetName, rowIndex) {
+    var sheet = getSheetByName_(sheetName);
+    sheet.deleteRow(rowIndex);
+    invalidateSheetCache_(sheetName);
 }
 
 // ─── ID GENERATION ───────────────────────────────────────

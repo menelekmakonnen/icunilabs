@@ -146,6 +146,13 @@ var ACTION_MAP = {
     confirmCalendarEvent: handleConfirmCalendarEvent,
     getAvailableSlots: handleGetAvailableSlots,
     deleteCalendarEvent: handleDeleteCalendarEvent,
+
+    // ── Meetings ──
+    getMeetings: handleGetMeetings, createMeeting: handleCreateMeeting,
+    updateMeeting: handleUpdateMeeting, deleteMeeting: handleDeleteMeeting,
+    sendMeetingConfirmation: handleSendMeetingConfirmation,
+    qualifyMeeting: handleQualifyMeeting,
+    regressMeeting: handleRegressMeeting, cancelMeeting: handleCancelMeeting,
 };
 
 // ═══════════════════════════════════════════════════════════

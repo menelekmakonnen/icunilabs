@@ -1489,6 +1489,29 @@ export const adminActions = {
     }
   },
 
+  regressMeeting: async (meeting_id: string, target_stage: string) => {
+    try {
+      await apiPost('regressMeeting', { token: state.token, meeting_id, target_stage })
+      await adminActions.loadMeetings()
+      await adminActions.loadClients()
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  cancelMeeting: async (meeting_id: string, reason?: string) => {
+    try {
+      await apiPost('cancelMeeting', { token: state.token, meeting_id, reason })
+      await adminActions.loadMeetings()
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
   // ── Calendar Integration ──
   createCalendarEvent: async (data: Record<string, any>) => {
     try {
