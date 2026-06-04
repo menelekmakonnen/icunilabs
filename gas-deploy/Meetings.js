@@ -14,9 +14,9 @@ function handleGetMeetings(payload) {
 
     var meetings = sheetToObjects_(SHEETS.MEETINGS);
 
-    // Filter out regressed meetings (they're back in the call pipeline)
+    // Filter out regressed AND cancelled meetings (they're no longer active)
     if (!payload.include_regressed) {
-        meetings = meetings.filter(function(m) { return m.stage !== 'regressed'; });
+        meetings = meetings.filter(function(m) { return m.stage !== 'regressed' && m.stage !== 'cancelled'; });
     }
 
     // Filter by client if specified
@@ -55,10 +55,13 @@ function handleCreateMeeting(payload) {
     var clientName = payload.client_name || (client ? (client.name || client.company || 'Unknown') : 'Unknown');
     var clientCompany = payload.client_company || (client ? (client.company || '') : '');
 
+    // Map client_email → contact_email (frontend sends client_email)
+    var contactEmail = payload.contact_email || payload.client_email || '';
+
     appendRow_(SHEETS.MEETINGS, [
         meetingId, clientId, clientName, clientCompany,
-        payload.contact_name || '', payload.contact_email || '',
-        payload.date || '', payload.time || '',
+        payload.contact_name || '', contactEmail,
+        payload.date || '', String(payload.time || ''),
         payload.type || 'online', payload.location_or_link || '',
         payload.booked_by || auth.user.email,
         'booked', // initial stage
@@ -104,6 +107,16 @@ function handleUpdateMeeting(payload) {
             updates[field] = payload[field];
         }
     });
+
+    // Force time to be a string (prevent Sheets date auto-format)
+    if (updates.time !== undefined) {
+        updates.time = String(updates.time);
+    }
+
+    // Map client_email → contact_email (frontend sends client_email)
+    if (payload.client_email !== undefined && !payload.contact_email) {
+        updates.contact_email = payload.client_email;
+    }
 
     // Handle demo_checklist separately (serialize to JSON)
     if (payload.demo_checklist !== undefined) {

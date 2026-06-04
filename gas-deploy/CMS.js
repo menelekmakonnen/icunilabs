@@ -1257,6 +1257,34 @@ function handlePreviewClientEmail(payload) {
 function buildClientTemplate_(name, template, extras) {
     extras = extras || {};
     switch (template) {
+        case 'meeting_confirmation':
+            var mtgDate = extras.date || 'TBD';
+            var mtgTime = extras.time || 'TBD';
+            var mtgType = extras.type || 'online';
+            var mtgLink = extras.link || extras.meetLink || '';
+            var mtgLocation = extras.location || '';
+            return {
+                subject: 'Meeting Confirmed \u2014 ' + mtgDate + ' at ' + mtgTime + ' | ICUNI Labs',
+                title: 'Your Meeting is Confirmed',
+                body:
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                    '<span style="display:inline-block;background:linear-gradient(135deg,#10b981,#22c55e);color:#fff;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:1px;">CONFIRMED</span>' +
+                    '</div>' +
+                    'We\u2019re looking forward to meeting with you. Here are the details:<br><br>' +
+                    '<div style="background:#1a1a2e;border:1px solid #2a4a2a;border-radius:10px;padding:20px;margin:12px 0;">' +
+                    '<div style="color:#10b981;font-size:13px;letter-spacing:2px;margin-bottom:10px;">MEETING DETAILS</div>' +
+                    '<table style="width:100%;border-collapse:collapse;">' +
+                    '<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#94a3b8;font-size:14px;">Date</td>' +
+                    '<td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#e8ecf4;font-size:15px;font-weight:600;text-align:right;">' + mtgDate + '</td></tr>' +
+                    '<tr><td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#94a3b8;font-size:14px;">Time</td>' +
+                    '<td style="padding:8px 12px;border-bottom:1px solid #2a2a4a;color:#e8ecf4;font-size:15px;font-weight:600;text-align:right;">' + mtgTime + '</td></tr>' +
+                    '<tr><td style="padding:8px 12px;color:#94a3b8;font-size:14px;">Format</td>' +
+                    '<td style="padding:8px 12px;color:#e8ecf4;font-size:15px;font-weight:600;text-align:right;">' + (mtgType === 'online' ? 'Virtual (Google Meet)' : 'In Person') + '</td></tr>' +
+                    (mtgLocation ? '<tr><td style="padding:8px 12px;color:#94a3b8;font-size:14px;">Location</td><td style="padding:8px 12px;color:#e8ecf4;font-size:15px;font-weight:600;text-align:right;">' + mtgLocation + '</td></tr>' : '') +
+                    '</table></div>' +
+                    (extras.notes || 'If you need to reschedule, simply reply to this email and we\u2019ll accommodate.'),
+                opts: mtgLink ? { ctaText: 'Join Meeting', ctaLink: mtgLink } : {}
+            };
         case 'welcome':
             return {
                 subject: 'Welcome to ICUNI Labs \u2014 Let\u2019s Build Something Great',

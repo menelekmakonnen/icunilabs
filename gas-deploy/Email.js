@@ -625,6 +625,7 @@ var MAIL_HUB_TEMPLATES = [
     { id: 'referrer:meeting_reminder',    name: 'Referrer Meeting Reminder',   category: 'referrer',  builder: 'referrer',  from: 'hello@icuni.org', desc: 'Remind about an upcoming prospect meeting.' },
     { id: 'referrer:new_material',        name: 'New Referral Material',       category: 'referrer',  builder: 'referrer',  from: 'hello@icuni.org', desc: 'New portfolio or demo material available.' },
     // ── CLIENT ──
+    { id: 'client:meeting_confirmation', name: 'Meeting Confirmation',        category: 'client',    builder: 'client',    from: 'labs@icuni.org',  desc: 'Confirm a scheduled meeting with date, time, and link.' },
     { id: 'client:welcome',              name: 'Client Welcome',              category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Welcome them as a new ICUNI Labs client.' },
     { id: 'client:project_kickoff',      name: 'Project Kickoff',             category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Kickoff call scheduled, outline what happens next.' },
     { id: 'client:milestone_update',     name: 'Milestone Update',            category: 'client',    builder: 'client',    from: 'hello@icuni.org', desc: 'Share progress on their project milestone.' },

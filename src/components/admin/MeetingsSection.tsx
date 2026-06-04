@@ -30,16 +30,44 @@ function fmtDate(d: string) {
 function fmtTime(t: string) {
   if (!t) return ''
   try {
-    const [h, m] = t.split(':')
+    let raw = String(t).trim()
+    // Google Sheets may return a full ISO date for time-only cells
+    // e.g. "1899-12-30T14:00:00.000Z" or "Sat Dec 30 1899 14:00:00 GMT..."
+    if (raw.includes('T') || raw.includes('1899') || raw.includes('GMT')) {
+      const d = new Date(raw)
+      if (!isNaN(d.getTime())) {
+        const hr = d.getHours()
+        const mn = String(d.getMinutes()).padStart(2, '0')
+        return `${hr > 12 ? hr - 12 : hr || 12}:${mn} ${hr >= 12 ? 'PM' : 'AM'}`
+      }
+    }
+    const [h, m] = raw.split(':')
     const hr = parseInt(h)
+    if (isNaN(hr)) return raw
     return `${hr > 12 ? hr - 12 : hr || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`
-  } catch { return t }
+  } catch { return String(t) }
 }
 
 function getInitials(name: string) {
   return (name || '').replace(/[^a-zA-Z\s]/g, '').trim().split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '•'
 }
 const COLORS = ['#00bfff','#8b5cf6','#ff7a00','#10b981','#ef4444','#f59e0b','#ec4899','#06b6d4']
+
+// Normalize time to HH:MM for <input type="time">
+function normalizeTime(t: any): string {
+  if (!t) return ''
+  const s = String(t).trim()
+  // Already HH:MM or HH:MM:SS
+  if (/^\d{1,2}:\d{2}/.test(s)) return s.slice(0, 5)
+  // ISO date or Sheets date object ("1899-12-30T14:00:00")
+  if (s.includes('T') || s.includes('1899') || s.includes('GMT')) {
+    try {
+      const d = new Date(s)
+      if (!isNaN(d.getTime())) return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+    } catch {}
+  }
+  return s
+}
 function getColor(name: string) { let h = 0; for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h << 5) - h); return COLORS[Math.abs(h) % COLORS.length] }
 
 export default function MeetingsSection() {
@@ -109,8 +137,11 @@ export default function MeetingsSection() {
       })
   }, [callLogs, meetings, clientMap])
 
-  // Group meetings by stage (including inferred)
-  const allMeetings = useMemo(() => [...(meetings || []), ...inferredMeetings], [meetings, inferredMeetings])
+  // Group meetings by stage (including inferred) — exclude regressed/cancelled
+  const allMeetings = useMemo(() => {
+    const combined = [...(meetings || []), ...inferredMeetings]
+    return combined.filter((m: any) => m.stage !== 'regressed' && m.stage !== 'cancelled')
+  }, [meetings, inferredMeetings])
 
   const grouped = useMemo(() => {
     const map: Record<string, any[]> = {}
@@ -415,7 +446,7 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
   const [prepNotes, setPrepNotes] = useState(meeting.prep_notes || '')
   const [postNotes, setPostNotes] = useState(meeting.post_meeting_notes || '')
   const [editDate, setEditDate] = useState(meeting.date || '')
-  const [editTime, setEditTime] = useState(meeting.time || '')
+  const [editTime, setEditTime] = useState(normalizeTime(meeting.time))
   const [dateTimeDirty, setDateTimeDirty] = useState(false)
   const [confirmSent, setConfirmSent] = useState(false)
   const [checklist, setChecklist] = useState<{ item: string; checked: boolean }[]>(() => {
@@ -439,7 +470,7 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
     setPrepNotes(meeting.prep_notes || '')
     setPostNotes(meeting.post_meeting_notes || '')
     setEditDate(meeting.date || '')
-    setEditTime(meeting.time || '')
+    setEditTime(normalizeTime(meeting.time))
     setDateTimeDirty(false)
     setConfirmSent(false)
     try { if (meeting.demo_checklist?.length) setChecklist(meeting.demo_checklist) } catch {}

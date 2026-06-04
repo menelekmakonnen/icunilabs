@@ -71,6 +71,7 @@ function normalizeStage(stage: string): string {
 
 const EMAIL_TEMPLATES = [
   { id: 'welcome', label: 'Welcome', desc: 'Onboarding welcome' },
+  { id: 'meeting_confirmation', label: 'Meeting Confirmation', desc: 'Confirm meeting date/time' },
   { id: 'project_kickoff', label: 'Project Kickoff', desc: 'Announce project start' },
   { id: 'milestone_update', label: 'Milestone', desc: 'Progress checkpoint' },
   { id: 'invoice_reminder', label: 'Invoice Reminder', desc: 'Payment reminder' },
