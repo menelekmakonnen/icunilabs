@@ -275,6 +275,19 @@ export default function CallSection() {
       conversionRate: c.calls ? Math.round((c.meetings / c.calls) * 100) : 0
     })).sort((a, b) => b.meetings - a.meetings || b.calls - a.calls)
 
+    // Daily attempt/conversation targets (computed from today's calls in all logs)
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayLogs = callLogs.filter((l: any) => {
+      try { return new Date(l.call_start) >= todayStart } catch { return false }
+    })
+    let todayAttempts = 0, todayConversations = 0
+    todayLogs.forEach((l: any) => {
+      const dur = Number(l.duration_seconds || 0)
+      if (l.call_type === 'conversation' || (!l.call_type && dur > 180)) todayConversations++
+      else todayAttempts++
+    })
+
     return {
       calls: filteredLogs.length,
       avgDuration,
@@ -282,9 +295,11 @@ export default function CallSection() {
       pathCounts: paths,
       conversionByPath,
       outcomeCounts: outcomes,
-      callerLeaderboard: leaderboard
+      callerLeaderboard: leaderboard,
+      todayAttempts,
+      todayConversations
     }
-  }, [filteredLogs])
+  }, [filteredLogs, callLogs])
 
   // ── Actionable Follow-ups ──
   const actionableLogs = useMemo(() => {
@@ -441,6 +456,32 @@ export default function CallSection() {
                   <p className="text-2xl font-bold" style={{ color: m.color }}>{m.value}</p>
                 </div>
               ))}
+            </div>
+
+            {/* Daily Targets */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {[{
+                label: 'Attempts Today', value: analytics.todayAttempts || 0,
+                min: 25, max: 30, color: '#00bfff'
+              }, {
+                label: 'Conversations Today', value: analytics.todayConversations || 0,
+                min: 15, max: 18, color: '#10b981'
+              }].map((t, i) => {
+                const pct = Math.min((t.value / t.min) * 100, 100)
+                const status = t.value >= t.min ? 'text-emerald-400' : t.value >= t.min * 0.7 ? 'text-amber-400' : 'text-red-400'
+                return (
+                  <div key={i} className="crm-metric">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">{t.label}</p>
+                      <span className={`text-xs font-bold ${status}`}>{t.value} / {t.min}–{t.max}</span>
+                    </div>
+                    <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${t.color}, ${t.color}cc)` }} />
+                    </div>
+                    {t.value >= t.min && <p className="text-[10px] text-emerald-400/80 mt-1">✓ Target reached</p>}
+                  </div>
+                )
+              })}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -715,6 +756,11 @@ export default function CallSection() {
                           <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${log.outcome === 'meeting_booked' ? 'bg-emerald-500/15 text-emerald-400' : log.outcome === 'no_interest' ? 'bg-red-500/15 text-red-400' : 'bg-neutral-800 text-neutral-400'}`}>
                             {OUTCOME_LABELS[log.outcome] || log.outcome}
                           </span>
+                          {log.call_type && (
+                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${log.call_type === 'conversation' ? 'bg-[#8b5cf6]/15 text-[#8b5cf6]' : 'bg-neutral-700/50 text-neutral-500'}`}>
+                              {log.call_type === 'conversation' ? '💬 Conversation' : '📞 Attempt'}
+                            </span>
+                          )}
                           <span className="text-neutral-400 font-mono hidden sm:block">{fmtDuration(Number(log.duration_seconds || 0))}</span>
                           <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>

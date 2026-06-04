@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { resolveStaffName } from '../../utils/resolveStaffName'
 import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
-import { Calendar, Clock, MapPin, Video, Users, Plus, X, Send, Check, ChevronRight, Trash2, FileText, ArrowLeft, Mail } from 'lucide-react'
+import { Calendar, Clock, MapPin, Video, Users, Plus, X, Send, Check, ChevronRight, Trash2, FileText, ArrowLeft, Mail, RotateCcw, Ban } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './meetings.css'
 
@@ -428,6 +428,10 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
     ] } catch { return [] }
   })
   const [newCheckItem, setNewCheckItem] = useState('')
+  const [showRegress, setShowRegress] = useState(false)
+  const [regressTarget, setRegressTarget] = useState('contacted')
+  const [showCancel, setShowCancel] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
 
   // Refresh meeting data when prop changes
   useEffect(() => {
@@ -537,6 +541,22 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
     if (!confirm('Delete this meeting?')) return
     setBusy(true)
     await adminActions.deleteMeeting(m.meeting_id)
+    setBusy(false)
+    onClose()
+  }
+
+  const handleRegress = async () => {
+    if (!confirm(`Regress this meeting? The client will return to "${regressTarget}" in the pipeline.`)) return
+    setBusy(true)
+    await adminActions.regressMeeting(m.meeting_id, regressTarget)
+    setBusy(false)
+    onClose()
+  }
+
+  const handleCancel = async () => {
+    if (!confirm('Cancel this meeting? This is different from regression — it marks the meeting as deliberately cancelled.')) return
+    setBusy(true)
+    await adminActions.cancelMeeting(m.meeting_id, cancelReason)
     setBusy(false)
     onClose()
   }
@@ -842,13 +862,68 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
         </div>
 
         {/* Footer Actions */}
-        {!['qualified'].includes(m.stage) && (
+        {!['qualified', 'regressed', 'cancelled'].includes(m.stage) && (
           <div className="mtg-action-bar">
-            {m.stage === 'booked' && !m.confirmation_sent && (
-              <button onClick={() => advanceStage('confirmed')} disabled={busy} className="mtg-btn mtg-btn--ghost text-xs">
-                Skip confirmation →
-              </button>
-            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {m.stage === 'booked' && !m.confirmation_sent && (
+                <button onClick={() => advanceStage('confirmed')} disabled={busy} className="mtg-btn mtg-btn--ghost text-xs">
+                  Skip confirmation →
+                </button>
+              )}
+
+              {/* Regress */}
+              {!showRegress ? (
+                <button onClick={() => setShowRegress(true)} className="mtg-btn text-xs text-amber-400 border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 cursor-pointer">
+                  <RotateCcw className="w-3.5 h-3.5" /> Regress
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 p-2 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                  <select value={regressTarget} onChange={e => setRegressTarget(e.target.value)} className={inputCls + ' text-xs w-36'}>
+                    <option value="prospect">Prospect</option>
+                    <option value="new_lead">New Lead</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="qualified">Qualified</option>
+                  </select>
+                  <button onClick={handleRegress} disabled={busy} className="mtg-btn mtg-btn--ghost text-xs text-amber-400">
+                    {busy ? '...' : 'Confirm'}
+                  </button>
+                  <button onClick={() => setShowRegress(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
+
+              {/* Cancel */}
+              {!showCancel ? (
+                <button onClick={() => setShowCancel(true)} className="mtg-btn text-xs text-red-400 border-red-500/20 bg-red-500/5 hover:bg-red-500/10 cursor-pointer">
+                  <Ban className="w-3.5 h-3.5" /> Cancel Meeting
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 p-2 rounded-xl bg-red-500/5 border border-red-500/10">
+                  <input value={cancelReason} onChange={e => setCancelReason(e.target.value)} placeholder="Reason (optional)" className={inputCls + ' text-xs w-40'} />
+                  <button onClick={handleCancel} disabled={busy} className="mtg-btn mtg-btn--ghost text-xs text-red-400">
+                    {busy ? '...' : 'Confirm Cancel'}
+                  </button>
+                  <button onClick={() => setShowCancel(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Regressed/Cancelled status */}
+        {m.stage === 'regressed' && (
+          <div className="mtg-action-bar">
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+              <RotateCcw className="w-4 h-4 text-amber-400" />
+              <p className="text-xs text-amber-400">Meeting regressed — client returned to call pipeline.</p>
+            </div>
+          </div>
+        )}
+        {m.stage === 'cancelled' && (
+          <div className="mtg-action-bar">
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/5 border border-red-500/10">
+              <Ban className="w-4 h-4 text-red-400" />
+              <p className="text-xs text-red-400">Meeting cancelled{m.result_notes ? `: ${m.result_notes}` : ''}.</p>
+            </div>
           </div>
         )}
       </motion.div>

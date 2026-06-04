@@ -1550,4 +1550,45 @@ export const adminActions = {
       return false
     }
   },
+
+  // ── Client Contacts ──
+  loadContacts: async (client_id?: string) => {
+    try {
+      const result = await apiPost('getContacts', { token: state.token, client_id })
+      return result?.contacts || []
+    } catch (err: any) {
+      setState({ error: err.message })
+      return []
+    }
+  },
+
+  addContact: async (data: Record<string, any>) => {
+    try {
+      const result = await apiPost('addContact', { token: state.token, ...data })
+      return result
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
+  updateContact: async (contact_id: string, data: Record<string, any>) => {
+    try {
+      await apiPost('updateContact', { token: state.token, contact_id, ...data })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  deleteContact: async (contact_id: string) => {
+    try {
+      await apiPost('deleteContact', { token: state.token, contact_id })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
 }

@@ -1438,3 +1438,96 @@ function buildClientTemplate_(name, template, extras) {
             throw new Error('Unknown client template: ' + template);
     }
 }
+
+// ═══════════════════════════════════════════════════════════
+// CLIENT CONTACTS MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+
+var CONTACT_ROLES = ['receptionist', 'buyer_manager', 'owner', 'front_desk', 'middle_manager', 'mr_cooper', 'other'];
+
+function handleGetContacts(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+
+    var contacts = sheetToObjects_(SHEETS.CLIENT_CONTACTS);
+
+    // Filter by client_id if specified
+    if (payload.client_id) {
+        contacts = contacts.filter(function(c) { return c.client_id === payload.client_id; });
+    }
+
+    return successResponse_({ contacts: contacts });
+}
+
+function handleAddContact(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+
+    if (!payload.client_id) return errorResponse_('Client ID is required.');
+    if (!payload.name) return errorResponse_('Contact name is required.');
+    if (!payload.role) return errorResponse_('Contact role is required.');
+
+    var contactId = generateId_('CON');
+    var nowStr = now_();
+
+    appendRow_(SHEETS.CLIENT_CONTACTS, [
+        contactId, payload.client_id,
+        payload.name, payload.role,
+        payload.email || '', payload.phone || '',
+        payload.whatsapp || '', payload.notes || '',
+        payload.is_primary ? 'true' : 'false',
+        nowStr, nowStr
+    ]);
+
+    // If this contact has an email and the client doesn't, update the client record
+    if (payload.email && payload.is_primary) {
+        var client = findRow_(SHEETS.CLIENTS, 'client_id', payload.client_id);
+        if (client && !client.email) {
+            updateRow_(SHEETS.CLIENTS, client._rowIndex, { email: payload.email });
+            invalidateSheetCache_(SHEETS.CLIENTS);
+        }
+    }
+
+    logAction_(auth.user.user_id, auth.user.name, 'CONTACT_ADDED',
+        payload.name + ' (' + payload.role + ') → ' + payload.client_id);
+
+    return successResponse_({ contact_id: contactId }, 'Contact added.');
+}
+
+function handleUpdateContact(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+
+    if (!payload.contact_id) return errorResponse_('Contact ID is required.');
+
+    var contact = findRow_(SHEETS.CLIENT_CONTACTS, 'contact_id', payload.contact_id);
+    if (!contact) return errorResponse_('Contact not found.');
+
+    var updates = { updated_at: now_() };
+    ['name', 'role', 'email', 'phone', 'whatsapp', 'notes', 'is_primary'].forEach(function(f) {
+        if (payload[f] !== undefined) updates[f] = payload[f];
+    });
+
+    updateRow_(SHEETS.CLIENT_CONTACTS, contact._rowIndex, updates);
+    invalidateSheetCache_(SHEETS.CLIENT_CONTACTS);
+
+    logAction_(auth.user.user_id, auth.user.name, 'CONTACT_UPDATED', contact.name);
+
+    return successResponse_(null, 'Contact updated.');
+}
+
+function handleDeleteContact(payload) {
+    var auth = requireStaff_(payload.token);
+    if (auth.error) return auth.error;
+
+    if (!payload.contact_id) return errorResponse_('Contact ID is required.');
+
+    var contact = findRow_(SHEETS.CLIENT_CONTACTS, 'contact_id', payload.contact_id);
+    if (!contact) return errorResponse_('Contact not found.');
+
+    deleteRow_(SHEETS.CLIENT_CONTACTS, contact._rowIndex);
+
+    logAction_(auth.user.user_id, auth.user.name, 'CONTACT_DELETED', contact.name);
+
+    return successResponse_(null, 'Contact deleted.');
+}

@@ -45,6 +45,12 @@ function handleSaveCallLog(payload) {
         } catch(e) {}
     }
 
+    // ── Classify: attempt vs conversation ──
+    // Conversation: >180s AND/OR >=70% talking points checked
+    var tpPercent = tpTotal > 0 ? (tpChecked.length / tpTotal) : 0;
+    var isConversation = durationSeconds > 180 || tpPercent >= 0.7;
+    var callType = isConversation ? 'conversation' : 'attempt';
+
     // ── Determine pipeline auto-advance ──
     var autoAdvanced = '';
     var outcome = payload.outcome || '';
@@ -99,19 +105,62 @@ function handleSaveCallLog(payload) {
         updateRow_(SHEETS.CLIENTS, client._rowIndex, contactUpdates);
     }
 
-    appendRow_(SHEETS.CALL_LOGS, [
-        callId, clientId, auth.user.email, auth.user.name,
-        payload.environment_type || '', payload.persona_type || '',
-        payload.path_loaded || '', payload.path_switched_to || '',
-        payload.call_start || nowStr, payload.call_end || nowStr, durationSeconds,
-        JSON.stringify(tpChecked), JSON.stringify(tpSkipped), tpTotal,
-        dataCaptureJson, outcome, outcomeDetailsJson,
-        payload.next_action || '', payload.next_action_date || '', payload.next_action_notes || '',
-        payload.call_notes || '', autoAdvanced, nowStr,
-        payload.self_image_initial || '', payload.self_image_confirmed || '',
-        payload.self_image_pivoted ? 'Yes' : '',
-        payload.transcript || ''
-    ]);
+    // ── Same-day same-company grouping ──
+    // If caller already logged a call to this client today, merge into existing
+    var todayStr = nowStr.substring(0, 10); // YYYY-MM-DD
+    var existingToday = sheetToObjects_(SHEETS.CALL_LOGS).filter(function(l) {
+        return l.client_id === clientId &&
+               l.caller_email === auth.user.email &&
+               (l.call_start || l.created_at || '').substring(0, 10) === todayStr;
+    });
+
+    if (existingToday.length > 0) {
+        // Merge into the first matching log — update end time, duration, append notes
+        var existing = existingToday[0];
+        var mergedDuration = Number(existing.duration_seconds || 0) + durationSeconds;
+        var mergedNotes = (existing.call_notes || '');
+        if (payload.call_notes) mergedNotes += (mergedNotes ? '\n---\n' : '') + payload.call_notes;
+
+        // Upgrade to conversation if any segment qualifies
+        var mergedType = (existing.call_type === 'conversation' || callType === 'conversation') ? 'conversation' : 'attempt';
+
+        // Use the latest outcome
+        var mergedOutcome = outcome || existing.outcome;
+
+        updateRow_(SHEETS.CALL_LOGS, existing._rowIndex, {
+            call_end: payload.call_end || nowStr,
+            duration_seconds: mergedDuration,
+            call_notes: mergedNotes,
+            call_type: mergedType,
+            outcome: mergedOutcome,
+            outcome_details_json: outcomeDetailsJson || existing.outcome_details_json,
+            talking_points_checked_json: JSON.stringify(tpChecked.length > 0 ? tpChecked : (existing.talking_points_checked_json ? JSON.parse(existing.talking_points_checked_json) : [])),
+            next_action: payload.next_action || existing.next_action,
+            next_action_date: payload.next_action_date || existing.next_action_date,
+            next_action_notes: payload.next_action_notes || existing.next_action_notes,
+            transcript: (existing.transcript || '') + (payload.transcript ? '\n---\n' + payload.transcript : ''),
+            created_at: nowStr
+        });
+        invalidateSheetCache_(SHEETS.CALL_LOGS);
+
+        callId = existing.call_id; // return the existing call ID
+    } else {
+        // New call log entry
+        appendRow_(SHEETS.CALL_LOGS, [
+            callId, clientId, auth.user.email, auth.user.name,
+            payload.environment_type || '', payload.persona_type || '',
+            payload.path_loaded || '', payload.path_switched_to || '',
+            payload.call_start || nowStr, payload.call_end || nowStr, durationSeconds,
+            JSON.stringify(tpChecked), JSON.stringify(tpSkipped), tpTotal,
+            dataCaptureJson, outcome, outcomeDetailsJson,
+            payload.next_action || '', payload.next_action_date || '', payload.next_action_notes || '',
+            payload.call_notes || '', autoAdvanced, nowStr,
+            payload.self_image_initial || '', payload.self_image_confirmed || '',
+            payload.self_image_pivoted ? 'Yes' : '',
+            payload.transcript || '',
+            callType
+        ]);
+    }
 
     // ── Extract competitor intel ──
     var dataCapture = payload.data_capture || {};
@@ -298,6 +347,22 @@ function handleGetCallAnalytics(payload) {
         };
     }).sort(function(a, b) { return b.meetings - a.meetings || b.calls - a.calls; });
 
+    // ── Daily targets: attempts vs conversations ──
+    var todayAttempts = today.filter(function(l) { return l.call_type === 'attempt' || (!l.call_type && Number(l.duration_seconds || 0) <= 180); }).length;
+    var todayConversations = today.filter(function(l) { return l.call_type === 'conversation' || (!l.call_type && Number(l.duration_seconds || 0) > 180); }).length;
+
+    // Per-caller daily breakdown
+    var callerDaily = {};
+    today.forEach(function(l) {
+        var email = l.caller_email || 'unknown';
+        if (!callerDaily[email]) callerDaily[email] = { name: l.caller_name, attempts: 0, conversations: 0 };
+        if (l.call_type === 'conversation' || (!l.call_type && Number(l.duration_seconds || 0) > 180)) {
+            callerDaily[email].conversations++;
+        } else {
+            callerDaily[email].attempts++;
+        }
+    });
+
     return successResponse_({
         callsToday: today.length,
         callsThisWeek: thisWeek.length,
@@ -308,7 +373,14 @@ function handleGetCallAnalytics(payload) {
         tpCompletionRates: tpCompletionRates,
         conversionByPath: conversionByPath,
         outcomeCounts: outcomeCounts,
-        callerLeaderboard: callerLeaderboard
+        callerLeaderboard: callerLeaderboard,
+        // Daily targets
+        todayAttempts: todayAttempts,
+        todayConversations: todayConversations,
+        todayTotal: today.length,
+        targetAttempts: { min: 25, max: 30 },
+        targetConversations: { min: 15, max: 18 },
+        callerDaily: callerDaily
     });
 }
 

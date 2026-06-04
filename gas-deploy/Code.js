@@ -153,6 +153,10 @@ var ACTION_MAP = {
     sendMeetingConfirmation: handleSendMeetingConfirmation,
     qualifyMeeting: handleQualifyMeeting,
     regressMeeting: handleRegressMeeting, cancelMeeting: handleCancelMeeting,
+
+    // ── Client Contacts ──
+    getContacts: handleGetContacts, addContact: handleAddContact,
+    updateContact: handleUpdateContact, deleteContact: handleDeleteContact,
 };
 
 // ═══════════════════════════════════════════════════════════
