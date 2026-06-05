@@ -65,7 +65,7 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
 
   // Persist filter selection
   useEffect(() => {
-    try { localStorage.setItem('icuni_dash_date_filter', dateFilter) } catch {}
+    try { localStorage.setItem('icuni_dash_date_filter', dateFilter) } catch { /* ignored */ }
   }, [dateFilter])
 
   useEffect(() => {

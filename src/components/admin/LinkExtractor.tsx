@@ -120,7 +120,7 @@ export default function LinkExtractor({ onClose, onOpenClient }: Props) {
   const [editData, setEditData] = useState<Record<string, string>>({})
   const [dupResult, setDupResult] = useState<DuplicateResult | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
-  const [_busySave, setBusySave] = useState(false)
+  const [, setBusySave] = useState(false)
   const [buyerProfile, setBuyerProfile] = useState('')
 
   // Bulk mode state
@@ -129,7 +129,7 @@ export default function LinkExtractor({ onClose, onOpenClient }: Props) {
   const [bulkSelected, setBulkSelected] = useState<Set<number>>(new Set())
   const [bulkPhase, setBulkPhase] = useState<'idle' | 'searching' | 'results' | 'saving'>('idle')
   const [bulkMsg, setBulkMsg] = useState('')
-  const [_busyBulkSave, setBusyBulkSave] = useState(false)
+  const [, setBusyBulkSave] = useState(false)
   const [bulkSaveProgress, setBulkSaveProgress] = useState(0)
 
   const urlRef = useRef<HTMLInputElement>(null)

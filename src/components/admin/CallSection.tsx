@@ -158,9 +158,7 @@ export default function CallSection() {
     if (e) e.stopPropagation()
     const client = clients?.find((c: any) => c.client_id === clientId)
     if (client) {
-      // @ts-ignore
       if (adminActions.setActiveClientOptimistic) adminActions.setActiveClientOptimistic(client)
-      // @ts-ignore
       if (adminActions.setSection) adminActions.setSection('clients')
     }
   }
@@ -317,7 +315,7 @@ export default function CallSection() {
       headers.join(','),
       ...filteredLogs.map(log => {
         let ptsChecked = 0
-        try { ptsChecked = JSON.parse(log.talking_points_checked || '[]').length } catch {}
+        try { ptsChecked = JSON.parse(log.talking_points_checked || '[]').length } catch { /* ignored */ }
         
         return [
           `"${new Date(log.call_start).toISOString()}"`,
@@ -730,7 +728,7 @@ export default function CallSection() {
                 {filteredLogs.map(log => {
                   const isExpanded = expandedLog === log.call_id
                   let ptsChecked = 0
-                  try { ptsChecked = JSON.parse(log.talking_points_checked || '[]').length } catch {}
+                  try { ptsChecked = JSON.parse(log.talking_points_checked || '[]').length } catch { /* ignored */ }
 
                   return (
                     <div key={log.call_id} className="border-b border-neutral-800/50 last:border-0">
@@ -835,7 +833,7 @@ export default function CallSection() {
                           {/* ── Data Captured ── */}
                           {(() => {
                             let dc: Record<string, any> = {}
-                            try { const raw = log.data_capture || log.data_capture_json; dc = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch {}
+                            try { const raw = log.data_capture || log.data_capture_json; dc = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch { /* ignored */ }
                             const entries = Object.entries(dc).filter(([, v]) => v)
                             if (entries.length === 0) return null
                             return (
@@ -856,7 +854,7 @@ export default function CallSection() {
                           {/* ── Outcome Details ── */}
                           {(() => {
                             let od: Record<string, any> = {}
-                            try { const raw = log.outcome_details || log.outcome_details_json; od = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch {}
+                            try { const raw = log.outcome_details || log.outcome_details_json; od = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch { /* ignored */ }
                             if (!od.date && !od.notes && !od.time) return null
                             return (
                               <div>
@@ -872,7 +870,7 @@ export default function CallSection() {
                           {/* ── Cost/Pain Math ── */}
                           {(() => {
                             let cm: Record<string, any> = {}
-                            try { cm = typeof log.cost_math === 'string' ? JSON.parse(log.cost_math) : (log.cost_math || {}) } catch {}
+                            try { cm = typeof log.cost_math === 'string' ? JSON.parse(log.cost_math) : (log.cost_math || {}) } catch { /* ignored */ }
                             if (!cm.monthly && !cm.annual && !cm.monthlyTimeHours) return null
                             return (
                               <div>

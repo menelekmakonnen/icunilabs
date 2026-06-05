@@ -1685,7 +1685,7 @@ export function UsersSection() {
     setSelectedUser(u)
     try {
       setEditPerms(JSON.parse(u.permissions_json || '{}'))
-    } catch { setEditPerms({}) }
+    } catch { /* ignored */ setEditPerms({}) }
   }
 
   const savePermissions = async () => {

@@ -83,7 +83,7 @@ function loadTemplates(): ContractTemplate[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) return JSON.parse(stored)
-  } catch {}
+  } catch { /* ignored */ }
   return DEFAULT_TEMPLATES
 }
 function saveTemplates(templates: ContractTemplate[]) {

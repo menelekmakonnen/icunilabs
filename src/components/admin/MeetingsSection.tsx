@@ -30,7 +30,7 @@ function fmtDate(d: string) {
 function fmtTime(t: string) {
   if (!t) return ''
   try {
-    let raw = String(t).trim()
+    const raw = String(t).trim()
     // Google Sheets may return a full ISO date for time-only cells
     // e.g. "1899-12-30T14:00:00.000Z" or "Sat Dec 30 1899 14:00:00 GMT..."
     if (raw.includes('T') || raw.includes('1899') || raw.includes('GMT')) {
@@ -64,7 +64,7 @@ function normalizeTime(t: any): string {
     try {
       const d = new Date(s)
       if (!isNaN(d.getTime())) return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-    } catch {}
+    } catch { /* ignored */ }
   }
   return s
 }
@@ -440,7 +440,8 @@ export default function MeetingsSection() {
 // ════════════════════════════════════════════════════════
 // MEETING DETAIL DRAWER
 // ════════════════════════════════════════════════════════
-function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effectiveUser, clientMap }: { meeting: any; onClose: () => void; users: any[]; effectiveUser: any; clientMap: Record<string, any> }) {
+function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { meeting: any; onClose: () => void; users: any[]; effectiveUser: any; clientMap: Record<string, any> }) {
+  void users; void effectiveUser
   const [m, setM] = useState(meeting)
   const [busy, setBusy] = useState(false)
   const [prepNotes, setPrepNotes] = useState(meeting.prep_notes || '')
@@ -473,7 +474,7 @@ function MeetingDrawer({ meeting, onClose, users: _users, effectiveUser: _effect
     setEditTime(normalizeTime(meeting.time))
     setDateTimeDirty(false)
     setConfirmSent(false)
-    try { if (meeting.demo_checklist?.length) setChecklist(meeting.demo_checklist) } catch {}
+    try { if (meeting.demo_checklist?.length) setChecklist(meeting.demo_checklist) } catch { /* ignored */ }
   }, [meeting])
 
   const stageIdx = STAGES.findIndex(s => s.id === (m.stage || 'booked'))

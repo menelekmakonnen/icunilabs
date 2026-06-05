@@ -73,7 +73,7 @@ function loadProgress(): Record<string, boolean> {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     return saved ? JSON.parse(saved) : {}
-  } catch { return {} }
+  } catch { /* ignored */ return {} }
 }
 
 function saveProgress(p: Record<string, boolean>) {

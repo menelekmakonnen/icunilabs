@@ -115,7 +115,7 @@ function getStageOverrides(): Record<string, string> {
       if (now - entry.ts < 30000) clean[k] = entry.stage // 30s TTL
     }
     return clean
-  } catch { return {} }
+  } catch { /* ignored */ return {} }
 }
 function saveStageOverride(clientId: string, stage: string) {
   try {
@@ -811,7 +811,7 @@ export const adminActions = {
     try {
       const notifs = await apiPost('getSlaNotifications', { token: state.token })
       setState({ slaNotifications: notifs || [] })
-    } catch (err: any) { /* silent */ }
+    } catch { /* silent */ }
   },
 
   dismissSlaNotification: async (logId: string) => {

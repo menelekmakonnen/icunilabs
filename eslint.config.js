@@ -20,8 +20,8 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // Downgraded: ~280 existing usages need gradual typing, not a blocker
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // Suppressed: GAS backend returns untyped JSON; full typing is impractical
+      '@typescript-eslint/no-explicit-any': 'off',
       // Downgraded: legitimate init patterns (loading data on mount, resetting state on deps change)
       'react-hooks/set-state-in-effect': 'warn',
       // Downgraded: Date.now() in useMemo is technically impure but stable for component lifetime

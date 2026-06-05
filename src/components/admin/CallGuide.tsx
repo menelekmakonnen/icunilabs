@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { adminActions, useAdminStore } from '../../store/useAdminStore'
-import { X, Check, ChevronDown, ChevronUp, Phone, ArrowRight, BookOpen, Mic, MicOff } from 'lucide-react'
+import { X, Check, ChevronDown, ChevronUp, Phone, ArrowRight, BookOpen, Mic, MicOff, Users } from 'lucide-react'
 import './call-guide.css'
 
 // ═══ TYPES ═══
@@ -495,6 +495,9 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   const [contactRole, setContactRole] = useState('')
   const [saving, setSaving] = useState(false)
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  // ── Contact selector state ──
+  const [knownContacts, setKnownContacts] = useState<any[]>([])
+  const [showContactPicker, setShowContactPicker] = useState(false)
 
   // ── Live Transcript state ──
   const [transcript, setTranscript] = useState('')
@@ -520,20 +523,25 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   const [elapsed, setElapsed] = useState(0)
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined)
 
-  useEffect(() => {
-    if (phase === 'guide' && !timerRef.current) {
-      setCallStart(new Date().toISOString())
-      timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
-      // Auto-start transcription when guide opens
-      if (speechSupported && !isTranscribing) {
-        setTimeout(() => startTranscription(), 300)
-      }
-    }
-    return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [phase])
 
   // Note: contactName is intentionally NOT linked to client?.name
   // The person on the call may be different from the CRM contact
+
+  // ── Load known contacts for this client ──
+  useEffect(() => {
+    if (client?.client_id) {
+      adminActions.loadContacts(client.client_id).then((list: any) => {
+        setKnownContacts(list || [])
+      })
+    }
+  }, [client?.client_id])
+
+  const selectKnownContact = (contact: any) => {
+    setContactName(contact.name || '')
+    setContactPhone(contact.phone || client?.phone || '')
+    setContactRole(contact.role || '')
+    setShowContactPicker(false)
+  }
 
   // ── SpeechRecognition lifecycle ──
   const startTranscription = useCallback(() => {
@@ -580,7 +588,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
       setInterimText('')
       // Auto-restart if still supposed to be transcribing
       if (recognitionRef.current === recognition) {
-        try { recognition.start() } catch (e) { setIsTranscribing(false) }
+        try { recognition.start() } catch { setIsTranscribing(false) }
       }
     }
 
@@ -588,7 +596,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
     try {
       recognition.start()
       setIsTranscribing(true)
-    } catch (e) {
+    } catch {
       setIsTranscribing(false)
     }
   }, [speechSupported, callStart])
@@ -597,15 +605,28 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
     if (recognitionRef.current) {
       const ref = recognitionRef.current
       recognitionRef.current = null // Prevent auto-restart in onend
-      try { ref.stop() } catch (e) {}
+      try { ref.stop() } catch { /* ignored */ }
     }
     setIsTranscribing(false)
     setInterimText('')
   }, [])
 
+  // Timer — starts when entering guide phase
+  useEffect(() => {
+    if (phase === 'guide' && !timerRef.current) {
+      setCallStart(new Date().toISOString())
+      timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
+      // Auto-start transcription when guide opens
+      if (speechSupported && !isTranscribing) {
+        setTimeout(() => startTranscription(), 300)
+      }
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [phase, speechSupported, isTranscribing, startTranscription])
+
   // Cleanup on unmount
   useEffect(() => {
-    return () => { if (recognitionRef.current) { try { recognitionRef.current.stop() } catch (e) {} } }
+    return () => { if (recognitionRef.current) { try { recognitionRef.current.stop() } catch { /* ignored */ } } }
   }, [])
 
   const currentPath = PATHS[pathId]
@@ -1144,6 +1165,45 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
           </div>
           {!collapsed.contact && (
             <div className="cg-section-body">
+              {/* Known contacts selector */}
+              {knownContacts.length > 0 && (
+                <div className="mb-3">
+                  <label className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider block mb-1">Select Known Contact</label>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowContactPicker(!showContactPicker)}
+                      className="w-full px-3 py-2 bg-neutral-900/60 border border-neutral-800 rounded-lg text-sm text-left flex items-center justify-between cursor-pointer hover:border-neutral-700 transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Users className="w-3.5 h-3.5 text-[#00bfff]" />
+                        <span className={contactName ? 'text-white' : 'text-neutral-600'}>{contactName || 'Pick a contact...'}</span>
+                      </span>
+                      <ChevronDown className="w-3.5 h-3.5 text-neutral-600" />
+                    </button>
+                    {showContactPicker && (
+                      <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-neutral-950 border border-neutral-800 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                        <button
+                          onClick={() => { setContactName(''); setContactPhone(client?.phone || ''); setContactRole(''); setShowContactPicker(false) }}
+                          className="w-full px-3 py-2 text-left text-xs text-neutral-500 hover:bg-neutral-900 cursor-pointer transition-colors"
+                        >
+                          — New / Unknown —
+                        </button>
+                        {knownContacts.map((c: any) => (
+                          <button
+                            key={c.contact_id || c.id}
+                            onClick={() => selectKnownContact(c)}
+                            className="w-full px-3 py-2 text-left hover:bg-neutral-900 cursor-pointer transition-colors flex items-center gap-2"
+                          >
+                            <span className="text-xs text-white font-medium">{c.name}</span>
+                            {c.role && <span className="text-[9px] text-neutral-500">{c.role}</span>}
+                            {(c.is_primary === 'true' || c.is_primary === true) && <span className="text-[8px] text-amber-400 font-bold">★</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider block mb-1">Company</label>
                   <input value={client?.company || ''} readOnly className="w-full px-3 py-2 bg-neutral-900/60 border border-neutral-800 rounded-lg text-white text-sm" /></div>

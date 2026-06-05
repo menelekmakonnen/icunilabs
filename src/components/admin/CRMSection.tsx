@@ -7,6 +7,7 @@ import { personas } from '../../data/personaData'
 import { FormButton } from './ActionButton'
 import CallGuide from './CallGuide'
 import LinkExtractor from './LinkExtractor'
+import ContactsTab from './ContactsTab'
 import './crm.css'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
@@ -16,8 +17,8 @@ const modalCard = 'bg-neutral-950 border border-neutral-800 rounded-2xl p-6 w-fu
 const AVATAR_COLORS = ['#00bfff','#8b5cf6','#ff7a00','#10b981','#ef4444','#f59e0b','#ec4899','#06b6d4']
 function getAvatarColor(name: string) { let h = 0; for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h << 5) - h); return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length] }
 function getInitials(name: string) { const clean = (name || '').replace(/[^a-zA-Z\s]/g, '').trim(); if (!clean) return '\u2022'; return clean.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) }
-function fmtMoney(v: number) { return `GH₵${(v||0).toLocaleString()}` }
-function fmtDate(d: string) { if (!d) return '—'; try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) } catch { return d } }
+function fmtMoney(v: number) { return `GHÃ¢â€šÂµ${(v||0).toLocaleString()}` }
+function fmtDate(d: string) { if (!d) return 'Ã¢â‚¬â€'; try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) } catch { return d } }
 function fmtCountdown(target: string) {
   const diff = new Date(target).getTime() - Date.now()
   if (diff <= 0) return { text: 'NOW', urgency: 'now' as const }
@@ -39,7 +40,7 @@ function stageClass(stage: string): string {
   return ''
 }
 
-/** Procedural person silhouette SVG — unique hue per name */
+/** Procedural person silhouette SVG Ã¢â‚¬â€ unique hue per name */
 function PersonAvatar({ name, size = 80 }: { name: string; size?: number }) {
   const color = getAvatarColor(name)
   return (
@@ -63,7 +64,7 @@ const STAGES = [
   { id: 'won', label: 'Won', color: '#10b981', hidden: false },
 ] as const
 
-/** Normalize stage IDs: new_lead → prospect (merged) */
+/** Normalize stage IDs: new_lead Ã¢â€ â€™ prospect (merged) */
 function normalizeStage(stage: string): string {
   if (stage === 'new_lead') return 'prospect'
   return stage
@@ -94,7 +95,13 @@ export default function CRMSection() {
   const [batchName, setBatchName] = useState('')
   const [batchLocation, setBatchLocation] = useState('')
   const [batchSelfImage, setBatchSelfImage] = useState<string>('')
-  const [detailTab, setDetailTab] = useState<'overview'|'projects'|'invoices'|'notes'|'activity'|'email'|'calls'>('overview')
+  const [detailTab, setDetailTab] = useState<'overview'|'projects'|'invoices'|'notes'|'activity'|'email'|'calls'|'contacts'>('overview')
+  // Ã¢â€â‚¬Ã¢â€â‚¬ Contacts tab state Ã¢â€â‚¬Ã¢â€â‚¬
+  const [contactsList, setContactsList] = useState<any[]>([])
+  const [contactsLoading, setContactsLoading] = useState(false)
+  const [showAddContact, setShowAddContact] = useState(false)
+  const [contactForm, setContactForm] = useState({ name: '', role: '', email: '', phone: '', notes: '' })
+  const [busyContactSave, setBusyContactSave] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [tagInput, setTagInput] = useState('')
   const [viewMode, setViewMode] = useState<'contacts'|'pipeline'|'others'>('contacts')
@@ -246,7 +253,7 @@ export default function CRMSection() {
     })
   }, [filtered, sortConfig])
 
-  // "Others" tab — contacts added by other team members
+  // "Others" tab Ã¢â‚¬â€ contacts added by other team members
   const othersClients = useMemo(() => {
     if (!user?.email) return []
     return activeClients
@@ -254,7 +261,7 @@ export default function CRMSection() {
       .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
   }, [activeClients, effectiveUser])
 
-  // Next-action map: client_id → { date, type } for countdown pills
+  // Next-action map: client_id Ã¢â€ â€™ { date, type } for countdown pills
   const { callLogs: allCallLogs } = useAdminStore()
   const nextActionMap = useMemo(() => {
     const map: Record<string, { date: string; type: string }> = {}
@@ -280,7 +287,8 @@ export default function CRMSection() {
   }, [allCallLogs])
 
   // Live ticker for countdowns
-  const [_tick, setTick] = useState(0)
+  const [tick, setTick] = useState(0)
+  void tick // used in useMemo deps to trigger periodic recalculation
   useEffect(() => {
     const t = setInterval(() => setTick(x => x + 1), 30000) // refresh every 30s
     return () => clearInterval(t)
@@ -303,7 +311,7 @@ export default function CRMSection() {
     }
   }
 
-  // Derive client calls from global callLogs (reactive — updates when callLogs change)
+  // Derive client calls from global callLogs (reactive Ã¢â‚¬â€ updates when callLogs change)
   const clientCallsForActive = useMemo(() => {
     if (!activeClient?.client_id) return []
     return (allCallLogs || [])
@@ -363,7 +371,8 @@ export default function CRMSection() {
   }
 
   const openStagePopup = (clientId: string, stage: string, _direction: 'advance'|'regress') => {
-    // Instant stage change — no popup required
+    // Instant stage change Ã¢â‚¬â€ no popup required
+    void _direction
     handleAdvanceStage(clientId, stage)
   }
 
@@ -413,7 +422,7 @@ export default function CRMSection() {
     await adminActions.updateClientTags(activeClient.client_id, updated)
   }
 
-  // ═══ CLIENT DETAIL VIEW ═══
+  // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â CLIENT DETAIL VIEW Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
   if (activeClient) {
     const c = activeClient
     const tabs = [
@@ -424,6 +433,7 @@ export default function CRMSection() {
       { id: 'notes', label: `Notes (${c.notes_list?.length || 0})` },
       { id: 'activity', label: 'Activity' },
       { id: 'email', label: 'Email' },
+      { id: 'contacts', label: `Contacts (${contactsList.length})` },
     ] as const
 
     return (
@@ -472,7 +482,7 @@ export default function CRMSection() {
                     adminActions.loadClients()
                   }}
                   className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border cursor-pointer transition-all ${isPublic ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20' : 'text-neutral-500 bg-neutral-800/50 border-neutral-700/50 hover:bg-neutral-800'}`}
-                  title={isPublic ? 'Visible to all staff — click to make private' : 'Only visible to you — click to make public'}
+                  title={isPublic ? 'Visible to all staff Ã¢â‚¬â€ click to make private' : 'Only visible to you Ã¢â‚¬â€ click to make public'}
                 >
                   {isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                   {isPublic ? 'Public' : 'Private'}
@@ -553,7 +563,7 @@ export default function CRMSection() {
                 ))}
               </div>
 
-              {/* ── Call Summary Quick Card ── */}
+              {/* Ã¢â€â‚¬Ã¢â€â‚¬ Call Summary Quick Card Ã¢â€â‚¬Ã¢â€â‚¬ */}
               {(() => {
                 const calls = clientCallsForActive
                 if (calls.length === 0) return (
@@ -565,7 +575,7 @@ export default function CRMSection() {
                       <p className="text-xs text-neutral-600">No calls recorded yet</p>
                     </div>
                     <button onClick={() => setDetailTab('calls')} className="text-[10px] text-[#00bfff] hover:text-white cursor-pointer transition-colors">
-                      Log a Call →
+                      Log a Call Ã¢â€ â€™
                     </button>
                   </div>
                 )
@@ -585,7 +595,7 @@ export default function CRMSection() {
                         <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Call History</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-white font-bold">{calls.length}</span>
                       </div>
-                      <span className="text-[10px] text-[#00bfff] hover:text-white transition-colors">View All →</span>
+                      <span className="text-[10px] text-[#00bfff] hover:text-white transition-colors">View All Ã¢â€ â€™</span>
                     </div>
                     <div className="flex items-center gap-4 text-xs">
                       <div>
@@ -669,8 +679,8 @@ export default function CRMSection() {
                   <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-2">Contact Info</p>
                   <div className="space-y-1.5 text-sm">
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Email:</span>{c.email}</p>
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Phone:</span>{c.phone || '—'}</p>
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Company:</span>{c.company || '—'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Phone:</span>{c.phone || 'Ã¢â‚¬â€'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Company:</span>{c.company || 'Ã¢â‚¬â€'}</p>
                     {c.address && <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Location:</span>{c.address}</p>}
                     {c.website && <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Web:</span><a href={c.website} target="_blank" rel="noreferrer" className="text-[#00bfff] hover:underline">{c.website}</a></p>}
                   </div>
@@ -678,9 +688,9 @@ export default function CRMSection() {
                 <div className="crm-metric">
                   <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-2">Details</p>
                   <div className="space-y-1.5 text-sm">
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Industry:</span>{c.industry || '—'}</p>
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Source:</span>{c.source || '—'}</p>
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Profile:</span>{c.buyer_profile ? personas.find(p => p.id === c.buyer_profile)?.title || c.buyer_profile : '—'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Industry:</span>{c.industry || 'Ã¢â‚¬â€'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Source:</span>{c.source || 'Ã¢â‚¬â€'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Profile:</span>{c.buyer_profile ? personas.find(p => p.id === c.buyer_profile)?.title || c.buyer_profile : 'Ã¢â‚¬â€'}</p>
                     {c.self_image && (
                       <p className="text-neutral-300 flex items-center gap-2"><span className="text-neutral-600 mr-2">Self-Image:</span>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -719,7 +729,7 @@ export default function CRMSection() {
                   <div className="mt-2 flex items-center gap-2">
                     <svg className="w-3.5 h-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                     <span className="text-[10px] text-amber-500/80 font-bold">Laugh Factor</span>
-                    <span className="text-[10px] text-neutral-500">They laughed when describing it — high-value signal</span>
+                    <span className="text-[10px] text-neutral-500">They laughed when describing it Ã¢â‚¬â€ high-value signal</span>
                   </div>
                 )}
               </div>
@@ -756,7 +766,7 @@ export default function CRMSection() {
               </button>
 
               {(c.projects || []).length === 0 ? (
-                <p className="text-neutral-600 text-sm text-center py-8">No projects yet — add one above</p>
+                <p className="text-neutral-600 text-sm text-center py-8">No projects yet Ã¢â‚¬â€ add one above</p>
               ) : (c.projects || []).map((p: any) => {
                 const stepPct = Math.min(((parseFloat(p.step) || 0) / 10) * 100, 100)
                 return (
@@ -818,7 +828,7 @@ export default function CRMSection() {
                           <option value="Other">Other</option>
                         </select>
                         <input value={projectForm.estimated_cost} onChange={e => setProjectForm({...projectForm, estimated_cost: e.target.value})}
-                          className={inputCls} placeholder="Est. cost (GH₵) *" type="number" step="0.01" required />
+                          className={inputCls} placeholder="Est. cost (GHÃ¢â€šÂµ) *" type="number" step="0.01" required />
                       </div>
                       <input value={projectForm.est_completion} onChange={e => setProjectForm({...projectForm, est_completion: e.target.value})}
                         className={inputCls} placeholder="Est. completion date" type="date" />
@@ -842,7 +852,7 @@ export default function CRMSection() {
                 <div key={inv.invoice_id} className="crm-card !cursor-default flex items-center justify-between">
                   <div>
                     <p className="text-sm font-bold text-[#ff7a00] font-mono">{inv.invoice_id}</p>
-                    <p className="text-xs text-neutral-500 mt-0.5">{inv.type} — Due: {fmtDate(inv.due_date)}</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">{inv.type} Ã¢â‚¬â€ Due: {fmtDate(inv.due_date)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-white">{fmtMoney(Number(inv.total))}</p>
@@ -870,12 +880,12 @@ export default function CRMSection() {
                 ) : (c.notes_list || []).map((n: any, i: number) => (
                   <div key={n.note_id || i} className="crm-timeline-item note" style={{ animationDelay: `${i * 0.05}s` }}>
                     <p className="text-sm text-white">{n.content}</p>
-                    <p className="text-[10px] text-neutral-600 mt-1">{n.author} — {fmtDate(n.created_at)}</p>
+                    <p className="text-[10px] text-neutral-600 mt-1">{n.author} Ã¢â‚¬â€ {fmtDate(n.created_at)}</p>
                   </div>
                 ))}
               </div>
 
-              {/* ── Call Intelligence Summaries ── */}
+              {/* Ã¢â€â‚¬Ã¢â€â‚¬ Call Intelligence Summaries Ã¢â€â‚¬Ã¢â€â‚¬ */}
               {clientCallsForActive.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3 pt-3 border-t border-neutral-800">
@@ -885,7 +895,7 @@ export default function CRMSection() {
                   <div className="space-y-3">
                     {clientCallsForActive.map((call: any) => {
                       let dc: Record<string, any> = {}
-                      try { const raw = call.data_capture || call.data_capture_json; dc = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch {}
+                      try { const raw = call.data_capture || call.data_capture_json; dc = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch { /* ignored */ }
                       const costMath = dc._cost_math || {}
                       const entries = Object.entries(dc).filter(([k, v]) => v && !k.startsWith('_'))
                       const outcomeLabels: Record<string, string> = { meeting_booked: 'Meeting Booked', callback_scheduled: 'Callback Scheduled', interested_will_revert: 'Interested', no_interest: 'No Interest', dropby_booked: 'Drop-By Booked', warm_lead: 'Warm Lead', disqualified_early: 'Disqualified' }
@@ -901,7 +911,7 @@ export default function CRMSection() {
                               <span className="text-[10px] text-neutral-600">{dMin}:{String(dSec).padStart(2, '0')}</span>
                             </div>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${call.outcome === 'meeting_booked' ? 'bg-emerald-500/15 text-emerald-400' : call.outcome === 'no_interest' ? 'bg-red-500/15 text-red-400' : 'bg-neutral-800 text-neutral-400'}`}>
-                              {outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || '—'}
+                              {outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || 'Ã¢â‚¬â€'}
                             </span>
                           </div>
 
@@ -921,6 +931,7 @@ export default function CRMSection() {
                             </details>
                           )}
 
+
                           {/* Data captured grid */}
                           {entries.length > 0 && (
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-2">
@@ -936,8 +947,8 @@ export default function CRMSection() {
                           {/* Pain math */}
                           {(costMath.monthly > 0 || costMath.annual > 0 || costMath.monthlyTimeHours > 0) && (
                             <div className="flex flex-wrap gap-2 mb-2">
-                              {costMath.monthly > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ff7a00]/10 text-[#ff7a00] font-bold">GH₵{Number(costMath.monthly).toLocaleString()}/mo</span>}
-                              {costMath.annual > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-bold">GH₵{Number(costMath.annual).toLocaleString()}/yr</span>}
+                              {costMath.monthly > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ff7a00]/10 text-[#ff7a00] font-bold">GHÃ¢â€šÂµ{Number(costMath.monthly).toLocaleString()}/mo</span>}
+                              {costMath.annual > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-bold">GHÃ¢â€šÂµ{Number(costMath.annual).toLocaleString()}/yr</span>}
                               {costMath.monthlyTimeHours > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-bold">{costMath.monthlyTimeHours}h/mo lost</span>}
                             </div>
                           )}
@@ -1046,7 +1057,8 @@ export default function CRMSection() {
                 const toggleCall = () => {
                   setExpandedCalls(prev => {
                     const next = new Set(prev)
-                    next.has(call.call_id) ? next.delete(call.call_id) : next.add(call.call_id)
+                    if (next.has(call.call_id)) next.delete(call.call_id)
+                    else next.add(call.call_id)
                     return next
                   })
                 }
@@ -1063,21 +1075,21 @@ export default function CRMSection() {
                 const outcomeLabels: Record<string, string> = {
                   meeting_booked: 'Meeting Booked',
                   callback_scheduled: 'Callback Scheduled',
-                  interested_will_revert: 'Interested — Will Revert',
+                  interested_will_revert: 'Interested Ã¢â‚¬â€ Will Revert',
                   no_interest: 'No Interest',
                   needs_follow_up: 'Needs Follow-Up',
                 }
                 const outcomeColor = outcomeColors[call.outcome] || '#64748b'
-                const outcomeLabel = outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || '—'
+                const outcomeLabel = outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || 'Ã¢â‚¬â€'
 
                 let dataCapture: Record<string, any> = {}
-                try { const raw = call.data_capture || call.data_capture_json; dataCapture = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch {}
+                try { const raw = call.data_capture || call.data_capture_json; dataCapture = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch { /* ignored */ }
                 let outcomeDetails: Record<string, any> = {}
-                try { const raw2 = call.outcome_details || call.outcome_details_json; outcomeDetails = typeof raw2 === 'string' ? JSON.parse(raw2) : (raw2 || {}) } catch {}
+                try { const raw2 = call.outcome_details || call.outcome_details_json; outcomeDetails = typeof raw2 === 'string' ? JSON.parse(raw2) : (raw2 || {}) } catch { /* ignored */ }
                 let tpChecked: string[] = []
-                try { tpChecked = typeof call.talking_points_checked === 'string' ? JSON.parse(call.talking_points_checked) : (call.talking_points_checked || []) } catch {}
+                try { tpChecked = typeof call.talking_points_checked === 'string' ? JSON.parse(call.talking_points_checked) : (call.talking_points_checked || []) } catch { /* ignored */ }
                 let tpSkipped: string[] = []
-                try { tpSkipped = typeof call.talking_points_skipped === 'string' ? JSON.parse(call.talking_points_skipped) : (call.talking_points_skipped || []) } catch {}
+                try { tpSkipped = typeof call.talking_points_skipped === 'string' ? JSON.parse(call.talking_points_skipped) : (call.talking_points_skipped || []) } catch { /* ignored */ }
 
                 return (
                   <div key={call.call_id} className="crm-call-accordion">
@@ -1094,7 +1106,7 @@ export default function CRMSection() {
                           </div>
                           <div className="flex items-center gap-3 mt-0.5 text-[11px] text-neutral-500">
                             <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{durationStr}</span>
-                            <span>{call.caller_name || (call.caller_email ? resolveStaffName(call.caller_email) : '—')}</span>
+                            <span>{call.caller_name || (call.caller_email ? resolveStaffName(call.caller_email) : 'Ã¢â‚¬â€')}</span>
                             {call.path_loaded && <span className="text-neutral-600">{call.path_loaded.replace(/_/g, ' ')}</span>}
                           </div>
                         </div>
@@ -1111,15 +1123,15 @@ export default function CRMSection() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                           <div>
                             <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Environment</p>
-                            <p className="text-xs text-neutral-300 font-medium">{(call.environment_type || '—').replace(/_/g, ' ')}</p>
+                            <p className="text-xs text-neutral-300 font-medium">{(call.environment_type || 'Ã¢â‚¬â€').replace(/_/g, ' ')}</p>
                           </div>
                           <div>
                             <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Persona</p>
-                            <p className="text-xs text-neutral-300 font-medium">{(call.persona_type || '—').replace(/_/g, ' ')}</p>
+                            <p className="text-xs text-neutral-300 font-medium">{(call.persona_type || 'Ã¢â‚¬â€').replace(/_/g, ' ')}</p>
                           </div>
                           <div>
                             <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Path</p>
-                            <p className="text-xs text-neutral-300 font-medium">{(call.path_loaded || '—').replace(/_/g, ' ')}</p>
+                            <p className="text-xs text-neutral-300 font-medium">{(call.path_loaded || 'Ã¢â‚¬â€').replace(/_/g, ' ')}</p>
                           </div>
                           <div>
                             <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Auto-Advanced</p>
@@ -1134,7 +1146,7 @@ export default function CRMSection() {
                             <div className="flex flex-wrap gap-1.5">
                               {tpChecked.map((tp: string) => (
                                 <span key={tp} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                  ✓ {tp.replace(/_/g, ' ')}
+                                  Ã¢Å“â€œ {tp.replace(/_/g, ' ')}
                                 </span>
                               ))}
                               {tpSkipped.map((tp: string) => (
@@ -1213,6 +1225,22 @@ export default function CRMSection() {
           )}
         </div>
 
+          {detailTab === 'contacts' && (
+            <ContactsTab
+              clientId={c.client_id}
+              contactsList={contactsList}
+              setContactsList={setContactsList}
+              contactsLoading={contactsLoading}
+              setContactsLoading={setContactsLoading}
+              showAddContact={showAddContact}
+              setShowAddContact={setShowAddContact}
+              contactForm={contactForm}
+              setContactForm={setContactForm}
+              busyContactSave={busyContactSave}
+              setBusyContactSave={setBusyContactSave}
+            />
+          )}
+
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
           <div className={modalBg} onClick={() => setShowDeleteConfirm(false)}>
@@ -1230,7 +1258,7 @@ export default function CRMSection() {
     )
   }
 
-  // ═══ CLIENTS LIST VIEW (CRM Home) ═══
+  // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â CLIENTS LIST VIEW (CRM Home) Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
   const outstandingTotal = activeClients.reduce((s: number, c: any) => s + Number(c.outstanding || 0), 0)
 
   return (
@@ -1276,10 +1304,10 @@ export default function CRMSection() {
             <input value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-3 py-1.5 bg-neutral-900/50 border border-neutral-800 rounded-lg text-white placeholder-neutral-600 focus:outline-none focus:border-[#00bfff] focus:bg-neutral-900 transition-all text-sm" placeholder="Search clients..." />
           </div>
         </div>
-        {/* Action Row: Add buttons + Filter toggle — Contacts mode only */}
+        {/* Action Row: Add buttons + Filter toggle Ã¢â‚¬â€ Contacts mode only */}
         {viewMode === 'contacts' && (
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {/* Link Extractor — prominent, always visible */}
+          {/* Link Extractor Ã¢â‚¬â€ prominent, always visible */}
           <button onClick={() => setShowLinkExtractor(true)}
             className="crm-link-extractor-btn flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#8b5cf6]/15 to-[#00bfff]/15 border border-[#8b5cf6]/30 text-[#8b5cf6] rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:border-[#8b5cf6]/50 hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-all">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1313,7 +1341,7 @@ export default function CRMSection() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-white font-semibold truncate">{cl.name || 'Unnamed'}</p>
-                      <p className="text-[10px] text-neutral-500 truncate">{cl.company || 'No company'} · {cl.phone || 'No phone'}</p>
+                      <p className="text-[10px] text-neutral-500 truncate">{cl.company || 'No company'} Ã‚Â· {cl.phone || 'No phone'}</p>
                     </div>
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0" style={{
                       color: cl.prospect_stage === 'client' ? '#10b981' : cl.prospect_stage === 'qualified' ? '#00bfff' : '#64748b',
@@ -1392,7 +1420,7 @@ export default function CRMSection() {
         </div>
       )}
 
-      {/* ═══ PIPELINE VIEW ═══ */}
+      {/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â PIPELINE VIEW Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */}
       {viewMode === 'pipeline' && (<>
         <div className="pipeline-scroll flex gap-2 sm:gap-3 overflow-x-auto overflow-y-auto pb-4" style={{ maxHeight: 'calc(100vh - 260px)', minHeight: 300 }}>
           {STAGES.filter(s => !s.hidden).map((stage) => {
@@ -1463,7 +1491,7 @@ export default function CRMSection() {
         </div>
       </>)}
 
-      {/* ═══ OTHERS VIEW ═══ */}
+      {/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â OTHERS VIEW Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */}
       {viewMode === 'others' && (<>
         <div className="p-3 bg-[#00bfff]/5 border border-[#00bfff]/15 rounded-xl mb-4 flex items-start gap-2.5">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00bfff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
@@ -1514,7 +1542,7 @@ export default function CRMSection() {
                       <button 
                         onClick={(e) => { e.stopPropagation(); setCallGuideClient(c) }}
                         className="w-8 h-8 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center transition-all cursor-pointer group/call"
-                        title="Start Call — Take Ownership"
+                        title="Start Call Ã¢â‚¬â€ Take Ownership"
                       >
                         <Phone className="w-4 h-4 text-emerald-500 group-hover/call:scale-110 transition-transform" />
                       </button>
@@ -1628,7 +1656,7 @@ export default function CRMSection() {
                   {/* Next Action / Status Pill */}
                   <div className="mt-1.5 relative z-10">
                     {stage === 'won' ? (
-                      <span className="crm-countdown-pill project">→ Project</span>
+                      <span className="crm-countdown-pill project">Ã¢â€ â€™ Project</span>
                     ) : stage === 'disqualified' ? (
                       <span className="crm-countdown-pill lost">Lost</span>
                     ) : nextActionMap[c.client_id] ? (() => {
@@ -1676,7 +1704,7 @@ export default function CRMSection() {
 
       </div>{/* end flex-1 content column */}
 
-      {/* ═══ FILTER SIDEBAR ═══ */}
+      {/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â FILTER SIDEBAR Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */}
       {showFilters && (
         <div className="w-64 sm:w-72 flex-shrink-0 bg-neutral-950/60 border border-neutral-800 rounded-xl p-4 space-y-5 h-fit sticky top-4 crm-fade-in">
           <div className="flex items-center justify-between">
@@ -1820,7 +1848,7 @@ export default function CRMSection() {
         </div>
       )}
 
-      {/* Add Prospect Modal — enriched with phone, location, buyer profile, SLA seed */}
+      {/* Add Prospect Modal Ã¢â‚¬â€ enriched with phone, location, buyer profile, SLA seed */}
       {showAddProspect && (
         <div className={modalBg} onClick={() => { setShowAddProspect(false); setBatchMode(false) }}>
           <div className={`${modalCard} !max-w-md`} onClick={e => e.stopPropagation()}>
@@ -1839,7 +1867,7 @@ export default function CRMSection() {
             </div>
 
             {batchMode ? (
-              /* ── Maps Batch Mode ── */
+              /* Ã¢â€â‚¬Ã¢â€â‚¬ Maps Batch Mode Ã¢â€â‚¬Ã¢â€â‚¬ */
               <div className="space-y-3">
                 <div>
                   <label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Location / Area</label>
@@ -1871,10 +1899,10 @@ export default function CRMSection() {
                     {busyBatch ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg> : 'Add'}
                   </button>
                 </div>
-                <p className="text-[10px] text-neutral-600 text-center">Press Enter or click Add — then type the next name. Source auto-set to "Google Maps".</p>
+                <p className="text-[10px] text-neutral-600 text-center">Press Enter or click Add Ã¢â‚¬â€ then type the next name. Source auto-set to "Google Maps".</p>
               </div>
             ) : (
-              /* ── Detail Mode ── */
+              /* Ã¢â€â‚¬Ã¢â€â‚¬ Detail Mode Ã¢â€â‚¬Ã¢â€â‚¬ */
               <form onSubmit={handleAddProspect} className="space-y-3">
                 <input value={prospectForm.name} onChange={e => setProspectForm({...prospectForm, name: e.target.value})} className={inputCls} placeholder="Contact name" />
                 <input value={prospectForm.company} onChange={e => setProspectForm({...prospectForm, company: e.target.value})} className={inputCls} placeholder="Company name" />
@@ -1886,7 +1914,7 @@ export default function CRMSection() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input value={prospectForm.source} onChange={e => setProspectForm({...prospectForm, source: e.target.value})} className={inputCls} placeholder="Source (Google Maps, Referral...)" />
                   <select value={prospectForm.buyer_profile} onChange={e => setProspectForm({...prospectForm, buyer_profile: e.target.value})} className={inputCls}>
-                    <option value="">— Buyer Profile —</option>
+                    <option value="">Ã¢â‚¬â€ Buyer Profile Ã¢â‚¬â€</option>
                     {personas.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                   </select>
                 </div>
@@ -2114,7 +2142,7 @@ export default function CRMSection() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[10px] text-neutral-600 mb-1 block">Project Cost (GH₵)</label>
+                    <label className="text-[10px] text-neutral-600 mb-1 block">Project Cost (GHÃ¢â€šÂµ)</label>
                     <input type="number" value={historicForm.estimated_cost} onChange={e => setHistoricForm({...historicForm, estimated_cost: e.target.value})} className={inputCls} placeholder="0" />
                   </div>
                   <div>
