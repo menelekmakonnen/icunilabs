@@ -126,6 +126,20 @@ function sheetToObjects_(sheetName) {
         ];
         ensureHeaders_(sheet, expectedCols);
     }
+    if (sheetName === SHEETS.CALL_LOGS) {
+        expectedCols = [
+            'call_id', 'client_id', 'caller_email', 'caller_name',
+            'environment_type', 'persona_type', 'path_loaded', 'path_switched_to',
+            'call_start', 'call_end', 'duration_seconds',
+            'talking_points_checked', 'talking_points_skipped', 'talking_points_total',
+            'data_capture_json', 'outcome', 'outcome_details_json',
+            'next_action', 'next_action_date', 'next_action_notes',
+            'call_notes', 'pipeline_auto_advanced', 'created_at',
+            'self_image_initial', 'self_image_confirmed', 'self_image_pivoted',
+            'transcript', 'call_type'
+        ];
+        ensureHeaders_(sheet, expectedCols);
+    }
     var data = sheet.getDataRange().getValues();
     var headers = data[0];
     // If we know the expected column count, only read that many columns.

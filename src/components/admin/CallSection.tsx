@@ -224,6 +224,16 @@ export default function CallSection() {
     })
   }, [callLogs, dateFilter, customStart, customEnd, outcomeFilter])
 
+  // Filtered transcripts (matching the active date filter)
+  const filteredTranscripts = useMemo(() => {
+    return filteredLogs.filter((l: any) => l.transcript && String(l.transcript).trim())
+  }, [filteredLogs])
+
+  // All transcripts across all time (ignores date filter)
+  const allTranscripts = useMemo(() => {
+    return (callLogs || []).filter((l: any) => l.transcript && String(l.transcript).trim())
+  }, [callLogs])
+
   // ── Client-Side Analytics ──
   const analytics = useMemo(() => {
     let totalDuration = 0
@@ -421,7 +431,7 @@ export default function CallSection() {
         {[
           { id: 'overview', label: 'Overview', icon: BarChart3 },
           { id: 'logs', label: `Call Logs (${filteredLogs.length})`, icon: FileText },
-          { id: 'transcripts', label: 'Transcripts', icon: MessageSquareText },
+          { id: 'transcripts', label: `Transcripts (${filteredTranscripts.length})`, icon: MessageSquareText },
           { id: 'upcoming', label: `Callbacks (${upcomingCalls.length})`, icon: Bell }
         ].map(t => (
           <button
@@ -951,14 +961,31 @@ export default function CallSection() {
               <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Call Transcripts</p>
             </div>
             {(() => {
-              const logsWithTranscript = filteredLogs.filter((l: any) => l.transcript && String(l.transcript).trim())
-              if (logsWithTranscript.length === 0) return (
-                <div className="text-center py-12">
-                  <MessageSquareText className="w-8 h-8 text-neutral-700 mx-auto mb-3" />
-                  <p className="text-neutral-500 text-sm">No transcripts recorded yet.</p>
-                  <p className="text-neutral-600 text-xs mt-1">Transcripts are saved automatically from call recordings.</p>
-                </div>
-              )
+              const logsWithTranscript = filteredTranscripts
+              if (logsWithTranscript.length === 0) {
+                const totalTranscriptsCount = allTranscripts.length
+                return (
+                  <div className="text-center py-12">
+                    <MessageSquareText className="w-8 h-8 text-neutral-700 mx-auto mb-3 opacity-60" />
+                    <p className="text-neutral-500 text-sm font-semibold">No transcripts recorded in this period.</p>
+                    {totalTranscriptsCount > 0 ? (
+                      <div className="mt-2 space-y-3">
+                        <p className="text-neutral-500 text-xs">
+                          There {totalTranscriptsCount === 1 ? 'is 1 transcript' : `are ${totalTranscriptsCount} transcripts`} saved in other periods.
+                        </p>
+                        <button
+                          onClick={() => setDateFilter('all')}
+                          className="px-4 py-2 bg-[#8b5cf6] hover:bg-[#7c3aed] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-md hover:shadow-lg transition-all"
+                        >
+                          Show All Transcripts
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-neutral-600 text-xs mt-1">Transcripts are saved automatically from call recordings.</p>
+                    )}
+                  </div>
+                )
+              }
               return logsWithTranscript.map((log: any) => (
                 <div key={log.call_id} className="p-4 rounded-xl bg-neutral-950 border border-neutral-800">
                   <div className="flex items-center justify-between mb-3">
