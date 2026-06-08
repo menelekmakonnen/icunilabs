@@ -611,6 +611,54 @@ export const adminActions = {
     }
   },
 
+  // ── Godmode Central Ops Ecosystem Controllers ──
+  godmodeGetEcosystemOverview: async () => {
+    try {
+      return await apiPost('godmodeGetEcosystemOverview', { token: state.token })
+    } catch (err: any) {
+      setState({ error: err.message })
+      throw err
+    }
+  },
+
+  godmodeToggleSiteStatus: async (siteKey: string, status: 'active' | 'maintenance') => {
+    try {
+      await apiPost('godmodeToggleSiteStatus', { token: state.token, siteKey, status })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message })
+      return false
+    }
+  },
+
+  godmodeManageConnect: async (subAction: string, payload: Record<string, any> = {}) => {
+    try {
+      return await apiPost('godmodeManageConnect', { token: state.token, subAction, ...payload })
+    } catch (err: any) {
+      setState({ error: err.message })
+      throw err
+    }
+  },
+
+  godmodeManageGroup: async (subAction: string, payload: Record<string, any> = {}) => {
+    try {
+      return await apiPost('godmodeManageGroup', { token: state.token, subAction, ...payload })
+    } catch (err: any) {
+      setState({ error: err.message })
+      throw err
+    }
+  },
+
+  godmodeManageStarterclass: async (subAction: string, payload: Record<string, any> = {}) => {
+    try {
+      return await apiPost('godmodeManageStarterclass', { token: state.token, subAction, ...payload })
+    } catch (err: any) {
+      setState({ error: err.message })
+      throw err
+    }
+  },
+
+
   // ── Email Hub ──
   loadInbox: async (alias?: string, page?: number, query?: string, folder?: 'inbox' | 'sent' | 'all') => {
     setState({ inboxLoading: true })

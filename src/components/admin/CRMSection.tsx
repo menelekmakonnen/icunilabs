@@ -17,7 +17,7 @@ const modalCard = 'bg-neutral-950 border border-neutral-800 rounded-2xl p-6 w-fu
 const AVATAR_COLORS = ['#00bfff','#8b5cf6','#ff7a00','#10b981','#ef4444','#f59e0b','#ec4899','#06b6d4']
 function getAvatarColor(name: string) { let h = 0; for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h << 5) - h); return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length] }
 function getInitials(name: string) { const clean = (name || '').replace(/[^a-zA-Z\s]/g, '').trim(); if (!clean) return '\u2022'; return clean.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) }
-function fmtMoney(v: number) { return `GHÃ¢â€šÂµ${(v||0).toLocaleString()}` }
+function fmtMoney(v: number) { return `GH₵${(v||0).toLocaleString()}` }
 function fmtDate(d: string) { if (!d) return 'Ã¢â‚¬â€'; try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) } catch { return d } }
 function fmtCountdown(target: string) {
   const diff = new Date(target).getTime() - Date.now()
@@ -64,7 +64,7 @@ const STAGES = [
   { id: 'won', label: 'Won', color: '#10b981', hidden: false },
 ] as const
 
-/** Normalize stage IDs: new_lead Ã¢â€ â€™ prospect (merged) */
+/** Normalize stage IDs: new_lead → prospect (merged) */
 function normalizeStage(stage: string): string {
   if (stage === 'new_lead') return 'prospect'
   return stage
@@ -261,7 +261,7 @@ export default function CRMSection() {
       .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
   }, [activeClients, effectiveUser])
 
-  // Next-action map: client_id Ã¢â€ â€™ { date, type } for countdown pills
+  // Next-action map: client_id → { date, type } for countdown pills
   const { callLogs: allCallLogs } = useAdminStore()
   const nextActionMap = useMemo(() => {
     const map: Record<string, { date: string; type: string }> = {}
@@ -575,7 +575,7 @@ export default function CRMSection() {
                       <p className="text-xs text-neutral-600">No calls recorded yet</p>
                     </div>
                     <button onClick={() => setDetailTab('calls')} className="text-[10px] text-[#00bfff] hover:text-white cursor-pointer transition-colors">
-                      Log a Call Ã¢â€ â€™
+                      Log a Call →
                     </button>
                   </div>
                 )
@@ -595,7 +595,7 @@ export default function CRMSection() {
                         <span className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Call History</span>
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-white font-bold">{calls.length}</span>
                       </div>
-                      <span className="text-[10px] text-[#00bfff] hover:text-white transition-colors">View All Ã¢â€ â€™</span>
+                      <span className="text-[10px] text-[#00bfff] hover:text-white transition-colors">View All →</span>
                     </div>
                     <div className="flex items-center gap-4 text-xs">
                       <div>
@@ -828,7 +828,7 @@ export default function CRMSection() {
                           <option value="Other">Other</option>
                         </select>
                         <input value={projectForm.estimated_cost} onChange={e => setProjectForm({...projectForm, estimated_cost: e.target.value})}
-                          className={inputCls} placeholder="Est. cost (GHÃ¢â€šÂµ) *" type="number" step="0.01" required />
+                          className={inputCls} placeholder="Est. cost (GH₵) *" type="number" step="0.01" required />
                       </div>
                       <input value={projectForm.est_completion} onChange={e => setProjectForm({...projectForm, est_completion: e.target.value})}
                         className={inputCls} placeholder="Est. completion date" type="date" />
@@ -947,8 +947,8 @@ export default function CRMSection() {
                           {/* Pain math */}
                           {(costMath.monthly > 0 || costMath.annual > 0 || costMath.monthlyTimeHours > 0) && (
                             <div className="flex flex-wrap gap-2 mb-2">
-                              {costMath.monthly > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ff7a00]/10 text-[#ff7a00] font-bold">GHÃ¢â€šÂµ{Number(costMath.monthly).toLocaleString()}/mo</span>}
-                              {costMath.annual > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-bold">GHÃ¢â€šÂµ{Number(costMath.annual).toLocaleString()}/yr</span>}
+                              {costMath.monthly > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#ff7a00]/10 text-[#ff7a00] font-bold">GH₵{Number(costMath.monthly).toLocaleString()}/mo</span>}
+                              {costMath.annual > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 font-bold">GH₵{Number(costMath.annual).toLocaleString()}/yr</span>}
                               {costMath.monthlyTimeHours > 0 && <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 font-bold">{costMath.monthlyTimeHours}h/mo lost</span>}
                             </div>
                           )}
@@ -1146,7 +1146,7 @@ export default function CRMSection() {
                             <div className="flex flex-wrap gap-1.5">
                               {tpChecked.map((tp: string) => (
                                 <span key={tp} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                  Ã¢Å“â€œ {tp.replace(/_/g, ' ')}
+                                  ✔ {tp.replace(/_/g, ' ')}
                                 </span>
                               ))}
                               {tpSkipped.map((tp: string) => (
@@ -1656,7 +1656,7 @@ export default function CRMSection() {
                   {/* Next Action / Status Pill */}
                   <div className="mt-1.5 relative z-10">
                     {stage === 'won' ? (
-                      <span className="crm-countdown-pill project">Ã¢â€ â€™ Project</span>
+                      <span className="crm-countdown-pill project">→ Project</span>
                     ) : stage === 'disqualified' ? (
                       <span className="crm-countdown-pill lost">Lost</span>
                     ) : nextActionMap[c.client_id] ? (() => {
@@ -2142,7 +2142,7 @@ export default function CRMSection() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-[10px] text-neutral-600 mb-1 block">Project Cost (GHÃ¢â€šÂµ)</label>
+                    <label className="text-[10px] text-neutral-600 mb-1 block">Project Cost (GH₵)</label>
                     <input type="number" value={historicForm.estimated_cost} onChange={e => setHistoricForm({...historicForm, estimated_cost: e.target.value})} className={inputCls} placeholder="0" />
                   </div>
                   <div>

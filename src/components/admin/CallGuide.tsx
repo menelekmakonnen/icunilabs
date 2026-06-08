@@ -616,13 +616,9 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
     if (phase === 'guide' && !timerRef.current) {
       setCallStart(new Date().toISOString())
       timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000)
-      // Auto-start transcription when guide opens
-      if (speechSupported && !isTranscribing) {
-        setTimeout(() => startTranscription(), 300)
-      }
     }
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [phase, speechSupported, isTranscribing, startTranscription])
+  }, [phase])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -1027,8 +1023,26 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
             ))}
           </>)}
 
-          <button onClick={startGuide} disabled={!pathId}
-            className="w-full mt-5 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all flex items-center justify-center gap-2">
+          {speechSupported && (
+            <div className="mt-4 p-3 bg-neutral-900 border border-neutral-800 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isTranscribing ? 'bg-emerald-500/10' : 'bg-neutral-800'}`}>
+                  {isTranscribing ? <><div className="cg-mic-pulse" /><Mic className="w-4 h-4 text-emerald-400" /></> : <MicOff className="w-4 h-4 text-neutral-500" />}
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white">Microphone</p>
+                  <p className="text-[10px] text-neutral-500">{isTranscribing ? 'Listening...' : 'Required for call'}</p>
+                </div>
+              </div>
+              <button onClick={() => isTranscribing ? stopTranscription() : startTranscription()}
+                className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${isTranscribing ? 'bg-neutral-800 border-neutral-700 text-white' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'}`}>
+                {isTranscribing ? 'Turn Off' : 'Turn On'}
+              </button>
+            </div>
+          )}
+
+          <button onClick={startGuide} disabled={!pathId || (speechSupported && !isTranscribing)}
+            className="w-full mt-4 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(0,191,255,0.3)] transition-all flex items-center justify-center gap-2">
             <Phone className="w-4 h-4" /> Begin Call Guide <ArrowRight className="w-4 h-4" />
           </button>
         </div>

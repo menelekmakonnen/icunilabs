@@ -3,14 +3,12 @@
 // Uses the Starterclass Apps Script API with godmode_token.
 
 import { useState, useEffect, useCallback } from 'react'
-import { useAdminStore } from '../../store/useAdminStore'
+import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import {
   GraduationCap, Users, CreditCard, Calendar, RefreshCw,
   Check, Mail, Search,
   Loader2, AlertCircle, ExternalLink, Send
 } from 'lucide-react'
-
-const SC_API = 'https://script.google.com/macros/s/AKfycbwYuXJjh75d8QnpHlTA1oE6xq7lS-x-pNAmimLMvp2urqqRILg5EutlnomEHV5zfmNirw/exec'
 
 interface SCRegistration {
   registration_id: string
@@ -53,25 +51,27 @@ interface SCDashboard {
   by_country: Record<string, number>
 }
 
-async function scFetch<T>(godmodeToken: string, action: string, body?: Record<string, unknown>): Promise<{ status: string; data?: T; message?: string }> {
+async function scFetch<T>(_godmodeToken: string, action: string, body?: Record<string, unknown>): Promise<{ status: string; data?: T; message?: string }> {
   try {
-    if (body) {
-      const res = await fetch(SC_API, {
-        method: 'POST',
-        redirect: 'follow',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action, godmodeToken, ...body }),
-      })
-      return await res.json()
-    } else {
-      const url = new URL(SC_API)
-      url.searchParams.set('action', action)
-      url.searchParams.set('godmode_token', godmodeToken)
-      const res = await fetch(url.toString(), { redirect: 'follow' })
-      return await res.json()
+    if (action === 'admin_dashboard') {
+      const data = await adminActions.godmodeManageStarterclass('getDashboard')
+      return { status: 'success', data: data as T }
     }
-  } catch (err) {
-    return { status: 'error', message: String(err) }
+    else if (action === 'admin_verify_payment') {
+      const registrationId = body?.registrationId as string
+      await adminActions.godmodeManageStarterclass('confirmPayment', { registrationId })
+      return { status: 'success' }
+    }
+    else if (action === 'admin_send_email') {
+      const recipients = body?.recipients
+      const subject = body?.subject as string
+      const bodyText = body?.body as string
+      await adminActions.godmodeManageStarterclass('sendEmail', { recipients, subject, body: bodyText })
+      return { status: 'success' }
+    }
+    return { status: 'error', message: `Unknown action: ${action}` }
+  } catch (err: any) {
+    return { status: 'error', message: err.message || String(err) }
   }
 }
 

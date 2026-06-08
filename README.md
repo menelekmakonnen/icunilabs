@@ -67,15 +67,11 @@ Set in `.env` locally or in Vercel project settings for production.
 
 ## Apps Script Backend
 
-The backend lives in `src/api/Code.js` and is deployed as a Google Apps Script web app.
+The Apps Script backend has been migrated to its own repository under **ICUNI Ops** (located in the sibling `ICUNI Ops` folder).
 
-### Deployment
-```bash
-cd src/api
-clasp login          # Authenticate with Google
-clasp push           # Push code to Apps Script
-clasp deploy         # Create a new deployment version
-```
+To make backend updates:
+1. Navigate to the `ICUNI Ops` repository.
+2. Run clasp commands (`npm run push`, `npm run deploy`) in the `ICUNI Ops/appscript` directory.
 
 ### Action Router
 
@@ -131,7 +127,6 @@ Theme selection persisted in `localStorage` as `icuni_admin_theme`.
 
 ```
 src/
-├── api/              # Google Apps Script backend (Code.js)
 ├── components/
 │   ├── admin/        # Admin console (CRM, Mail, Invoices, Team, etc.)
 │   │   ├── mail/     # Mail hub components
@@ -150,4 +145,4 @@ src/
 1. Make changes on `main` branch
 2. Run `npm run build` to verify
 3. `git push` — Vercel auto-deploys to `labs.icuni.org`
-4. For backend changes: `clasp push` then `clasp deploy` in `src/api/`
+4. For backend changes, navigate to the `ICUNI Ops` repository and run `npm run push` / deploy.
