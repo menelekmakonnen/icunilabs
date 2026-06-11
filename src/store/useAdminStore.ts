@@ -152,9 +152,53 @@ function setCachedUser(user: any) {
   } catch { /* non-critical */ }
 }
 
+// ─── TOKEN PERSISTENCE (7-day expiry) ─────────────────────
+// The token is stored alongside a timestamp; stored auth older than
+// 7 days is cleared on restore so stale sessions don't linger forever.
+const ADMIN_TOKEN_KEY = 'icuni_admin_token'
+const ADMIN_TOKEN_TS_KEY = 'icuni_admin_token_ts'
+const TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
+function storeToken(token: string) {
+  try {
+    localStorage.setItem(ADMIN_TOKEN_KEY, token)
+    localStorage.setItem(ADMIN_TOKEN_TS_KEY, String(Date.now()))
+  } catch { /* non-critical */ }
+}
+function clearStoredToken() {
+  try {
+    localStorage.removeItem(ADMIN_TOKEN_KEY)
+    localStorage.removeItem(ADMIN_TOKEN_TS_KEY)
+  } catch { /* non-critical */ }
+}
+function isStoredTokenExpired(): boolean {
+  try {
+    const ts = Number(localStorage.getItem(ADMIN_TOKEN_TS_KEY) || 0)
+    if (!ts) {
+      // Legacy token stored before timestamps existed — stamp it now so it
+      // expires 7 days from today instead of forcing an immediate re-login.
+      if (localStorage.getItem(ADMIN_TOKEN_KEY)) localStorage.setItem(ADMIN_TOKEN_TS_KEY, String(Date.now()))
+      return false
+    }
+    return Date.now() - ts > TOKEN_MAX_AGE_MS
+  } catch { return false }
+}
+function getStoredToken(): string | null {
+  try {
+    const token = localStorage.getItem(ADMIN_TOKEN_KEY)
+    if (!token) return null
+    if (isStoredTokenExpired()) {
+      clearStoredToken()
+      setCachedUser(null)
+      return null
+    }
+    return token
+  } catch { return null }
+}
+
 // Singleton store
 let state: AdminState = {
-  token: localStorage.getItem('icuni_admin_token'),
+  token: getStoredToken(),
   user: getCachedUser(),
   loading: false,
   error: null,
@@ -264,7 +308,7 @@ export const adminActions = {
         return
       }
       setState({ token: session.token, user: session.user, loading: false })
-      localStorage.setItem('icuni_admin_token', session.token)
+      storeToken(session.token)
       setCachedUser(session.user)
     } catch (err: any) {
       setState({ error: err.message, loading: false })
@@ -280,7 +324,7 @@ export const adminActions = {
         return
       }
       setState({ token: session.token, user: session.user, loading: false })
-      localStorage.setItem('icuni_admin_token', session.token)
+      storeToken(session.token)
       setCachedUser(session.user)
     } catch (err: any) {
       setState({ error: err.message, loading: false })
@@ -296,7 +340,7 @@ export const adminActions = {
         return
       }
       setState({ token: session.token, user: session.user, loading: false })
-      localStorage.setItem('icuni_admin_token', session.token)
+      storeToken(session.token)
       setCachedUser(session.user)
     } catch (err: any) {
       setState({ error: err.message, loading: false })
@@ -306,12 +350,19 @@ export const adminActions = {
   validateSession: async () => {
     const { token } = state
     if (!token) return
+    // Hard-expire stored sessions older than 7 days regardless of server state
+    if (isStoredTokenExpired()) {
+      setState({ token: null, user: null, loading: false })
+      clearStoredToken()
+      setCachedUser(null)
+      return
+    }
     // Don't set loading:true — allow optimistic rendering with cached user data
     try {
       const result = await apiPost('validateSession', { token })
       if (!ALLOWED_ROLES.includes(result.user?.role)) {
         setState({ token: null, user: null, loading: false })
-        localStorage.removeItem('icuni_admin_token')
+        clearStoredToken()
         setCachedUser(null)
         return
       }
@@ -330,7 +381,7 @@ export const adminActions = {
       setCachedUser(merged)
     } catch {
       setState({ token: null, user: null, loading: false })
-      localStorage.removeItem('icuni_admin_token')
+      clearStoredToken()
       setCachedUser(null)
     }
   },
@@ -344,7 +395,7 @@ export const adminActions = {
       token: null, user: null, otpSent: false, activeSection: 'dashboard',
       impersonating: null, impersonationToken: null, actingAs: null, floatingCall: null,
     })
-    localStorage.removeItem('icuni_admin_token')
+    clearStoredToken()
     setCachedUser(null)
   },
 
@@ -425,7 +476,10 @@ export const adminActions = {
     try {
       const jobs = await apiPost('getJobListings', { token: state.token })
       setState({ jobs: jobs || [] })
-    } catch (err: any) { setState({ error: err.message }) }
+    } catch (err: any) {
+      console.warn('[Careers] Failed to load live job listings — static fallback will be shown:', err)
+      setState({ error: err.message })
+    }
   },
 
   loadApplications: async () => {
@@ -921,6 +975,7 @@ export const adminActions = {
   updatePortfolio: async (projectId: string, data: Record<string, any>) => {
     setState({ loading: true, error: null })
     try {
+      // Backend expects a flat payload: { token, project_id, ...updatable fields }
       await apiPost('updatePortfolio', { token: state.token, project_id: projectId, ...data })
       await adminActions.loadPortfolio()
       setState({ loading: false })

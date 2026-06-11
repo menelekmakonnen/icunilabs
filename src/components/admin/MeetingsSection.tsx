@@ -482,6 +482,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
   const [regressTarget, setRegressTarget] = useState('contacted')
   const [showCancel, setShowCancel] = useState(false)
   const [cancelReason, setCancelReason] = useState('')
+  const [syncWarning, setSyncWarning] = useState<string | null>(null)
 
   // Refresh meeting data when prop changes
   useEffect(() => {
@@ -492,6 +493,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
     setEditTime(normalizeTime(meeting.time))
     setDateTimeDirty(false)
     setConfirmSent(false)
+    setSyncWarning(null)
     try { if (meeting.demo_checklist?.length) setChecklist(meeting.demo_checklist) } catch { /* ignored */ }
   }, [meeting])
 
@@ -503,6 +505,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
 
     // Trigger calendar event on confirmation
     if (targetStage === 'confirmed') {
+      setSyncWarning(null)
       const client = clientMap?.[m.client_id]
       const clientEmail = m.client_email || client?.email || client?.contact_email || ''
       try {
@@ -530,6 +533,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
       } catch (e) {
         // Calendar sync is best-effort, don't block stage advancement
         console.warn('Calendar sync failed:', e)
+        setSyncWarning('Google Calendar sync failed — the meeting was confirmed, but no calendar invite was created. Check the connection and try re-confirming, or create the event manually.')
       }
     }
 
@@ -677,6 +681,15 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
 
         {/* Body */}
         <div className="mtg-drawer__body">
+          {/* Calendar sync warning */}
+          {syncWarning && (
+            <div className="mb-4 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-start gap-2">
+              <span className="text-xs text-amber-400 flex-1">{syncWarning}</span>
+              <button onClick={() => setSyncWarning(null)} className="text-amber-400/60 hover:text-amber-400 cursor-pointer flex-shrink-0">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
           {/* Client Contact Info */}
           {(() => {
             const client = clientMap?.[m.client_id]

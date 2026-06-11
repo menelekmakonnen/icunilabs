@@ -142,12 +142,13 @@ const buildPortfolioRows = () => portfolioProjects.map((p, i) => ({
 }))
 
 export function ProjectsSection() {
-  const { projects, loading } = useAdminStore()
+  const { projects, loading, error } = useAdminStore()
   const [tab, setTab] = useState<'pipeline' | 'portfolio'>('portfolio')
   const [portfolioData, setPortfolioData] = useState(buildPortfolioRows)
   const [editProject, setEditProject] = useState<any>(null)
   const [editForm, setEditForm] = useState<any>(null)
   const [projectEditorTab, setProjectEditorTab] = useState<'overview' | 'content' | 'media'>('overview')
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
   useEffect(() => { adminActions.loadProjects() }, [])
 
@@ -155,15 +156,19 @@ export function ProjectsSection() {
     setEditProject(row)
     setEditForm({ ...row })
     setProjectEditorTab('overview')
+    setSaveState('idle')
   }
 
   const handleProjectSave = async () => {
     if (!editForm || !editProject) return
+    setSaveState('saving')
     const success = await adminActions.updatePortfolio(editProject.project_id, editForm)
     if (success) {
       setPortfolioData(prev => prev.map(p => p.project_id === editProject.project_id ? { ...p, ...editForm } : p))
-      setEditProject(null)
-      setEditForm(null)
+      setSaveState('saved')
+      setTimeout(() => { setEditProject(null); setEditForm(null); setSaveState('idle') }, 1200)
+    } else {
+      setSaveState('error')
     }
   }
 
@@ -186,10 +191,16 @@ export function ProjectsSection() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-amber-500/80 mr-2" title="Portfolio content is sourced from src/data/portfolioData.ts. Edits here update the preview only and are lost on reload — they are not yet persisted to the backend.">
-              ⚠ Preview only — not persisted
+            {saveState === 'saved' && (
+              <span className="text-[10px] text-emerald-400 mr-1">✓ Saved to backend</span>
+            )}
+            {saveState === 'error' && (
+              <span className="text-[10px] text-red-400 mr-1">Save failed{error ? ` — ${error}` : ''}</span>
+            )}
+            <span className="text-[10px] text-neutral-500 mr-2" title="Edits are persisted to the backend Portfolio sheet. The public portfolio page currently renders from static data (src/data/portfolioData.ts), so saved changes appear on the live site after the next deploy.">
+              Public site updates on next deploy
             </span>
-            <button onClick={handleProjectSave} className={`${btnPrimary} text-xs px-4 py-1.5`}>Apply to Preview</button>
+            <button onClick={handleProjectSave} disabled={saveState === 'saving'} className={`${btnPrimary} text-xs px-4 py-1.5`}>{saveState === 'saving' ? 'Saving…' : 'Save'}</button>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
@@ -466,7 +477,8 @@ const STATIC_JOBS = [{
 export function CareersSection() {
   const { jobs: apiJobs, applications, loading } = useAdminStore()
   // Merge: prefer API data, fall back to static if API returns empty
-  const jobs = apiJobs.length > 0 ? apiJobs : STATIC_JOBS
+  const usingStaticJobs = apiJobs.length === 0
+  const jobs = usingStaticJobs ? STATIC_JOBS : apiJobs
   const [tab, setTab] = useState<CareersTab>('listings')
   // Listing CRUD
   const [showListingModal, setShowListingModal] = useState(false)
@@ -776,6 +788,11 @@ export function CareersSection() {
   if (tab === 'listings') return (
     <div>
       <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', applications.length)}{tabBtn('emails', 'Manual Emails')}</div>
+      {usingStaticJobs && !loading && (
+        <div className="mb-4 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
+          Live listings unavailable — showing recent roles from built-in fallback data. Edits made here may not reach the backend until the connection recovers.
+        </div>
+      )}
       <DataTable title="Career Listings" subtitle="Manage open positions" loading={loading} data={jobs}
         onAdd={openCreate} addLabel="Add Listing"
         columns={[

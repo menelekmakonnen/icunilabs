@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Circle, Clock, LogOut, ChevronRight, Send, AlertTriangle, X } from 'lucide-react';
-import { usePortalStore, portalActions } from '../../store/usePortalStore';
+import { usePortalStore, portalActions, getPortalState } from '../../store/usePortalStore';
 import type { PortalProject } from '../../store/usePortalStore';
 
 const API = import.meta.env.VITE_APPS_SCRIPT_URL;
@@ -111,7 +111,7 @@ function BugReportModal({ projects, onClose }: { projects: PortalProject[]; onCl
             projectTitle: proj?.title || 'Unknown',
             category,
             description,
-            token: localStorage.getItem('icuni_portal_token'),
+            token: getPortalState().token,
           }),
           redirect: 'follow',
         });

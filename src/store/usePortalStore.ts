@@ -52,9 +52,52 @@ async function apiPost(action: string, payload: Record<string, any> = {}): Promi
   return data.data
 }
 
+// ─── TOKEN PERSISTENCE (7-day expiry) ─────────────────────
+// The token is stored alongside a timestamp; stored auth older than
+// 7 days is cleared on restore so stale sessions don't linger forever.
+const PORTAL_TOKEN_KEY = 'icuni_portal_token'
+const PORTAL_TOKEN_TS_KEY = 'icuni_portal_token_ts'
+const TOKEN_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+
+function storeToken(token: string) {
+  try {
+    localStorage.setItem(PORTAL_TOKEN_KEY, token)
+    localStorage.setItem(PORTAL_TOKEN_TS_KEY, String(Date.now()))
+  } catch { /* non-critical */ }
+}
+function clearStoredToken() {
+  try {
+    localStorage.removeItem(PORTAL_TOKEN_KEY)
+    localStorage.removeItem(PORTAL_TOKEN_TS_KEY)
+  } catch { /* non-critical */ }
+}
+function isStoredTokenExpired(): boolean {
+  try {
+    const ts = Number(localStorage.getItem(PORTAL_TOKEN_TS_KEY) || 0)
+    if (!ts) {
+      // Legacy token stored before timestamps existed — stamp it now so it
+      // expires 7 days from today instead of forcing an immediate re-login.
+      if (localStorage.getItem(PORTAL_TOKEN_KEY)) localStorage.setItem(PORTAL_TOKEN_TS_KEY, String(Date.now()))
+      return false
+    }
+    return Date.now() - ts > TOKEN_MAX_AGE_MS
+  } catch { return false }
+}
+function getStoredToken(): string | null {
+  try {
+    const token = localStorage.getItem(PORTAL_TOKEN_KEY)
+    if (!token) return null
+    if (isStoredTokenExpired()) {
+      clearStoredToken()
+      return null
+    }
+    return token
+  } catch { return null }
+}
+
 // Singleton store
 let state: PortalState = {
-  token: localStorage.getItem('icuni_portal_token'),
+  token: getStoredToken(),
   user: null,
   projects: [],
   activeProject: null,
@@ -101,7 +144,7 @@ export const portalActions = {
     try {
       const session = await apiPost('verifyOTP', { email, otp })
       setState({ token: session.token, user: session.user, loading: false })
-      localStorage.setItem('icuni_portal_token', session.token)
+      storeToken(session.token)
     } catch (err: any) {
       setState({ error: err.message, loading: false })
     }
@@ -110,13 +153,19 @@ export const portalActions = {
   validateExistingToken: async () => {
     const { token } = state
     if (!token) return
+    // Hard-expire stored sessions older than 7 days regardless of server state
+    if (isStoredTokenExpired()) {
+      setState({ token: null, user: null, loading: false })
+      clearStoredToken()
+      return
+    }
     setState({ loading: true })
     try {
       const result = await apiPost('validateSession', { token })
       setState({ user: result.user, loading: false })
     } catch {
       setState({ token: null, user: null, loading: false })
-      localStorage.removeItem('icuni_portal_token')
+      clearStoredToken()
     }
   },
 
@@ -130,7 +179,7 @@ export const portalActions = {
     } catch (err: any) {
       if (err.message?.includes('Unauthorized') || err.message?.includes('expired')) {
         setState({ token: null, user: null, projects: [] })
-        localStorage.removeItem('icuni_portal_token')
+        clearStoredToken()
       }
       setState({ error: err.message, loading: false })
     }
@@ -164,7 +213,7 @@ export const portalActions = {
     const { token } = state
     if (token) apiPost('logout', { token }).catch(() => {})
     setState({ token: null, user: null, projects: [], activeProject: null, otpSent: false })
-    localStorage.removeItem('icuni_portal_token')
+    clearStoredToken()
     window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate'));
   },
 }

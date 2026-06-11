@@ -80,7 +80,10 @@ export default function InvoiceBuilder() {
       if (ih <= ph - 16) { pdf.addImage(img, 'PNG', 8, 8, iw, ih) }
       else { let y = 0; while (y < ih) { if (y > 0) pdf.addPage(); pdf.addImage(img, 'PNG', 8, -y + 8, iw, ih); y += ph - 16 } }
       pdf.save(`${d.invoiceNo || 'invoice'}.pdf`)
-    } catch (e) { console.error('PDF failed:', e) }
+    } catch (e) {
+      console.error('PDF failed:', e)
+      alert('PDF generation failed. Please try again.')
+    }
     setGenerating(false)
   }
 
@@ -108,7 +111,10 @@ export default function InvoiceBuilder() {
       } else {
         alert('Failed to save invoice.')
       }
-    } catch (e) { console.error('Save failed:', e) }
+    } catch (e) {
+      console.error('Save failed:', e)
+      alert('Failed to save invoice — an unexpected error occurred while generating the PDF.')
+    }
     setGenerating(false)
   }
 

@@ -1,3 +1,16 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Cloud-sync artifacts
+desktop.ini
+**/desktop.ini
+
+# Lint dumps
+lint_output.json
+lint_full.txt
+
 # Logs
 logs
 *.log

@@ -183,7 +183,10 @@ export default function ContractsSection() {
       if (ih <= ph - 20) { pdf.addImage(img, 'PNG', 10, 10, iw, ih) }
       else { let y = 0; while (y < ih) { if (y > 0) pdf.addPage(); pdf.addImage(img, 'PNG', 10, -y + 10, iw, ih); y += ph - 20 } }
       pdf.save(`${active?.title?.replace(/\s+/g, '_') || 'contract'}.pdf`)
-    } catch (e) { console.error('PDF failed:', e) }
+    } catch (e) {
+      console.error('PDF failed:', e)
+      alert('PDF generation failed. Please try again.')
+    }
     setGenerating(false)
   }
 
@@ -212,7 +215,10 @@ export default function ContractsSection() {
       } else {
         alert('Failed to save contract.')
       }
-    } catch (e) { console.error('Save failed:', e) }
+    } catch (e) {
+      console.error('Save failed:', e)
+      alert('Failed to save contract — an unexpected error occurred while generating the PDF.')
+    }
     setGenerating(false)
   }
 
