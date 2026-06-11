@@ -42,6 +42,7 @@ export default function MailSection() {
   const [activeMailboxes, setActiveMailboxes] = useState<string[]>([])
   const [searchQ, setSearchQ] = useState('')
   const [page, setPage] = useState(0)
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null)
   const [folder, setFolder] = useState<'inbox' | 'sent' | 'all'>('inbox')
   const [impersonatedBoxes, setImpersonatedBoxes] = useState<string[] | null>(null)
 
@@ -274,8 +275,8 @@ export default function MailSection() {
         </div>
       )}
 
-      {tab === 'compose' && <MailCompose />}
-      {tab === 'templates' && <MailTemplates onUseTemplate={() => { setTab('compose') }} />}
+      {tab === 'compose' && <MailCompose initialTemplateId={pendingTemplateId} onTemplateConsumed={() => setPendingTemplateId(null)} />}
+      {tab === 'templates' && <MailTemplates onUseTemplate={(id: string) => { setPendingTemplateId(id); setTab('compose') }} />}
 
       {/* MAILBOXES MANAGEMENT */}
       {tab === 'mailboxes' && canManage && <MailboxManager aliases={aliases} />}
