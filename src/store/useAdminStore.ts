@@ -255,10 +255,10 @@ export const adminActions = {
     }
   },
 
-  verifyOTP: async (email: string, otp: string) => {
+  verifyOTP: async (email: string, otp: string, rememberMe?: boolean) => {
     setState({ loading: true, error: null })
     try {
-      const session = await apiPost('verifyOTP', { email, otp })
+      const session = await apiPost('verifyOTP', { email, otp, rememberMe })
       if (!ALLOWED_ROLES.includes(session.user?.role)) {
         setState({ error: 'Access denied. Admin privileges required.', loading: false })
         return
@@ -271,10 +271,10 @@ export const adminActions = {
     }
   },
 
-  passwordLogin: async (email: string, password: string) => {
+  passwordLogin: async (email: string, password: string, rememberMe?: boolean) => {
     setState({ loading: true, error: null })
     try {
-      const session = await apiPost('passwordLogin', { identifier: email, password })
+      const session = await apiPost('passwordLogin', { identifier: email, password, rememberMe })
       if (!ALLOWED_ROLES.includes(session.user?.role)) {
         setState({ error: 'Access denied. Admin privileges required.', loading: false })
         return
@@ -287,10 +287,10 @@ export const adminActions = {
     }
   },
 
-  pinLogin: async (email: string, pin: string) => {
+  pinLogin: async (email: string, pin: string, rememberMe?: boolean) => {
     setState({ loading: true, error: null })
     try {
-      const session = await apiPost('pinLogin', { identifier: email, pin })
+      const session = await apiPost('pinLogin', { identifier: email, pin, rememberMe })
       if (!ALLOWED_ROLES.includes(session.user?.role)) {
         setState({ error: 'Access denied. Admin privileges required.', loading: false })
         return
@@ -315,8 +315,19 @@ export const adminActions = {
         setCachedUser(null)
         return
       }
-      setState({ user: result.user, loading: false })
-      setCachedUser(result.user)
+      // Merge over cached user — validateSession returns a slim session object
+      // (no permissions/job_title/profile_pic_url). A raw overwrite wiped
+      // permission-based nav filtering on every page refresh.
+      const cached = getCachedUser() || {}
+      const merged = { ...cached, ...result.user }
+      // Deep merge permissions specifically
+      if (cached.permissions && result.user?.permissions) {
+        merged.permissions = { ...cached.permissions, ...result.user.permissions }
+      } else if (cached.permissions && !result.user?.permissions) {
+        merged.permissions = cached.permissions
+      }
+      setState({ user: merged, loading: false })
+      setCachedUser(merged)
     } catch {
       setState({ token: null, user: null, loading: false })
       localStorage.removeItem('icuni_admin_token')
@@ -325,9 +336,14 @@ export const adminActions = {
   },
 
   logout: () => {
-    const { token } = state
+    const { token, impersonationToken } = state
+    // End any active impersonation session server-side before logging out
+    if (token && impersonationToken) apiPost('endImpersonation', { token, impersonationToken }).catch(() => {})
     if (token) apiPost('logout', { token }).catch(() => {})
-    setState({ token: null, user: null, otpSent: false, activeSection: 'dashboard' })
+    setState({
+      token: null, user: null, otpSent: false, activeSection: 'dashboard',
+      impersonating: null, impersonationToken: null, actingAs: null, floatingCall: null,
+    })
     localStorage.removeItem('icuni_admin_token')
     setCachedUser(null)
   },
@@ -664,7 +680,8 @@ export const adminActions = {
     setState({ inboxLoading: true })
     try {
       const result = await apiPost('getInbox', { token: state.token, alias: alias || 'all', page: page || 0, query, folder: folder || 'all' })
-      setState({ inbox: result?.threads || [], inboxLoading: false, emailAliases: result?.aliases || state.emailAliases })
+      const newAliases = Array.isArray(result?.aliases) && result.aliases.length > 0 ? result.aliases : state.emailAliases
+      setState({ inbox: result?.threads || [], inboxLoading: false, emailAliases: newAliases })
       return result
     } catch (err: any) {
       setState({ error: err.message, inboxLoading: false })
@@ -811,6 +828,17 @@ export const adminActions = {
     }
   },
 
+  deleteEmailTemplate: async (id: string) => {
+    try {
+      const result = await apiPost('deleteEmailTemplate', { token: state.token, id })
+      await adminActions.loadEmailTemplates()
+      return result
+    } catch (err: any) {
+      setState({ error: err.message })
+      return null
+    }
+  },
+
   previewBrandedEmail: async (data: { templateId?: string; subject?: string; body?: string; recipientName?: string; opts?: any; extras?: any }) => {
     try {
       return await apiPost('previewBrandedEmail', { token: state.token, ...data })
@@ -890,10 +918,10 @@ export const adminActions = {
     } catch (err: any) { setState({ error: err.message }) }
   },
 
-  updatePortfolioStatus: async (projectId: string, status: string) => {
+  updatePortfolio: async (projectId: string, data: Record<string, any>) => {
     setState({ loading: true, error: null })
     try {
-      await apiPost('updatePortfolio', { token: state.token, project_id: projectId, status })
+      await apiPost('updatePortfolio', { token: state.token, project_id: projectId, ...data })
       await adminActions.loadPortfolio()
       setState({ loading: false })
       return true
@@ -1008,16 +1036,22 @@ export const adminActions = {
     }
   },
 
-  updateProject: async (data: any) => {
+  /** Advance a client project to its next delivery step.
+   *  Backend handles invoice generation, step emails, and SLA reset. */
+  advanceProjectStep: async (projectId: string, nextStep?: number): Promise<{ step: number; stepName: string } | null> => {
     setState({ loading: true, error: null })
     try {
-      await apiPost('updateProject', { token: state.token, ...data })
+      const result = await apiPost('advanceStep', {
+        token: state.token,
+        projectId,
+        ...(nextStep !== undefined ? { nextStep } : {}),
+      })
       await adminActions.loadProjects()
       setState({ loading: false })
-      return true
+      return result
     } catch (err: any) {
       setState({ error: err.message, loading: false })
-      return false
+      return null
     }
   },
 
@@ -1039,6 +1073,33 @@ export const adminActions = {
       const result = await apiPost('getInvoiceHTML', { token: state.token, invoiceId })
       setState({ activeInvoiceHTML: result?.html || null, activeInvoice: result?.invoice || null })
     } catch (err: any) { setState({ error: err.message }) }
+  },
+
+  closeInvoiceHTML: () => setState({ activeInvoiceHTML: null }),
+
+  saveInvoice: async (data: Record<string, any>) => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('saveInvoice', { token: state.token, ...data })
+      await adminActions.loadInvoices()
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
+  },
+
+  saveContract: async (data: Record<string, any>) => {
+    setState({ loading: true, error: null })
+    try {
+      await apiPost('saveContract', { token: state.token, ...data })
+      setState({ loading: false })
+      return true
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return false
+    }
   },
 
   snoozeSla: async (projectId: string, minutes: number) => {
@@ -1143,16 +1204,21 @@ export const adminActions = {
   loadDashboard: async () => {
     setState({ loading: true })
     try {
-      await Promise.all([
-        adminActions.loadClients(),
-        adminActions.loadProjects(),
-        adminActions.loadInvoices(),
-        adminActions.loadSLA(),
-        adminActions.loadLogs(),
-      ])
-      setState({ loading: false })
-    } catch {
-      setState({ loading: false })
+      const dashboard = await apiPost('getDashboard', { token: state.token })
+      if (dashboard) {
+        setState({
+          clients: dashboard.clients || [],
+          projects: dashboard.projects || [],
+          invoices: dashboard.invoices || [],
+          slaStatuses: dashboard.slaStatuses || [],
+          logs: dashboard.logs || [],
+          loading: false,
+        })
+      } else {
+        setState({ loading: false })
+      }
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
     }
   },
 
@@ -1514,9 +1580,9 @@ export const adminActions = {
     }
   },
 
-  sendMeetingConfirmation: async (meeting_id: string, template_id?: string) => {
+  sendMeetingConfirmation: async (meeting_id: string, data?: Record<string, any>, template_id?: string) => {
     try {
-      await apiPost('sendMeetingConfirmation', { token: state.token, meeting_id, template_id })
+      await apiPost('sendMeetingConfirmation', { token: state.token, meeting_id, template_id, ...data })
       await adminActions.loadMeetings()
       return true
     } catch (err: any) {

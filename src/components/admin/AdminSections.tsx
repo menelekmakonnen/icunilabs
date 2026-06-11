@@ -157,11 +157,14 @@ export function ProjectsSection() {
     setProjectEditorTab('overview')
   }
 
-  const handleProjectSave = () => {
+  const handleProjectSave = async () => {
     if (!editForm || !editProject) return
-    setPortfolioData(prev => prev.map(p => p.project_id === editProject.project_id ? { ...p, ...editForm } : p))
-    setEditProject(null)
-    setEditForm(null)
+    const success = await adminActions.updatePortfolio(editProject.project_id, editForm)
+    if (success) {
+      setPortfolioData(prev => prev.map(p => p.project_id === editProject.project_id ? { ...p, ...editForm } : p))
+      setEditProject(null)
+      setEditForm(null)
+    }
   }
 
   const updateField = (field: string, value: string) => {
@@ -183,8 +186,10 @@ export function ProjectsSection() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-neutral-600 mr-2">Auto-saves to preview</span>
-            <button onClick={handleProjectSave} className={`${btnPrimary} text-xs px-4 py-1.5`}>Save Changes</button>
+            <span className="text-[10px] text-amber-500/80 mr-2" title="Portfolio content is sourced from src/data/portfolioData.ts. Edits here update the preview only and are lost on reload — they are not yet persisted to the backend.">
+              ⚠ Preview only — not persisted
+            </span>
+            <button onClick={handleProjectSave} className={`${btnPrimary} text-xs px-4 py-1.5`}>Apply to Preview</button>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row flex-1 overflow-hidden">
@@ -258,6 +263,17 @@ export function ProjectsSection() {
             { key: 'balance', label: 'Balance', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : '—' },
           ]}
           searchKeys={['title', 'client_name', 'project_id']}
+          renderRowActions={(row) => (
+            row.status !== 'completed' && row.status !== 'cancelled' ? (
+              <button
+                onClick={async () => {
+                  if (!window.confirm(`Advance "${row.title}" to the next step? This may trigger client emails and invoice generation.`)) return
+                  const res = await adminActions.advanceProjectStep(row.project_id)
+                  if (res) adminActions.setError(null)
+                }}
+                className="text-xs text-[#00bfff] hover:text-white cursor-pointer whitespace-nowrap">Advance Step</button>
+            ) : <span className="text-xs text-neutral-600">Complete</span>
+          )}
         />
       </div>
     )
@@ -349,6 +365,8 @@ export function InvoicesSection() {
             searchKeys={['invoice_id', 'client_name']}
             renderRowActions={(row) => (
               <div className="flex gap-2">
+                <button onClick={() => adminActions.viewInvoiceHTML(row.invoice_id)}
+                  className="text-xs text-[#00bfff] hover:text-cyan-300 cursor-pointer">View</button>
                 {row.status !== 'paid' && (
                   <button onClick={() => { setShowPayment(row); setPayForm({ amount: String(row.balance || row.total || ''), method: 'MoMo', reference: '' }) }}
                     className="text-xs text-emerald-400 hover:text-emerald-300 cursor-pointer">Record Payment</button>
@@ -375,8 +393,11 @@ export function InvoicesSection() {
             </div>
           )}
           {activeInvoiceHTML && (
-            <div className={modalBg} onClick={() => adminActions.setError(null)}>
+            <div className={modalBg} onClick={() => adminActions.closeInvoiceHTML()}>
               <div className="bg-white rounded-xl p-4 max-w-3xl w-full max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-end mb-2">
+                  <button onClick={() => adminActions.closeInvoiceHTML()} className="text-neutral-400 hover:text-neutral-700 cursor-pointer"><X className="w-5 h-5" /></button>
+                </div>
                 <SafeHtml html={activeInvoiceHTML} />
               </div>
             </div>
@@ -913,10 +934,10 @@ export function CareersSection() {
                   <div className="pt-3 border-t border-neutral-800 space-y-2">
                     <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Trial Details</p>
                     <div>
-                      <label className="text-[10px] text-neutral-500 block mb-1">Weekly Pay (GH&#x20B5;)</label>
+                      <label className="text-[10px] text-neutral-500 block mb-1">Weekly Pay (GH₵)</label>
                       <input type="number" value={trialWeeklyRate} onChange={e => setTrialWeeklyRate(e.target.value)} className={`${inputCls} !py-1.5 !text-xs`} placeholder="700" />
                     </div>
-                    <p className="text-[10px] text-neutral-600">Based on GH&#x20B5;2,500-3,000/mo = GH&#x20B5;625-750/week</p>
+                    <p className="text-[10px] text-neutral-600">Based on GH₵2,500-3,000/mo = GH₵625-750/week</p>
                     <button onClick={refreshRowPreview} className="text-[10px] text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
                   </div>
                 )}
@@ -1187,10 +1208,10 @@ export function CareersSection() {
               <label className="text-xs text-neutral-500 mb-2 block">Paid Trial Week Details</label>
               <div className="space-y-2">
                 <div>
-                  <label className="text-[10px] text-neutral-600 block mb-1">Weekly Pay (GH&#x20B5;)</label>
+                  <label className="text-[10px] text-neutral-600 block mb-1">Weekly Pay (GH₵)</label>
                   <input type="number" value={trialWeeklyRate} onChange={e => setTrialWeeklyRate(e.target.value)} className={inputCls} placeholder="700" />
                 </div>
-                <p className="text-[10px] text-neutral-500">Monthly range GH&#x20B5;2,500-3,000 = GH&#x20B5;625-750/week. Includes full referral commission on closes.</p>
+                <p className="text-[10px] text-neutral-500">Monthly range GH₵2,500-3,000 = GH₵625-750/week. Includes full referral commission on closes.</p>
               </div>
               <button onClick={loadPreview} className="mt-2 text-xs text-emerald-400 hover:text-white cursor-pointer">Refresh Preview</button>
             </div>
@@ -1264,6 +1285,7 @@ export function ReferralsSection() {
   const [notifyType, setNotifyType] = useState('stage_update')
   const [matModal, setMatModal] = useState(false)
   const [matForm, setMatForm] = useState({ title: '', description: '', type: 'deck', url: '' })
+  const [editMatId, setEditMatId] = useState<string | null>(null)
   const [closeModal, setCloseModal] = useState<any>(null)
   const [dealValue, setDealValue] = useState('')
 
@@ -1358,6 +1380,7 @@ export function ReferralsSection() {
               return <span className={`text-xs font-bold ${colors[stage] || 'text-neutral-400'}`}>{stage}</span>
             }},
             { key: 'payout_amount', label: 'Payout', render: (v) => v ? `GH₵${Number(v).toLocaleString()}` : '—' },
+            { key: 'payout_status', label: 'Payout Status', render: (v) => v ? <span className={`text-xs font-bold ${v === 'confirmed' || v === 'paid' ? 'text-emerald-400' : 'text-amber-400'}`}>{v}</span> : '—' },
           ]}
           searchKeys={['client_name', 'client_email', 'referrer_name']}
           renderRowActions={(row) => (
@@ -1369,6 +1392,13 @@ export function ReferralsSection() {
               {Number(row.stage || 0) < 4 && (
                 <button onClick={() => setCloseModal(row)}
                   className="text-xs text-emerald-400 hover:text-white cursor-pointer">Close</button>
+              )}
+              {row.payout_status !== 'paid' && Number(row.payout_amount) > 0 && (
+                <button onClick={async () => {
+                  if (!window.confirm(`Confirm payout of GH₵${Number(row.payout_amount || 0).toLocaleString()} to ${row.referrer_name || 'referrer'}? This updates their total earned.`)) return
+                  await adminActions.confirmPayout(row.referral_id)
+                }}
+                  className="text-xs text-emerald-400 hover:text-white cursor-pointer whitespace-nowrap">Confirm Payout</button>
               )}
               <button onClick={() => setNotifyTarget(row)}
                 className="text-xs text-amber-400 hover:text-white cursor-pointer">Notify</button>
@@ -1432,7 +1462,11 @@ export function ReferralsSection() {
           <button onClick={() => setTab('emails')} className={tabCls('emails')}>Emails</button>
         </div>
         <DataTable title="Referrer Materials" subtitle="Portfolio decks, demos, and case studies for referrers" loading={loading} data={referrerMaterials}
-          onAdd={() => setMatModal(true)} addLabel="Add Material"
+          onAdd={() => {
+            setMatForm({ title: '', description: '', type: 'deck', url: '' })
+            setEditMatId(null)
+            setMatModal(true)
+          }} addLabel="Add Material"
           columns={[
             { key: 'id', label: 'ID', width: '100px' },
             { key: 'title', label: 'Title', render: (v) => <span className="text-white font-medium">{v}</span> },
@@ -1444,18 +1478,30 @@ export function ReferralsSection() {
           ]}
           searchKeys={['title', 'type']}
           renderRowActions={(row) => (
-            <button onClick={() => { if (confirm(`Delete "${row.title}"?`)) adminActions.deleteMaterial(row.id) }}
-              className="text-xs text-red-400 hover:text-red-300 cursor-pointer">Delete</button>
+            <div className="flex items-center gap-3">
+              <button onClick={() => {
+                setMatForm({ title: row.title, description: row.description || '', type: row.type || 'deck', url: row.url })
+                setEditMatId(row.id)
+                setMatModal(true)
+              }} className="text-xs text-[#00bfff] hover:text-white cursor-pointer">Edit</button>
+              <button onClick={() => { if (confirm(`Delete "${row.title}"?`)) adminActions.deleteMaterial(row.id) }}
+                className="text-xs text-red-400 hover:text-red-300 cursor-pointer">Delete</button>
+            </div>
           )}
         />
         {matModal && (
           <div className={modalBg} onClick={() => setMatModal(false)}>
             <div className={modalCard} onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-white">Add Material</h3>
+                <h3 className="text-lg font-bold text-white">{editMatId ? 'Edit Material' : 'Add Material'}</h3>
                 <button onClick={() => setMatModal(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
               </div>
-              <form onSubmit={async e => { e.preventDefault(); const ok = await adminActions.createMaterial(matForm); if (ok) { setMatModal(false); setMatForm({ title: '', description: '', type: 'deck', url: '' }) } }} className="space-y-3">
+              <form onSubmit={async e => { 
+                e.preventDefault(); 
+                const payload = editMatId ? { ...matForm, material_id: editMatId } : matForm;
+                const ok = editMatId ? await adminActions.updateMaterial(payload) : await adminActions.createMaterial(matForm); 
+                if (ok) { setMatModal(false); setMatForm({ title: '', description: '', type: 'deck', url: '' }); setEditMatId(null) } 
+              }} className="space-y-3">
                 <input value={matForm.title} onChange={e => setMatForm({...matForm, title: e.target.value})} className={inputCls} placeholder="Material title" required />
                 <textarea value={matForm.description} onChange={e => setMatForm({...matForm, description: e.target.value})} className={`${inputCls} resize-none`} rows={2} placeholder="Description" />
                 <select value={matForm.type} onChange={e => setMatForm({...matForm, type: e.target.value})} className={inputCls}>
@@ -1465,7 +1511,7 @@ export function ReferralsSection() {
                   <option value="pricing">Pricing Overview</option>
                 </select>
                 <input value={matForm.url} onChange={e => setMatForm({...matForm, url: e.target.value})} className={inputCls} placeholder="URL (hosted file link)" required />
-                <button type="submit" className={btnPrimary}>Create Material</button>
+                <button type="submit" className={btnPrimary}>{editMatId ? 'Save Changes' : 'Create Material'}</button>
               </form>
             </div>
           </div>

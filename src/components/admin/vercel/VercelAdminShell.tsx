@@ -233,7 +233,12 @@ export default function VercelAdminShell({ onSwitchTheme }: VercelAdminShellProp
                 users.map((u: any) => (
                   <button
                     key={u.id}
-                    onClick={() => { adminActions.setImpersonating(u); setShowImpersonate(false); adminActions.setSection('profile') }}
+                    onClick={async () => {
+                      setShowImpersonate(false)
+                      // Server-side impersonation: creates a time-limited token and writes the audit log.
+                      const res = await adminActions.impersonateUser(u.user_id || u.id)
+                      if (res) adminActions.setSection('profile')
+                    }}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: 12, borderRadius: 'var(--v-radius)', background: 'none', border: 'none',
@@ -265,7 +270,7 @@ export default function VercelAdminShell({ onSwitchTheme }: VercelAdminShellProp
         <div className="v-banner v-banner-impersonate">
           <UserCircleIcon size={16} />
           <span>Impersonating: {impersonating.name} ({impersonating.role})</span>
-          <button onClick={() => adminActions.clearImpersonation()}>Exit</button>
+          <button onClick={() => adminActions.endImpersonation()}>Exit</button>
         </div>
       )}
 

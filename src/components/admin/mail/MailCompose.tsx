@@ -71,6 +71,7 @@ export default function MailCompose() {
           <div>
             <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider mb-1.5 block">Template</label>
             <select value={tplId} onChange={e => selectTpl(e.target.value)} className={cls}>
+              <option value="custom">Custom Email</option>
               {emailTemplates.map((t: any) => <option key={t.id} value={t.id}>[{t.category}] {t.name}</option>)}
             </select>
           </div>

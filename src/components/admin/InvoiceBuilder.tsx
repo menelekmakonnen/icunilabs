@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
-import { Download, RotateCcw, Plus, FileText, User, CreditCard, Hash, Layers } from 'lucide-react'
+import { Download, RotateCcw, Plus, FileText, User, CreditCard, Hash, Layers, Save } from 'lucide-react'
+import { adminActions } from '../../store/useAdminStore'
 import './invoice-builder.css'
 
 interface Row { feature: string; systemValue: string; yourPrice: string }
@@ -83,6 +84,34 @@ export default function InvoiceBuilder() {
     setGenerating(false)
   }
 
+  const handleSave = async () => {
+    if (!ref.current) return
+    setGenerating(true)
+    await new Promise(r => setTimeout(r, 200))
+    try {
+      const html2canvas = (await import('html2canvas')).default
+      const { jsPDF } = await import('jspdf')
+      const canvas = await html2canvas(ref.current, { scale: 2, useCORS: true, backgroundColor: '#fff' })
+      const img = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pw = pdf.internal.pageSize.getWidth()
+      const ph = pdf.internal.pageSize.getHeight()
+      const iw = pw - 16
+      const ih = iw * (canvas.height / canvas.width)
+      if (ih <= ph - 16) { pdf.addImage(img, 'PNG', 8, 8, iw, ih) }
+      else { let y = 0; while (y < ih) { if (y > 0) pdf.addPage(); pdf.addImage(img, 'PNG', 8, -y + 8, iw, ih); y += ph - 16 } }
+      
+      const pdfDataUri = pdf.output('datauristring')
+      const success = await adminActions.saveInvoice({ invoiceData: d, pdfDataUri })
+      if (success) {
+        alert('Invoice saved successfully to the backend.')
+      } else {
+        alert('Failed to save invoice.')
+      }
+    } catch (e) { console.error('Save failed:', e) }
+    setGenerating(false)
+  }
+
   return (
     <div className="inv-page">
       <div className="inv-toolbar">
@@ -91,10 +120,15 @@ export default function InvoiceBuilder() {
           <button className={`inv-view-toggle__btn${pageMode === '1-page' ? ' active' : ''}`} onClick={() => setPageMode('1-page')}>1-Page</button>
           <button className={`inv-view-toggle__btn${pageMode === '2-page' ? ' active' : ''}`} onClick={() => setPageMode('2-page')}>2-Page</button>
         </div>
-        <button className="inv-toolbar__btn inv-toolbar__btn--download" onClick={downloadPDF} disabled={generating}>
-          <Download /> {generating ? 'Generating...' : 'Download PDF'}
-        </button>
-        <button className="inv-toolbar__btn" onClick={() => setD(DEFAULTS)}><RotateCcw /> Reset</button>
+        <div className="inv-toolbar__actions">
+          <button className="inv-toolbar__btn" onClick={() => setD(DEFAULTS)}><RotateCcw /> Reset</button>
+          <button className="inv-toolbar__btn inv-toolbar__btn--download" onClick={downloadPDF} disabled={generating}>
+            <Download /> {generating ? 'Generating...' : 'Download PDF'}
+          </button>
+          <button className="inv-toolbar__btn" style={{ background: '#00bfff', color: '#fff', borderColor: '#00bfff' }} onClick={handleSave} disabled={generating}>
+            <Save /> {generating ? 'Saving...' : 'Save Invoice'}
+          </button>
+        </div>
       </div>
 
       <div className="inv-layout">

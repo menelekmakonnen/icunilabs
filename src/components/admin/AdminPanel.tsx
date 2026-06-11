@@ -21,6 +21,7 @@ import VercelAdminShell from './vercel/VercelAdminShell'
 import MeetingsSection from './MeetingsSection'
 import NewProjectSection from './NewProjectSection'
 import ContractsSection from './ContractsSection'
+import FloatingCallBubble from './FloatingCallBubble'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -405,7 +406,12 @@ export default function AdminPanel() {
                 <p className="text-sm text-neutral-600 text-center py-4">Loading users...</p>
               ) : (
                 users.map((u: any) => (
-                  <button key={u.id} onClick={() => { adminActions.setImpersonating(u); setShowImpersonate(false); adminActions.setSection('profile') }}
+                  <button key={u.id} onClick={async () => {
+                    setShowImpersonate(false)
+                    // Server-side impersonation: creates a time-limited token and writes the audit log.
+                    const res = await adminActions.impersonateUser(u.user_id || u.id)
+                    if (res) adminActions.setSection('profile')
+                  }}
                     className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-neutral-800 transition-all cursor-pointer group">
                     <div className="text-left">
                       <p className="text-sm text-white font-medium">{u.name}</p>
@@ -433,7 +439,7 @@ export default function AdminPanel() {
         <div className="fixed top-0 left-0 right-0 z-[60] flex items-center justify-center gap-3 py-2 bg-gradient-to-r from-purple-600/90 to-[#00bfff]/90 backdrop-blur-sm">
           <UserCircle className="w-4 h-4 text-white" />
           <span className="text-sm text-white font-bold">Impersonating: {impersonating.name} ({impersonating.role})</span>
-          <button onClick={() => adminActions.clearImpersonation()}
+          <button onClick={() => adminActions.endImpersonation()}
             className="ml-2 px-3 py-1 text-xs font-bold text-white bg-white/20 rounded-lg hover:bg-white/30 transition-all cursor-pointer">Exit</button>
         </div>
       )}
@@ -443,6 +449,9 @@ export default function AdminPanel() {
           <OnboardingChecklist onClose={() => setShowOnboarding(false)} onNavigate={(section) => adminActions.setSection(section)} />
         )}
       </AnimatePresence>
+
+      {/* Floating Call Bubble — parity with Modern theme so minimised calls survive theme choice */}
+      <FloatingCallBubble />
     </div>
   )
 }

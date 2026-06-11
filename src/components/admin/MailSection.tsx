@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
-import { Mail, Inbox, Send, FileText, Search, Plus, X, Sliders, ArrowUpRight } from 'lucide-react'
+import { Mail, Inbox, Send, FileText, Search, Plus, X, Sliders, ArrowUpRight, Trash2 } from 'lucide-react'
 import MailThread from './mail/MailThread'
 import MailCompose from './mail/MailCompose'
 import MailTemplates from './mail/MailTemplates'
@@ -290,6 +290,20 @@ function MailboxManager({ aliases }: { aliases: any[] }) {
   const [userBoxes, setUserBoxes] = useState<any[]>([])
   const [newBox, setNewBox] = useState('')
   const [loading, setLoading] = useState(false)
+  
+  const [aliasForm, setAliasForm] = useState({ alias: '', name: '' })
+
+  const handleCreateAlias = async () => {
+    if (!aliasForm.alias) return
+    await adminActions.updateEmailAlias(aliasForm)
+    setAliasForm({ alias: '', name: '' })
+  }
+
+  const handleDeleteAlias = async (alias: string) => {
+    if (confirm(`Delete mailbox alias ${alias}?`)) {
+      await adminActions.deleteEmailAlias(alias)
+    }
+  }
 
   const loadBoxes = useCallback(async (email: string) => {
     if (!email) return
@@ -313,11 +327,53 @@ function MailboxManager({ aliases }: { aliases: any[] }) {
   }
 
   return (
-    <div className="space-y-5 max-w-3xl">
-      <h3 className="text-lg font-bold text-white flex items-center gap-2">
-        <Sliders className="w-5 h-5 text-[#00bfff]" />Mailbox Assignments
-      </h3>
-      <p className="text-sm text-neutral-500">Assign or remove mailbox access for team members. Each user's company email is always accessible by default.</p>
+    <div className="space-y-8 max-w-3xl">
+      <div className="space-y-5">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <Mail className="w-5 h-5 text-[#00bfff]" />Global Mailboxes
+        </h3>
+        <p className="text-sm text-neutral-500">Create or delete company-wide mailboxes. Once created, they can be assigned to users.</p>
+        
+        <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+          {aliases.map((a: any) => (
+            <div key={aliasKey(a)} className="flex items-center justify-between px-4 py-3 rounded-xl border border-neutral-800/40 bg-neutral-900/30">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: avatarColor(aliasKey(a)) }}>
+                  {aliasLabel(a).charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-white">{aliasKey(a)}</span>
+                  <span className="text-xs text-neutral-600 ml-2">{aliasLabel(a)}</span>
+                </div>
+              </div>
+              <button onClick={() => handleDeleteAlias(aliasKey(a))} className="text-xs text-red-400/70 hover:text-red-400 cursor-pointer p-1.5 rounded hover:bg-red-500/10 transition-all"><Trash2 className="w-4 h-4"/></button>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2 items-end">
+          <div className="flex-1">
+            <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider mb-1.5 block">New Mailbox Email</label>
+            <input value={aliasForm.alias} onChange={e => setAliasForm({...aliasForm, alias: e.target.value})} className={cls} placeholder="hello@icuni.org" />
+          </div>
+          <div className="flex-1">
+            <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider mb-1.5 block">Display Name</label>
+            <input value={aliasForm.name} onChange={e => setAliasForm({...aliasForm, name: e.target.value})} className={cls} placeholder="ICUNI Hello" />
+          </div>
+          <button onClick={handleCreateAlias} disabled={!aliasForm.alias}
+            className="flex items-center gap-1.5 px-5 py-3 bg-gradient-to-r from-[#00bfff] to-[#0080ff] text-white rounded-xl text-sm font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,128,255,0.25)] disabled:opacity-40 transition-all">
+            <Plus className="w-4 h-4" />Create
+          </button>
+        </div>
+      </div>
+
+      <div className="h-px bg-neutral-800/50 w-full" />
+
+      <div className="space-y-5">
+        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+          <Sliders className="w-5 h-5 text-[#00bfff]" />Mailbox Assignments
+        </h3>
+        <p className="text-sm text-neutral-500">Assign or remove mailbox access for team members. Each user's company email is always accessible by default.</p>
 
       <div>
         <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider mb-1.5 block">Select Team Member</label>
@@ -372,6 +428,7 @@ function MailboxManager({ aliases }: { aliases: any[] }) {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

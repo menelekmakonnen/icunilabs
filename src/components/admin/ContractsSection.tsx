@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
-import { FileText, Download, Edit3, Save, Plus, X, ChevronDown, Eye } from 'lucide-react'
+import { FileText, Download, Edit3, Save, Plus, X, ChevronDown, Eye, UploadCloud } from 'lucide-react'
+import { adminActions } from '../../store/useAdminStore'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
 
@@ -186,6 +187,35 @@ export default function ContractsSection() {
     setGenerating(false)
   }
 
+  const handleSave = async () => {
+    if (!previewRef.current || !active) return
+    setGenerating(true)
+    await new Promise(r => setTimeout(r, 200))
+    try {
+      const html2canvas = (await import('html2canvas')).default
+      const { jsPDF } = await import('jspdf')
+      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true, backgroundColor: '#fff' })
+      const img = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pw = pdf.internal.pageSize.getWidth()
+      const ph = pdf.internal.pageSize.getHeight()
+      const iw = pw - 20
+      const ih = iw * (canvas.height / canvas.width)
+      if (ih <= ph - 20) { pdf.addImage(img, 'PNG', 10, 10, iw, ih) }
+      else { let y = 0; while (y < ih) { if (y > 0) pdf.addPage(); pdf.addImage(img, 'PNG', 10, -y + 10, iw, ih); y += ph - 20 } }
+      
+      const pdfDataUri = pdf.output('datauristring')
+      const vars = { clientName, clientAddress, projectTitle, projectType, projectCost, startDate, maintenanceFee }
+      const success = await adminActions.saveContract({ contractData: { title: active.title, sections: active.sections, vars }, pdfDataUri })
+      if (success) {
+        alert('Contract saved successfully to the backend.')
+      } else {
+        alert('Failed to save contract.')
+      }
+    } catch (e) { console.error('Save failed:', e) }
+    setGenerating(false)
+  }
+
   // ── TEMPLATE EDITOR VIEW ──
   if (active) {
     const sections = editing ? editSections : active.sections
@@ -220,6 +250,9 @@ export default function ContractsSection() {
                 <button onClick={() => resetTemplate(active.id)} className="text-xs text-neutral-600 hover:text-amber-400 cursor-pointer px-2 py-1.5 transition-colors">Reset</button>
                 <button onClick={downloadPDF} disabled={generating} className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#ff7a00] to-[#e06800] text-white rounded-lg text-xs font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(255,122,0,0.3)] transition-all disabled:opacity-40">
                   <Download className="w-3.5 h-3.5" /> {generating ? 'Generating...' : 'Download PDF'}
+                </button>
+                <button onClick={handleSave} disabled={generating} className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-xs font-bold cursor-pointer hover:shadow-[0_0_15px_rgba(0,191,255,0.3)] transition-all disabled:opacity-40">
+                  <UploadCloud className="w-3.5 h-3.5" /> {generating ? 'Saving...' : 'Save to Backend'}
                 </button>
               </>
             )}

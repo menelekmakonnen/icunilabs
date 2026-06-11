@@ -14,6 +14,7 @@ export default function AdminLogin() {
   const [otp, setOtp] = useState('')
   const [password, setPassword] = useState('')
   const [pin, setPin] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
 
   useEffect(() => { adminActions.validateSession() }, [])
 
@@ -23,16 +24,23 @@ export default function AdminLogin() {
   }
   const handleOTPVerify = (e: React.FormEvent) => {
     e.preventDefault()
-    adminActions.verifyOTP(email, otp)
+    adminActions.verifyOTP(email, otp, rememberMe)
   }
   const handlePasswordLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    adminActions.passwordLogin(email, password)
+    adminActions.passwordLogin(email, password, rememberMe)
   }
   const handlePinLogin = (e: React.FormEvent) => {
     e.preventDefault()
-    adminActions.pinLogin(email, pin)
+    adminActions.pinLogin(email, pin, rememberMe)
   }
+
+  const renderRememberMe = () => (
+    <div className="flex items-center gap-2 mt-2">
+      <input type="checkbox" id={`rm-${loginMethod}`} checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} className="rounded border-neutral-700 bg-neutral-900/50 text-[#00bfff] focus:ring-[#00bfff]/30 cursor-pointer" />
+      <label htmlFor={`rm-${loginMethod}`} className="text-xs text-neutral-400 cursor-pointer">Trust this device (Keep me logged in)</label>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-4">
@@ -94,6 +102,7 @@ export default function AdminLogin() {
                 <input type="text" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                   className={`${inputCls} text-center text-2xl tracking-[0.5em] font-mono`} placeholder="000000" maxLength={6} required autoFocus />
               </div>
+              {renderRememberMe()}
               <button type="submit" disabled={loading || otp.length < 6} className={primaryBtn}>
                 {loading ? 'Verifying...' : 'Verify & Login'}
               </button>
@@ -112,6 +121,7 @@ export default function AdminLogin() {
                 <label className="text-xs text-neutral-400 mb-1.5 block font-medium">Password</label>
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)} className={inputCls} placeholder="Enter password" required />
               </div>
+              {renderRememberMe()}
               <button type="submit" disabled={loading} className={primaryBtn}>
                 {loading ? 'Logging in...' : 'Login'}
               </button>
@@ -130,6 +140,7 @@ export default function AdminLogin() {
                 <input type="password" value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   className={`${inputCls} text-center text-3xl tracking-[1em] font-mono`} placeholder="••••" maxLength={4} required />
               </div>
+              {renderRememberMe()}
               <button type="submit" disabled={loading || pin.length < 4} className={primaryBtn}>
                 {loading ? 'Logging in...' : 'Login with PIN'}
               </button>

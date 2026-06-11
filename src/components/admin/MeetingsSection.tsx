@@ -12,7 +12,9 @@ const modalCard = 'bg-neutral-950 border border-neutral-800 rounded-2xl p-6 w-fu
 const STAGES = [
   { id: 'booked', label: 'Booked', color: '#00bfff' },
   { id: 'confirmed', label: 'Confirmed', color: '#8b5cf6' },
+  { id: 'prep', label: 'Prep', color: '#a855f7' },
   { id: 'on_day', label: 'On-Day', color: '#ff7a00' },
+  { id: 'post_meeting', label: 'Post-Meeting', color: '#f59e0b' },
   { id: 'qualified', label: 'Qualified', color: '#22c55e' },
 ] as const
 
@@ -101,12 +103,20 @@ export default function MeetingsSection() {
   const inferredMeetings = useMemo(() => {
     const formalClientIds = new Set((meetings || []).map((m: any) => m.client_id))
     const weekAgo = Date.now() - 7 * 86400000
+    const seenClients = new Set<string>() // deduplicate multiple calls for same client
     return (callLogs || [])
       .filter((l: any) =>
         l.outcome === 'meeting_booked' &&
         !formalClientIds.has(l.client_id) &&
         new Date(l.call_start || l.created_at || 0).getTime() >= weekAgo
       )
+      .sort((a: any, b: any) => new Date(b.call_start || b.created_at || 0).getTime() - new Date(a.call_start || a.created_at || 0).getTime()) // newest first
+      .filter((l: any) => {
+        // Only keep the most recent call per client
+        if (seenClients.has(l.client_id)) return false
+        seenClients.add(l.client_id)
+        return true
+      })
       .map((l: any) => {
         const client = clientMap[l.client_id] || {}
         const rawDate = l.next_action_date || ''
@@ -137,10 +147,18 @@ export default function MeetingsSection() {
       })
   }, [callLogs, meetings, clientMap])
 
-  // Group meetings by stage (including inferred) — exclude regressed/cancelled
+  // Group meetings by stage (including inferred) — exclude regressed/cancelled, deduplicate by meeting_id
   const allMeetings = useMemo(() => {
     const combined = [...(meetings || []), ...inferredMeetings]
-    return combined.filter((m: any) => m.stage !== 'regressed' && m.stage !== 'cancelled')
+    const seen = new Set<string>()
+    return combined
+      .filter((m: any) => m.stage !== 'regressed' && m.stage !== 'cancelled')
+      .filter((m: any) => {
+        const key = m.meeting_id || m.client_id
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
   }, [meetings, inferredMeetings])
 
   const grouped = useMemo(() => {
@@ -536,7 +554,18 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
       setM((prev: any) => ({ ...prev, date: editDate, time: editTime }))
       setDateTimeDirty(false)
     }
-    await adminActions.sendMeetingConfirmation(m.meeting_id)
+    // Pass full context so backend can send even for inferred meetings
+    const client = clientMap?.[m.client_id]
+    const clientEmail = m.client_email || client?.email || client?.contact_email || ''
+    await adminActions.sendMeetingConfirmation(m.meeting_id, {
+      client_name: m.client_name || client?.name || 'Client',
+      client_email: clientEmail,
+      date: editDate || m.date,
+      time: editTime || m.time,
+      type: m.type || 'online',
+      location_or_link: m.location_or_link || '',
+      attendees: m.attendees || [],
+    })
     setM((prev: any) => ({ ...prev, confirmation_sent: true }))
     setConfirmSent(true)
     await adminActions.loadMeetings() // Refresh Kanban cards
