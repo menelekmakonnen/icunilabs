@@ -24,7 +24,7 @@
   })();
 
   var sessionStart = Date.now();
-  var currentPage = location.pathname + location.search;
+  var currentPage = null; // set by the first trackPageView so the initial view is queued
   var pageEntryTime = Date.now();
   var maxScrollDepth = 0;
   var clickBuffer = [];
@@ -121,6 +121,12 @@
 
   // ── Track page view ──
   function trackPageView() {
+    // Dedupe: navigateTo() triggers BOTH the patched pushState and a manual
+    // popstate dispatch — without this guard every SPA navigation was counted
+    // twice, inflating page views and zeroing the bounce rate.
+    var newPage = location.pathname + location.search;
+    if (newPage === currentPage) return;
+
     // Flush previous page's time-on-page
     if (pageEntryTime && currentPage) {
       var timeOnPage = Math.round((Date.now() - pageEntryTime) / 1000);
@@ -134,7 +140,7 @@
       }
     }
 
-    currentPage = location.pathname + location.search;
+    currentPage = newPage;
     pageEntryTime = Date.now();
     maxScrollDepth = 0;
     clickBuffer = [];
@@ -239,7 +245,17 @@
   var flushInterval = setInterval(flush, BATCH_INTERVAL);
 
   // ── Flush on page exit ──
+  // beforeunload rarely fires on mobile, so exit events must be queued on
+  // visibilitychange(hidden) / pagehide too — previously mobile sessions never
+  // logged page_exit or session_end at all. A guard prevents duplicates when
+  // several of these fire for the same exit; if the user comes back, the
+  // session resumes and a later (longer) session_end supersedes this one —
+  // the backend deduplicates by keeping the longest duration per session.
+  var exitQueued = false;
   function onExit() {
+    if (exitQueued) return;
+    exitQueued = true;
+
     // Final page exit event
     var timeOnPage = Math.round((Date.now() - pageEntryTime) / 1000);
     queueEvent('page_exit', {
@@ -256,16 +272,20 @@
     });
 
     flush();
-    clearInterval(flushInterval);
   }
 
-  // visibilitychange is more reliable than beforeunload on mobile
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'hidden') {
-      flush();
+      onExit();
+    } else if (exitQueued) {
+      // User came back — resume the session as a new page segment
+      exitQueued = false;
+      pageEntryTime = Date.now();
+      clickBuffer = [];
     }
   });
 
+  window.addEventListener('pagehide', onExit);
   window.addEventListener('beforeunload', onExit);
 
   // ── Initial page view ──

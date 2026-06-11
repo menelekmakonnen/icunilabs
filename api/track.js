@@ -12,7 +12,7 @@ export const config = {
   runtime: 'edge',
 };
 
-export default async function handler(req) {
+export default async function handler(req, context) {
   // CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -72,15 +72,24 @@ export default async function handler(req) {
       geo: geo,
     };
 
-    // Fire-and-forget to GAS backend (don't wait for response)
+    // Forward to GAS backend. IMPORTANT: a plain fire-and-forget fetch gets
+    // killed when the edge function returns its response, which intermittently
+    // dropped whole event batches. waitUntil keeps the runtime alive until the
+    // forward completes (falls back to awaiting if waitUntil is unavailable).
     if (GAS_URL) {
-      fetch(GAS_URL, {
+      const forward = fetch(GAS_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(gasPayload),
       }).catch(() => {
         // Silently fail — analytics should never break the site
       });
+
+      if (context && typeof context.waitUntil === 'function') {
+        context.waitUntil(forward);
+      } else {
+        await forward;
+      }
     }
 
     return new Response(null, {
