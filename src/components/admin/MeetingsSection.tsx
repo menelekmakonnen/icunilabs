@@ -552,6 +552,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
 
   const sendConfirmation = async () => {
     setBusy(true)
+    setSyncWarning(null)
     // Always save any pending date/time changes first
     if (dateTimeDirty) {
       await adminActions.updateMeeting(m.meeting_id, { date: editDate, time: editTime })
@@ -561,7 +562,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
     // Pass full context so backend can send even for inferred meetings
     const client = clientMap?.[m.client_id]
     const clientEmail = m.client_email || client?.email || client?.contact_email || ''
-    await adminActions.sendMeetingConfirmation(m.meeting_id, {
+    const result = await adminActions.sendMeetingConfirmation(m.meeting_id, {
       client_name: m.client_name || client?.name || 'Client',
       client_email: clientEmail,
       date: editDate || m.date,
@@ -570,6 +571,9 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
       location_or_link: m.location_or_link || '',
       attendees: m.attendees || [],
     })
+    if (result && result.email_sent === false) {
+      setSyncWarning('Meeting confirmed but the confirmation email failed to send: ' + (result.email_error || 'unknown error') + '. Try sending via Mail Hub or re-confirm.')
+    }
     setM((prev: any) => ({ ...prev, confirmation_sent: true }))
     setConfirmSent(true)
     await adminActions.loadMeetings() // Refresh Kanban cards

@@ -1637,12 +1637,12 @@ export const adminActions = {
 
   sendMeetingConfirmation: async (meeting_id: string, data?: Record<string, any>, template_id?: string) => {
     try {
-      await apiPost('sendMeetingConfirmation', { token: state.token, meeting_id, template_id, ...data })
+      const result = await apiPost('sendMeetingConfirmation', { token: state.token, meeting_id, template_id, ...data })
       await adminActions.loadMeetings()
-      return true
+      return result || { email_sent: true }
     } catch (err: any) {
       setState({ error: err.message })
-      return false
+      return null
     }
   },
 
