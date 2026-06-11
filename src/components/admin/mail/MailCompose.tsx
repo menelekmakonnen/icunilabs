@@ -421,6 +421,25 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
           </div>
         )}
 
+        {/* Post-Meeting Thank You */}
+        {tplId === 'client:post_meeting_thankyou' && (
+          <div className="space-y-3 border-t border-neutral-800/50 pt-3">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400 flex items-center gap-1.5">🙏 Thank You Details</div>
+            <div><label className={lbl}>Meeting Date (for greeting)</label>
+              <input type="date" value={extras.meetingDate || ''} onChange={e => setExtra('meetingDate', fmtDate(e.target.value))} className={clsSm} /></div>
+            <div><label className={lbl}>Discussion Summary</label>
+              <textarea value={extras.summary || ''} onChange={e => setExtra('summary', e.target.value)}
+                className={`${clsSm} !min-h-[100px]`} placeholder="Briefly summarise what was discussed in the meeting...
+e.g. We discussed the mobile app redesign, timeline expectations, and integration requirements." /></div>
+            <div><label className={lbl}>Next Steps</label>
+              <textarea value={extras.nextSteps || ''} onChange={e => setExtra('nextSteps', e.target.value)}
+                className={`${clsSm} !min-h-[80px]`} placeholder="What happens next?
+e.g. 1. We'll send a detailed proposal by Friday
+2. Design mockups will be ready within 2 weeks
+3. Follow-up call scheduled for next Tuesday" /></div>
+          </div>
+        )}
+
         {/* Referrer Stage Update */}
         {tplId === 'referrer:stage_update' && (
           <div className="space-y-3 border-t border-neutral-800/50 pt-3">

@@ -456,6 +456,112 @@ export default function MeetingsSection() {
 }
 
 // ════════════════════════════════════════════════════════
+// THANK YOU EMAIL SECTION (used inside MeetingDrawer)
+// ════════════════════════════════════════════════════════
+const inputClsTy = "w-full bg-neutral-900/80 border border-neutral-700/50 rounded-lg px-3 py-2 text-xs text-white placeholder:text-neutral-600 focus:border-violet-400/40 focus:ring-1 focus:ring-violet-400/20 focus:outline-none transition-all"
+
+function ThankYouSection({ meeting, clientMap, busy: parentBusy, setBusy, setSyncWarning }: {
+  meeting: any; clientMap: Record<string, any>; busy: boolean;
+  setBusy: (b: boolean) => void; setSyncWarning: (w: string | null) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const [summary, setSummary] = useState('')
+  const [nextSteps, setNextSteps] = useState('')
+  const [sent, setSent] = useState(false)
+  const [sending, setSending] = useState(false)
+
+  const client = clientMap?.[meeting.client_id]
+  const clientEmail = meeting.client_email || client?.email || client?.contact_email || ''
+  const clientName = meeting.client_name || client?.name || 'Client'
+
+  // Format meeting date for the email
+  const fmtDate = (d: string) => {
+    if (!d) return ''
+    try { return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) }
+    catch { return d }
+  }
+
+  const handleSend = async () => {
+    if (!clientEmail) {
+      setSyncWarning('No email address for this client. Cannot send thank you.')
+      return
+    }
+    setSending(true)
+    setBusy(true)
+    try {
+      const ok = await adminActions.sendClientEmail(
+        'post_meeting_thankyou',
+        clientEmail,
+        clientName,
+        {
+          meetingDate: fmtDate(meeting.date) || 'our recent meeting',
+          summary: summary.trim() || undefined,
+          nextSteps: nextSteps.trim() || undefined
+        }
+      )
+      if (ok) {
+        setSent(true)
+      } else {
+        setSyncWarning('Thank you email failed to send. Please try again or use Mail Hub.')
+      }
+    } catch {
+      setSyncWarning('Thank you email failed to send.')
+    }
+    setSending(false)
+    setBusy(false)
+  }
+
+  if (sent) {
+    return (
+      <div className="p-4 rounded-xl bg-violet-500/5 border border-violet-500/15 mb-4">
+        <p className="text-xs text-violet-400 font-bold flex items-center gap-1.5">
+          <Mail className="w-3.5 h-3.5" /> ✓ Thank You Email Sent
+        </p>
+        <p className="text-[11px] text-neutral-500 mt-1">Sent to {clientEmail}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4 rounded-xl bg-violet-500/5 border border-violet-500/10 mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs text-violet-400 font-bold flex items-center gap-1.5">
+          🙏 Send Thank You Email
+        </p>
+        <button onClick={() => setExpanded(!expanded)}
+          className="text-[10px] text-violet-400/70 hover:text-violet-400 cursor-pointer transition-colors">
+          {expanded ? 'Collapse' : 'Customise'}
+        </button>
+      </div>
+      <p className="text-[11px] text-neutral-500 mb-3">
+        Send a branded thank you to <strong className="text-neutral-300">{clientName}</strong> ({clientEmail || 'no email'})
+      </p>
+
+      {expanded && (
+        <div className="space-y-3 mb-3">
+          <div>
+            <label className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-1 block">Discussion Summary</label>
+            <textarea value={summary} onChange={e => setSummary(e.target.value)}
+              className={inputClsTy + ' min-h-[80px]'} placeholder="What was discussed in the meeting..." />
+          </div>
+          <div>
+            <label className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-1 block">Next Steps</label>
+            <textarea value={nextSteps} onChange={e => setNextSteps(e.target.value)}
+              className={inputClsTy + ' min-h-[60px]'} placeholder="1. Send proposal by Friday&#10;2. Design mockups in 2 weeks&#10;3. Follow-up call next Tuesday" />
+          </div>
+        </div>
+      )}
+
+      <button onClick={handleSend} disabled={parentBusy || sending || !clientEmail}
+        className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-500/80 to-purple-500/80 text-white rounded-lg text-xs font-bold cursor-pointer hover:shadow-[0_0_12px_rgba(139,92,246,0.25)] disabled:opacity-40 transition-all">
+        <Send className="w-3 h-3" />
+        {sending ? 'Sending...' : expanded ? 'Send Customised Thank You' : 'Send Thank You'}
+      </button>
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════
 // MEETING DETAIL DRAWER
 // ════════════════════════════════════════════════════════
 function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { meeting: any; onClose: () => void; users: any[]; effectiveUser: any; clientMap: Record<string, any> }) {
@@ -903,6 +1009,12 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
                   {busy ? 'Saving...' : 'Save Notes'}
                 </button>
               </div>
+
+              {/* Send Thank You Email */}
+              {m.attendance === 'attended' && (
+                <ThankYouSection meeting={m} clientMap={clientMap} busy={busy} setBusy={setBusy} setSyncWarning={setSyncWarning} />
+              )}
+
               <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
                 <p className="text-xs text-emerald-400 font-bold mb-3">🎯 Qualify this Meeting</p>
                 <p className="text-xs text-neutral-400 mb-3">Mark as Won to advance this client to Won stage in the pipeline.</p>
