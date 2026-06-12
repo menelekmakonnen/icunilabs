@@ -372,7 +372,7 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
           ) : (
             <div className="space-y-2 max-h-[320px] overflow-y-auto">
               {upcomingActions.map((l: any, i: number) => {
-                const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || 'Unknown'
+                const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || l.client_name || l.caller_name || 'Unknown'
                 const actionTime = new Date(l.next_action_date).getTime()
                 const isOverdue = actionTime < now
                 const isToday = new Date(l.next_action_date).toDateString() === new Date().toDateString()
@@ -510,7 +510,7 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
           <div className="space-y-1 max-h-[260px] overflow-y-auto">
             {recentCalls.length === 0 && <p className="text-sm text-neutral-600 py-4 text-center">No calls in this period</p>}
             {recentCalls.map((l: any, i: number) => {
-              const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || 'Unknown'
+              const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || l.client_name || l.caller_name || 'Unknown'
               const color = OUTCOME_COLORS[l.outcome] || '#6b7280'
               return (
                 <div key={l.call_id || i} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-neutral-800/30 transition-colors cursor-pointer"
