@@ -80,6 +80,20 @@ export default function MeetingsSection() {
   const [showCreate, setShowCreate] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  // Sort preference (persisted)
+  type SortKey = 'default' | 'meeting_date' | 'date_called' | 'company' | 'contact'
+  const SORT_OPTIONS: { id: SortKey; label: string }[] = [
+    { id: 'default', label: 'Default' },
+    { id: 'meeting_date', label: 'Meeting Date' },
+    { id: 'date_called', label: 'Date Called' },
+    { id: 'company', label: 'Company' },
+    { id: 'contact', label: 'Contact Name' },
+  ]
+  const [sortKey, setSortKey] = useState<SortKey>(() => {
+    try { return (localStorage.getItem('icuni_mtg_sort') as SortKey) || 'default' } catch { return 'default' }
+  })
+  useEffect(() => { try { localStorage.setItem('icuni_mtg_sort', sortKey) } catch { /* ignored */ } }, [sortKey])
+
   useEffect(() => {
     adminActions.loadMeetings()
     adminActions.loadClients()
@@ -169,8 +183,38 @@ export default function MeetingsSection() {
       if (map[stage]) map[stage].push(m)
       else map.booked.push(m)
     })
+    // Apply sort to each column
+    const sortFn = (a: any, b: any): number => {
+      switch (sortKey) {
+        case 'meeting_date': {
+          const da = a.date ? new Date(a.date).getTime() : Infinity
+          const db = b.date ? new Date(b.date).getTime() : Infinity
+          return da - db // soonest first
+        }
+        case 'date_called': {
+          const ca = new Date(a.created_at || 0).getTime()
+          const cb = new Date(b.created_at || 0).getTime()
+          return cb - ca // newest first
+        }
+        case 'company': {
+          const compA = (a.client_company || '').toLowerCase()
+          const compB = (b.client_company || '').toLowerCase()
+          return compA.localeCompare(compB)
+        }
+        case 'contact': {
+          const nameA = (a.client_name || a.contact_name || '').toLowerCase()
+          const nameB = (b.client_name || b.contact_name || '').toLowerCase()
+          return nameA.localeCompare(nameB)
+        }
+        default:
+          return 0 // preserve insertion order
+      }
+    }
+    if (sortKey !== 'default') {
+      Object.keys(map).forEach(k => map[k].sort(sortFn))
+    }
     return map
-  }, [allMeetings])
+  }, [allMeetings, sortKey])
 
 
   // ─── CREATE MEETING MODAL ───
@@ -235,9 +279,18 @@ export default function MeetingsSection() {
           </div>
         </div>
         {activeTab === 'pipeline' && (
-          <button onClick={openCreate} className="mtg-btn mtg-btn--primary">
-            <Plus className="w-4 h-4" /> Book Meeting
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">Sort</span>
+              <select value={sortKey} onChange={e => setSortKey(e.target.value as SortKey)}
+                className="bg-neutral-900/80 border border-neutral-700/50 rounded-lg px-2.5 py-1.5 text-xs text-white cursor-pointer focus:border-[#00bfff]/40 focus:outline-none transition-colors">
+                {SORT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </div>
+            <button onClick={openCreate} className="mtg-btn mtg-btn--primary">
+              <Plus className="w-4 h-4" /> Book Meeting
+            </button>
+          </div>
         )}
       </div>
 
