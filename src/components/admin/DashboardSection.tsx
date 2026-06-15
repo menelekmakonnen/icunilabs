@@ -3,7 +3,8 @@ import { motion } from 'framer-motion'
 import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
 import {
   Users, FolderOpen, FileText, AlertTriangle, TrendingUp, Flame,
-  Phone, Target, Clock, Calendar, CheckCircle, BarChart3, Download
+  Phone, Target, Clock, Calendar, CheckCircle, BarChart3, Download,
+  X, CalendarClock, ArrowUpRight, MoreHorizontal
 } from 'lucide-react'
 
 const card = 'bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 sm:p-5'
@@ -34,6 +35,269 @@ const OUTCOME_LABELS: Record<string, string> = {
   meeting_booked: 'Meeting', callback_scheduled: 'Callback',
   interested_will_revert: 'Interested', no_interest: 'No Interest',
   needs_follow_up: 'Follow-Up', voicemail: 'Voicemail', wrong_number: 'Wrong #',
+}
+
+// ── Pipeline stages (mirrors CRM) ──
+const PIPELINE_STAGES = [
+  { id: 'disqualified', label: 'Disqualified' },
+  { id: 'prospect', label: 'Prospect' },
+  { id: 'contacted', label: 'Contacted' },
+  { id: 'qualified', label: 'Qualified' },
+  { id: 'meeting_scheduled', label: 'Meeting' },
+  { id: 'won', label: 'Won' },
+]
+
+// ═══════════════════════════════════════════════════════════
+// ── UPCOMING ACTIONS CARD (with quick commands) ──────────
+// ═══════════════════════════════════════════════════════════
+function UpcomingActionsCard({ upcomingActions, clients, now }: { upcomingActions: any[]; clients: any[]; now: number }) {
+  const [activeAction, setActiveAction] = useState<string | null>(null) // call_id of item with open menu
+  const [actionMode, setActionMode] = useState<'defer' | 'stage' | null>(null)
+  const [deferDate, setDeferDate] = useState('')
+  const [newStage, setNewStage] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const closeMenu = () => { setActiveAction(null); setActionMode(null); setDeferDate(''); setNewStage('') }
+
+  const handleDefer = async (l: any) => {
+    if (!deferDate) return
+    setBusy(true)
+    try {
+      await adminActions.saveCallLog({
+        call_id: l.call_id,
+        client_id: l.client_id,
+        outcome: l.outcome,
+        next_action_date: deferDate,
+        next_action: l.next_action || 'Follow up',
+        next_action_notes: `Deferred from ${new Date(l.next_action_date).toLocaleDateString('en-GB')}`,
+      })
+      await adminActions.loadCallLogs({ page_size: 500 })
+    } catch { /* handled by store */ }
+    setBusy(false)
+    closeMenu()
+  }
+
+  const handleStageChange = async (l: any) => {
+    if (!newStage || !l.client_id) return
+    setBusy(true)
+    try {
+      await adminActions.updateClientStatus(l.client_id, newStage)
+      // If moving to a stage that doesn't need a callback, clear it
+      if (['disqualified', 'won'].includes(newStage)) {
+        await adminActions.saveCallLog({
+          call_id: l.call_id,
+          client_id: l.client_id,
+          outcome: newStage === 'disqualified' ? 'no_interest' : l.outcome,
+          next_action_date: '',
+          next_action: '',
+        })
+      }
+      await adminActions.loadCallLogs({ page_size: 500 })
+    } catch { /* handled by store */ }
+    setBusy(false)
+    closeMenu()
+  }
+
+  const handleDismiss = async (l: any) => {
+    setBusy(true)
+    try {
+      await adminActions.saveCallLog({
+        call_id: l.call_id,
+        client_id: l.client_id,
+        outcome: l.outcome,
+        next_action_date: '',
+        next_action: '',
+        next_action_notes: 'Cleared from dashboard',
+      })
+      await adminActions.loadCallLogs({ page_size: 500 })
+    } catch { /* handled by store */ }
+    setBusy(false)
+    closeMenu()
+  }
+
+  // Split into overdue vs upcoming
+  const overdue = upcomingActions.filter((l: any) => new Date(l.next_action_date).getTime() < now)
+  const upcoming = upcomingActions.filter((l: any) => new Date(l.next_action_date).getTime() >= now)
+
+  const renderItem = (l: any, i: number) => {
+    const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || l.client_name || l.caller_name || 'Unknown'
+    const actionTime = new Date(l.next_action_date).getTime()
+    const isOverdue = actionTime < now
+    const isToday = new Date(l.next_action_date).toDateString() === new Date().toDateString()
+    const overdueMs = isOverdue ? now - actionTime : 0
+    const overdueHours = Math.floor(overdueMs / 3600000)
+    const overdueDays = Math.floor(overdueHours / 24)
+    const isMenuOpen = activeAction === (l.call_id || `idx-${i}`)
+    const itemKey = l.call_id || `idx-${i}`
+
+    return (
+      <div key={itemKey} className="relative">
+        <div className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+          isOverdue
+            ? 'border-amber-500/20 bg-amber-500/[0.03]'
+            : isToday ? 'border-[#00bfff]/20 bg-[#00bfff]/[0.03]' : 'border-neutral-800/50 hover:border-neutral-700/50'
+        }`}>
+          {/* Icon */}
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: isOverdue ? 'rgba(245,158,11,0.12)' : `${OUTCOME_COLORS[l.outcome] || '#6b7280'}12` }}>
+            {isOverdue
+              ? <CalendarClock className="w-4 h-4 text-amber-400" />
+              : <Phone className="w-4 h-4" style={{ color: OUTCOME_COLORS[l.outcome] || '#6b7280' }} />
+            }
+          </div>
+          {/* Info — clickable to go to client */}
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => {
+            const client = clients.find((c: any) => c.client_id === l.client_id)
+            if (client) adminActions.setActiveClientOptimistic(client)
+            adminActions.setSection('clients')
+          }}>
+            <p className="text-sm font-medium text-white truncate">{clientName}</p>
+            <p className="text-[10px] text-neutral-500">{OUTCOME_LABELS[l.outcome] || l.outcome} · {l.next_action || 'Follow up'}</p>
+          </div>
+          {/* Time info */}
+          <div className="text-right flex-shrink-0 mr-1">
+            {isOverdue ? (
+              <p className="text-[11px] font-semibold text-amber-400">
+                {overdueDays > 0 ? `${overdueDays}d` : `${overdueHours}h`} ago
+              </p>
+            ) : (
+              <p className={`text-[11px] font-semibold ${isToday ? 'text-[#00bfff]' : 'text-neutral-400'}`}>
+                {fmtCountdown(l.next_action_date)}
+              </p>
+            )}
+            <p className="text-[9px] text-neutral-600">{new Date(l.next_action_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
+          </div>
+          {/* Quick actions trigger */}
+          <button onClick={(e) => { e.stopPropagation(); isMenuOpen ? closeMenu() : (setActiveAction(itemKey), setActionMode(null)) }}
+            className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all cursor-pointer ${
+              isMenuOpen ? 'bg-[#00bfff]/15 text-[#00bfff]' : 'text-neutral-600 hover:text-neutral-300 hover:bg-neutral-800'
+            }`}>
+            {isMenuOpen ? <X className="w-3.5 h-3.5" /> : <MoreHorizontal className="w-3.5 h-3.5" />}
+          </button>
+        </div>
+
+        {/* ── Inline action panel ── */}
+        {isMenuOpen && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+            className="mt-1 rounded-xl border border-neutral-800 bg-neutral-900/90 overflow-hidden">
+
+            {/* Action buttons row */}
+            {!actionMode && (
+              <div className="flex items-center gap-1.5 p-2.5">
+                <button onClick={() => { setActionMode('defer'); setDeferDate(new Date(Date.now() + 86400000).toISOString().slice(0, 10)) }}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-colors cursor-pointer">
+                  <CalendarClock className="w-3.5 h-3.5" /> Defer
+                </button>
+                <button onClick={() => { setActionMode('stage'); setNewStage('') }}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-[#8b5cf6]/10 text-[#8b5cf6] hover:bg-[#8b5cf6]/20 transition-colors cursor-pointer">
+                  <ArrowUpRight className="w-3.5 h-3.5" /> Move Stage
+                </button>
+                <button onClick={() => handleDismiss(l)} disabled={busy}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white transition-colors cursor-pointer disabled:opacity-50">
+                  <X className="w-3.5 h-3.5" /> {busy ? '...' : 'Dismiss'}
+                </button>
+              </div>
+            )}
+
+            {/* Defer panel */}
+            {actionMode === 'defer' && (
+              <div className="p-3 space-y-2">
+                <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Reschedule callback</p>
+                <div className="flex items-center gap-2">
+                  <input type="date" value={deferDate} onChange={e => setDeferDate(e.target.value)}
+                    className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-white focus:border-amber-500/50 focus:outline-none" />
+                  <button onClick={() => handleDefer(l)} disabled={busy || !deferDate}
+                    className="px-4 py-2 rounded-lg text-xs font-bold bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 transition-colors cursor-pointer disabled:opacity-50">
+                    {busy ? 'Saving...' : 'Defer'}
+                  </button>
+                  <button onClick={() => setActionMode(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
+                </div>
+                {/* Quick presets */}
+                <div className="flex gap-1.5">
+                  {[
+                    { label: 'Tomorrow', days: 1 },
+                    { label: 'In 3 days', days: 3 },
+                    { label: 'Next week', days: 7 },
+                    { label: 'In 2 weeks', days: 14 },
+                  ].map(p => (
+                    <button key={p.label} onClick={() => setDeferDate(new Date(Date.now() + p.days * 86400000).toISOString().slice(0, 10))}
+                      className="px-2 py-1 rounded text-[10px] text-neutral-400 bg-neutral-800 hover:bg-neutral-700 hover:text-white transition-colors cursor-pointer">
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Stage change panel */}
+            {actionMode === 'stage' && (
+              <div className="p-3 space-y-2">
+                <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-bold">Move to pipeline stage</p>
+                <div className="flex items-center gap-2">
+                  <select value={newStage} onChange={e => setNewStage(e.target.value)}
+                    className="flex-1 bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-xs text-white focus:border-[#8b5cf6]/50 focus:outline-none cursor-pointer">
+                    <option value="">Select stage...</option>
+                    {PIPELINE_STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  </select>
+                  <button onClick={() => handleStageChange(l)} disabled={busy || !newStage}
+                    className="px-4 py-2 rounded-lg text-xs font-bold bg-[#8b5cf6]/15 text-[#8b5cf6] hover:bg-[#8b5cf6]/25 transition-colors cursor-pointer disabled:opacity-50">
+                    {busy ? 'Saving...' : 'Move'}
+                  </button>
+                  <button onClick={() => setActionMode(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-4 h-4" /></button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-[#00bfff]" /> Action Queue
+        </h3>
+        <button onClick={() => adminActions.setSection('calls')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">
+          View All
+        </button>
+      </div>
+
+      {upcomingActions.length === 0 ? (
+        <p className="text-sm text-neutral-600 py-4 text-center">No pending callbacks or follow-ups 🎉</p>
+      ) : (
+        <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
+          {/* Overdue section */}
+          {overdue.length > 0 && (
+            <>
+              <div className="flex items-center gap-2 py-1.5 px-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span className="text-[10px] font-bold text-amber-400/80 uppercase tracking-wider">
+                  Needs attention · {overdue.length}
+                </span>
+              </div>
+              {overdue.map(renderItem)}
+            </>
+          )}
+
+          {/* Upcoming section */}
+          {upcoming.length > 0 && (
+            <>
+              {overdue.length > 0 && <div className="border-t border-neutral-800/50 my-2" />}
+              <div className="flex items-center gap-2 py-1.5 px-1">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#00bfff]" />
+                <span className="text-[10px] font-bold text-[#00bfff]/70 uppercase tracking-wider">
+                  Upcoming · {upcoming.length}
+                </span>
+              </div>
+              {upcoming.map(renderItem)}
+            </>
+          )}
+        </div>
+      )}
+    </>
+  )
 }
 
 interface GrowthDashProps {
@@ -359,75 +623,11 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Today's Schedule */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className={card}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[#00bfff]" /> Upcoming Actions
-            </h3>
-            <button onClick={() => adminActions.setSection('calls')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">
-              View All
-            </button>
-          </div>
-          {upcomingActions.length === 0 ? (
-            <p className="text-sm text-neutral-600 py-4 text-center">No upcoming callbacks or meetings</p>
-          ) : (
-            <div className="space-y-2 max-h-[320px] overflow-y-auto">
-              {upcomingActions.map((l: any, i: number) => {
-                const clientName = clients.find((c: any) => c.client_id === l.client_id)?.name || l.client_name || l.caller_name || 'Unknown'
-                const actionTime = new Date(l.next_action_date).getTime()
-                const isOverdue = actionTime < now
-                const isToday = new Date(l.next_action_date).toDateString() === new Date().toDateString()
-                const overdueMs = isOverdue ? now - actionTime : 0
-                const overdueHours = Math.floor(overdueMs / 3600000)
-                const overdueMins = Math.floor((overdueMs % 3600000) / 60000)
-                const overdueStr = overdueHours > 24
-                  ? `${Math.floor(overdueHours / 24)}d ${overdueHours % 24}h`
-                  : overdueHours > 0 ? `${overdueHours}h ${overdueMins}m` : `${overdueMins}m`
-                return (
-                  <div key={l.call_id || i}
-                    className={`flex items-center gap-3 p-3 rounded-xl border transition-all cursor-pointer hover:bg-neutral-800/30 ${
-                      isOverdue ? 'border-red-500/30 bg-red-500/[0.04]' : isToday ? 'border-[#00bfff]/20 bg-[#00bfff]/[0.03]' : 'border-transparent'
-                    }`}
-                    onClick={() => {
-                      const client = clients.find((c: any) => c.client_id === l.client_id)
-                      if (client) adminActions.setActiveClientOptimistic(client)
-                      adminActions.setSection('clients')
-                    }}>
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${isOverdue ? 'animate-pulse' : ''}`}
-                      style={{ background: isOverdue ? 'rgba(239,68,68,0.15)' : `${OUTCOME_COLORS[l.outcome] || '#6b7280'}15` }}>
-                      {isOverdue
-                        ? <AlertTriangle className="w-4 h-4 text-red-400" />
-                        : <Phone className="w-4 h-4" style={{ color: OUTCOME_COLORS[l.outcome] || '#6b7280' }} />
-                      }
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-white truncate">{clientName}</p>
-                        {isOverdue && (
-                          <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-red-500/15 text-red-400 flex-shrink-0">
-                            Overdue
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-neutral-500">{OUTCOME_LABELS[l.outcome] || l.outcome} — {l.next_action || 'Follow up'}</p>
-                    </div>
-                    <div className="text-right flex-shrink-0">
-                      {isOverdue ? (
-                        <>
-                          <p className="text-xs font-bold text-red-400">{overdueStr} ago</p>
-                          <p className="text-[9px] text-red-500/60">was {new Date(l.next_action_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
-                        </>
-                      ) : (
-                        <>
-                          <p className={`text-xs font-bold ${isToday ? 'text-[#00bfff]' : 'text-neutral-400'}`}>{fmtCountdown(l.next_action_date)}</p>
-                          <p className="text-[9px] text-neutral-600">{new Date(l.next_action_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+          <UpcomingActionsCard
+            upcomingActions={upcomingActions}
+            clients={clients}
+            now={now}
+          />
         </motion.div>
 
         {/* Outcome Distribution */}
