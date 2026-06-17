@@ -1379,8 +1379,12 @@ export const adminActions = {
     setState({ loading: true, error: null })
     try {
       const result = await apiPost('saveCallLog', { token: state.token, ...data })
-      // Refresh clients to reflect any pipeline auto-advance
-      await adminActions.loadClients()
+      // Refresh clients (pipeline auto-advance) AND call logs so the new call
+      // shows immediately — no log-out/in needed.
+      await Promise.all([
+        adminActions.loadClients(),
+        adminActions.loadCallLogs({ page_size: 500 }),
+      ])
       setState({ loading: false })
       return result
     } catch (err: any) {

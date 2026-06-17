@@ -213,6 +213,7 @@ export default function CRMSection() {
   const [historicForm, setHistoricForm] = useState({ name:'', email:'', phone:'', company:'', industry:'', created_at_override:'', project_title:'', project_type:'Website', estimated_cost:'', start_date:'', completion_date:'', notes:'' })
   const [historicPayments, setHistoricPayments] = useState<{amount:string, method:string, paid_at:string}[]>([])
   const [busyHistoric, setBusyHistoric] = useState(false)
+  const [busyInfoEmail, setBusyInfoEmail] = useState<'idle'|'sending'|'sent'|'error'>('idle')
   const [showAddProject, setShowAddProject] = useState(false)
   const [projectForm, setProjectForm] = useState({ title:'', type:'Website', estimated_cost:'', description:'', est_completion:'' })
   const [busyProject, setBusyProject] = useState(false)
@@ -535,6 +536,24 @@ export default function CRMSection() {
             {/* Start Call */}
             <button onClick={() => setCallGuideClient(c)} className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold cursor-pointer hover:bg-emerald-500/20 transition-all shrink-0" title="Start call guide">
               <Phone className="w-3.5 h-3.5" /><span className="hidden sm:inline">Call</span>
+            </button>
+            {/* One-click: send ICUNI business info to this lead */}
+            <button
+              onClick={async () => {
+                if (!c.email) { setBusyInfoEmail('error'); setTimeout(() => setBusyInfoEmail('idle'), 2500); return }
+                setBusyInfoEmail('sending')
+                const ok = await adminActions.sendClientEmail('business_info', c.email, c.name)
+                setBusyInfoEmail(ok ? 'sent' : 'error')
+                setTimeout(() => setBusyInfoEmail('idle'), 3000)
+              }}
+              disabled={busyInfoEmail === 'sending'}
+              title={c.email ? `Email ICUNI business info to ${c.email}` : 'No email on file for this client'}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all shrink-0 disabled:opacity-50 ${
+                busyInfoEmail === 'sent' ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400'
+                : busyInfoEmail === 'error' ? 'bg-red-500/10 border border-red-500/30 text-red-400'
+                : 'bg-[#00bfff]/10 border border-[#00bfff]/20 text-[#00bfff] hover:bg-[#00bfff]/20'}`}>
+              {busyInfoEmail === 'sending' ? <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg> : <Send className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">{busyInfoEmail === 'sent' ? 'Info Sent' : busyInfoEmail === 'error' ? 'Failed' : 'Send Info'}</span>
             </button>
             {/* Stage Selector */}
             <select value={c.prospect_stage || 'new_lead'} onChange={e => handleAdvanceStage(c.client_id, e.target.value)}

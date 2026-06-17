@@ -61,6 +61,25 @@ export default function AdminPanel() {
   useEffect(() => { adminActions.validateSession() }, [])
   useEffect(() => { if (token) adminActions.loadSlaNotifications() }, [token])
 
+  // ── Auto-refresh core data when the tab/window regains focus ──
+  // Kills the "log out and back in" workaround: returning to the tab pulls
+  // fresh clients/calls/meetings instead of showing stale state. Throttled.
+  useEffect(() => {
+    if (!token) return
+    let last = Date.now()
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return
+      if (Date.now() - last < 20000) return
+      last = Date.now()
+      adminActions.loadClients()
+      adminActions.loadCallLogs({ page_size: 500 })
+      adminActions.loadMeetings()
+    }
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    return () => { document.removeEventListener('visibilitychange', refresh); window.removeEventListener('focus', refresh) }
+  }, [token])
+
   // ── Modern Theme Routing ──
   // If Modern theme selected, delegate entirely to VercelAdminShell
   if (adminTheme === 'modern') {

@@ -307,8 +307,9 @@ interface GrowthDashProps {
 }
 
 function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
-  const { callLogs, clients } = useAdminStore()
+  const { callLogs, clients, meetings } = useAdminStore()
   const [_tick, setTick] = useState(0)
+  const [drill, setDrill] = useState<null | 'calls' | 'meetings'>(null)
 
   // ── Persistent date filter ──
   type DateFilter = 'today' | 'yesterday' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'this_year' | 'last_year'
@@ -335,6 +336,7 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
   useEffect(() => {
     adminActions.loadCallLogs({ page_size: 500 })
     adminActions.loadClients()
+    adminActions.loadMeetings()
     if (['Godmode', 'SuperAdmin'].includes(role)) adminActions.loadUsers()
   }, [])
 
@@ -436,6 +438,50 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
       calls: calls.length, meetings: meetings.length, convRate, avgDur, overdue,
     }
   }, [filteredPrimary, primaryCalls, _tick])
+
+  // ── P4: drill-down lists (clients called / met in range) + recent meetings ──
+  const clientById = useMemo(() => {
+    const m: Record<string, any> = {}
+    ;(clients || []).forEach((c: any) => { m[c.client_id] = c })
+    return m
+  }, [clients])
+
+  const groupByClient = (logs: any[]) => {
+    const byClient: Record<string, any> = {}
+    logs.forEach((l: any) => {
+      const id = l.client_id || l.client_name || 'unknown'
+      if (!byClient[id]) byClient[id] = {
+        client_id: l.client_id,
+        name: l.client_name || clientById[l.client_id]?.name || 'Unknown',
+        company: l.client_company || clientById[l.client_id]?.company || '',
+        count: 0, lastOutcome: '', lastTime: 0,
+      }
+      byClient[id].count++
+      const t = new Date(l.call_start || 0).getTime()
+      if (t >= byClient[id].lastTime) { byClient[id].lastTime = t; byClient[id].lastOutcome = l.outcome || '' }
+    })
+    return Object.values(byClient).sort((a: any, b: any) => b.lastTime - a.lastTime)
+  }
+
+  const callsDrill = useMemo(() => groupByClient(filteredPrimary), [filteredPrimary, clientById])
+  const meetingsDrill = useMemo(
+    () => groupByClient(filteredPrimary.filter((l: any) => l.outcome === 'meeting_booked')),
+    [filteredPrimary, clientById]
+  )
+
+  const recentMeetings = useMemo(() => {
+    return [...(meetings || [])]
+      .filter((mm: any) => mm.stage !== 'cancelled' && mm.stage !== 'regressed')
+      .sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
+      .slice(0, 6)
+  }, [meetings])
+
+  const openClientFromDash = (clientId: string) => {
+    const client = (clients || []).find((c: any) => c.client_id === clientId)
+    if (client) adminActions.setActiveClientOptimistic(client)
+    adminActions.setSection('clients')
+    setDrill(null)
+  }
 
   // ── Secondary scope (team avg or team calls) ──
   const secondaryLabel = isGodmode ? 'My Calls' : isSuperAdmin ? "Team's Calls" : 'Team Average'
@@ -568,13 +614,14 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
       {/* ── Primary Metric Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: `${primaryLabel} (${rangeLabel})`, value: primaryMetrics.calls, sub: `${primaryMetrics.meetings} meeting${primaryMetrics.meetings !== 1 ? 's' : ''} booked`, icon: Phone, color: '#00bfff', nav: 'calls' },
-          { label: 'Meetings Booked', value: primaryMetrics.meetings, sub: `${primaryMetrics.convRate}% conversion`, icon: Target, color: '#22c55e', nav: 'meetings' },
-          { label: 'Avg Call Duration', value: fmtDuration(primaryMetrics.avgDur), sub: rangeLabel.toLowerCase(), icon: Clock, color: '#8b5cf6', nav: 'calls' },
-          { label: 'Overdue Follow-Ups', value: primaryMetrics.overdue, sub: primaryMetrics.overdue === 0 ? 'All caught up!' : 'Need attention', icon: primaryMetrics.overdue > 0 ? AlertTriangle : CheckCircle, color: primaryMetrics.overdue > 0 ? '#ef4444' : '#22c55e', nav: 'sla' },
+          { label: `${primaryLabel} (${rangeLabel})`, value: primaryMetrics.calls, sub: `${primaryMetrics.meetings} meeting${primaryMetrics.meetings !== 1 ? 's' : ''} booked`, icon: Phone, color: '#00bfff', nav: 'calls', drill: 'calls' as const },
+          { label: 'Meetings Booked', value: primaryMetrics.meetings, sub: `${primaryMetrics.convRate}% conversion`, icon: Target, color: '#22c55e', nav: 'meetings', drill: 'meetings' as const },
+          { label: 'Avg Call Duration', value: fmtDuration(primaryMetrics.avgDur), sub: rangeLabel.toLowerCase(), icon: Clock, color: '#8b5cf6', nav: 'calls', drill: null },
+          { label: 'Overdue Follow-Ups', value: primaryMetrics.overdue, sub: primaryMetrics.overdue === 0 ? 'All caught up!' : 'Need attention', icon: primaryMetrics.overdue > 0 ? AlertTriangle : CheckCircle, color: primaryMetrics.overdue > 0 ? '#ef4444' : '#22c55e', nav: 'sla', drill: null },
         ].map((m, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-            onClick={() => adminActions.setSection(m.nav)}
+            onClick={() => m.drill ? setDrill(m.drill) : adminActions.setSection(m.nav)}
+            title={m.drill ? 'Click to see who' : undefined}
             className="relative bg-neutral-900/50 border border-neutral-800 rounded-xl p-4 overflow-hidden group hover:border-neutral-700 transition-all cursor-pointer">
             <div className="absolute inset-0 opacity-5 group-hover:opacity-10 transition-opacity" style={{ background: `linear-gradient(135deg, ${m.color} 0%, transparent 100%)` }} />
             <div className="relative z-[1]">
@@ -618,6 +665,74 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
           </div>
         </div>
       </motion.div>
+
+      {/* ── Recent Meetings subgroup ── */}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }}
+        className="bg-neutral-900/40 border border-neutral-800 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-bold text-neutral-300 uppercase tracking-wider flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-[#8b5cf6]" /> Recent Meetings
+          </span>
+          <button onClick={() => adminActions.setSection('meetings')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">View all</button>
+        </div>
+        {recentMeetings.length === 0 ? (
+          <p className="text-xs text-neutral-600 py-3 text-center">No meetings yet</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            {recentMeetings.map((mm: any) => (
+              <button key={mm.meeting_id} onClick={() => adminActions.setSection('meetings')}
+                className="w-full flex items-center justify-between gap-2 text-left px-2.5 py-2 bg-neutral-900/60 border border-neutral-800 rounded-lg hover:border-[#8b5cf6]/40 transition-all cursor-pointer">
+                <div className="min-w-0">
+                  <p className="text-xs text-white font-medium truncate">{mm.client_name || mm.client_company || 'Meeting'}</p>
+                  {mm.client_company && <p className="text-[10px] text-neutral-500 truncate">{mm.client_company}</p>}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-[10px] text-neutral-300">{mm.date ? new Date(mm.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'TBD'}</p>
+                  <span className="text-[9px] uppercase tracking-wider font-bold text-[#8b5cf6]">{mm.stage || 'booked'}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </motion.div>
+
+      {/* ── Drill-down modal: clients called / met in range ── */}
+      {drill && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setDrill(null)}>
+          <div className="bg-neutral-950 border border-neutral-800 rounded-2xl w-full max-w-md shadow-2xl max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+              <div>
+                <h3 className="text-sm font-bold text-white">{drill === 'calls' ? 'Clients Called' : 'Meetings Booked'} — {rangeLabel}</h3>
+                <p className="text-[10px] text-neutral-500">{(drill === 'calls' ? callsDrill : meetingsDrill).length} {drill === 'calls' ? 'contacts' : 'with meetings'}</p>
+              </div>
+              <button onClick={() => setDrill(null)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+              {(drill === 'calls' ? callsDrill : meetingsDrill).length === 0 ? (
+                <p className="text-xs text-neutral-600 py-8 text-center">Nothing in this range</p>
+              ) : (drill === 'calls' ? callsDrill : meetingsDrill).map((c: any, i: number) => (
+                <button key={c.client_id || i} onClick={() => c.client_id && openClientFromDash(c.client_id)}
+                  className="w-full flex items-center justify-between gap-2 text-left px-3 py-2.5 bg-neutral-900/60 border border-neutral-800 rounded-lg hover:border-[#00bfff]/40 transition-all cursor-pointer">
+                  <div className="min-w-0">
+                    <p className="text-xs text-white font-medium truncate">{c.name}</p>
+                    {c.company && <p className="text-[10px] text-neutral-500 truncate">{c.company}</p>}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[10px] text-neutral-400">{c.count} call{c.count !== 1 ? 's' : ''}</p>
+                    {c.lastOutcome && <span className="text-[9px] uppercase tracking-wider text-neutral-600">{String(c.lastOutcome).replace(/_/g, ' ')}</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="p-3 border-t border-neutral-800">
+              <button onClick={() => { adminActions.setSection(drill === 'calls' ? 'calls' : 'meetings'); setDrill(null) }}
+                className="w-full py-2 text-xs font-bold text-[#00bfff] hover:text-white bg-[#00bfff]/10 hover:bg-[#00bfff]/20 rounded-lg cursor-pointer transition-all">
+                Open {drill === 'calls' ? 'Call Logs' : 'Meetings'} →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Main Content Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
