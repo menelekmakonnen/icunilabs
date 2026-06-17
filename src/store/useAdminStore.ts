@@ -1714,6 +1714,20 @@ export const adminActions = {
     }
   },
 
+  // Unified calendar feed (internal meetings + callbacks + Google events)
+  getCalendarEvents: async (from?: string, to?: string): Promise<any[]> => {
+    try {
+      const result = await apiPost('getCalendarEvents', { token: state.token, from, to })
+      return result?.events || []
+    } catch (err: any) { setState({ error: err.message }); return [] }
+  },
+
+  syncCalendar: async (): Promise<any> => {
+    try {
+      return await apiPost('syncCalendar', { token: state.token })
+    } catch (err: any) { setState({ error: err.message }); return null }
+  },
+
   deleteCalendarEvent: async (eventId: string) => {
     try {
       await apiPost('deleteCalendarEvent', { token: state.token, event_id: eventId })

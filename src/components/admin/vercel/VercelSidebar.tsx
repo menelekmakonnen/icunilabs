@@ -11,6 +11,7 @@ import {
   SidebarCollapseIcon, SidebarExpandIcon, ThemeIcon,
   OnboardingIcon, ICUNILogo, SunIcon, MoonIcon,
   PhoneIcon, AnalyticsIcon, MeetingsIcon, NewProjectIcon, ContractsIcon,
+  CalendarIcon,
 } from './VercelIcons'
 
 export interface NavItem {
@@ -30,6 +31,7 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
   { id: 'clients', label: 'Clients', icon: ClientsIcon, section: 'Operations' },
   { id: 'calls', label: 'Calls', icon: PhoneIcon },
   { id: 'meetings', label: 'Meetings', icon: MeetingsIcon },
+  { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
   { id: 'mail', label: 'Mail Hub', icon: MailIcon },
   { id: 'invoices', label: 'Invoices', icon: InvoicesIcon },
   // Projects

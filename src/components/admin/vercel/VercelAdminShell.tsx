@@ -32,6 +32,7 @@ import MeetingsSection from '../MeetingsSection'
 import NewProjectSection from '../NewProjectSection'
 import ContractsSection from '../ContractsSection'
 import SectionErrorBoundary from '../SectionErrorBoundary'
+import CalendarSection from '../CalendarSection'
 
 interface VercelAdminShellProps {
   onSwitchTheme: () => void
@@ -138,6 +139,7 @@ export default function VercelAdminShell({ onSwitchTheme }: VercelAdminShellProp
       case 'ecosystem': return <EcosystemSection />
       case 'starterclass': return <StarterclassSection />
       case 'meetings': return <MeetingsSection />
+      case 'calendar': return <CalendarSection />
       case 'new-project': return <NewProjectSection />
       case 'contracts': return <ContractsSection />
       default: return <DashboardSection />

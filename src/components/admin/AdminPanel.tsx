@@ -8,7 +8,7 @@ import CRMSection from './CRMSection'
 import ProfileSection from './ProfileSection'
 import ReferralPortal from '../portal/ReferralPortal'
 import ClientPortal from '../portal/ClientPortal'
-import { LayoutDashboard, BarChart3, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe, Mail, GraduationCap, Phone, Bell, AlertTriangle } from 'lucide-react'
+import { LayoutDashboard, BarChart3, Users, FolderOpen, FileText, Briefcase, UserCheck, Shield, Settings, Activity, Clock, LogOut, Eye, UserCircle, X, BookOpen, Globe, Mail, GraduationCap, Phone, Bell, AlertTriangle, Calendar } from 'lucide-react'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import OnboardingChecklist from './OnboardingChecklist'
@@ -23,6 +23,7 @@ import NewProjectSection from './NewProjectSection'
 import ContractsSection from './ContractsSection'
 import FloatingCallBubble from './FloatingCallBubble'
 import SectionErrorBoundary from './SectionErrorBoundary'
+import CalendarSection from './CalendarSection'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,6 +31,7 @@ const NAV = [
   { id: 'mail', label: 'Mail', icon: Mail },
   { id: 'calls', label: 'Calls', icon: Phone },
   { id: 'meetings', label: 'Meetings', icon: Clock },
+  { id: 'calendar', label: 'Calendar', icon: Calendar },
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'referrals', label: 'Referrals', icon: UserCheck },
   { id: 'invoices', label: 'Invoices', icon: FileText },
@@ -153,6 +155,7 @@ export default function AdminPanel() {
       case 'analytics': return <AnalyticsSection />
       case 'mail': return <MailSection />
       case 'clients': return <CRMSection />
+      case 'calendar': return <CalendarSection />
       case 'projects': return <ProjectsSection />
       case 'invoices': return <InvoicesSection />
       case 'careers': return <CareersSection />
