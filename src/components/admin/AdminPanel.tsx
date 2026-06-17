@@ -22,6 +22,7 @@ import MeetingsSection from './MeetingsSection'
 import NewProjectSection from './NewProjectSection'
 import ContractsSection from './ContractsSection'
 import FloatingCallBubble from './FloatingCallBubble'
+import SectionErrorBoundary from './SectionErrorBoundary'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -387,7 +388,9 @@ export default function AdminPanel() {
 
         {/* Content */}
         <div className="p-3 md:p-6 max-w-7xl">
-          {renderSection()}
+          <SectionErrorBoundary resetKey={activeSection}>
+            {renderSection()}
+          </SectionErrorBoundary>
         </div>
         </div>
       </main>

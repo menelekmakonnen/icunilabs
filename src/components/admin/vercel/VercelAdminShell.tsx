@@ -31,6 +31,7 @@ import FloatingCallBubble from '../FloatingCallBubble'
 import MeetingsSection from '../MeetingsSection'
 import NewProjectSection from '../NewProjectSection'
 import ContractsSection from '../ContractsSection'
+import SectionErrorBoundary from '../SectionErrorBoundary'
 
 interface VercelAdminShellProps {
   onSwitchTheme: () => void
@@ -189,7 +190,9 @@ export default function VercelAdminShell({ onSwitchTheme }: VercelAdminShellProp
 
         {/* Content */}
         <div className="v-content">
-          {renderSection()}
+          <SectionErrorBoundary resetKey={activeSection}>
+            {renderSection()}
+          </SectionErrorBoundary>
         </div>
       </main>
 

@@ -84,6 +84,82 @@ const EMAIL_TEMPLATES = [
   { id: 'custom', label: 'Custom', desc: 'Write your own' },
 ]
 
+// ── Duplicate detection ──────────────────────────────────
+// Matches what the user is typing against existing clients so the same company
+// or person isn't entered twice. Everything is coerced with String() because
+// Sheets-backed values (phone especially) can come back as numbers.
+function dupNorm(v: any): string { return String(v ?? '').toLowerCase().trim() }
+function dupPhoneKey(v: any): string { const d = String(v ?? '').replace(/\D/g, ''); return d.length >= 9 ? d.slice(-9) : d }
+
+type DupeFields = { name?: string; email?: string; phone?: string; company?: string }
+
+function findDuplicates(fields: DupeFields, clients: any[]): { client: any; reasons: string[] }[] {
+  const name = dupNorm(fields.name)
+  const email = dupNorm(fields.email)
+  const phone = dupPhoneKey(fields.phone)
+  const company = dupNorm(fields.company)
+  // Need a meaningful amount of input before suggesting anything
+  if (name.length < 2 && company.length < 2 && email.length < 3 && phone.length < 4) return []
+
+  const scored: { client: any; reasons: string[]; score: number }[] = []
+  for (const c of clients) {
+    const reasons: string[] = []
+    let score = 0
+    const cEmail = dupNorm(c.email)
+    const cPhone = dupPhoneKey(c.phone)
+    const cName = dupNorm(c.name)
+    const cCompany = dupNorm(c.company)
+
+    if (email.length >= 3 && cEmail && cEmail === email) { reasons.push('same email'); score += 100 }
+    if (phone.length >= 7 && cPhone && cPhone === phone) { reasons.push('same phone'); score += 100 }
+    if (name.length >= 2 && cName) {
+      if (cName === name) { reasons.push('same name'); score += 60 }
+      else if (cName.includes(name) || name.includes(cName)) { reasons.push('similar name'); score += 30 }
+    }
+    if (company.length >= 2 && cCompany) {
+      if (cCompany === company) { reasons.push('same company'); score += 50 }
+      else if (cCompany.includes(company) || company.includes(cCompany)) { reasons.push('similar company'); score += 25 }
+    }
+    if (reasons.length) scored.push({ client: c, reasons, score })
+  }
+  scored.sort((a, b) => b.score - a.score)
+  return scored.slice(0, 4).map(({ client, reasons }) => ({ client, reasons }))
+}
+
+/** Inline amber panel shown inside the Add Client / Add Prospect modals. */
+function DuplicateWarning({ clients, fields, onPick }: { clients: any[]; fields: DupeFields; onPick: (c: any) => void }) {
+  const matches = useMemo(
+    () => findDuplicates(fields, clients),
+    [clients, fields.name, fields.email, fields.phone, fields.company]
+  )
+  if (matches.length === 0) return null
+  return (
+    <div className="p-3 bg-amber-500/8 border border-amber-500/25 rounded-xl space-y-2">
+      <div className="flex items-center gap-2">
+        <svg className="w-4 h-4 text-amber-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+        <p className="text-xs font-bold text-amber-300">
+          {matches.length === 1 ? 'Possible duplicate already in CRM' : `${matches.length} possible duplicates already in CRM`}
+        </p>
+      </div>
+      <p className="text-[10px] text-amber-200/60">Open an existing record instead of creating a new one:</p>
+      <div className="space-y-1.5">
+        {matches.map(({ client: c, reasons }) => (
+          <button key={c.client_id} type="button" onClick={() => onPick(c)}
+            className="w-full flex items-center justify-between gap-2 text-left px-2.5 py-2 bg-neutral-900/60 border border-neutral-800 rounded-lg hover:border-amber-500/40 hover:bg-neutral-900 transition-all cursor-pointer">
+            <div className="min-w-0">
+              <p className="text-xs text-white font-medium truncate">{String(c.name || c.company || c.email || 'Unnamed')}</p>
+              <p className="text-[10px] text-neutral-500 truncate">
+                {[c.company, c.email, c.phone].filter(Boolean).map((v: any) => String(v)).join(' · ') || '—'}
+              </p>
+            </div>
+            <span className="text-[9px] text-amber-300/80 font-bold uppercase tracking-wider whitespace-nowrap flex-shrink-0">{reasons[0]}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function CRMSection() {
   const { clients, loading, error, activeClient, clientActivity, user } = useAdminStore()
   const [search, setSearch] = useState('')
@@ -215,10 +291,13 @@ export default function CRMSection() {
     // Added by filter
     if (addedByFilter && (c.added_by || '') !== addedByFilter) return false
 
-    // Search logic
+    // Search logic — coerce every field with String() first. Values coming back
+    // from the Sheets backend can be numbers (e.g. an all-digits phone), and
+    // calling .toLowerCase() on a number throws, crashing the whole admin render.
     if (search) {
       const q = search.toLowerCase()
-      if (!(c.name||'').toLowerCase().includes(q) && !(c.email||'').toLowerCase().includes(q) && !(c.company||'').toLowerCase().includes(q) && !(c.phone||'').toLowerCase().includes(q) && !(c.source||'').toLowerCase().includes(q)) return false
+      const hay = (v: any) => String(v ?? '').toLowerCase().includes(q)
+      if (!hay(c.name) && !hay(c.email) && !hay(c.company) && !hay(c.phone) && !hay(c.source)) return false
     }
     return true
   })
@@ -227,18 +306,18 @@ export default function CRMSection() {
     return [...filtered].sort((a: any, b: any) => {
       let aVal, bVal
       if (sortConfig.key === 'name') {
-        aVal = (a.name || a.company || a.email || '').toLowerCase()
-        bVal = (b.name || b.company || b.email || '').toLowerCase()
+        aVal = String(a.name || a.company || a.email || '').toLowerCase()
+        bVal = String(b.name || b.company || b.email || '').toLowerCase()
       } else if (sortConfig.key === 'added_by') {
-        aVal = (a.added_by || '').toLowerCase()
-        bVal = (b.added_by || '').toLowerCase()
+        aVal = String(a.added_by || '').toLowerCase()
+        bVal = String(b.added_by || '').toLowerCase()
       } else if (sortConfig.key === 'pipeline_stage') {
         const stageOrder: string[] = STAGES.map(s => s.id)
         aVal = stageOrder.indexOf(normalizeStage(a.prospect_stage || 'new_lead'))
         bVal = stageOrder.indexOf(normalizeStage(b.prospect_stage || 'new_lead'))
       } else if (sortConfig.key === 'company') {
-        aVal = (a.company || '').toLowerCase()
-        bVal = (b.company || '').toLowerCase()
+        aVal = String(a.company || '').toLowerCase()
+        bVal = String(b.company || '').toLowerCase()
       } else if (sortConfig.key === 'outstanding') {
         aVal = Number(a.outstanding || 0)
         bVal = Number(b.outstanding || 0)
@@ -1835,6 +1914,8 @@ export default function CRMSection() {
                 <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputCls} placeholder="Phone" />
                 <input value={form.company} onChange={e => setForm({...form, company: e.target.value})} className={inputCls} placeholder="Company" />
               </div>
+              <DuplicateWarning clients={activeClients} fields={{ name: form.name, email: form.email, phone: form.phone, company: form.company }}
+                onPick={(c) => { setShowAdd(false); openClient(c) }} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input value={form.industry} onChange={e => setForm({...form, industry: e.target.value})} className={inputCls} placeholder="Industry" />
                 <input value={form.source} onChange={e => setForm({...form, source: e.target.value})} className={inputCls} placeholder="Source (e.g. Referral)" />
@@ -1899,6 +1980,8 @@ export default function CRMSection() {
                     {busyBatch ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg> : 'Add'}
                   </button>
                 </div>
+                <DuplicateWarning clients={activeClients} fields={{ name: batchName, company: batchName }}
+                  onPick={(c) => { setShowAddProspect(false); setBatchMode(false); openClient(c) }} />
                 <p className="text-[10px] text-neutral-600 text-center">Press Enter or click Add Ã¢â‚¬â€ then type the next name. Source auto-set to "Google Maps".</p>
               </div>
             ) : (
@@ -1910,6 +1993,8 @@ export default function CRMSection() {
                   <input value={prospectForm.phone} onChange={e => setProspectForm({...prospectForm, phone: e.target.value})} className={inputCls} placeholder="Phone number" />
                   <input type="email" value={prospectForm.email} onChange={e => setProspectForm({...prospectForm, email: e.target.value})} className={inputCls} placeholder="Email" />
                 </div>
+                <DuplicateWarning clients={activeClients} fields={{ name: prospectForm.name, email: prospectForm.email, phone: prospectForm.phone, company: prospectForm.company }}
+                  onPick={(c) => { setShowAddProspect(false); setBatchMode(false); openClient(c) }} />
                 <input value={prospectForm.location} onChange={e => setProspectForm({...prospectForm, location: e.target.value})} className={inputCls} placeholder="Location / Area (e.g. Newtown, Accra)" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input value={prospectForm.source} onChange={e => setProspectForm({...prospectForm, source: e.target.value})} className={inputCls} placeholder="Source (Google Maps, Referral...)" />

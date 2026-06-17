@@ -605,7 +605,9 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
     if (recognitionRef.current) {
       const ref = recognitionRef.current
       recognitionRef.current = null // Prevent auto-restart in onend
+      try { ref.onend = null; ref.onresult = null; ref.onerror = null } catch { /* ignored */ }
       try { ref.stop() } catch { /* ignored */ }
+      try { ref.abort?.() } catch { /* ignored */ } // force-release the mic immediately
     }
     setIsTranscribing(false)
     setInterimText('')
@@ -620,9 +622,20 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [phase])
 
-  // Cleanup on unmount
+  // Cleanup on unmount — release the mic for good.
+  // CRITICAL: null the ref and detach handlers BEFORE stopping, otherwise the
+  // onend handler sees recognitionRef.current === recognition and auto-restarts,
+  // leaving the browser mic indicator blinking for as long as the tab is open.
   useEffect(() => {
-    return () => { if (recognitionRef.current) { try { recognitionRef.current.stop() } catch { /* ignored */ } } }
+    return () => {
+      const ref = recognitionRef.current
+      if (ref) {
+        recognitionRef.current = null
+        try { ref.onend = null; ref.onresult = null; ref.onerror = null } catch { /* ignored */ }
+        try { ref.stop() } catch { /* ignored */ }
+        try { ref.abort?.() } catch { /* ignored */ }
+      }
+    }
   }, [])
 
   const currentPath = PATHS[pathId]
@@ -807,7 +820,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
 
     const result = await adminActions.saveCallLog(data)
     setSaving(false)
-    if (result) onClose()
+    if (result) { stopTranscription(); onClose() }
   }
 
   const toggleSection = (id: string) => setCollapsed(p => ({ ...p, [id]: !p[id] }))

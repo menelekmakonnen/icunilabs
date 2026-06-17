@@ -658,18 +658,77 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
 
   const stageIdx = STAGES.findIndex(s => s.id === (m.stage || 'booked'))
 
-  const advanceStage = async (targetStage: string) => {
-    setBusy(true)
-    await adminActions.updateMeeting(m.meeting_id, { stage: targetStage })
+  // ── Inferred-meeting safety net ──
+  // Cards on the board can be "inferred" from a call log (meeting_id like
+  // "call-123") with NO real row in the Meetings sheet. Every mutating
+  // endpoint rejects those IDs with "Meeting not found", so progress/regress/
+  // qualify/save all silently fail. Before any write we materialise the
+  // inferred meeting into a real row and use that ID for the rest of the action.
+  const isInferred = (mm: any) => !!mm._inferred || String(mm?.meeting_id || '').startsWith('call-')
+  const ensureRealMeeting = async (): Promise<string | null> => {
+    if (!isInferred(m)) return m.meeting_id
+    const client = clientMap?.[m.client_id]
+    const created = await adminActions.createMeeting({
+      client_id: m.client_id,
+      client_name: m.client_name || client?.name || 'Client',
+      client_company: m.client_company || client?.company || '',
+      client_email: m.client_email || client?.email || client?.contact_email || '',
+      date: editDate || m.date || '',
+      time: editTime || m.time || '',
+      type: m.type || 'online',
+      location_or_link: m.location_or_link || '',
+      booked_by: m.booked_by || '',
+      attendees: m.attendees || [],
+    })
+    const newId = created?.meeting_id || null
+    if (newId) {
+      setM((prev: any) => ({ ...prev, meeting_id: newId, _inferred: false }))
+    } else {
+      setSyncWarning('Could not save: this call-based meeting could not be converted into a real meeting. Refresh and try again.')
+    }
+    return newId
+  }
 
-    // Trigger calendar event on confirmation
+  const advanceStage = async (targetStage: string, opts?: { sendEmail?: boolean }) => {
+    setBusy(true)
+    const id = await ensureRealMeeting()
+    if (!id) { setBusy(false); return }
+    await adminActions.updateMeeting(id, { stage: targetStage })
+
+    // Trigger calendar event / confirmation email on confirmation
     if (targetStage === 'confirmed') {
       setSyncWarning(null)
       const client = clientMap?.[m.client_id]
       const clientEmail = m.client_email || client?.email || client?.contact_email || ''
+
+      // Auto-send: send the branded confirmation email (which also creates the
+      // calendar event server-side), then we're done.
+      if (opts?.sendEmail) {
+        const result = await adminActions.sendMeetingConfirmation(id, {
+          client_name: m.client_name || client?.name || 'Client',
+          client_email: clientEmail,
+          date: editDate || m.date,
+          time: editTime || m.time,
+          type: m.type || 'online',
+          location_or_link: m.location_or_link || '',
+          attendees: m.attendees || [],
+        })
+        if (result && result.email_sent === false) {
+          setSyncWarning('Meeting confirmed but the confirmation email failed to send: ' + (result.email_error || 'unknown error') + '. Try the Send Confirmation Email button or Mail Hub.')
+        } else {
+          setConfirmSent(true)
+          setM((prev: any) => ({ ...prev, confirmation_sent: true }))
+        }
+        setM((prev: any) => ({ ...prev, stage: targetStage }))
+        await adminActions.loadMeetings()
+        setBusy(false)
+        return
+      }
+
+      // Confirm-only: create the calendar event but do NOT send the branded email.
       try {
         const result = await adminActions.confirmCalendarEvent({
-          meeting_id: m.meeting_id,
+          meeting_id: id,
           client_name: m.client_name || client?.name || 'Client',
           client_email: clientEmail,
           date: editDate || m.date,
@@ -680,14 +739,14 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
           booked_by_email: m.booked_by || '',
         })
         if (result?.meet_link) {
-          // Update meeting with the Meet link
-          await adminActions.updateMeeting(m.meeting_id, { location_or_link: result.meet_link, calendar_event_id: result.event_id })
+          await adminActions.updateMeeting(id, { location_or_link: result.meet_link, calendar_event_id: result.event_id })
           setM((prev: any) => ({ ...prev, location_or_link: result.meet_link, calendar_event_id: result.event_id, stage: targetStage }))
+          await adminActions.loadMeetings()
           setBusy(false)
           return
         }
         if (result?.event_id) {
-          await adminActions.updateMeeting(m.meeting_id, { calendar_event_id: result.event_id })
+          await adminActions.updateMeeting(id, { calendar_event_id: result.event_id })
         }
       } catch (e) {
         // Calendar sync is best-effort, don't block stage advancement
@@ -697,12 +756,15 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
     }
 
     setM((prev: any) => ({ ...prev, stage: targetStage }))
+    await adminActions.loadMeetings()
     setBusy(false)
   }
 
   const saveDateTime = async () => {
     setBusy(true)
-    await adminActions.updateMeeting(m.meeting_id, { date: editDate, time: editTime })
+    const id = await ensureRealMeeting()
+    if (!id) { setBusy(false); return }
+    await adminActions.updateMeeting(id, { date: editDate, time: editTime })
     setM((prev: any) => ({ ...prev, date: editDate, time: editTime }))
     setDateTimeDirty(false)
     await adminActions.loadMeetings() // Refresh Kanban cards
@@ -712,16 +774,18 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
   const sendConfirmation = async () => {
     setBusy(true)
     setSyncWarning(null)
+    const id = await ensureRealMeeting()
+    if (!id) { setBusy(false); return }
     // Always save any pending date/time changes first
     if (dateTimeDirty) {
-      await adminActions.updateMeeting(m.meeting_id, { date: editDate, time: editTime })
+      await adminActions.updateMeeting(id, { date: editDate, time: editTime })
       setM((prev: any) => ({ ...prev, date: editDate, time: editTime }))
       setDateTimeDirty(false)
     }
     // Pass full context so backend can send even for inferred meetings
     const client = clientMap?.[m.client_id]
     const clientEmail = m.client_email || client?.email || client?.contact_email || ''
-    const result = await adminActions.sendMeetingConfirmation(m.meeting_id, {
+    const result = await adminActions.sendMeetingConfirmation(id, {
       client_name: m.client_name || client?.name || 'Client',
       client_email: clientEmail,
       date: editDate || m.date,
@@ -741,34 +805,48 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
 
   const savePrepNotes = async () => {
     setBusy(true)
-    await adminActions.updateMeeting(m.meeting_id, { prep_notes: prepNotes, demo_checklist: checklist })
+    const id = await ensureRealMeeting()
+    if (!id) { setBusy(false); return }
+    await adminActions.updateMeeting(id, { prep_notes: prepNotes, demo_checklist: checklist })
     setBusy(false)
   }
 
   const markAttendance = async (attendance: string) => {
     setBusy(true)
-    await adminActions.updateMeeting(m.meeting_id, { attendance, stage: 'post_meeting' })
+    const id = await ensureRealMeeting()
+    if (!id) { setBusy(false); return }
+    await adminActions.updateMeeting(id, { attendance, stage: 'post_meeting' })
     setM((prev: any) => ({ ...prev, attendance, stage: 'post_meeting' }))
+    await adminActions.loadMeetings()
     setBusy(false)
   }
 
   const qualify = async (result: string) => {
     setBusy(true)
-    await adminActions.qualifyMeeting(m.meeting_id, result, postNotes)
+    const id = await ensureRealMeeting()
+    if (!id) { setBusy(false); return }
+    // Persist any post-meeting notes alongside the qualification
+    if (postNotes && postNotes !== (m.post_meeting_notes || '')) {
+      await adminActions.updateMeeting(id, { post_meeting_notes: postNotes })
+    }
+    await adminActions.qualifyMeeting(id, result, postNotes)
     setM((prev: any) => ({ ...prev, qualification_result: result, stage: 'qualified' }))
     setBusy(false)
   }
 
   const savePostNotes = async () => {
     setBusy(true)
-    await adminActions.updateMeeting(m.meeting_id, { post_meeting_notes: postNotes })
+    const id = await ensureRealMeeting()
+    if (!id) { setBusy(false); return }
+    await adminActions.updateMeeting(id, { post_meeting_notes: postNotes })
     setBusy(false)
   }
 
   const handleDelete = async () => {
     if (!confirm('Delete this meeting?')) return
     setBusy(true)
-    await adminActions.deleteMeeting(m.meeting_id)
+    // Inferred meetings have no real row — nothing to delete server-side.
+    if (!isInferred(m)) await adminActions.deleteMeeting(m.meeting_id)
     setBusy(false)
     onClose()
   }
@@ -776,7 +854,9 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
   const handleRegress = async () => {
     if (!confirm(`Regress this meeting? The client will return to "${regressTarget}" in the pipeline.`)) return
     setBusy(true)
-    await adminActions.regressMeeting(m.meeting_id, regressTarget)
+    const id = await ensureRealMeeting()
+    if (!id) { setBusy(false); return }
+    await adminActions.regressMeeting(id, regressTarget)
     setBusy(false)
     onClose()
   }
@@ -784,7 +864,9 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
   const handleCancel = async () => {
     if (!confirm('Cancel this meeting? This is different from regression — it marks the meeting as deliberately cancelled.')) return
     setBusy(true)
-    await adminActions.cancelMeeting(m.meeting_id, cancelReason)
+    const id = await ensureRealMeeting()
+    if (!id) { setBusy(false); return }
+    await adminActions.cancelMeeting(id, cancelReason)
     setBusy(false)
     onClose()
   }
@@ -872,10 +954,12 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
                       const newEmail = e.target.value.trim()
                       if (newEmail && newEmail !== email) {
                         setBusy(true)
+                        const id = await ensureRealMeeting()
+                        if (!id) { setBusy(false); return }
                         // Save to meeting
-                        await adminActions.updateMeeting(m.meeting_id, { client_email: newEmail })
+                        await adminActions.updateMeeting(id, { client_email: newEmail })
                         // Also update the client record if this client exists
-                        if (m.client_id && !m.client_id.startsWith('call-')) {
+                        if (m.client_id && !String(m.client_id).startsWith('call-')) {
                           await adminActions.updateClient(m.client_id, { email: newEmail })
                         }
                         setM((prev: any) => ({ ...prev, client_email: newEmail }))
@@ -909,11 +993,11 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
             <div className="mtg-field-group">
               <div className="mtg-field-label">Type</div>
               <div className="flex gap-1.5">
-                <button onClick={async () => { await adminActions.updateMeeting(m.meeting_id, { type: 'online' }); setM((p: any) => ({ ...p, type: 'online' })) }}
+                <button onClick={async () => { const id = await ensureRealMeeting(); if (!id) return; await adminActions.updateMeeting(id, { type: 'online' }); setM((p: any) => ({ ...p, type: 'online' })) }}
                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
                     m.type === 'online' ? 'bg-[#00bfff]/10 text-[#00bfff] border border-[#00bfff]/20' : 'bg-neutral-900/50 text-neutral-500 border border-neutral-800 hover:text-white'
                   }`}><Video className="w-3 h-3" /> Online</button>
-                <button onClick={async () => { await adminActions.updateMeeting(m.meeting_id, { type: 'in_person' }); setM((p: any) => ({ ...p, type: 'in_person' })) }}
+                <button onClick={async () => { const id = await ensureRealMeeting(); if (!id) return; await adminActions.updateMeeting(id, { type: 'in_person' }); setM((p: any) => ({ ...p, type: 'in_person' })) }}
                   className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all ${
                     m.type === 'in_person' ? 'bg-[#ff7a00]/10 text-[#ff7a00] border border-[#ff7a00]/20' : 'bg-neutral-900/50 text-neutral-500 border border-neutral-800 hover:text-white'
                   }`}><MapPin className="w-3 h-3" /> In-Person</button>
@@ -978,10 +1062,16 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
           {m.stage === 'booked' && (
             <div className="p-4 rounded-xl bg-[#00bfff]/5 border border-[#00bfff]/10 mb-4">
               <p className="text-xs text-[#00bfff] font-bold mb-2">Next Step</p>
-              <p className="text-xs text-neutral-400 mb-3">Once confirmed with the client, advance this meeting to the next stage.</p>
-              <button onClick={() => advanceStage('confirmed')} disabled={busy} className="mtg-btn mtg-btn--primary text-xs">
-                Mark as Confirmed
-              </button>
+              <p className="text-xs text-neutral-400 mb-3">Confirm the meeting. You can send the client the branded confirmation email now, or just move it to Confirmed and email later.</p>
+              <div className="flex flex-wrap gap-2">
+                <button onClick={() => advanceStage('confirmed', { sendEmail: true })} disabled={busy || (!editDate && !editTime)} className="mtg-btn mtg-btn--primary text-xs">
+                  <Send className="w-3.5 h-3.5" /> {busy ? 'Working...' : 'Confirm & Send Email'}
+                </button>
+                <button onClick={() => advanceStage('confirmed')} disabled={busy} className="mtg-btn mtg-btn--ghost text-xs">
+                  {busy ? '...' : 'Confirm Only'}
+                </button>
+              </div>
+              <p className="text-[10px] text-neutral-600 mt-2">Use the <strong className="text-neutral-400">Send Confirmation Email</strong> button above to send (or resend) the email on its own at any time.</p>
             </div>
           )}
 
