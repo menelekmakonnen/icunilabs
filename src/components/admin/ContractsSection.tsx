@@ -255,70 +255,138 @@ function LetterheadPreview({
   signatureBlock?: React.ReactNode
 }) {
   const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  // Fixed A4 width (794px at 96dpi) for consistent PDF rendering
   return (
-    <div ref={previewRef} style={{ background: '#fff', color: '#1a1a2e', padding: '48px 40px', fontFamily: 'Inter, system-ui, sans-serif', fontSize: '12px', lineHeight: 1.6, minHeight: '900px' }}>
-      {/* Premium Letterhead */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '8px' }}>
+    <div ref={previewRef} style={{
+      background: '#ffffff',
+      color: '#1a1a2e',
+      width: '794px',
+      maxWidth: '100%',
+      margin: '0 auto',
+      fontFamily: "'Georgia', 'Times New Roman', serif",
+      fontSize: '11.5px',
+      lineHeight: 1.7,
+      position: 'relative',
+    }}>
+      {/* ── Top accent bar ── */}
+      <div style={{ height: '4px', background: 'linear-gradient(90deg, #1e3a5f 0%, #3b82f6 35%, #8b5cf6 65%, #1e3a5f 100%)' }} />
+
+      {/* ── Header area ── */}
+      <div style={{ padding: '28px 52px 22px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/icuni_logo.png" alt="ICUNI Labs" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} crossOrigin="anonymous" />
-            <div style={{ fontSize: '22px', fontWeight: 800, color: '#1a1a2e', letterSpacing: '-0.02em' }}>ICUNI Labs</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <img src="/icuni_logo.png" alt="ICUNI Labs" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} crossOrigin="anonymous" />
+            <div>
+              <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>ICUNI Labs</div>
+              <div style={{ fontSize: '8.5px', color: '#64748b', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '1px', fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>Custom Software, Automation & AI</div>
+            </div>
           </div>
-          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', letterSpacing: '0.04em' }}>Custom Software, Automation & AI</div>
         </div>
-        <div style={{ textAlign: 'right' }}>
+        <div style={{ textAlign: 'right', paddingTop: '4px' }}>
           {!isBlank && (
-            <div style={{ fontSize: '13px', fontWeight: 800, color: '#1a1a2e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: "'Inter', 'Helvetica Neue', sans-serif", marginBottom: '4px' }}>{title}</div>
           )}
-          <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>{today}</div>
+          <div style={{ fontSize: '10px', color: '#64748b', fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>{today}</div>
         </div>
       </div>
-      {/* Gradient divider */}
-      <div style={{ height: '3px', borderRadius: '2px', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6, #a855f7)', marginBottom: '32px' }} />
 
-      {isBlank ? (
-        <div style={{ fontSize: '12px', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.8, minHeight: '520px' }}>
-          {replaceVars(sections[0]?.body || '')}
-        </div>
-      ) : (
-        sections.map((sec, i) => (
-          <div key={i} style={{ marginBottom: '18px' }}>
-            {sec.heading && (
-              <div style={{ fontSize: '10px', fontWeight: 800, color: color, letterSpacing: '0.1em', marginBottom: '6px', textTransform: 'uppercase' }}>{i + 1}. {replaceVars(sec.heading)}</div>
-            )}
-            <div style={{ fontSize: '11px', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{replaceVars(sec.body)}</div>
+      {/* ── Body content ── */}
+      <div style={{ padding: '32px 52px 24px' }}>
+        {isBlank ? (
+          <div style={{ fontSize: '12px', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.85, minHeight: '520px' }}>
+            {replaceVars(sections[0]?.body || '')}
           </div>
-        ))
-      )}
+        ) : (
+          <div>
+            {sections.map((sec, i) => (
+              <div key={i} style={{ marginBottom: '22px', pageBreakInside: 'avoid' }}>
+                {sec.heading && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px',
+                  }}>
+                    <div style={{
+                      width: '22px', height: '22px', borderRadius: '50%',
+                      background: color, color: '#fff',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '10px', fontWeight: 700, flexShrink: 0,
+                      fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+                    }}>{i + 1}</div>
+                    <div style={{
+                      fontSize: '10.5px', fontWeight: 700, color: '#0f172a',
+                      letterSpacing: '0.08em', textTransform: 'uppercase',
+                      fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+                    }}>{replaceVars(sec.heading)}</div>
+                  </div>
+                )}
+                <div style={{
+                  fontSize: '11.5px', color: '#334155', whiteSpace: 'pre-wrap',
+                  lineHeight: 1.75, paddingLeft: sec.heading ? '32px' : '0',
+                }}>{replaceVars(sec.body)}</div>
+              </div>
+            ))}
+          </div>
+        )}
 
-      {/* Signature Block */}
-      {signatureBlock || (
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px', paddingTop: '24px', borderTop: '1px solid #e2e8f0' }}>
-          <div style={{ width: '45%' }}>
-            <div style={{ borderBottom: '1px solid #1a1a2e', height: '40px', marginBottom: '6px' }} />
-            <div style={{ fontSize: '9px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Authorised Signatory</div>
-            <div style={{ fontSize: '10px', fontWeight: 600, marginTop: '2px', color: '#1a1a2e' }}>Menelek Makonnen, Director</div>
-            <div style={{ fontSize: '9px', color: '#64748b', marginTop: '1px' }}>For ICUNI Labs</div>
-          </div>
-          <div style={{ width: '45%' }}>
-            <div style={{ borderBottom: '1px solid #1a1a2e', height: '40px', marginBottom: '6px' }} />
-            <div style={{ fontSize: '9px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{RECIPIENT_TYPES.find(r => r.id === recipientType)?.label || 'Recipient'}</div>
-            <div style={{ fontSize: '10px', fontWeight: 600, marginTop: '2px', color: '#1a1a2e' }}>{recipientName || '[Name]'}</div>
-          </div>
-        </div>
-      )}
+        {/* ── Signature Block ── */}
+        {signatureBlock || (
+          <div style={{ marginTop: '52px', paddingTop: '0' }}>
+            <div style={{
+              fontSize: '9px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase',
+              letterSpacing: '0.15em', marginBottom: '20px',
+              fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+            }}>Executed as of the date written above</div>
 
-      {/* Premium Footer */}
-      <div style={{ marginTop: '36px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', fontSize: '8px', color: '#94a3b8' }}>
-          <span>labs.icuni.org</span>
-          <span style={{ color: '#cbd5e1' }}>&#183;</span>
-          <span>hello@icuni.org</span>
-          <span style={{ color: '#cbd5e1' }}>&#183;</span>
-          <span>+233 55 229 1534</span>
-        </div>
-        <div style={{ textAlign: 'center', fontSize: '7px', color: '#cbd5e1', marginTop: '4px' }}>ICUNI Labs  --  Accra, Ghana</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '40px' }}>
+              {/* ICUNI Labs side */}
+              <div style={{ flex: 1 }}>
+                <div style={{ borderBottom: '2px dotted #94a3b8', height: '44px', marginBottom: '8px' }} />
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>Menelek Makonnen</div>
+                <div style={{ fontSize: '9.5px', color: '#64748b', marginTop: '1px' }}>Director, ICUNI Labs</div>
+                <div style={{
+                  fontSize: '8px', color: '#94a3b8', textTransform: 'uppercase',
+                  letterSpacing: '0.1em', marginTop: '6px',
+                  fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+                }}>Authorised Signatory</div>
+              </div>
+              {/* Recipient side */}
+              <div style={{ flex: 1 }}>
+                <div style={{ borderBottom: '2px dotted #94a3b8', height: '44px', marginBottom: '8px' }} />
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>{recipientName || '[Name]'}</div>
+                <div style={{ fontSize: '9.5px', color: '#64748b', marginTop: '1px' }}>{RECIPIENT_TYPES.find(r => r.id === recipientType)?.label || 'Recipient'}</div>
+                <div style={{
+                  fontSize: '8px', color: '#94a3b8', textTransform: 'uppercase',
+                  letterSpacing: '0.1em', marginTop: '6px',
+                  fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+                }}>Counterparty</div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* ── Footer ── */}
+      <div style={{
+        borderTop: '1px solid #e5e7eb',
+        margin: '0 52px',
+        padding: '16px 0 24px',
+      }}>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          fontFamily: "'Inter', 'Helvetica Neue', sans-serif",
+        }}>
+          <div style={{ fontSize: '8px', color: '#94a3b8', letterSpacing: '0.08em' }}>
+            ICUNI Labs &mdash; Accra, Ghana
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '8px', color: '#94a3b8' }}>
+            <span>labs.icuni.org</span>
+            <span>hello@icuni.org</span>
+            <span>+233 55 229 1534</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Bottom accent bar ── */}
+      <div style={{ height: '3px', background: 'linear-gradient(90deg, #1e3a5f 0%, #3b82f6 35%, #8b5cf6 65%, #1e3a5f 100%)' }} />
     </div>
   )
 }
@@ -444,21 +512,40 @@ function TemplatesView() {
   const updateSection = (i: number, field: 'heading' | 'body', value: string) =>
     setEditSections(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: value } : s))
 
-  // Build a jsPDF from the live preview
+  // Build a jsPDF from the live preview — smart page splitting
   const buildPdf = async () => {
     if (!previewRef.current) return null
-    await new Promise(r => setTimeout(r, 150))
+    await new Promise(r => setTimeout(r, 200))
     const html2canvas = (await import('html2canvas')).default
     const { jsPDF } = await import('jspdf')
-    const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true, backgroundColor: '#fff' })
-    const img = canvas.toDataURL('image/png')
+    // Render at high res for crisp text
+    const canvas = await html2canvas(previewRef.current, { scale: 2.5, useCORS: true, backgroundColor: '#fff', logging: false })
+    const imgData = canvas.toDataURL('image/png')
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-    const pw = pdf.internal.pageSize.getWidth()
-    const ph = pdf.internal.pageSize.getHeight()
-    const iw = pw - 20
-    const ih = iw * (canvas.height / canvas.width)
-    if (ih <= ph - 20) { pdf.addImage(img, 'PNG', 10, 10, iw, ih) }
-    else { let y = 0; while (y < ih) { if (y > 0) pdf.addPage(); pdf.addImage(img, 'PNG', 10, -y + 10, iw, ih); y += ph - 20 } }
+    const pageW = pdf.internal.pageSize.getWidth()
+    const pageH = pdf.internal.pageSize.getHeight()
+    const margin = 6
+    const usableW = pageW - margin * 2
+    const usableH = pageH - margin * 2
+    const imgH = usableW * (canvas.height / canvas.width)
+
+    if (imgH <= usableH) {
+      // Single page — centre vertically
+      const yOff = margin
+      pdf.addImage(imgData, 'PNG', margin, yOff, usableW, imgH)
+    } else {
+      // Multi-page with slight overlap to avoid cutting mid-line
+      const overlap = 10 // mm overlap between pages
+      const step = usableH - overlap
+      let y = 0
+      let page = 0
+      while (y < imgH) {
+        if (page > 0) pdf.addPage()
+        pdf.addImage(imgData, 'PNG', margin, margin - y, usableW, imgH)
+        y += step
+        page++
+      }
+    }
     return pdf
   }
 
@@ -925,18 +1012,26 @@ function ContractViewer({ contract, onBack }: { contract: any; onBack: () => voi
     if (!previewRef.current) return
     setBusy(true)
     try {
-      await new Promise(r => setTimeout(r, 150))
+      await new Promise(r => setTimeout(r, 200))
       const html2canvas = (await import('html2canvas')).default
       const { jsPDF } = await import('jspdf')
-      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true, backgroundColor: '#fff' })
-      const img = canvas.toDataURL('image/png')
+      const canvas = await html2canvas(previewRef.current, { scale: 2.5, useCORS: true, backgroundColor: '#fff', logging: false })
+      const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-      const pw = pdf.internal.pageSize.getWidth()
-      const ph = pdf.internal.pageSize.getHeight()
-      const iw = pw - 20
-      const ih = iw * (canvas.height / canvas.width)
-      if (ih <= ph - 20) { pdf.addImage(img, 'PNG', 10, 10, iw, ih) }
-      else { let y = 0; while (y < ih) { if (y > 0) pdf.addPage(); pdf.addImage(img, 'PNG', 10, -y + 10, iw, ih); y += ph - 20 } }
+      const pageW = pdf.internal.pageSize.getWidth()
+      const pageH = pdf.internal.pageSize.getHeight()
+      const margin = 6
+      const usableW = pageW - margin * 2
+      const usableH = pageH - margin * 2
+      const imgH = usableW * (canvas.height / canvas.width)
+      if (imgH <= usableH) {
+        pdf.addImage(imgData, 'PNG', margin, margin, usableW, imgH)
+      } else {
+        const overlap = 10
+        const step = usableH - overlap
+        let y = 0; let pg = 0
+        while (y < imgH) { if (pg > 0) pdf.addPage(); pdf.addImage(imgData, 'PNG', margin, margin - y, usableW, imgH); y += step; pg++ }
+      }
       pdf.save(`${cTitle.replace(/\s+/g, '_')}.pdf`)
     } catch (e) { console.error(e) }
     setBusy(false)
