@@ -83,6 +83,9 @@ interface AdminState {
   floatingCall: { client: any; callStartTime: number; paused: boolean; callGuideState?: any } | null
   // Analytics
   analyticsData: any | null
+  // Contracts
+  myContracts: any[]
+  allContracts: any[]
   // Cache timestamps (ms)
   _cache: Record<string, number>
 }
@@ -242,6 +245,8 @@ let state: AdminState = {
   emailTemplates: [],
   floatingCall: null,
   analyticsData: null,
+  myContracts: [],
+  allContracts: [],
   _cache: {},
 }
 
@@ -1165,6 +1170,39 @@ export const adminActions = {
       const result = await apiPost('sendContract', { token: state.token, ...data })
       setState({ loading: false })
       return result || { email_sent: true }
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return null
+    }
+  },
+
+  loadMyContracts: async () => {
+    try {
+      const result = await apiPost('getMyContracts', { token: state.token })
+      setState({ myContracts: Array.isArray(result) ? result : [] })
+    } catch (err: any) {
+      setState({ error: err.message })
+    }
+  },
+
+  loadAllContracts: async () => {
+    try {
+      const result = await apiPost('getContracts', { token: state.token })
+      setState({ allContracts: Array.isArray(result) ? result : [] })
+    } catch (err: any) {
+      setState({ error: err.message })
+    }
+  },
+
+  signContractAction: async (data: { contract_id: string; legalName: string; address: string }): Promise<any> => {
+    setState({ loading: true, error: null })
+    try {
+      const result = await apiPost('signContract', { token: state.token, ...data })
+      setState({ loading: false })
+      // Refresh the user's contracts list
+      const refreshed = await apiPost('getMyContracts', { token: state.token })
+      setState({ myContracts: Array.isArray(refreshed) ? refreshed : [] })
+      return result
     } catch (err: any) {
       setState({ error: err.message, loading: false })
       return null

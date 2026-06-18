@@ -124,6 +124,8 @@ export default function AdminPanel() {
     // Check department scope first, then permission overrides
     const deptSections = DEPT_SCOPE[role] || []
     const inScope = deptSections.includes(item.id)
+    // Contracts visible to ALL authenticated users (they see only their own contracts)
+    if (item.id === 'contracts') return true
     // Permission toggles can override scope (admin can restrict further)
     if (userPerms[item.id] === false) return false
     return inScope

@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react'
-import { FileText, Download, Edit3, Save, Plus, X, Eye, UploadCloud, Send, Mail } from 'lucide-react'
-import { adminActions } from '../../store/useAdminStore'
+import { useState, useRef, useEffect } from 'react'
+import { FileText, Download, Edit3, Save, Plus, X, Eye, UploadCloud, Send, Mail, ChevronDown, ChevronUp, Filter } from 'lucide-react'
+import { useAdminStore, adminActions } from '../../store/useAdminStore'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
 
@@ -222,7 +222,162 @@ function persistTemplates(templates: ContractTemplate[]) {
 
 const CATEGORY_ORDER = ['Clients', 'Growth Associates', 'Referrers', 'Team', 'General']
 
-export default function ContractsSection() {
+// ─── Status badge helper ──────────────────────────────────
+function StatusBadge({ status }: { status: string }) {
+  const s = (status || 'draft').toLowerCase()
+  const cls =
+    s === 'signed' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+    s === 'pending' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+    'bg-neutral-700/40 text-neutral-400 border-neutral-600/30'
+  return <span className={`inline-block px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full border ${cls}`}>{s}</span>
+}
+
+// ─── Shared letterhead renderer (inline styles for PDF capture) ───
+function LetterheadPreview({
+  previewRef,
+  title,
+  isBlank,
+  color,
+  sections,
+  recipientType,
+  recipientName,
+  replaceVars,
+  signatureBlock,
+}: {
+  previewRef?: React.RefObject<HTMLDivElement | null>
+  title: string
+  isBlank: boolean
+  color: string
+  sections: { heading: string; body: string }[]
+  recipientType: string
+  recipientName: string
+  replaceVars: (t: string) => string
+  signatureBlock?: React.ReactNode
+}) {
+  const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  return (
+    <div ref={previewRef} style={{ background: '#fff', color: '#1a1a2e', padding: '48px 40px', fontFamily: 'Inter, system-ui, sans-serif', fontSize: '12px', lineHeight: 1.6, minHeight: '900px' }}>
+      {/* Premium Letterhead */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '8px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/icuni_logo.png" alt="ICUNI Labs" style={{ height: '40px', width: 'auto', objectFit: 'contain' }} crossOrigin="anonymous" />
+            <div style={{ fontSize: '22px', fontWeight: 800, color: '#1a1a2e', letterSpacing: '-0.02em' }}>ICUNI Labs</div>
+          </div>
+          <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', letterSpacing: '0.04em' }}>Custom Software, Automation & AI</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          {!isBlank && (
+            <div style={{ fontSize: '13px', fontWeight: 800, color: '#1a1a2e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</div>
+          )}
+          <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>{today}</div>
+        </div>
+      </div>
+      {/* Gradient divider */}
+      <div style={{ height: '3px', borderRadius: '2px', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6, #a855f7)', marginBottom: '32px' }} />
+
+      {isBlank ? (
+        <div style={{ fontSize: '12px', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.8, minHeight: '520px' }}>
+          {replaceVars(sections[0]?.body || '')}
+        </div>
+      ) : (
+        sections.map((sec, i) => (
+          <div key={i} style={{ marginBottom: '18px' }}>
+            {sec.heading && (
+              <div style={{ fontSize: '10px', fontWeight: 800, color: color, letterSpacing: '0.1em', marginBottom: '6px', textTransform: 'uppercase' }}>{i + 1}. {replaceVars(sec.heading)}</div>
+            )}
+            <div style={{ fontSize: '11px', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{replaceVars(sec.body)}</div>
+          </div>
+        ))
+      )}
+
+      {/* Signature Block */}
+      {signatureBlock || (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px', paddingTop: '24px', borderTop: '1px solid #e2e8f0' }}>
+          <div style={{ width: '45%' }}>
+            <div style={{ borderBottom: '1px solid #1a1a2e', height: '40px', marginBottom: '6px' }} />
+            <div style={{ fontSize: '9px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Authorised Signatory</div>
+            <div style={{ fontSize: '10px', fontWeight: 600, marginTop: '2px', color: '#1a1a2e' }}>Menelek Makonnen, Director</div>
+            <div style={{ fontSize: '9px', color: '#64748b', marginTop: '1px' }}>For ICUNI Labs</div>
+          </div>
+          <div style={{ width: '45%' }}>
+            <div style={{ borderBottom: '1px solid #1a1a2e', height: '40px', marginBottom: '6px' }} />
+            <div style={{ fontSize: '9px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{RECIPIENT_TYPES.find(r => r.id === recipientType)?.label || 'Recipient'}</div>
+            <div style={{ fontSize: '10px', fontWeight: 600, marginTop: '2px', color: '#1a1a2e' }}>{recipientName || '[Name]'}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Premium Footer */}
+      <div style={{ marginTop: '36px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', fontSize: '8px', color: '#94a3b8' }}>
+          <span>labs.icuni.org</span>
+          <span style={{ color: '#cbd5e1' }}>&#183;</span>
+          <span>hello@icuni.org</span>
+          <span style={{ color: '#cbd5e1' }}>&#183;</span>
+          <span>+233 55 229 1534</span>
+        </div>
+        <div style={{ textAlign: 'center', fontSize: '7px', color: '#cbd5e1', marginTop: '4px' }}>ICUNI Labs  --  Accra, Ghana</div>
+      </div>
+    </div>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════
+
+interface ContractsSectionProps {
+  initialView?: 'templates' | 'submitted'
+}
+
+export default function ContractsSection({ initialView }: ContractsSectionProps) {
+  const { user, myContracts, allContracts } = useAdminStore()
+  const isStaff = ['Godmode', 'SuperAdmin', 'Admin', 'Sales', 'Product'].includes(user?.role || '')
+
+  if (isStaff) return <StaffView initialView={initialView} />
+  return <NonStaffView />
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// STAFF VIEW — Templates + Submitted Contracts
+// ═══════════════════════════════════════════════════════════
+
+function StaffView({ initialView }: { initialView?: 'templates' | 'submitted' }) {
+  const [tab, setTab] = useState<'templates' | 'submitted'>(initialView || 'templates')
+
+  return (
+    <div>
+      {/* Subtab bar */}
+      <div className="flex items-center gap-1 mb-6 border-b border-neutral-800 pb-0">
+        {(['templates', 'submitted'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`px-4 py-2.5 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors border-b-2 -mb-px ${
+              tab === t
+                ? 'border-[#00bfff] text-white'
+                : 'border-transparent text-neutral-500 hover:text-neutral-300'
+            }`}
+          >
+            {t === 'templates' ? 'Templates' : 'Submitted Contracts'}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'templates' ? <TemplatesView /> : <SubmittedContractsView />}
+    </div>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// TEMPLATES VIEW — Original template gallery + editor
+// ═══════════════════════════════════════════════════════════
+
+function TemplatesView() {
   const [templates, setTemplates] = useState<ContractTemplate[]>(loadTemplates)
   const [activeTemplate, setActiveTemplate] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
@@ -357,7 +512,6 @@ export default function ContractsSection() {
   // ── EDITOR / PREVIEW VIEW ──
   if (active) {
     const sections = editing ? editSections : active.sections
-    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     return (
       <div className="-m-3 sm:-m-6 flex flex-col h-[calc(100vh-64px)]">
         {/* Toolbar */}
@@ -368,7 +522,7 @@ export default function ContractsSection() {
             </button>
             <div className="min-w-0">
               <h2 className="text-sm font-bold text-white truncate">{active.icon} {active.title}</h2>
-              <p className="text-[10px] text-neutral-600">{active.category} · {active.description}</p>
+              <p className="text-[10px] text-neutral-600">{active.category} -- {active.description}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -382,9 +536,9 @@ export default function ContractsSection() {
                 <button onClick={() => setPreviewMode(!previewMode)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-neutral-700 text-neutral-400 hover:text-white rounded-lg cursor-pointer transition-colors sm:hidden"><Eye className="w-3.5 h-3.5" /> {previewMode ? 'Form' : 'Preview'}</button>
                 <button onClick={startEditing} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-neutral-700 text-neutral-400 hover:text-white rounded-lg cursor-pointer transition-colors"><Edit3 className="w-3.5 h-3.5" /> Edit</button>
                 <button onClick={() => resetTemplate(active.id)} className="text-xs text-neutral-600 hover:text-amber-400 cursor-pointer px-2 py-1.5 transition-colors">Reset</button>
-                <button onClick={downloadPDF} disabled={!!busy} className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#ff7a00] to-[#e06800] text-white rounded-lg text-xs font-bold cursor-pointer transition-all disabled:opacity-40"><Download className="w-3.5 h-3.5" /> {busy === 'pdf' ? 'Generating…' : 'Download PDF'}</button>
+                <button onClick={downloadPDF} disabled={!!busy} className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#ff7a00] to-[#e06800] text-white rounded-lg text-xs font-bold cursor-pointer transition-all disabled:opacity-40"><Download className="w-3.5 h-3.5" /> {busy === 'pdf' ? 'Generating...' : 'Download PDF'}</button>
                 <button onClick={() => setShowEmail(true)} disabled={!!busy} className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white rounded-lg text-xs font-bold cursor-pointer transition-all disabled:opacity-40"><Mail className="w-3.5 h-3.5" /> Email PDF</button>
-                <button onClick={saveToFolder} disabled={!!busy} className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-xs font-bold cursor-pointer transition-all disabled:opacity-40"><UploadCloud className="w-3.5 h-3.5" /> {busy === 'save' ? 'Saving…' : 'Save to Folder'}</button>
+                <button onClick={saveToFolder} disabled={!!busy} className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white rounded-lg text-xs font-bold cursor-pointer transition-all disabled:opacity-40"><UploadCloud className="w-3.5 h-3.5" /> {busy === 'save' ? 'Saving...' : 'Save to Folder'}</button>
               </>
             )}
           </div>
@@ -432,8 +586,8 @@ export default function ContractsSection() {
                     <div className="grid grid-cols-2 gap-3">
                       <div><label className="text-xs text-neutral-500 mb-1 block">Project Title</label><input value={projectTitle} onChange={e => setProjectTitle(e.target.value)} className={inputCls} placeholder="Operations System" /></div>
                       <div><label className="text-xs text-neutral-500 mb-1 block">Project Type</label><input value={projectType} onChange={e => setProjectType(e.target.value)} className={inputCls} placeholder="CRM + Inventory" /></div>
-                      <div><label className="text-xs text-neutral-500 mb-1 block">Project Cost</label><input value={projectCost} onChange={e => setProjectCost(e.target.value)} className={inputCls} placeholder="GH₵8,000" /></div>
-                      <div><label className="text-xs text-neutral-500 mb-1 block">Monthly Fee</label><input value={monthlyFee} onChange={e => setMonthlyFee(e.target.value)} className={inputCls} placeholder="GH₵500/mo" /></div>
+                      <div><label className="text-xs text-neutral-500 mb-1 block">Project Cost</label><input value={projectCost} onChange={e => setProjectCost(e.target.value)} className={inputCls} placeholder="GHS 8,000" /></div>
+                      <div><label className="text-xs text-neutral-500 mb-1 block">Monthly Fee</label><input value={monthlyFee} onChange={e => setMonthlyFee(e.target.value)} className={inputCls} placeholder="GHS 500/mo" /></div>
                       <div><label className="text-xs text-neutral-500 mb-1 block">Role Title</label><input value={roleTitle} onChange={e => setRoleTitle(e.target.value)} className={inputCls} placeholder="Growth Associate" /></div>
                       <div><label className="text-xs text-neutral-500 mb-1 block">Commission</label><input value={commissionRate} onChange={e => setCommissionRate(e.target.value)} className={inputCls} placeholder="10%" /></div>
                       <div><label className="text-xs text-neutral-500 mb-1 block">Start Date</label><input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputCls} /></div>
@@ -447,8 +601,8 @@ export default function ContractsSection() {
                     <textarea value={editSections[0]?.body || active.sections[0]?.body || ''}
                       onChange={e => { const next = [{ heading: '', body: e.target.value }]; setEditSections(next) }}
                       onFocus={() => { if (editSections.length === 0) setEditSections(JSON.parse(JSON.stringify(active.sections))) }}
-                      className={inputCls + ' min-h-[300px] font-mono text-xs leading-relaxed'} placeholder="Type your letter on the ICUNI Labs letterhead…" />
-                    <p className="text-[10px] text-neutral-700 mt-1">Free-type anything — it renders on the letterhead. You can still use {'{{RECIPIENT_NAME}}'} etc.</p>
+                      className={inputCls + ' min-h-[300px] font-mono text-xs leading-relaxed'} placeholder="Type your letter on the ICUNI Labs letterhead..." />
+                    <p className="text-[10px] text-neutral-700 mt-1">Free-type anything -- it renders on the letterhead. You can still use {'{{RECIPIENT_NAME}}'} etc.</p>
                   </div>
                 )}
               </>
@@ -457,53 +611,16 @@ export default function ContractsSection() {
 
           {/* Right: live preview (the PDF source) */}
           <div className={`w-full sm:w-[55%] flex-col overflow-y-auto bg-neutral-950/50 p-4 sm:p-6 ${previewMode ? 'flex' : 'hidden sm:flex'}`}>
-            <div ref={previewRef} style={{ background: '#fff', color: '#1a1a2e', padding: '48px 40px', fontFamily: 'Inter, system-ui, sans-serif', fontSize: '12px', lineHeight: 1.6, minHeight: '900px' }}>
-              {/* Letterhead */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', borderBottom: '2px solid #1a1a2e', paddingBottom: '16px' }}>
-                <div>
-                  <div style={{ fontSize: '20px', fontWeight: 800, color: '#1a1a2e', letterSpacing: '-0.02em' }}>ICUNI Labs</div>
-                  <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Custom Business Operations Systems</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#1a1a2e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{active.blank ? '' : active.title}</div>
-                  <div style={{ fontSize: '9px', color: '#64748b', marginTop: '2px' }}>{today}</div>
-                </div>
-              </div>
-
-              {active.blank ? (
-                <div style={{ fontSize: '12px', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.8, minHeight: '520px' }}>
-                  {replaceVars((editing ? editSections[0]?.body : (editSections[0]?.body ?? active.sections[0]?.body)) || '')}
-                </div>
-              ) : (
-                sections.map((sec, i) => (
-                  <div key={i} style={{ marginBottom: '18px' }}>
-                    {sec.heading && (
-                      <div style={{ fontSize: '10px', fontWeight: 800, color: active.color, letterSpacing: '0.1em', marginBottom: '6px', textTransform: 'uppercase' }}>{i + 1}. {replaceVars(sec.heading)}</div>
-                    )}
-                    <div style={{ fontSize: '11px', color: '#334155', whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{replaceVars(sec.body)}</div>
-                  </div>
-                ))
-              )}
-
-              {/* Signatures */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px', paddingTop: '24px', borderTop: '1px solid #e2e8f0' }}>
-                <div style={{ width: '45%' }}>
-                  <div style={{ borderBottom: '1px solid #1a1a2e', height: '40px', marginBottom: '6px' }} />
-                  <div style={{ fontSize: '9px', color: '#64748b' }}>For ICUNI Labs</div>
-                  <div style={{ fontSize: '10px', fontWeight: 600, marginTop: '2px' }}>Menelek Makonnen, Director</div>
-                </div>
-                <div style={{ width: '45%' }}>
-                  <div style={{ borderBottom: '1px solid #1a1a2e', height: '40px', marginBottom: '6px' }} />
-                  <div style={{ fontSize: '9px', color: '#64748b' }}>{RECIPIENT_TYPES.find(r => r.id === recipientType)?.label || 'Recipient'}</div>
-                  <div style={{ fontSize: '10px', fontWeight: 600, marginTop: '2px' }}>{recipientName || '[Name]'}</div>
-                </div>
-              </div>
-
-              {/* Footer */}
-              <div style={{ marginTop: '36px', textAlign: 'center', fontSize: '8px', color: '#94a3b8', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
-                ICUNI Labs &nbsp;|&nbsp; Custom Business Operations Systems &nbsp;|&nbsp; Accra, Ghana &nbsp;|&nbsp; hello@icuni.org &nbsp;|&nbsp; labs.icuni.org
-              </div>
-            </div>
+            <LetterheadPreview
+              previewRef={previewRef}
+              title={active.title}
+              isBlank={!!active.blank}
+              color={active.color}
+              sections={active.blank ? [{ heading: '', body: (editing ? editSections[0]?.body : (editSections[0]?.body ?? active.sections[0]?.body)) || '' }] : sections}
+              recipientType={recipientType}
+              recipientName={recipientName}
+              replaceVars={replaceVars}
+            />
           </div>
         </div>
 
@@ -518,11 +635,11 @@ export default function ContractsSection() {
               <p className="text-xs text-neutral-500 mb-3">Sends the PDF as an attachment and files a copy in {recipientName || 'the recipient'}'s folder.</p>
               <div className="space-y-3">
                 <div><label className="text-xs text-neutral-500 mb-1 block">To</label><input type="email" value={recipientEmail} onChange={e => setRecipientEmail(e.target.value)} className={inputCls} placeholder="name@example.com" /></div>
-                <div><label className="text-xs text-neutral-500 mb-1 block">Personal note <span className="text-neutral-600">(optional)</span></label><textarea value={emailMsg} onChange={e => setEmailMsg(e.target.value)} className={inputCls + ' min-h-[90px]'} placeholder="Hi — as discussed, here's the agreement…" /></div>
+                <div><label className="text-xs text-neutral-500 mb-1 block">Personal note <span className="text-neutral-600">(optional)</span></label><textarea value={emailMsg} onChange={e => setEmailMsg(e.target.value)} className={inputCls + ' min-h-[90px]'} placeholder="Hi -- as discussed, here's the agreement..." /></div>
               </div>
               <div className="flex gap-3 mt-4">
                 <button onClick={() => setShowEmail(false)} className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-neutral-800 text-neutral-300 cursor-pointer hover:bg-neutral-700 transition-all">Cancel</button>
-                <button onClick={sendEmail} disabled={busy === 'email' || !recipientEmail.trim()} className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white cursor-pointer disabled:opacity-40 transition-all flex items-center justify-center gap-1.5"><Send className="w-3.5 h-3.5" /> {busy === 'email' ? 'Sending…' : 'Send PDF'}</button>
+                <button onClick={sendEmail} disabled={busy === 'email' || !recipientEmail.trim()} className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-[#8b5cf6] to-[#7c3aed] text-white cursor-pointer disabled:opacity-40 transition-all flex items-center justify-center gap-1.5"><Send className="w-3.5 h-3.5" /> {busy === 'email' ? 'Sending...' : 'Send PDF'}</button>
               </div>
             </div>
           </div>
@@ -538,7 +655,7 @@ export default function ContractsSection() {
     <div>
       <div className="mb-6">
         <h2 className="text-lg font-bold text-white">Contracts</h2>
-        <p className="text-xs text-neutral-500">ICUNI Labs contract templates — fill in the recipient, then download, email, or file the PDF to their folder.</p>
+        <p className="text-xs text-neutral-500">ICUNI Labs contract templates -- fill in the recipient, then download, email, or file the PDF to their folder.</p>
       </div>
       <div className="space-y-6">
         {byCategory.map(group => (
@@ -562,6 +679,410 @@ export default function ContractsSection() {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// SUBMITTED CONTRACTS VIEW — Staff table of all contracts
+// ═══════════════════════════════════════════════════════════
+
+function SubmittedContractsView() {
+  const { allContracts } = useAdminStore()
+  const [filter, setFilter] = useState<'all' | 'draft' | 'pending' | 'signed'>('all')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [viewContract, setViewContract] = useState<any | null>(null)
+
+  useEffect(() => {
+    adminActions.loadAllContracts()
+  }, [])
+
+  const filtered = allContracts.filter(c => {
+    if (filter === 'all') return true
+    return (c.status || 'draft').toLowerCase() === filter
+  })
+
+  const passthrough = (t: string) => t
+
+  if (viewContract) {
+    const cSections = viewContract.sections || viewContract.contractData?.sections || []
+    const cTitle = viewContract.title || viewContract.contractData?.title || 'Contract'
+    const recipName = viewContract.vars?._recipient?.name || viewContract.contractData?.vars?.recipientName || ''
+    const recipType = viewContract.vars?._recipient?.type || viewContract.contractData?.vars?.recipientType || 'client'
+    return (
+      <div className="-m-3 sm:-m-6 flex flex-col h-[calc(100vh-120px)]">
+        <div className="flex items-center gap-3 px-4 sm:px-6 py-3 bg-neutral-900/50 border-b border-neutral-800">
+          <button onClick={() => setViewContract(null)} className="text-neutral-500 hover:text-white cursor-pointer transition-colors shrink-0">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+          </button>
+          <div className="min-w-0">
+            <h2 className="text-sm font-bold text-white truncate">{cTitle}</h2>
+            <p className="text-[10px] text-neutral-600">Sent to {recipName || 'Unknown'}</p>
+          </div>
+          <div className="ml-auto"><StatusBadge status={viewContract.status || 'draft'} /></div>
+        </div>
+        <div className="flex-1 overflow-y-auto bg-neutral-950/50 p-4 sm:p-6">
+          <LetterheadPreview
+            title={cTitle}
+            isBlank={false}
+            color="#00bfff"
+            sections={cSections}
+            recipientType={recipType}
+            recipientName={recipName}
+            replaceVars={passthrough}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-bold text-white">Submitted Contracts</h2>
+          <p className="text-xs text-neutral-500">{allContracts.length} contracts on record</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <Filter className="w-3.5 h-3.5 text-neutral-600 mr-1" />
+          {(['all', 'draft', 'pending', 'signed'] as const).map(f => (
+            <button key={f} onClick={() => setFilter(f)}
+              className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full cursor-pointer transition-colors ${
+                filter === f ? 'bg-neutral-700 text-white' : 'text-neutral-500 hover:text-neutral-300'
+              }`}
+            >{f}</button>
+          ))}
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-16 text-neutral-600 text-sm">No contracts match this filter.</div>
+      ) : (
+        <div className="space-y-1">
+          {/* Header */}
+          <div className="grid grid-cols-12 gap-2 px-4 py-2 text-[10px] text-neutral-600 font-bold uppercase tracking-wider border-b border-neutral-800">
+            <div className="col-span-3">Title</div>
+            <div className="col-span-3">Recipient</div>
+            <div className="col-span-2">Type</div>
+            <div className="col-span-2">Created</div>
+            <div className="col-span-2">Status</div>
+          </div>
+          {filtered.map((c: any) => {
+            const cId = c.contract_id || c.id || Math.random().toString()
+            const recipientObj = c.vars?._recipient || c.recipient || {}
+            const rName = recipientObj.name || c.contractData?.vars?.recipientName || '--'
+            const rType = recipientObj.type || c.contractData?.vars?.recipientType || '--'
+            const created = c.created_at ? new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '--'
+            const cStatus = (c.status || 'draft').toLowerCase()
+            const isExpanded = expandedId === cId
+            return (
+              <div key={cId}>
+                <div
+                  className="grid grid-cols-12 gap-2 px-4 py-3 rounded-lg hover:bg-neutral-900/50 cursor-pointer transition-colors items-center"
+                  onClick={() => setViewContract(c)}
+                >
+                  <div className="col-span-3 text-sm text-white font-medium truncate">{c.title || c.contractData?.title || 'Contract'}</div>
+                  <div className="col-span-3 text-xs text-neutral-400 truncate">{rName}</div>
+                  <div className="col-span-2 text-xs text-neutral-500 capitalize">{rType}</div>
+                  <div className="col-span-2 text-xs text-neutral-500">{created}</div>
+                  <div className="col-span-2 flex items-center gap-2">
+                    <StatusBadge status={cStatus} />
+                    {cStatus === 'signed' && (
+                      <button
+                        onClick={e => { e.stopPropagation(); setExpandedId(isExpanded ? null : cId) }}
+                        className="text-neutral-600 hover:text-neutral-300 cursor-pointer"
+                      >
+                        {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {isExpanded && cStatus === 'signed' && (
+                  <div className="ml-8 mb-2 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/15 text-xs space-y-1">
+                    <div className="text-neutral-400"><span className="text-neutral-600 font-medium">Signed by:</span> {c.signed_name || '--'}</div>
+                    <div className="text-neutral-400"><span className="text-neutral-600 font-medium">Address:</span> {c.signed_address || '--'}</div>
+                    <div className="text-neutral-400"><span className="text-neutral-600 font-medium">Signed at:</span> {c.signed_at ? new Date(c.signed_at).toLocaleString('en-GB') : '--'}</div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// NON-STAFF VIEW — My Contracts (card-based)
+// ═══════════════════════════════════════════════════════════
+
+function NonStaffView() {
+  const { myContracts } = useAdminStore()
+  const [selectedContract, setSelectedContract] = useState<any | null>(null)
+
+  useEffect(() => {
+    adminActions.loadMyContracts()
+  }, [])
+
+  if (selectedContract) {
+    return (
+      <ContractViewer
+        contract={selectedContract}
+        onBack={() => { setSelectedContract(null); adminActions.loadMyContracts() }}
+      />
+    )
+  }
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-lg font-bold text-white">My Contracts</h2>
+        <p className="text-xs text-neutral-500">Contracts sent to you by ICUNI Labs. Review, sign, and download.</p>
+      </div>
+
+      {myContracts.length === 0 ? (
+        <div className="text-center py-20">
+          <FileText className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
+          <p className="text-sm text-neutral-500">No contracts yet.</p>
+          <p className="text-xs text-neutral-600 mt-1">When ICUNI Labs sends you a contract it will appear here.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {myContracts.map((c: any) => {
+            const cStatus = (c.status || 'pending').toLowerCase()
+            const created = c.created_at ? new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '--'
+            const cTitle = c.title || c.contractData?.title || 'Contract'
+            return (
+              <div
+                key={c.contract_id || c.id || Math.random()}
+                className="p-5 rounded-xl bg-neutral-900/30 border border-neutral-800 hover:border-neutral-700 transition-all"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="min-w-0 flex-1 mr-3">
+                    <h3 className="text-sm font-bold text-white truncate">{cTitle}</h3>
+                    <p className="text-[10px] text-neutral-600 mt-0.5">Received {created}</p>
+                  </div>
+                  <StatusBadge status={cStatus} />
+                </div>
+
+                {cStatus === 'signed' && c.signed_at && (
+                  <p className="text-[10px] text-emerald-500/70 mb-3">
+                    Signed on {new Date(c.signed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-2 mt-auto pt-2">
+                  {cStatus === 'pending' ? (
+                    <button
+                      onClick={() => setSelectedContract(c)}
+                      className="flex-1 py-2 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-[#3b82f6] to-[#2563eb] cursor-pointer transition-all hover:shadow-lg hover:shadow-blue-500/20"
+                    >
+                      View & Sign
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setSelectedContract(c)}
+                        className="flex-1 py-2 rounded-lg text-xs font-bold text-white bg-neutral-800 hover:bg-neutral-700 cursor-pointer transition-all"
+                      >
+                        View
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// CONTRACT VIEWER + SIGNING PANEL
+// ═══════════════════════════════════════════════════════════
+
+function ContractViewer({ contract, onBack }: { contract: any; onBack: () => void }) {
+  const previewRef = useRef<HTMLDivElement>(null)
+  const [busy, setBusy] = useState(false)
+
+  const cSections = contract.sections || contract.contractData?.sections || []
+  const cTitle = contract.title || contract.contractData?.title || 'Contract'
+  const recipName = contract.vars?._recipient?.name || contract.contractData?.vars?.recipientName || ''
+  const recipType = contract.vars?._recipient?.type || contract.contractData?.vars?.recipientType || 'client'
+  const cStatus = (contract.status || 'pending').toLowerCase()
+  const isUnsigned = cStatus !== 'signed'
+
+  const passthrough = (t: string) => t
+
+  const downloadPdf = async () => {
+    if (!previewRef.current) return
+    setBusy(true)
+    try {
+      await new Promise(r => setTimeout(r, 150))
+      const html2canvas = (await import('html2canvas')).default
+      const { jsPDF } = await import('jspdf')
+      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true, backgroundColor: '#fff' })
+      const img = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const pw = pdf.internal.pageSize.getWidth()
+      const ph = pdf.internal.pageSize.getHeight()
+      const iw = pw - 20
+      const ih = iw * (canvas.height / canvas.width)
+      if (ih <= ph - 20) { pdf.addImage(img, 'PNG', 10, 10, iw, ih) }
+      else { let y = 0; while (y < ih) { if (y > 0) pdf.addPage(); pdf.addImage(img, 'PNG', 10, -y + 10, iw, ih); y += ph - 20 } }
+      pdf.save(`${cTitle.replace(/\s+/g, '_')}.pdf`)
+    } catch (e) { console.error(e) }
+    setBusy(false)
+  }
+
+  return (
+    <div>
+      {/* Top bar */}
+      <div className="flex items-center gap-3 mb-4">
+        <button onClick={onBack} className="text-neutral-500 hover:text-white cursor-pointer transition-colors shrink-0">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
+        </button>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-sm font-bold text-white truncate">{cTitle}</h2>
+          <p className="text-[10px] text-neutral-600">Contract for {recipName || 'you'}</p>
+        </div>
+        <StatusBadge status={cStatus} />
+        <button
+          onClick={downloadPdf}
+          disabled={busy}
+          className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-[#ff7a00] to-[#e06800] text-white rounded-lg text-xs font-bold cursor-pointer transition-all disabled:opacity-40"
+        >
+          <Download className="w-3.5 h-3.5" /> {busy ? 'Generating...' : 'Download PDF'}
+        </button>
+      </div>
+
+      {/* Contract preview */}
+      <div className="rounded-xl overflow-hidden border border-neutral-800 bg-neutral-950/50 p-4 sm:p-6 mb-6">
+        <LetterheadPreview
+          previewRef={previewRef}
+          title={cTitle}
+          isBlank={false}
+          color="#00bfff"
+          sections={cSections}
+          recipientType={recipType}
+          recipientName={recipName}
+          replaceVars={passthrough}
+        />
+      </div>
+
+      {/* Signing panel */}
+      {isUnsigned && (
+        <SigningPanel contractId={contract.contract_id || contract.id} />
+      )}
+
+      {/* Signed info */}
+      {!isUnsigned && contract.signed_at && (
+        <div className="rounded-xl p-5 bg-emerald-500/5 border border-emerald-500/20">
+          <p className="text-sm font-bold text-emerald-400 mb-2">Contract Signed</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-neutral-400">
+            <div><span className="text-neutral-600 block text-[10px] font-medium uppercase tracking-wider mb-0.5">Name</span>{contract.signed_name || '--'}</div>
+            <div><span className="text-neutral-600 block text-[10px] font-medium uppercase tracking-wider mb-0.5">Address</span>{contract.signed_address || '--'}</div>
+            <div><span className="text-neutral-600 block text-[10px] font-medium uppercase tracking-wider mb-0.5">Date</span>{new Date(contract.signed_at).toLocaleString('en-GB')}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+
+// ─── Signing Panel ────────────────────────────────────────
+
+function SigningPanel({ contractId }: { contractId: string }) {
+  const [legalName, setLegalName] = useState('')
+  const [address, setAddress] = useState('')
+  const [agreed, setAgreed] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [result, setResult] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+
+  const todayStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  const canSubmit = legalName.trim().length > 0 && address.trim().length > 0 && agreed && !submitting
+
+  const handleSign = async () => {
+    setSubmitting(true); setResult(null)
+    try {
+      const res = await adminActions.signContractAction({ contract_id: contractId, legalName: legalName.trim(), address: address.trim() })
+      if (res) {
+        setResult({ kind: 'ok', text: 'Contract signed successfully. Thank you.' })
+      } else {
+        setResult({ kind: 'err', text: 'Failed to sign the contract. Please try again.' })
+      }
+    } catch (e: any) {
+      setResult({ kind: 'err', text: e?.message || 'An error occurred.' })
+    }
+    setSubmitting(false)
+  }
+
+  if (result?.kind === 'ok') {
+    return (
+      <div className="rounded-xl p-6 bg-emerald-500/5 border border-emerald-500/20 text-center">
+        <div className="text-emerald-400 font-bold text-sm mb-1">Signed Successfully</div>
+        <p className="text-xs text-neutral-400">{result.text}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl p-6 bg-neutral-900/40 border border-neutral-800">
+      <h3 className="text-sm font-bold text-white mb-4">Sign this Contract</h3>
+
+      {result?.kind === 'err' && (
+        <div className="mb-4 px-3 py-2 rounded-lg bg-red-500/10 text-red-400 text-xs font-medium">{result.text}</div>
+      )}
+
+      <div className="space-y-4">
+        <div>
+          <label className="text-xs text-neutral-500 mb-1 block">Legal Full Name <span className="text-red-400">*</span></label>
+          <input
+            value={legalName}
+            onChange={e => setLegalName(e.target.value)}
+            className={inputCls}
+            placeholder="Your full legal name"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-neutral-500 mb-1 block">Full Address <span className="text-red-400">*</span></label>
+          <textarea
+            value={address}
+            onChange={e => setAddress(e.target.value)}
+            className={inputCls + ' min-h-[80px]'}
+            placeholder="Your full postal address"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-neutral-500 mb-1 block">Date</label>
+          <div className="px-3 py-2.5 bg-neutral-900/60 border border-neutral-700 rounded-lg text-white text-sm">{todayStr}</div>
+        </div>
+        <label className="flex items-start gap-3 cursor-pointer group">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={e => setAgreed(e.target.checked)}
+            className="mt-0.5 w-4 h-4 rounded border-neutral-600 bg-neutral-800 text-[#00bfff] focus:ring-[#00bfff] cursor-pointer"
+          />
+          <span className="text-xs text-neutral-400 group-hover:text-neutral-300 transition-colors leading-relaxed">
+            I have read and agree to the terms of this contract.
+          </span>
+        </label>
+        <button
+          onClick={handleSign}
+          disabled={!canSubmit}
+          className="w-full py-3 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-[#22c55e] to-[#16a34a] cursor-pointer transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-emerald-500/20"
+        >
+          {submitting ? 'Signing...' : 'Sign & Submit'}
+        </button>
       </div>
     </div>
   )
