@@ -734,8 +734,9 @@ export const adminActions = {
     setState({ inboxLoading: true })
     try {
       const result = await apiPost('getInbox', { token: state.token, alias: alias || 'all', page: page || 0, query, folder: folder || 'all' })
-      const newAliases = Array.isArray(result?.aliases) && result.aliases.length > 0 ? result.aliases : state.emailAliases
-      setState({ inbox: result?.threads || [], inboxLoading: false, emailAliases: newAliases })
+      // Only update aliases from inbox response if it returns actual alias data — never overwrite with empty
+      const aliasUpdate = Array.isArray(result?.aliases) && result.aliases.length > 0 ? { emailAliases: result.aliases } : {}
+      setState({ inbox: result?.threads || [], inboxLoading: false, ...aliasUpdate })
       return result
     } catch (err: any) {
       setState({ error: err.message, inboxLoading: false })
@@ -768,7 +769,7 @@ export const adminActions = {
     }
   },
 
-  sendBrandedEmail: async (data: { to?: string; subject: string; body: string; fromAlias?: string; recipients?: any[]; useTemplate?: boolean; templateOpts?: any; recipientName?: string }) => {
+  sendBrandedEmail: async (data: { to?: string; subject: string; body: string; fromAlias?: string; recipients?: any[]; useTemplate?: boolean; templateOpts?: any; recipientName?: string; cc?: string; bcc?: string; rawHtml?: string }) => {
     try {
       const result = await apiPost('sendBrandedEmail', { token: state.token, ...data })
       return result

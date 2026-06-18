@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useAdminStore, adminActions } from '../../../store/useAdminStore'
-import { Send, Users, Eye, RefreshCw, X, Edit3, RotateCcw, Calendar, Video, FileText, Milestone } from 'lucide-react'
+import { Send, Users, Eye, RefreshCw, X, Edit3, RotateCcw, Calendar, Video, FileText, Milestone, ChevronDown, Globe, Link as LinkIcon } from 'lucide-react'
 
 const clsSm = "w-full bg-neutral-900/80 border border-neutral-700/50 rounded-lg px-3 py-2 text-xs text-white placeholder:text-neutral-600 focus:border-[#00bfff]/40 focus:ring-1 focus:ring-[#00bfff]/20 focus:outline-none transition-all"
 const lbl = "text-[11px] font-medium text-neutral-500 uppercase tracking-wider mb-1.5 block"
@@ -14,6 +14,8 @@ const TEMPLATE_GROUPS: { key: string; label: string; color: string }[] = [
   { key: 'custom', label: 'Custom', color: '#94a3b8' },
 ]
 
+// Fallback alias when the API hasn't loaded yet
+const DEFAULT_ALIAS = { alias: 'labs@icuni.org', name: 'ICUNI Labs', can_send: true }
 
 interface Props {
   initialTemplateId?: string | null
@@ -23,6 +25,9 @@ interface Props {
 export default function MailCompose({ initialTemplateId, onTemplateConsumed }: Props) {
   const { emailAliases, emailTemplates, clients, referrers, users: teamUsers } = useAdminStore()
   const [to, setTo] = useState('')
+  const [cc, setCc] = useState('')
+  const [bcc, setBcc] = useState('')
+  const [showCcBcc, setShowCcBcc] = useState(false)
   const [from, setFrom] = useState('labs@icuni.org')
   const [tplId, setTplId] = useState('custom')
   const [group, setGroup] = useState<string | null>(null)
@@ -49,9 +54,17 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
   // Interview date options (special array field)
   const [dateOptions, setDateOptions] = useState<{ date: string; time: string }[]>([{ date: '', time: '' }])
 
-  const aliases = useMemo(() =>
-    Array.isArray(emailAliases) ? emailAliases.filter((a: any) => a.can_send) : []
-  , [emailAliases])
+  // Ensure aliases are loaded eagerly
+  useEffect(() => {
+    adminActions.loadEmailAliases()
+  }, [])
+
+  const aliases = useMemo(() => {
+    const loaded = Array.isArray(emailAliases) ? emailAliases.filter((a: any) => a.can_send) : []
+    // Always ensure at least the default alias is available
+    if (loaded.length === 0) return [DEFAULT_ALIAS]
+    return loaded
+  }, [emailAliases])
 
   // Handle initialTemplateId from parent
   useEffect(() => {
@@ -88,6 +101,28 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
     setExtras(prev => ({ ...prev, [key]: value }))
   }
 
+  // ── Auto-BCC: if CC/To contains @icuni.org, auto-BCC login email ──
+  const computeAutoBcc = useCallback((): string => {
+    const allEmails = [to, cc].join(',').split(',').map(e => e.trim()).filter(Boolean)
+    const icuniEmails = allEmails.filter(e => e.endsWith('@icuni.org'))
+    if (icuniEmails.length === 0) return bcc
+
+    // Find login emails for @icuni.org staff
+    const autoBccEmails: string[] = []
+    for (const icuniEmail of icuniEmails) {
+      const staff = (teamUsers || []).find((u: any) => u.email === icuniEmail || u.company_email === icuniEmail)
+      if (staff?.email && staff.email !== icuniEmail && !allEmails.includes(staff.email)) {
+        autoBccEmails.push(staff.email)
+      }
+    }
+
+    if (autoBccEmails.length === 0) return bcc
+    // Merge with existing BCC, avoiding duplicates
+    const existingBcc = bcc.split(',').map(e => e.trim()).filter(Boolean)
+    const merged = [...new Set([...existingBcc, ...autoBccEmails])]
+    return merged.join(', ')
+  }, [to, cc, bcc, teamUsers])
+
   // ── Determine backend route ──
   const getTemplateCategory = () => {
     if (!tplId || tplId === 'custom') return 'custom'
@@ -113,6 +148,21 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
         link: extras.meetLink || '', meetLink: extras.meetLink || '',
         location: extras.location || ''
       }
+    }
+    if (tplId === 'client:demo_link') {
+      return { projectName: extras.projectName || '', demoLink: extras.demoLink || '', notes: extras.notes || '' }
+    }
+    if (tplId === 'client:demo_meeting') {
+      return {
+        date: fmtDate(extras.date), time: fmtTime(extras.time),
+        type: extras.meetingType || 'online',
+        link: extras.meetLink || '', meetLink: extras.meetLink || '',
+        location: extras.location || '',
+        projectName: extras.projectName || ''
+      }
+    }
+    if (tplId === 'client:business_info_premium') {
+      return { note: extras.note || '' }
     }
     return { ...extras }
   }
@@ -200,12 +250,17 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
     const templateKey = tplId.includes(':') ? tplId.split(':')[1] : tplId
     const ex = buildExtras()
 
+    // Compute final BCC with auto-BCC logic
+    const finalBcc = computeAutoBcc()
+
     try {
       let r: any
       if (tplId === 'custom') {
         if (!subject.trim() || !body.trim()) { setSending(false); return }
         r = await adminActions.sendBrandedEmail({
           subject, body, fromAlias: from, recipients, useTemplate: true,
+          cc: cc || undefined,
+          bcc: finalBcc || undefined,
           ...(editedHtml ? { rawHtml: editedHtml } : {})
         })
       } else if (cat === 'applicant') {
@@ -223,11 +278,13 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
         }
         r = { sent, failed }
       } else if (cat === 'referrer') {
-        // Referrer templates — batch send via referrer email handler
+        // Referrer templates - batch send via referrer email handler
         r = await adminActions.sendReferrerEmail?.(templateKey, recipients, ex) || { sent: 0, failed: recipients.length }
       } else {
         r = await adminActions.sendBrandedEmail({
           subject, body, fromAlias: from, recipients, useTemplate: true,
+          cc: cc || undefined,
+          bcc: finalBcc || undefined,
           ...(editedHtml ? { rawHtml: editedHtml } : {})
         })
       }
@@ -306,6 +363,34 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
           {!group && <input value={to} onChange={e => setTo(e.target.value)} className={clsSm} placeholder="email@example.com (comma-separate for multiple)" />}
         </div>
 
+        {/* CC / BCC toggle + fields */}
+        <div>
+          {!showCcBcc && (
+            <button onClick={() => setShowCcBcc(true)} className="text-[11px] text-neutral-500 hover:text-[#00bfff] cursor-pointer flex items-center gap-1 transition-colors">
+              <ChevronDown className="w-3 h-3" /> Add CC / BCC
+            </button>
+          )}
+          {showCcBcc && (
+            <div className="space-y-2 border-t border-neutral-800/50 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-neutral-600 uppercase tracking-wider font-bold">CC / BCC</span>
+                <button onClick={() => { setShowCcBcc(false); setCc(''); setBcc('') }} className="text-neutral-600 hover:text-white cursor-pointer">
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+              <div>
+                <label className={lbl}>CC</label>
+                <input value={cc} onChange={e => setCc(e.target.value)} className={clsSm} placeholder="email@example.com (comma-separate)" />
+              </div>
+              <div>
+                <label className={lbl}>BCC</label>
+                <input value={bcc} onChange={e => setBcc(e.target.value)} className={clsSm} placeholder="email@example.com (comma-separate)" />
+                <p className="text-[9px] text-neutral-600 mt-1">Tip: CC/mailing an @icuni.org address will auto-BCC their personal login email.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* ── Dynamic Fields Per Template ── */}
         {tplId === 'custom' && (
           <div className="space-y-3 border-t border-neutral-800/50 pt-3">
@@ -348,6 +433,56 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
           </div>
         )}
 
+        {/* Demo Link fields */}
+        {tplId === 'client:demo_link' && (
+          <div className="space-y-3 border-t border-neutral-800/50 pt-3">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#00bfff] flex items-center gap-1.5"><LinkIcon className="w-3 h-3" />Demo Details</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={lbl}>Project / Demo Name</label>
+                <input value={extras.projectName || ''} onChange={e => setExtra('projectName', e.target.value)} className={clsSm} placeholder="Inventory Management System" /></div>
+              <div><label className={lbl}>Demo Link</label>
+                <input value={extras.demoLink || ''} onChange={e => setExtra('demoLink', e.target.value)} className={clsSm} placeholder="https://demo.icuni.org/..." /></div>
+            </div>
+            <div><label className={lbl}>Notes (optional)</label>
+              <textarea value={extras.notes || ''} onChange={e => setExtra('notes', e.target.value)} className={`${clsSm} !min-h-[60px] resize-none`} placeholder="Things to look out for, login credentials, etc." /></div>
+          </div>
+        )}
+
+        {/* Demo Meeting Confirmation fields */}
+        {tplId === 'client:demo_meeting' && (
+          <div className="space-y-3 border-t border-neutral-800/50 pt-3">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400 flex items-center gap-1.5"><Video className="w-3 h-3" />Demo Session Details</div>
+            <div><label className={lbl}>Project / Demo Name</label>
+              <input value={extras.projectName || ''} onChange={e => setExtra('projectName', e.target.value)} className={clsSm} placeholder="Inventory Management System" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={lbl}>Date</label>
+                <input type="date" value={extras.date || ''} onChange={e => setExtra('date', e.target.value)} className={clsSm} /></div>
+              <div><label className={lbl}>Time</label>
+                <input type="time" value={extras.time || ''} onChange={e => setExtra('time', e.target.value)} className={clsSm} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={lbl}>Type</label>
+                <select value={extras.meetingType || 'online'} onChange={e => setExtra('meetingType', e.target.value)} className={clsSm}>
+                  <option value="online">Online (Google Meet)</option>
+                  <option value="in_person">In-Person</option>
+                </select></div>
+              <div><label className={lbl}>{extras.meetingType === 'in_person' ? 'Location' : 'Google Meet Link'}</label>
+                <input value={extras.meetingType === 'in_person' ? (extras.location || '') : (extras.meetLink || '')}
+                  onChange={e => setExtra(extras.meetingType === 'in_person' ? 'location' : 'meetLink', e.target.value)}
+                  className={clsSm} placeholder={extras.meetingType === 'in_person' ? 'Office address...' : 'https://meet.google.com/...'} /></div>
+            </div>
+          </div>
+        )}
+
+        {/* Business Info Premium fields */}
+        {tplId === 'client:business_info_premium' && (
+          <div className="space-y-3 border-t border-neutral-800/50 pt-3">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-amber-400 flex items-center gap-1.5"><Globe className="w-3 h-3" />Business Info</div>
+            <div><label className={lbl}>Personal Note (optional)</label>
+              <textarea value={extras.note || ''} onChange={e => setExtra('note', e.target.value)} className={`${clsSm} !min-h-[80px] resize-none`} placeholder={"Add a personal note to the top of the email...\ne.g. It was great speaking with you today. As promised, here's everything about ICUNI Labs."} /></div>
+          </div>
+        )}
+
         {/* Project Kickoff */}
         {tplId === 'client:project_kickoff' && (
           <div className="space-y-3 border-t border-neutral-800/50 pt-3">
@@ -356,7 +491,7 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
               <div><label className={lbl}>Project Name</label>
                 <input value={extras.projectName || ''} onChange={e => setExtra('projectName', e.target.value)} className={clsSm} placeholder="My App" /></div>
               <div><label className={lbl}>Est. Timeline</label>
-                <input value={extras.timeline || ''} onChange={e => setExtra('timeline', e.target.value)} className={clsSm} placeholder="4–6 weeks" /></div>
+                <input value={extras.timeline || ''} onChange={e => setExtra('timeline', e.target.value)} className={clsSm} placeholder="4-6 weeks" /></div>
             </div>
           </div>
         )}
@@ -368,7 +503,7 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
             <div className="grid grid-cols-2 gap-3">
               <div><label className={lbl}>Milestone Name</label>
                 <input value={extras.milestone || ''} onChange={e => setExtra('milestone', e.target.value)} className={clsSm} placeholder="UI Design Complete" /></div>
-              <div><label className={lbl}>Step (1–10)</label>
+              <div><label className={lbl}>Step (1-10)</label>
                 <input type="number" min="1" max="10" value={extras.step || '5'} onChange={e => setExtra('step', e.target.value)} className={clsSm} /></div>
             </div>
             <div><label className={lbl}>Details (optional)</label>
@@ -383,7 +518,7 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
             <div className="grid grid-cols-3 gap-3">
               <div><label className={lbl}>Invoice No.</label>
                 <input value={extras.invoiceId || ''} onChange={e => setExtra('invoiceId', e.target.value)} className={clsSm} placeholder="INV-001" /></div>
-              <div><label className={lbl}>Amount (GH₵)</label>
+              <div><label className={lbl}>Amount (GH&#8373;)</label>
                 <input value={extras.amount || ''} onChange={e => setExtra('amount', e.target.value)} className={clsSm} placeholder="5,000" /></div>
               <div><label className={lbl}>Due Date</label>
                 <input type="date" value={extras.dueDate || ''} onChange={e => setExtra('dueDate', e.target.value)} className={clsSm} /></div>
@@ -429,14 +564,10 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
               <input type="date" value={extras.meetingDate || ''} onChange={e => setExtra('meetingDate', fmtDate(e.target.value))} className={clsSm} /></div>
             <div><label className={lbl}>Discussion Summary</label>
               <textarea value={extras.summary || ''} onChange={e => setExtra('summary', e.target.value)}
-                className={`${clsSm} !min-h-[100px]`} placeholder="Briefly summarise what was discussed in the meeting...
-e.g. We discussed the mobile app redesign, timeline expectations, and integration requirements." /></div>
+                className={`${clsSm} !min-h-[100px]`} placeholder={"Briefly summarise what was discussed in the meeting...\ne.g. We discussed the mobile app redesign, timeline expectations, and integration requirements."} /></div>
             <div><label className={lbl}>Next Steps</label>
               <textarea value={extras.nextSteps || ''} onChange={e => setExtra('nextSteps', e.target.value)}
-                className={`${clsSm} !min-h-[80px]`} placeholder="What happens next?
-e.g. 1. We'll send a detailed proposal by Friday
-2. Design mockups will be ready within 2 weeks
-3. Follow-up call scheduled for next Tuesday" /></div>
+                className={`${clsSm} !min-h-[80px]`} placeholder={"What happens next?\ne.g. 1. We'll send a detailed proposal by Friday\n2. Design mockups will be ready within 2 weeks\n3. Follow-up call scheduled for next Tuesday"} /></div>
           </div>
         )}
 
@@ -456,7 +587,7 @@ e.g. 1. We'll send a detailed proposal by Friday
         {tplId === 'referrer:payment_sent' && (
           <div className="space-y-3 border-t border-neutral-800/50 pt-3">
             <div className="grid grid-cols-2 gap-3">
-              <div><label className={lbl}>Amount (GH₵)</label>
+              <div><label className={lbl}>Amount (GH&#8373;)</label>
                 <input value={extras.amount || ''} onChange={e => setExtra('amount', e.target.value)} className={clsSm} placeholder="1,000" /></div>
               <div><label className={lbl}>Payment Method</label>
                 <input value={extras.method || ''} onChange={e => setExtra('method', e.target.value)} className={clsSm} placeholder="Mobile Money" /></div>
@@ -523,7 +654,7 @@ e.g. 1. We'll send a detailed proposal by Friday
         {/* Trial Invitation */}
         {tplId === 'applicant:trial_invitation' && (
           <div className="space-y-3 border-t border-neutral-800/50 pt-3">
-            <div><label className={lbl}>Weekly Rate (GH₵)</label>
+            <div><label className={lbl}>Weekly Rate (GH&#8373;)</label>
               <input value={extras.weeklyRate || '700'} onChange={e => setExtra('weeklyRate', e.target.value)} className={clsSm} placeholder="700" /></div>
           </div>
         )}
