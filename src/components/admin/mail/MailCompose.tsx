@@ -202,6 +202,9 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
     if (tplId === 'client:post_meeting_thankyou') {
       return { meetingDate: extras.meetingDate || '', summary: extras.summary || '', nextSteps: extras.nextSteps || '' }
     }
+    if (tplId === 'client:prospect_demo_site') {
+      return { demoLink: extras.demoLink || '', note: extras.note || '' }
+    }
     return { ...extras }
   }
 
@@ -710,6 +713,17 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
             <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 flex items-center gap-1.5"><Globe className="w-3 h-3" />Thank You + Company Info</div>
             <div><label className={lbl}>Personal Note (optional)</label>
               <textarea value={extras.note || ''} onChange={e => setExtra('note', e.target.value)} className={`${clsSm} !min-h-[80px] resize-none`} placeholder={"Add a personal note...\ne.g. It was great speaking with you today. As promised, here's more about ICUNI Labs and what we can do for your business."} /></div>
+          </div>
+        )}
+
+        {/* Prospect: Thank You + Demo Site Link */}
+        {tplId === 'client:prospect_demo_site' && (
+          <div className="space-y-3 border-t border-neutral-800/50 pt-3">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#00bfff] flex items-center gap-1.5"><Globe className="w-3 h-3" />Demo Site Link</div>
+            <div><label className={lbl}>Demo Site URL</label>
+              <input value={extras.demoLink || ''} onChange={e => setExtra('demoLink', e.target.value)} className={clsSm} placeholder="https://demo.example.com" /></div>
+            <div><label className={lbl}>Personal Note (optional)</label>
+              <textarea value={extras.note || ''} onChange={e => setExtra('note', e.target.value)} className={`${clsSm} !min-h-[80px] resize-none`} placeholder={"Add a personal note...\ne.g. It was great walking you through the system today."} /></div>
           </div>
         )}
 
