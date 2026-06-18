@@ -333,7 +333,7 @@ interface ContractsSectionProps {
 }
 
 export default function ContractsSection({ initialView }: ContractsSectionProps) {
-  const { user, myContracts, allContracts } = useAdminStore()
+  const { user } = useAdminStore()
   const isStaff = ['Godmode', 'SuperAdmin', 'Admin', 'Sales', 'Product'].includes(user?.role || '')
 
   if (isStaff) return <StaffView initialView={initialView} />
