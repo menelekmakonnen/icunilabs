@@ -7,6 +7,7 @@ const lbl = "text-[11px] font-medium text-neutral-500 uppercase tracking-wider m
 
 // ── Template groups for the card selector ────────────────────
 const TEMPLATE_GROUPS: { key: string; label: string; color: string }[] = [
+  { key: 'prospect', label: 'Prospect', color: '#ff7a00' },
   { key: 'client', label: 'Client', color: '#10b981' },
   { key: 'referrer', label: 'Referrer', color: '#ff7a00' },
   { key: 'careers', label: 'Careers', color: '#8b5cf6' },
@@ -175,8 +176,31 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
         projectName: extras.projectName || ''
       }
     }
-    if (tplId === 'client:business_info_premium') {
+    if (tplId === 'client:business_info_premium' || tplId === 'client:prospect_thankyou_info') {
       return { note: extras.note || '' }
+    }
+    if (tplId === 'client:prospect_demo_general') {
+      return {
+        date: fmtDate(extras.date), time: fmtTime(extras.time),
+        type: extras.meetingType || 'online',
+        meetLink: extras.meetLink || '',
+        location: extras.location || ''
+      }
+    }
+    if (tplId === 'client:prospect_custom_demo') {
+      return {
+        date: fmtDate(extras.date), time: fmtTime(extras.time),
+        type: extras.meetingType || 'online',
+        meetLink: extras.meetLink || '',
+        location: extras.location || '',
+        projectName: extras.projectName || ''
+      }
+    }
+    if (tplId === 'client:prospect_thankyou_demos') {
+      return { meetingDate: extras.meetingDate || '', summary: extras.summary || '' }
+    }
+    if (tplId === 'client:post_meeting_thankyou') {
+      return { meetingDate: extras.meetingDate || '', summary: extras.summary || '', nextSteps: extras.nextSteps || '' }
     }
     return { ...extras }
   }
@@ -196,6 +220,9 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
       } else if (cat === 'applicant') {
         r = await adminActions.previewApplicantEmail(templateKey, name, ex)
       } else if (cat === 'client') {
+        r = await adminActions.previewClientEmail(templateKey, name, ex)
+      } else if (cat === 'prospect') {
+        // Prospect templates use the client builder backend
         r = await adminActions.previewClientEmail(templateKey, name, ex)
       } else if (cat === 'referrer') {
         r = await adminActions.previewReferrerEmail?.(templateKey, name, ex)
@@ -283,6 +310,16 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
         r = await adminActions.sendApplicantEmail(templateKey, recipients, ex, editedHtml || undefined, editedSubject)
       } else if (cat === 'client') {
         // Client templates - send individually to each recipient
+        let sent = 0, failed = 0
+        for (const rec of recipients) {
+          try {
+            await adminActions.sendClientEmail(templateKey, rec.email, rec.name || recipientName, ex, editedHtml || undefined)
+            sent++
+          } catch { failed++ }
+        }
+        r = { sent, failed }
+      } else if (cat === 'prospect') {
+        // Prospect templates use the client email builder
         let sent = 0, failed = 0
         for (const rec of recipients) {
           try {
@@ -604,6 +641,75 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
             <div><label className={lbl}>Next Steps</label>
               <textarea value={extras.nextSteps || ''} onChange={e => setExtra('nextSteps', e.target.value)}
                 className={`${clsSm} !min-h-[80px]`} placeholder={"What happens next?\ne.g. 1. We'll send a detailed proposal by Friday\n2. Design mockups will be ready within 2 weeks\n3. Follow-up call scheduled for next Tuesday"} /></div>
+          </div>
+        )}
+
+        {/* ── PROSPECT TEMPLATES ── */}
+
+        {/* Prospect: General Demo Meeting */}
+        {tplId === 'client:prospect_demo_general' && (
+          <div className="space-y-3 border-t border-neutral-800/50 pt-3">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#ff7a00] flex items-center gap-1.5"><Calendar className="w-3 h-3" />General Demo Meeting</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={lbl}>Date</label>
+                <input type="date" value={extras.date || ''} onChange={e => setExtra('date', e.target.value)} className={clsSm} /></div>
+              <div><label className={lbl}>Time</label>
+                <input type="time" value={extras.time || ''} onChange={e => setExtra('time', e.target.value)} className={clsSm} /></div>
+              <div><label className={lbl}>Format</label>
+                <select value={extras.meetingType || 'online'} onChange={e => setExtra('meetingType', e.target.value)} className={clsSm}>
+                  <option value="online">Online</option>
+                  <option value="in_person">In-Person</option>
+                </select></div>
+              <div><label className={lbl}>{extras.meetingType === 'in_person' ? 'Location' : 'Google Meet Link'}</label>
+                <input value={extras.meetingType === 'in_person' ? (extras.location || '') : (extras.meetLink || '')}
+                  onChange={e => setExtra(extras.meetingType === 'in_person' ? 'location' : 'meetLink', e.target.value)}
+                  className={clsSm} placeholder={extras.meetingType === 'in_person' ? 'Office address...' : 'https://meet.google.com/...'} /></div>
+            </div>
+          </div>
+        )}
+
+        {/* Prospect: Custom Demo Meeting */}
+        {tplId === 'client:prospect_custom_demo' && (
+          <div className="space-y-3 border-t border-neutral-800/50 pt-3">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#00bfff] flex items-center gap-1.5"><Calendar className="w-3 h-3" />Custom Demo Meeting</div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={lbl}>Date</label>
+                <input type="date" value={extras.date || ''} onChange={e => setExtra('date', e.target.value)} className={clsSm} /></div>
+              <div><label className={lbl}>Time</label>
+                <input type="time" value={extras.time || ''} onChange={e => setExtra('time', e.target.value)} className={clsSm} /></div>
+              <div><label className={lbl}>Project Name</label>
+                <input value={extras.projectName || ''} onChange={e => setExtra('projectName', e.target.value)} className={clsSm} placeholder="Their CRM / Portal / etc." /></div>
+              <div><label className={lbl}>Format</label>
+                <select value={extras.meetingType || 'online'} onChange={e => setExtra('meetingType', e.target.value)} className={clsSm}>
+                  <option value="online">Online</option>
+                  <option value="in_person">In-Person</option>
+                </select></div>
+              <div className="col-span-2"><label className={lbl}>{extras.meetingType === 'in_person' ? 'Location' : 'Google Meet Link'}</label>
+                <input value={extras.meetingType === 'in_person' ? (extras.location || '') : (extras.meetLink || '')}
+                  onChange={e => setExtra(extras.meetingType === 'in_person' ? 'location' : 'meetLink', e.target.value)}
+                  className={clsSm} placeholder={extras.meetingType === 'in_person' ? 'Office address...' : 'https://meet.google.com/...'} /></div>
+            </div>
+          </div>
+        )}
+
+        {/* Prospect: Thank You + Demo Links */}
+        {tplId === 'client:prospect_thankyou_demos' && (
+          <div className="space-y-3 border-t border-neutral-800/50 pt-3">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400 flex items-center gap-1.5">Thank You + Demos</div>
+            <div><label className={lbl}>Meeting Date (for greeting)</label>
+              <input type="date" value={extras.meetingDate || ''} onChange={e => setExtra('meetingDate', fmtDate(e.target.value))} className={clsSm} /></div>
+            <div><label className={lbl}>Discussion Summary (optional)</label>
+              <textarea value={extras.summary || ''} onChange={e => setExtra('summary', e.target.value)}
+                className={`${clsSm} !min-h-[80px]`} placeholder={"Briefly summarise the meeting...\nThe email will include links to our demo gallery and portfolio."} /></div>
+          </div>
+        )}
+
+        {/* Prospect: Thank You + About Us */}
+        {tplId === 'client:prospect_thankyou_info' && (
+          <div className="space-y-3 border-t border-neutral-800/50 pt-3">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 flex items-center gap-1.5"><Globe className="w-3 h-3" />Thank You + Company Info</div>
+            <div><label className={lbl}>Personal Note (optional)</label>
+              <textarea value={extras.note || ''} onChange={e => setExtra('note', e.target.value)} className={`${clsSm} !min-h-[80px] resize-none`} placeholder={"Add a personal note...\ne.g. It was great speaking with you today. As promised, here's more about ICUNI Labs and what we can do for your business."} /></div>
           </div>
         )}
 
