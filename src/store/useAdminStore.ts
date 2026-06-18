@@ -1157,6 +1157,19 @@ export const adminActions = {
     }
   },
 
+  // Email a generated contract PDF to a recipient + archive to their folder
+  sendContract: async (data: Record<string, any>): Promise<any> => {
+    setState({ loading: true, error: null })
+    try {
+      const result = await apiPost('sendContract', { token: state.token, ...data })
+      setState({ loading: false })
+      return result || { email_sent: true }
+    } catch (err: any) {
+      setState({ error: err.message, loading: false })
+      return null
+    }
+  },
+
   snoozeSla: async (projectId: string, minutes: number) => {
     setState({ loading: true, error: null })
     try {

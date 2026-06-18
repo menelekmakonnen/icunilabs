@@ -766,7 +766,7 @@ export default function CallSection() {
                           </span>
                           {log.call_type && (
                             <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${log.call_type === 'conversation' ? 'bg-[#8b5cf6]/15 text-[#8b5cf6]' : 'bg-neutral-700/50 text-neutral-500'}`}>
-                              {log.call_type === 'conversation' ? '💬 Conversation' : '📞 Attempt'}
+                              {log.call_type === 'conversation' ? 'Conversation' : 'Attempt'}
                             </span>
                           )}
                           <span className="text-neutral-400 font-mono hidden sm:block">{fmtDuration(Number(log.duration_seconds || 0))}</span>
@@ -1005,7 +1005,7 @@ export default function CallSection() {
                     <div className="flex items-center gap-2">
                       {log.call_type && (
                         <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${log.call_type === 'conversation' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-neutral-800 text-neutral-400 border border-neutral-700'}`}>
-                          {log.call_type === 'conversation' ? '💬 Conversation' : '📞 Attempt'}
+                          {log.call_type === 'conversation' ? 'Conversation' : 'Attempt'}
                         </span>
                       )}
                       <span className="text-[10px] text-neutral-600">by {resolveStaffName(log.caller_email || '')}</span>

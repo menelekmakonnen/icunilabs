@@ -1,9 +1,10 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { resolveStaffName } from '../../utils/resolveStaffName'
 import { useAdminStore, adminActions, useEffectiveUser } from '../../store/useAdminStore'
-import { Calendar, Clock, MapPin, Video, Users, Plus, X, Send, Check, ChevronRight, Trash2, FileText, ArrowLeft, Mail, RotateCcw, Ban } from 'lucide-react'
+import { Calendar, Clock, MapPin, Video, Users, Plus, X, Send, Check, ChevronRight, ChevronLeft, Trash2, FileText, ArrowLeft, Mail, RotateCcw, Ban, Phone, ExternalLink } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './meetings.css'
+import MeetingDatePrompt from './MeetingDatePrompt'
 
 const inputCls = 'w-full px-3 py-2.5 bg-neutral-900/80 border border-neutral-700 rounded-lg text-white placeholder-neutral-500 focus:outline-none focus:border-[#00bfff] text-sm'
 const modalBg = 'fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4'
@@ -20,6 +21,17 @@ const STAGES = [
 
 const FOUNDER_EMAIL = 'menelek@icuni.org'
 const FOUNDER_NAME = 'Menelek Makonnen'
+
+const OUTCOME_COLORS: Record<string, string> = {
+  meeting_booked: '#22c55e', callback_scheduled: '#00bfff',
+  interested_will_revert: '#8b5cf6', no_interest: '#6b7280',
+  needs_follow_up: '#f59e0b', voicemail: '#64748b', wrong_number: '#ef4444',
+}
+const OUTCOME_LABELS: Record<string, string> = {
+  meeting_booked: 'Meeting', callback_scheduled: 'Callback',
+  interested_will_revert: 'Interested', no_interest: 'No Interest',
+  needs_follow_up: 'Follow-Up', voicemail: 'Voicemail', wrong_number: 'Wrong #',
+}
 
 function fmtDate(d: string) {
   if (!d) return '—'
@@ -75,10 +87,10 @@ function getColor(name: string) { let h = 0; for (let i = 0; i < (name||'').leng
 export default function MeetingsSection() {
   const { meetings, clients, users, callLogs } = useAdminStore()
   const effectiveUser = useEffectiveUser()
-  const [activeTab, setActiveTab] = useState<'pipeline' | 'calendar'>('pipeline')
   const [activeMeeting, setActiveMeeting] = useState<any>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [activeTab, setActiveTab] = useState<'pipeline' | 'calendar'>('pipeline')
 
   // Sort preference (persisted)
   type SortKey = 'default' | 'meeting_date' | 'date_called' | 'company' | 'contact'
@@ -265,17 +277,34 @@ export default function MeetingsSection() {
     <div>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-white">Meetings</h2>
-          <div className="flex items-center gap-1 mt-2">
-            <button onClick={() => setActiveTab('pipeline')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-                activeTab === 'pipeline' ? 'bg-[#00bfff]/10 text-[#00bfff] border border-[#00bfff]/20' : 'text-neutral-500 hover:text-white border border-transparent'
-              }`}>Pipeline</button>
-            <button onClick={() => setActiveTab('calendar')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
-                activeTab === 'calendar' ? 'bg-[#8b5cf6]/10 text-[#8b5cf6] border border-[#8b5cf6]/20' : 'text-neutral-500 hover:text-white border border-transparent'
-              }`}>Calendar Sync</button>
+        <div className="flex items-center gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-white">Meetings</h2>
+            <p className="text-[11px] text-neutral-500 mt-1">
+              {activeTab === 'pipeline' ? 'Pipeline view — switch to Calendar for the month view.' : 'Calendar view — switch to Pipeline for the Kanban board.'}
+            </p>
+          </div>
+          <div className="flex items-center bg-neutral-900/60 border border-neutral-800 rounded-lg p-0.5">
+            <button
+              onClick={() => setActiveTab('pipeline')}
+              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                activeTab === 'pipeline'
+                  ? 'bg-[#00bfff]/15 text-[#00bfff] shadow-sm'
+                  : 'text-neutral-500 hover:text-white'
+              }`}
+            >
+              Pipeline
+            </button>
+            <button
+              onClick={() => setActiveTab('calendar')}
+              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                activeTab === 'calendar'
+                  ? 'bg-[#00bfff]/15 text-[#00bfff] shadow-sm'
+                  : 'text-neutral-500 hover:text-white'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" /> Calendar
+            </button>
           </div>
         </div>
         {activeTab === 'pipeline' && (
@@ -294,133 +323,99 @@ export default function MeetingsSection() {
         )}
       </div>
 
-      {/* ═══ PIPELINE TAB ═══ */}
+      <MeetingDatePrompt />
+
       {activeTab === 'pipeline' && (
         <>
-      {/* Kanban Board */}
-      <div className="mtg-board">
-        {STAGES.map(stage => (
-          <div key={stage.id} className="mtg-column">
-            <div className="mtg-col-header">
-              <div className="flex items-center">
-                <div className="mtg-col-header__dot" style={{ background: stage.color }} />
-                <span className="mtg-col-header__label">{stage.label}</span>
-              </div>
-              <span className="mtg-col-header__count">{grouped[stage.id]?.length || 0}</span>
-            </div>
-            <div className="mtg-col-body">
-              <AnimatePresence>
-                {(grouped[stage.id] || []).map((m: any) => {
-                  const mClient = clientMap[m.client_id]
-                  const mEmail = m.client_email || mClient?.email || mClient?.contact_email || ''
-                  return (
-                  <motion.div key={m.meeting_id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
-                    className="mtg-card" onClick={() => setActiveMeeting(m)}>
-                    {m.attendance && m.attendance !== 'pending' && <div className={`mtg-card__attendance mtg-card__attendance--${m.attendance}`} />}
-                    {m._inferred && <div className="text-[8px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded mb-1.5 w-fit uppercase tracking-wider">From Call</div>}
-                    <div className="mtg-card__client">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
-                        style={{ background: `${getColor(m.client_name || '')}20`, color: getColor(m.client_name || '') }}>
-                        {getInitials(m.client_name || '').charAt(0)}
-                      </div>
-                      {m.client_name || 'Unknown'}
-                    </div>
-                    {m.client_company && <div className="mtg-card__company">{m.client_company}</div>}
-                    {mEmail && (
-                      <div className="mtg-card__row" style={{ color: '#8b5cf6' }}>
-                        <Mail className="w-3 h-3" /> <span className="truncate text-[10px]">{mEmail}</span>
-                      </div>
-                    )}
-                    <div className="mtg-card__row">
-                      <Calendar /> {m.date ? fmtDate(m.date) : <span className="text-neutral-600 italic">TBD</span>}
-                    </div>
-                    <div className="mtg-card__row">
-                      <Clock /> {m.time ? fmtTime(m.time) : <span className="text-neutral-600 italic">TBD</span>}
-                    </div>
-                    <div className="mt-2">
-                      <span className={`mtg-card__type mtg-card__type--${m.type}`}>
-                        {m.type === 'online' ? <><Video className="w-3 h-3" /> Online</> : <><MapPin className="w-3 h-3" /> In-Person</>}
-                      </span>
-                    </div>
-                    <div className="mtg-card__booker">
-                      Booked by {resolveStaffName(m.booked_by || '')}
-                    </div>
-                  </motion.div>
-                  )
-                })}
-              </AnimatePresence>
-              {(!grouped[stage.id] || grouped[stage.id].length === 0) && (
-                <div className="mtg-empty">
-                  <Calendar />
-                  <span>No meetings</span>
+          {/* ═══ PIPELINE ═══ */}
+          {/* Kanban Board */}
+          <div className="mtg-board">
+            {STAGES.map(stage => (
+              <div key={stage.id} className="mtg-column">
+                <div className="mtg-col-header">
+                  <div className="flex items-center">
+                    <div className="mtg-col-header__dot" style={{ background: stage.color }} />
+                    <span className="mtg-col-header__label">{stage.label}</span>
+                  </div>
+                  <span className="mtg-col-header__count">{grouped[stage.id]?.length || 0}</span>
                 </div>
-              )}
-            </div>
+                <div className="mtg-col-body">
+                  <AnimatePresence>
+                    {(grouped[stage.id] || []).map((m: any) => {
+                      const mClient = clientMap[m.client_id]
+                      const mEmail = m.client_email || mClient?.email || mClient?.contact_email || ''
+                      return (
+                      <motion.div key={m.meeting_id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
+                        className="mtg-card" onClick={() => setActiveMeeting(m)}>
+                        {m.attendance && m.attendance !== 'pending' && <div className={`mtg-card__attendance mtg-card__attendance--${m.attendance}`} />}
+                        {m._inferred && <div className="text-[8px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded mb-1.5 w-fit uppercase tracking-wider">From Call</div>}
+                        <div className="mtg-card__client">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
+                            style={{ background: `${getColor(m.client_name || '')}20`, color: getColor(m.client_name || '') }}>
+                            {getInitials(m.client_name || '').charAt(0)}
+                          </div>
+                          {m.client_name || 'Unknown'}
+                        </div>
+                        {m.client_company && <div className="mtg-card__company">{m.client_company}</div>}
+                        {mEmail && (
+                          <div className="mtg-card__row" style={{ color: '#8b5cf6' }}>
+                            <Mail className="w-3 h-3" /> <span className="truncate text-[10px]">{mEmail}</span>
+                          </div>
+                        )}
+                        <div className="mtg-card__row">
+                          <Calendar /> {m.date ? fmtDate(m.date) : <span className="text-neutral-600 italic">TBD</span>}
+                        </div>
+                        <div className="mtg-card__row">
+                          <Clock /> {m.time ? fmtTime(m.time) : <span className="text-neutral-600 italic">TBD</span>}
+                        </div>
+                        <div className="mt-2">
+                          <span className={`mtg-card__type mtg-card__type--${m.type}`}>
+                            {m.type === 'online' ? <><Video className="w-3 h-3" /> Online</> : <><MapPin className="w-3 h-3" /> In-Person</>}
+                          </span>
+                        </div>
+                        <div className="mtg-card__booker">
+                          Booked by {resolveStaffName(m.booked_by || '')}
+                        </div>
+                      </motion.div>
+                      )
+                    })}
+                  </AnimatePresence>
+                  {(!grouped[stage.id] || grouped[stage.id].length === 0) && (
+                    <div className="mtg-empty">
+                      <Calendar />
+                      <span>No meetings</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* Detail Drawer */}
-      <AnimatePresence>
-        {activeMeeting && (
-          <MeetingDrawer meeting={activeMeeting} onClose={() => setActiveMeeting(null)} users={users} effectiveUser={effectiveUser} clientMap={clientMap} />
-        )}
-      </AnimatePresence>
+          {/* Detail Drawer */}
+          <AnimatePresence>
+            {activeMeeting && (
+              <MeetingDrawer meeting={activeMeeting} onClose={() => setActiveMeeting(null)} users={users} effectiveUser={effectiveUser} clientMap={clientMap} />
+            )}
+          </AnimatePresence>
         </>
       )}
 
-      {/* ═══ CALENDAR SYNC TAB ═══ */}
       {activeTab === 'calendar' && (
-        <div className="space-y-4">
-          <div className="p-6 rounded-2xl bg-neutral-950 border border-neutral-800">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-[#8b5cf6]" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white">Google Calendar Integration</h3>
-                <p className="text-[10px] text-neutral-500">Sync confirmed meetings with the ICUNI Labs team calendar</p>
-              </div>
-            </div>
+        <CalendarView
+          callLogs={callLogs}
+          allMeetings={allMeetings}
+          clientMap={clientMap}
+          setActiveMeeting={setActiveMeeting}
+        />
+      )}
 
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
-                <span className="text-xs text-neutral-300 flex-1">Connected to ICUNI Labs shared calendar</span>
-                <span className="text-[10px] text-emerald-400 font-bold">Active</span>
-              </div>
-
-              <div className="p-4 rounded-xl bg-[#00bfff]/5 border border-[#00bfff]/10">
-                <p className="text-xs text-[#00bfff] font-bold mb-2">How it works</p>
-                <ul className="space-y-2">
-                  <li className="text-xs text-neutral-400 flex items-start gap-2">
-                    <span className="text-[#00bfff] font-bold mt-0.5">1.</span>
-                    When a salesperson books a meeting on a call, it's added to the <strong className="text-white">ICUNI Labs calendar only</strong>.
-                  </li>
-                  <li className="text-xs text-neutral-400 flex items-start gap-2">
-                    <span className="text-[#00bfff] font-bold mt-0.5">2.</span>
-                    When the meeting moves to <strong className="text-white">Confirmed</strong>, an invite is sent to <strong className="text-white">both parties</strong>.
-                  </li>
-                  <li className="text-xs text-neutral-400 flex items-start gap-2">
-                    <span className="text-[#00bfff] font-bold mt-0.5">3.</span>
-                    For online meetings, a <strong className="text-white">Google Meet link</strong> is auto-created and sent to everyone.
-                  </li>
-                </ul>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
-                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">In-Person Slots</p>
-                  <p className="text-xs text-white font-bold">11:30 AM — 5:00 PM</p>
-                </div>
-                <div className="p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
-                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-1">Online Slots</p>
-                  <p className="text-xs text-white font-bold">11:00 AM — 3:30 PM</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Detail Drawer (for calendar tab too) */}
+      {activeTab === 'calendar' && (
+        <AnimatePresence>
+          {activeMeeting && (
+            <MeetingDrawer meeting={activeMeeting} onClose={() => setActiveMeeting(null)} users={users} effectiveUser={effectiveUser} clientMap={clientMap} />
+          )}
+        </AnimatePresence>
       )}
 
       {/* Create Meeting Modal */}
@@ -509,6 +504,524 @@ export default function MeetingsSection() {
 }
 
 // ════════════════════════════════════════════════════════
+// CALENDAR VIEW
+// ════════════════════════════════════════════════════════
+
+const CALENDAR_OUTCOMES = ['callback_scheduled', 'needs_follow_up', 'meeting_booked'] as const
+
+const DEFER_PRESETS = [
+  { label: 'Tomorrow', days: 1 },
+  { label: '3 days', days: 3 },
+  { label: 'Next week', days: 7 },
+  { label: '2 weeks', days: 14 },
+] as const
+
+function toDateKey(d: string | Date): string {
+  if (!d) return ''
+  try {
+    if (typeof d === 'string') {
+      // Handle "YYYY-MM-DD at HH:MM" format
+      const clean = String(d).split(' at ')[0].split('T')[0].trim()
+      if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean
+      const parsed = new Date(d)
+      if (!isNaN(parsed.getTime())) return parsed.toISOString().split('T')[0]
+    }
+    if (d instanceof Date && !isNaN(d.getTime())) return d.toISOString().split('T')[0]
+  } catch { /* ignored */ }
+  return ''
+}
+
+function addDays(dateStr: string, n: number): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  d.setDate(d.getDate() + n)
+  return d.toISOString().split('T')[0]
+}
+
+interface CalendarItem {
+  id: string
+  dateKey: string
+  type: 'callback' | 'meeting'
+  clientName: string
+  clientCompany: string
+  clientId: string
+  outcome?: string
+  stage?: string
+  nextAction?: string
+  raw: any
+}
+
+function CalendarView({ callLogs, allMeetings, clientMap, setActiveMeeting }: {
+  callLogs: any[]
+  allMeetings: any[]
+  clientMap: Record<string, any>
+  setActiveMeeting: (m: any) => void
+}) {
+  const [viewDate, setViewDate] = useState(() => new Date())
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [deferringId, setDeferringId] = useState<string | null>(null)
+  const [deferDate, setDeferDate] = useState('')
+  const [busyAction, setBusyAction] = useState<string | null>(null)
+
+  // Build calendar items from call logs + meetings
+  const calendarItems = useMemo(() => {
+    const items: CalendarItem[] = []
+
+    // Callbacks with relevant outcomes AND a next_action_date
+    ;(callLogs || []).forEach((l: any) => {
+      if (!(CALENDAR_OUTCOMES as readonly string[]).includes(l.outcome)) return
+      const dk = toDateKey(l.next_action_date)
+      if (!dk) return
+      const client = clientMap[l.client_id] || {}
+      items.push({
+        id: `call-${l.call_id}`,
+        dateKey: dk,
+        type: 'callback',
+        clientName: client.name || l.client_name || 'Unknown',
+        clientCompany: client.company || l.client_company || '',
+        clientId: l.client_id || '',
+        outcome: l.outcome,
+        nextAction: l.next_action || '',
+        raw: l,
+      })
+    })
+
+    // All meetings with a date
+    ;(allMeetings || []).forEach((m: any) => {
+      const dk = toDateKey(m.date)
+      if (!dk) return
+      const client = clientMap[m.client_id] || {}
+      items.push({
+        id: `mtg-${m.meeting_id}`,
+        dateKey: dk,
+        type: 'meeting',
+        clientName: m.client_name || client.name || 'Unknown',
+        clientCompany: m.client_company || client.company || '',
+        clientId: m.client_id || '',
+        stage: m.stage || 'booked',
+        raw: m,
+      })
+    })
+
+    return items
+  }, [callLogs, allMeetings, clientMap])
+
+  // Group by date key
+  const itemsByDate = useMemo(() => {
+    const map: Record<string, CalendarItem[]> = {}
+    calendarItems.forEach(item => {
+      if (!map[item.dateKey]) map[item.dateKey] = []
+      map[item.dateKey].push(item)
+    })
+    return map
+  }, [calendarItems])
+
+  // Calendar grid math
+  const year = viewDate.getFullYear()
+  const month = viewDate.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  const startOffset = firstDay.getDay() // 0=Sun
+  const daysInMonth = lastDay.getDate()
+
+  const todayKey = new Date().toISOString().split('T')[0]
+
+  const prevMonth = useCallback(() => {
+    setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+    setSelectedDay(null)
+  }, [])
+  const nextMonth = useCallback(() => {
+    setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+    setSelectedDay(null)
+  }, [])
+  const goToToday = useCallback(() => {
+    setViewDate(new Date())
+    setSelectedDay(todayKey)
+  }, [todayKey])
+
+  const monthLabel = viewDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+  // Build day cells
+  const dayCells: { day: number; dateKey: string }[] = []
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dk = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+    dayCells.push({ day: d, dateKey: dk })
+  }
+
+  const selectedItems = selectedDay ? (itemsByDate[selectedDay] || []) : []
+
+  // Defer action
+  const handleDefer = async (item: CalendarItem, newDate: string) => {
+    if (item.type !== 'callback' || !item.raw?.call_id) return
+    setBusyAction(item.id)
+    await adminActions.saveCallLog({
+      call_id: item.raw.call_id,
+      client_id: item.clientId,
+      outcome: item.raw.outcome,
+      next_action_date: newDate,
+      next_action: item.raw.next_action || 'Follow up',
+      notes: item.raw.notes || '',
+    })
+    setDeferringId(null)
+    setDeferDate('')
+    setBusyAction(null)
+  }
+
+  // Dismiss action (clear next_action_date)
+  const handleDismiss = async (item: CalendarItem) => {
+    if (item.type !== 'callback' || !item.raw?.call_id) return
+    setBusyAction(item.id)
+    await adminActions.saveCallLog({
+      call_id: item.raw.call_id,
+      client_id: item.clientId,
+      outcome: item.raw.outcome,
+      next_action_date: '',
+      next_action: '',
+      notes: item.raw.notes || '',
+    })
+    setBusyAction(null)
+    // If this was the only item on selected day, clear selection
+    if (selectedItems.length <= 1) setSelectedDay(null)
+  }
+
+  // Go to client
+  const handleGoToClient = (item: CalendarItem) => {
+    const client = clientMap[item.clientId]
+    if (client) {
+      adminActions.setActiveClientOptimistic(client)
+      adminActions.setSection('clients')
+    }
+  }
+
+  // Color for a dot
+  const getDotColor = (item: CalendarItem): string => {
+    if (item.type === 'meeting') {
+      const stageObj = STAGES.find(s => s.id === item.stage)
+      return stageObj?.color || '#00bfff'
+    }
+    return OUTCOME_COLORS[item.outcome || ''] || '#6b7280'
+  }
+
+  return (
+    <div>
+      {/* Month header */}
+      <div className="flex items-center justify-between mb-4 px-1">
+        <div className="flex items-center gap-2">
+          <button onClick={prevMonth} className="p-1.5 rounded-lg bg-neutral-900/50 border border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700 cursor-pointer transition-colors">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button onClick={nextMonth} className="p-1.5 rounded-lg bg-neutral-900/50 border border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700 cursor-pointer transition-colors">
+            <ChevronRight className="w-4 h-4" />
+          </button>
+          <h3 className="text-sm font-bold text-white ml-2">{monthLabel}</h3>
+        </div>
+        <button onClick={goToToday} className="text-[10px] font-bold text-[#00bfff] hover:text-white cursor-pointer transition-colors uppercase tracking-wider">
+          Today
+        </button>
+      </div>
+
+      {/* Calendar grid */}
+      <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 overflow-hidden">
+        {/* Week day headers */}
+        <div className="grid grid-cols-7 border-b border-neutral-800">
+          {weekDays.map(wd => (
+            <div key={wd} className="px-2 py-2 text-center text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
+              {wd}
+            </div>
+          ))}
+        </div>
+
+        {/* Day cells */}
+        <div className="grid grid-cols-7">
+          {/* Empty cells for offset */}
+          {Array.from({ length: startOffset }).map((_, i) => (
+            <div key={`empty-${i}`} className="min-h-[80px] border-b border-r border-neutral-800/50 bg-neutral-950/30" />
+          ))}
+
+          {dayCells.map(({ day, dateKey }) => {
+            const items = itemsByDate[dateKey] || []
+            const isToday = dateKey === todayKey
+            const isOverdue = dateKey < todayKey && items.length > 0
+            const isSelected = dateKey === selectedDay
+
+            return (
+              <div
+                key={dateKey}
+                onClick={() => setSelectedDay(isSelected ? null : dateKey)}
+                className={`min-h-[80px] border-b border-r border-neutral-800/50 p-1.5 cursor-pointer transition-all relative group ${
+                  isSelected
+                    ? 'bg-[#00bfff]/5 ring-1 ring-inset ring-[#00bfff]/30'
+                    : isToday
+                      ? 'bg-[#00bfff]/[0.03]'
+                      : isOverdue
+                        ? 'bg-amber-500/[0.03]'
+                        : 'hover:bg-neutral-800/30'
+                }`}
+              >
+                {/* Day number */}
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-[11px] font-bold w-6 h-6 flex items-center justify-center rounded-full ${
+                    isToday
+                      ? 'bg-[#00bfff] text-white'
+                      : isOverdue
+                        ? 'text-amber-400'
+                        : 'text-neutral-400 group-hover:text-white'
+                  }`}>
+                    {day}
+                  </span>
+                  {items.length > 0 && (
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                      isOverdue ? 'bg-amber-500/15 text-amber-400' : 'bg-neutral-800 text-neutral-400'
+                    }`}>
+                      {items.length}
+                    </span>
+                  )}
+                </div>
+
+                {/* Dots */}
+                <div className="flex flex-wrap gap-0.5">
+                  {items.slice(0, 6).map(item => (
+                    <div
+                      key={item.id}
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: getDotColor(item) }}
+                      title={`${item.clientName} - ${item.type === 'meeting' ? (STAGES.find(s => s.id === item.stage)?.label || item.stage) : (OUTCOME_LABELS[item.outcome || ''] || item.outcome)}`}
+                    />
+                  ))}
+                  {items.length > 6 && (
+                    <span className="text-[8px] text-neutral-500 font-bold">+{items.length - 6}</span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+
+          {/* Fill remaining cells in last row */}
+          {(() => {
+            const totalCells = startOffset + daysInMonth
+            const remainder = totalCells % 7
+            if (remainder === 0) return null
+            return Array.from({ length: 7 - remainder }).map((_, i) => (
+              <div key={`trail-${i}`} className="min-h-[80px] border-b border-r border-neutral-800/50 bg-neutral-950/30" />
+            ))
+          })()}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-4 mt-3 px-1 flex-wrap">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-[#00bfff]" />
+          <span className="text-[10px] text-neutral-500">Callback</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-[#f59e0b]" />
+          <span className="text-[10px] text-neutral-500">Follow-Up</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-[#22c55e]" />
+          <span className="text-[10px] text-neutral-500">Meeting Booked</span>
+        </div>
+        {STAGES.slice(0, 4).map(s => (
+          <div key={s.id} className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+            <span className="text-[10px] text-neutral-500">{s.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Day detail panel */}
+      <AnimatePresence>
+        {selectedDay && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-4 overflow-hidden"
+          >
+            <div className="rounded-xl border border-neutral-800 bg-neutral-900/50 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold text-white">
+                  {new Date(selectedDay + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                  {selectedDay < todayKey && (
+                    <span className="ml-2 text-[10px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                      Overdue
+                    </span>
+                  )}
+                  {selectedDay === todayKey && (
+                    <span className="ml-2 text-[10px] font-bold text-[#00bfff] bg-[#00bfff]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                      Today
+                    </span>
+                  )}
+                </h4>
+                <button onClick={() => setSelectedDay(null)} className="text-neutral-500 hover:text-white cursor-pointer">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {selectedItems.length === 0 && (
+                <p className="text-xs text-neutral-500 italic py-4 text-center">No items scheduled for this day.</p>
+              )}
+
+              <div className="space-y-2">
+                {selectedItems.map(item => {
+                  const isDeferring = deferringId === item.id
+                  const isBusy = busyAction === item.id
+
+                  return (
+                    <div key={item.id} className="p-3 rounded-lg bg-neutral-950/60 border border-neutral-800/50 group/item">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          {/* Avatar */}
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                            style={{ background: `${getColor(item.clientName)}15`, color: getColor(item.clientName) }}
+                          >
+                            {getInitials(item.clientName).charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white truncate">{item.clientName}</span>
+                              {item.clientCompany && (
+                                <span className="text-[10px] text-neutral-500 truncate">{item.clientCompany}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {/* Type badge */}
+                              {item.type === 'callback' && item.outcome && (
+                                <span
+                                  className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                                  style={{
+                                    color: OUTCOME_COLORS[item.outcome] || '#6b7280',
+                                    backgroundColor: `${OUTCOME_COLORS[item.outcome] || '#6b7280'}15`,
+                                  }}
+                                >
+                                  <Phone className="w-2.5 h-2.5 inline mr-0.5 -mt-px" />
+                                  {OUTCOME_LABELS[item.outcome] || item.outcome}
+                                </span>
+                              )}
+                              {item.type === 'meeting' && item.stage && (
+                                <span
+                                  className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                                  style={{
+                                    color: STAGES.find(s => s.id === item.stage)?.color || '#00bfff',
+                                    backgroundColor: `${STAGES.find(s => s.id === item.stage)?.color || '#00bfff'}15`,
+                                  }}
+                                >
+                                  <Calendar className="w-2.5 h-2.5 inline mr-0.5 -mt-px" />
+                                  {STAGES.find(s => s.id === item.stage)?.label || item.stage}
+                                </span>
+                              )}
+                              {item.nextAction && (
+                                <span className="text-[10px] text-neutral-500">{item.nextAction}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {/* Defer (callbacks only) */}
+                          {item.type === 'callback' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setDeferringId(isDeferring ? null : item.id); setDeferDate('') }}
+                              disabled={isBusy}
+                              className="px-2 py-1 rounded-md text-[10px] font-bold text-[#00bfff] bg-[#00bfff]/5 border border-[#00bfff]/10 hover:bg-[#00bfff]/10 cursor-pointer transition-all disabled:opacity-40"
+                            >
+                              <Clock className="w-3 h-3 inline mr-0.5 -mt-px" /> Defer
+                            </button>
+                          )}
+
+                          {/* Go to Client */}
+                          {item.clientId && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleGoToClient(item) }}
+                              className="px-2 py-1 rounded-md text-[10px] font-bold text-neutral-400 bg-neutral-800/50 border border-neutral-700/30 hover:text-white hover:bg-neutral-800 cursor-pointer transition-all"
+                            >
+                              <ExternalLink className="w-3 h-3 inline mr-0.5 -mt-px" /> Client
+                            </button>
+                          )}
+
+                          {/* Meeting: open drawer */}
+                          {item.type === 'meeting' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setActiveMeeting(item.raw) }}
+                              className="px-2 py-1 rounded-md text-[10px] font-bold text-[#8b5cf6] bg-[#8b5cf6]/5 border border-[#8b5cf6]/10 hover:bg-[#8b5cf6]/10 cursor-pointer transition-all"
+                            >
+                              <ChevronRight className="w-3 h-3 inline -mt-px" /> Open
+                            </button>
+                          )}
+
+                          {/* Dismiss (callbacks only) */}
+                          {item.type === 'callback' && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDismiss(item) }}
+                              disabled={isBusy}
+                              className="px-2 py-1 rounded-md text-[10px] font-bold text-neutral-500 bg-neutral-800/30 border border-neutral-700/20 hover:text-red-400 hover:border-red-500/20 cursor-pointer transition-all disabled:opacity-40"
+                            >
+                              {isBusy ? '...' : <><X className="w-3 h-3 inline -mt-px" /> Dismiss</>}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Defer panel */}
+                      {isDeferring && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-2 pt-2 border-t border-neutral-800/50"
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Defer to:</span>
+                            {DEFER_PRESETS.map(p => {
+                              const target = addDays(todayKey, p.days)
+                              return (
+                                <button
+                                  key={p.label}
+                                  onClick={() => handleDefer(item, target)}
+                                  disabled={isBusy}
+                                  className="px-2 py-1 rounded-md text-[10px] font-medium text-neutral-300 bg-neutral-800/60 border border-neutral-700/30 hover:text-white hover:bg-neutral-700/60 cursor-pointer transition-all disabled:opacity-40"
+                                >
+                                  {p.label}
+                                </button>
+                              )
+                            })}
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="date"
+                                value={deferDate}
+                                onChange={e => setDeferDate(e.target.value)}
+                                min={todayKey}
+                                className="bg-neutral-900/80 border border-neutral-700/50 rounded-md px-2 py-1 text-[10px] text-white focus:border-[#00bfff]/40 focus:outline-none"
+                              />
+                              {deferDate && (
+                                <button
+                                  onClick={() => handleDefer(item, deferDate)}
+                                  disabled={isBusy}
+                                  className="px-2 py-1 rounded-md text-[10px] font-bold text-[#00bfff] bg-[#00bfff]/10 hover:bg-[#00bfff]/15 cursor-pointer transition-all disabled:opacity-40"
+                                >
+                                  {isBusy ? '...' : 'Set'}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════
 // THANK YOU EMAIL SECTION (used inside MeetingDrawer)
 // ════════════════════════════════════════════════════════
 const inputClsTy = "w-full bg-neutral-900/80 border border-neutral-700/50 rounded-lg px-3 py-2 text-xs text-white placeholder:text-neutral-600 focus:border-violet-400/40 focus:ring-1 focus:ring-violet-400/20 focus:outline-none transition-all"
@@ -579,7 +1092,7 @@ function ThankYouSection({ meeting, clientMap, busy: parentBusy, setBusy, setSyn
     <div className="p-4 rounded-xl bg-violet-500/5 border border-violet-500/10 mb-4">
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-violet-400 font-bold flex items-center gap-1.5">
-          🙏 Send Thank You Email
+          Send Thank You Email
         </p>
         <button onClick={() => setExpanded(!expanded)}
           className="text-[10px] text-violet-400/70 hover:text-violet-400 cursor-pointer transition-colors">
@@ -1121,7 +1634,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
           {/* ON-DAY: Mark attendance */}
           {m.stage === 'on_day' && (
             <div className="p-4 rounded-xl bg-[#ff7a00]/5 border border-[#ff7a00]/10 mb-4">
-              <p className="text-xs text-[#ff7a00] font-bold mb-3">📍 Meeting Day — Mark Attendance</p>
+              <p className="text-xs text-[#ff7a00] font-bold mb-3">Meeting Day — Mark Attendance</p>
               <div className="flex gap-2 flex-wrap">
                 <button onClick={() => markAttendance('attended')} disabled={busy} className="mtg-btn mtg-btn--won text-xs">
                   <Check className="w-3.5 h-3.5" /> Attended
@@ -1159,7 +1672,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
               )}
 
               <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                <p className="text-xs text-emerald-400 font-bold mb-3">🎯 Qualify this Meeting</p>
+                <p className="text-xs text-emerald-400 font-bold mb-3">Qualify this Meeting</p>
                 <p className="text-xs text-neutral-400 mb-3">Mark as Won to advance this client to Won stage in the pipeline.</p>
                 <div className="flex gap-2">
                   <button onClick={() => qualify('won')} disabled={busy} className="mtg-btn mtg-btn--won text-xs">
@@ -1177,7 +1690,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
           {m.stage === 'qualified' && (
             <div className={`p-4 rounded-xl border mb-4 ${m.qualification_result === 'won' ? 'bg-emerald-500/5 border-emerald-500/15' : 'bg-red-500/5 border-red-500/10'}`}>
               <p className={`text-sm font-bold mb-1 ${m.qualification_result === 'won' ? 'text-emerald-400' : 'text-red-400'}`}>
-                {m.qualification_result === 'won' ? '🏆 Deal Won' : '❌ Not Won'}
+                {m.qualification_result === 'won' ? 'Deal Won' : 'Not Won'}
               </p>
               <p className="text-xs text-neutral-400">
                 {m.qualification_result === 'won'

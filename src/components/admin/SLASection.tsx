@@ -739,7 +739,7 @@ export default function SLASection() {
           </span>
           {s.breached ? (
             <span className="text-red-400 font-bold">
-              ⚠ {fmtElapsed(overdueMinutes)} overdue
+              OVERDUE: {fmtElapsed(overdueMinutes)} overdue
             </span>
           ) : (
             <span style={{ color: barColor }} className="font-bold">

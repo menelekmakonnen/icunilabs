@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { adminActions, useAdminStore } from '../../store/useAdminStore'
-import { X, Check, ChevronDown, ChevronUp, Phone, ArrowRight, BookOpen, Mic, MicOff, Users } from 'lucide-react'
+import { X, Check, ChevronDown, ChevronUp, Phone, ArrowRight, BookOpen, Mic, MicOff, Users, Calendar } from 'lucide-react'
 import './call-guide.css'
 
 // ═══ TYPES ═══
@@ -42,7 +42,7 @@ const PATHS: Record<string, PathDef> = {
         id: 'if_yes', label: 'If yes — get transferred',
         scriptNote: 'Thank them by name. Ask who you\'ll be speaking to. Get transferred. Switch to "WC Decision-Maker" path.',
         responses: [
-          { label: '✅ Transferring now', text: 'Thank you so much, {{receptionist_name}}. Who will I be speaking with? … Great, thank you.' },
+          { label: '[YES] Transferring now', text: 'Thank you so much, {{receptionist_name}}. Who will I be speaking with? … Great, thank you.' },
         ],
       },
       {
@@ -61,7 +61,7 @@ const PATHS: Record<string, PathDef> = {
         id: 'receptionist_answered', label: 'If receptionist wants to answer — engage then escalate',
         scriptNote: 'Do not fight this. Engage them with the same research questions. Start with easy ones, then escalate.',
         responses: [
-          { label: '↗️ Escalate to manager', text: 'I really appreciate you helping {{receptionist_name}}, but I wouldn\'t want to put you on the spot answering for the manager\'s department — these are really questions only they can answer properly, and I only need about two minutes of their time. Can you please check for me {{receptionist_name}}?' },
+          { label: '[UP] Escalate to manager', text: 'I really appreciate you helping {{receptionist_name}}, but I wouldn\'t want to put you on the spot answering for the manager\'s department — these are really questions only they can answer properly, and I only need about two minutes of their time. Can you please check for me {{receptionist_name}}?' },
         ],
         dataFields: [
           { id: 'rc_system_name', label: 'Q1: Do you use any business operations system for HR/Finance/Operations?', type: 'text' },
@@ -91,8 +91,8 @@ const PATHS: Record<string, PathDef> = {
           { id: 'system_cost', label: 'System Cost (if known)', type: 'text' },
         ],
         responses: [
-          { label: '✅ Yes — has a system', text: 'Thank you. Is it a custom-built for you or off the shelf? … What\'s the system called? … Do you know what it cost?' },
-          { label: '❌ No system', text: 'I see. So, does that mean you use Excel and WhatsApp for your operations?' },
+          { label: '[YES] Yes — has a system', text: 'Thank you. Is it a custom-built for you or off the shelf? … What\'s the system called? … Do you know what it cost?' },
+          { label: '[NO] No system', text: 'I see. So, does that mean you use Excel and WhatsApp for your operations?' },
         ],
       },
       {
@@ -117,8 +117,8 @@ const PATHS: Record<string, PathDef> = {
         id: 'read_energy', label: 'Read their energy',
         scriptNote: 'After 3-4 questions, read their tone. Engaged and talkative → PIVOT. Short answers → finish research, exit warm.',
         responses: [
-          { label: '💬 Strong engagement → PIVOT', text: 'They\'re opening up, sharing specifics. Go to the PIVOT now.' },
-          { label: '⏱️ Low engagement', text: '"It\'s manageable." Do NOT push. Finish research, exit warmly.' },
+          { label: '[HOT] Strong engagement → PIVOT', text: 'They\'re opening up, sharing specifics. Go to the PIVOT now.' },
+          { label: '[COOL] Low engagement', text: '"It\'s manageable." Do NOT push. Finish research, exit warmly.' },
         ],
       },
       {
@@ -126,8 +126,8 @@ const PATHS: Record<string, PathDef> = {
         script: 'That\'s actually something we\'ve solved for businesses in similar positions. We could probably solve it for you too.',
         scriptNote: 'If they ask "can it do X?" — the answer is YES. Let interest build, then push for meeting.',
         responses: [
-          { label: '🔥 Asking questions', text: 'Yes, we can do that. [Let interest build, then close the meeting.]' },
-          { label: '😐 Not biting', text: 'Continue research. You\'ll get a second push at the end.' },
+          { label: '[HOT] Asking questions', text: 'Yes, we can do that. [Let interest build, then close the meeting.]' },
+          { label: '[COOL] Not biting', text: 'Continue research. You\'ll get a second push at the end.' },
         ],
       },
       {
@@ -135,9 +135,9 @@ const PATHS: Record<string, PathDef> = {
         script: 'So, can I ask — does your current system help you with that specific problem?',
         scriptNote: 'Use this version if they said they HAVE a system. If they said they DON\'T have a system, use the "No system" response below instead.',
         responses: [
-          { label: '❌ No / Not really', text: 'That\'s what we hear a lot. → PIVOT if not already done.' },
-          { label: '🚫 No system (ask this instead)', text: 'Do you think a business operations system could solve this problem? → If they ask HOW, PIVOT.' },
-          { label: '✅ Yes it helps', text: 'Continue to dream system question.' },
+          { label: '[NO] No / Not really', text: 'That\'s what we hear a lot. → PIVOT if not already done.' },
+          { label: '[ALT] No system (ask this instead)', text: 'Do you think a business operations system could solve this problem? → If they ask HOW, PIVOT.' },
+          { label: '[YES] Yes it helps', text: 'Continue to dream system question.' },
         ],
       },
       {
@@ -272,9 +272,9 @@ const PATHS: Record<string, PathDef> = {
         id: 'already_have_system', label: 'If they have a system — probe',
         script: 'Oh, that\'s great. What system do you use? and who built it for you?',
         responses: [
-          { label: '📱 Phone access', text: 'Does it handle seeing everything from your phone?' },
-          { label: '💰 Subscription?', text: 'Quick question — do you pay for it every month, or is it yours?' },
-          { label: '🔄 Ownership pitch', text: 'Interesting. When we build, it is yours for life — you pay once and you own it, no monthly fees. If you ever want to compare, we would happily show you. Could we drop by for ten minutes tomorrow?' },
+          { label: '[Q] Phone access', text: 'Does it handle seeing everything from your phone?' },
+          { label: '[Q] Subscription?', text: 'Quick question — do you pay for it every month, or is it yours?' },
+          { label: '[PITCH] Ownership pitch', text: 'Interesting. When we build, it is yours for life — you pay once and you own it, no monthly fees. If you ever want to compare, we would happily show you. Could we drop by for ten minutes tomorrow?' },
         ],
         dataFields: [
           { id: 'competitor_system', label: 'Competitor System', type: 'text' },
@@ -342,22 +342,22 @@ interface PainPreset {
 
 const PAIN_PRESETS: PainPreset[] = [
   // Money-based pain points
-  { id: 'stock_shrinkage', label: 'Stock shrinkage / theft', icon: '📦', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'How much stock goes missing or unaccounted for?' },
-  { id: 'cash_reconciliation', label: 'Cash & MoMo reconciliation errors', icon: '💳', category: 'money', defaultUnit: 'cedis', defaultFreq: 'weekly', hint: 'How much is unaccounted for when you reconcile?' },
-  { id: 'overpurchasing', label: 'Overpurchasing / duplicate orders', icon: '🔄', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'Extra spent on redundant or excess orders?' },
-  { id: 'lost_sales', label: 'Lost sales / missed orders', icon: '📉', category: 'money', defaultUnit: 'cedis', defaultFreq: 'weekly', hint: 'Revenue lost from stockouts or missed customer orders?' },
-  { id: 'customer_churn', label: 'Customer churn / poor follow-up', icon: '👋', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'Revenue lost from clients who left?' },
-  { id: 'delivery_issues', label: 'Late deliveries / penalties', icon: '🚚', category: 'money', defaultUnit: 'cedis', defaultFreq: 'weekly', hint: 'Fines, refunds, or lost goodwill from late deliveries?' },
-  { id: 'system_subscription', label: 'Current system subscription', icon: '💸', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'How much do you pay per month for your current system?' },
+  { id: 'stock_shrinkage', label: 'Stock shrinkage / theft', icon: 'PKG', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'How much stock goes missing or unaccounted for?' },
+  { id: 'cash_reconciliation', label: 'Cash & MoMo reconciliation errors', icon: 'PAY', category: 'money', defaultUnit: 'cedis', defaultFreq: 'weekly', hint: 'How much is unaccounted for when you reconcile?' },
+  { id: 'overpurchasing', label: 'Overpurchasing / duplicate orders', icon: 'RPT', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'Extra spent on redundant or excess orders?' },
+  { id: 'lost_sales', label: 'Lost sales / missed orders', icon: 'DWN', category: 'money', defaultUnit: 'cedis', defaultFreq: 'weekly', hint: 'Revenue lost from stockouts or missed customer orders?' },
+  { id: 'customer_churn', label: 'Customer churn / poor follow-up', icon: 'BYE', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'Revenue lost from clients who left?' },
+  { id: 'delivery_issues', label: 'Late deliveries / penalties', icon: 'DLV', category: 'money', defaultUnit: 'cedis', defaultFreq: 'weekly', hint: 'Fines, refunds, or lost goodwill from late deliveries?' },
+  { id: 'system_subscription', label: 'Current system subscription', icon: 'SUB', category: 'money', defaultUnit: 'cedis', defaultFreq: 'monthly', hint: 'How much do you pay per month for your current system?' },
   // Time-based pain points
-  { id: 'manual_stock_count', label: 'Manual stock counting', icon: '📋', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Hours spent physically counting stock?' },
-  { id: 'whatsapp_reporting', label: 'WhatsApp & phone-based reporting', icon: '📱', category: 'time', defaultUnit: 'hours', defaultFreq: 'daily', hint: 'Time spent gathering reports via WhatsApp/calls?' },
-  { id: 'manual_reconciliation', label: 'Manual reconciliation', icon: '🧮', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Hours spent reconciling cash, MoMo, and bank?' },
-  { id: 'staff_scheduling', label: 'Staff scheduling & attendance', icon: '👥', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Time managing rotas, attendance, and shift changes?' },
-  { id: 'order_processing', label: 'Order processing & tracking', icon: '📝', category: 'time', defaultUnit: 'hours', defaultFreq: 'daily', hint: 'Hours processing and tracking customer orders?' },
-  { id: 'branch_visits', label: 'Branch visits for oversight', icon: '🏪', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Time traveling to branches just to check on things?' },
-  { id: 'invoice_prep', label: 'Invoice & receipt preparation', icon: '🧾', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Time creating invoices, receipts, or quotes manually?' },
-  { id: 'chasing_payments', label: 'Chasing payments & follow-ups', icon: '📞', category: 'time', defaultUnit: 'hours', defaultFreq: 'daily', hint: 'Time calling customers for overdue payments?' },
+  { id: 'manual_stock_count', label: 'Manual stock counting', icon: 'LST', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Hours spent physically counting stock?' },
+  { id: 'whatsapp_reporting', label: 'WhatsApp & phone-based reporting', icon: 'PHN', category: 'time', defaultUnit: 'hours', defaultFreq: 'daily', hint: 'Time spent gathering reports via WhatsApp/calls?' },
+  { id: 'manual_reconciliation', label: 'Manual reconciliation', icon: 'CAL', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Hours spent reconciling cash, MoMo, and bank?' },
+  { id: 'staff_scheduling', label: 'Staff scheduling & attendance', icon: 'PPL', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Time managing rotas, attendance, and shift changes?' },
+  { id: 'order_processing', label: 'Order processing & tracking', icon: 'ORD', category: 'time', defaultUnit: 'hours', defaultFreq: 'daily', hint: 'Hours processing and tracking customer orders?' },
+  { id: 'branch_visits', label: 'Branch visits for oversight', icon: 'SHP', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Time traveling to branches just to check on things?' },
+  { id: 'invoice_prep', label: 'Invoice & receipt preparation', icon: 'INV', category: 'time', defaultUnit: 'hours', defaultFreq: 'weekly', hint: 'Time creating invoices, receipts, or quotes manually?' },
+  { id: 'chasing_payments', label: 'Chasing payments & follow-ups', icon: 'TEL', category: 'time', defaultUnit: 'hours', defaultFreq: 'daily', hint: 'Time calling customers for overdue payments?' },
 ]
 
 const FREQ_MULTIPLIERS: Record<PainFreq, number> = {
@@ -487,6 +487,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
   const [outcomeDate, setOutcomeDate] = useState('')
   const [outcomeTime, setOutcomeTime] = useState('')
   const [outcomeNotes, setOutcomeNotes] = useState('')
+  const [showMeetingTimePrompt, setShowMeetingTimePrompt] = useState(false)
   const [callNotes, setCallNotes] = useState('')
   const [nextActionNotes, setNextActionNotes] = useState('')
   const [contactName, setContactName] = useState('')
@@ -785,6 +786,11 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
 
   const handleSave = async () => {
     if (!outcome) return
+    // A client moved to "Meeting" must have a date AND time before the call can save.
+    if (outcome === 'meeting_booked' && (!outcomeDate || !outcomeTime)) {
+      setShowMeetingTimePrompt(true)
+      return
+    }
     setSaving(true)
     const callEnd = new Date().toISOString()
     const points = currentPath?.points || []
@@ -806,7 +812,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
       outcome,
       outcome_details: { date: outcomeDate, time: outcomeTime, notes: outcomeNotes },
       next_action: getNextAction(),
-      next_action_date: outcomeDate || '',
+      next_action_date: outcomeDate ? (outcomeTime ? `${outcomeDate} at ${outcomeTime}` : outcomeDate) : '',
       next_action_notes: nextActionNotes,
       call_notes: callNotes,
       contact_name: contactName,
@@ -1293,7 +1299,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
                         )}
                         {p.scriptNote && (
                           <div className="cg-script-note">
-                            💡 {p.scriptNote}
+                            [TIP] {p.scriptNote}
                           </div>
                         )}
                         {p.responses && p.responses.length > 0 && (
@@ -1397,7 +1403,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
                                       ? 'bg-[#8b5cf6]/10 border-[#8b5cf6]/40 text-[#8b5cf6]'
                                       : 'bg-neutral-800/60 border-neutral-700/40 text-neutral-400 hover:text-white hover:border-neutral-600'
                                   }`}>
-                                  ✏️ Other
+                                  [+] Other
                                 </button>
                               </div>
                             </div>
@@ -1442,7 +1448,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
                             {/* Auto-calculated totals */}
                             {(costMath.hasCost || costMath.hasTime) && (
                               <div className="mt-3 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                                <p className="text-[9px] text-emerald-400/50 font-bold uppercase tracking-wider mb-1.5">📊 Total Calculated Impact</p>
+                                <p className="text-[9px] text-emerald-400/50 font-bold uppercase tracking-wider mb-1.5">Total Calculated Impact</p>
                                 <div className={`grid ${costMath.hasCost && costMath.hasTime ? 'grid-cols-2' : 'grid-cols-1'} gap-2`}>
                                   {costMath.hasCost && (
                                     <div className="text-center p-2 rounded-lg bg-emerald-500/5">
@@ -1469,7 +1475,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
                         {/* Competitor cost comparison */}
                         {costMath.hasCompetitor && p.id === 'already_have_system' && (
                           <div className="mt-3 p-3 rounded-lg bg-[#ff7a00]/5 border border-[#ff7a00]/20">
-                            <p className="text-[10px] text-[#ff7a00]/60 font-bold uppercase tracking-wider mb-1.5">💸 Subscription vs Ownership</p>
+                            <p className="text-[10px] text-[#ff7a00]/60 font-bold uppercase tracking-wider mb-1.5">Subscription vs Ownership</p>
                             <div className="grid grid-cols-2 gap-3 text-center">
                               <div className="p-2 rounded-lg bg-red-500/5 border border-red-500/10">
                                 <p className="text-[10px] text-neutral-500">Their system (3 yr)</p>
@@ -1531,9 +1537,9 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
               <div className="mb-4">
                 <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider mb-2">3 Pains Every Accra Business Shares</p>
                 <div className="space-y-1">
-                  <p className="text-[11px] text-neutral-400">📦 <strong>Stock disappearing</strong> — variance between what comes in and what sells</p>
-                  <p className="text-[11px] text-neutral-400">💳 <strong>Cash & MoMo chaos</strong> — fragmented payments that don't reconcile</p>
-                  <p className="text-[11px] text-neutral-400">🏪 <strong>Owner trapped at the shop</strong> — can't see what's happening without being there</p>
+                  <p className="text-[11px] text-neutral-400"><strong>Stock disappearing</strong> — variance between what comes in and what sells</p>
+                  <p className="text-[11px] text-neutral-400"><strong>Cash & MoMo chaos</strong> — fragmented payments that don’t reconcile</p>
+                  <p className="text-[11px] text-neutral-400"><strong>Owner trapped at the shop</strong> — can’t see what’s happening without being there</p>
                 </div>
               </div>
 
@@ -1693,6 +1699,47 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
                   className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-neutral-800 text-neutral-300 cursor-pointer hover:bg-neutral-700 transition-all">Keep Going</button>
                 <button onClick={onClose}
                   className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-red-500/15 border border-red-500/30 text-red-400 cursor-pointer hover:bg-red-500/25 transition-all">Discard Call</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Meeting requires a date & time before the call can be saved */}
+        {showMeetingTimePrompt && (
+          <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setShowMeetingTimePrompt(false)}>
+            <div className="bg-neutral-950 border border-neutral-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-[#ff7a00]/10 border border-[#ff7a00]/20 flex items-center justify-center">
+                  <Calendar className="w-4 h-4 text-[#ff7a00]" />
+                </div>
+                <h3 className="text-base font-bold text-white">Set the meeting date &amp; time</h3>
+              </div>
+              <p className="text-xs text-neutral-400 mb-4">This client is being moved to <strong className="text-white">Meeting</strong>. A meeting needs a date and time before you can save — or change the allocation to something else.</p>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                  <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Date</label>
+                  <input type="date" value={outcomeDate} onChange={e => setOutcomeDate(e.target.value)}
+                    className="w-full px-2.5 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white text-sm focus:outline-none focus:border-[#00bfff]" />
+                </div>
+                <div>
+                  <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Time</label>
+                  <input type="time" value={outcomeTime} onChange={e => setOutcomeTime(e.target.value)}
+                    className="w-full px-2.5 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white text-sm focus:outline-none focus:border-[#00bfff]" />
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="text-[10px] text-neutral-500 uppercase tracking-wider block mb-1">Or change the allocation</label>
+                <select value={outcome} onChange={e => setOutcome(e.target.value)}
+                  className="w-full px-2.5 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white text-sm cursor-pointer focus:outline-none focus:border-[#00bfff]">
+                  {OUTCOMES.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                </select>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setShowMeetingTimePrompt(false)}
+                  className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-neutral-800 text-neutral-300 cursor-pointer hover:bg-neutral-700 transition-all">Cancel</button>
+                <button onClick={() => { setShowMeetingTimePrompt(false); handleSave() }}
+                  disabled={saving || (outcome === 'meeting_booked' && (!outcomeDate || !outcomeTime))}
+                  className="flex-1 py-2.5 rounded-lg font-bold text-sm bg-gradient-to-r from-[#00bfff] to-[#0099cc] text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed transition-all">Save Call</button>
               </div>
             </div>
           </div>

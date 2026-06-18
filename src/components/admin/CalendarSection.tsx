@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useAdminStore, adminActions } from '../../store/useAdminStore'
 import { ChevronLeft, ChevronRight, RefreshCw, Calendar as CalIcon, X, Phone, Video, MapPin, Clock, ExternalLink } from 'lucide-react'
+import MeetingDatePrompt from './MeetingDatePrompt'
 
 type CalView = 'month' | 'week' | 'day'
 
@@ -73,6 +74,7 @@ export default function CalendarSection() {
   }, [range.from, range.to])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => { adminActions.loadMeetings() }, [])
 
   const eventsByDay = useMemo(() => {
     const map: Record<string, any[]> = {}
@@ -120,6 +122,8 @@ export default function CalendarSection() {
 
   return (
     <div className="space-y-4">
+      <MeetingDatePrompt />
+
       {/* Header / controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">

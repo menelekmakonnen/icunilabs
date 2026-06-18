@@ -265,7 +265,7 @@ function UpcomingActionsCard({ upcomingActions, clients, now }: { upcomingAction
       </div>
 
       {upcomingActions.length === 0 ? (
-        <p className="text-sm text-neutral-600 py-4 text-center">No pending callbacks or follow-ups 🎉</p>
+        <p className="text-sm text-neutral-600 py-4 text-center">No pending callbacks or follow-ups</p>
       ) : (
         <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
           {/* Overdue section */}
@@ -469,12 +469,31 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
     [filteredPrimary, clientById]
   )
 
+  // Recent meetings = formal meetings (any stage incl. just-booked) PLUS
+  // call-derived booked meetings that don't have a formal row yet, so the
+  // dashboard shows booked meetings, not only confirmed ones.
   const recentMeetings = useMemo(() => {
-    return [...(meetings || [])]
-      .filter((mm: any) => mm.stage !== 'cancelled' && mm.stage !== 'regressed')
+    const formal = (meetings || []).filter((mm: any) => mm.stage !== 'cancelled' && mm.stage !== 'regressed')
+    const formalClientIds = new Set(formal.map((m: any) => m.client_id))
+    const seen = new Set<string>()
+    const inferred = (callLogs || [])
+      .filter((l: any) => l.outcome === 'meeting_booked' && l.client_id && !formalClientIds.has(l.client_id))
+      .filter((l: any) => { if (seen.has(l.client_id)) return false; seen.add(l.client_id); return true })
+      .map((l: any) => {
+        const datePart = String(l.next_action_date || '').split(' at ')[0].split('T')[0].trim()
+        return {
+          meeting_id: `call-${l.call_id}`,
+          client_id: l.client_id,
+          client_name: l.client_name || clientById[l.client_id]?.name || 'Unknown',
+          client_company: l.client_company || clientById[l.client_id]?.company || '',
+          date: /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : '',
+          stage: 'booked',
+        }
+      })
+    return [...formal, ...inferred]
       .sort((a: any, b: any) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())
       .slice(0, 6)
-  }, [meetings])
+  }, [meetings, callLogs, clientById])
 
   const openClientFromDash = (clientId: string) => {
     const client = (clients || []).find((c: any) => c.client_id === clientId)

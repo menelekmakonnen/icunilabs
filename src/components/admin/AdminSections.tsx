@@ -422,15 +422,15 @@ export function InvoicesSection() {
 // ─── CAREERS ─────────────────────────────────────────────
 
 const EMAIL_TEMPLATES = [
-  { key: 'cv_confirmation', label: 'Thank You for Application', desc: 'Confirm receipt of their application materials.', color: 'text-blue-400', icon: '📄' },
-  { key: 'interview_selected', label: 'Selected for Interview', desc: 'Invite them with date/time options to choose from.', color: 'text-emerald-400', icon: '✅' },
-  { key: 'not_selected', label: 'Not Selected (Next Step)', desc: 'They did not make it past the application stage.', color: 'text-red-400', icon: '❌' },
-  { key: 'interview_thanks', label: 'Interview Thank You', desc: 'Thank them for attending the interview today.', color: 'text-sky-400', icon: '🤝' },
+  { key: 'cv_confirmation', label: 'Thank You for Application', desc: 'Confirm receipt of their application materials.', color: 'text-blue-400', icon: 'CV' },
+  { key: 'interview_selected', label: 'Selected for Interview', desc: 'Invite them with date/time options to choose from.', color: 'text-emerald-400', icon: 'Y' },
+  { key: 'not_selected', label: 'Not Selected (Next Step)', desc: 'They did not make it past the application stage.', color: 'text-red-400', icon: 'X' },
+  { key: 'interview_thanks', label: 'Interview Thank You', desc: 'Thank them for attending the interview today.', color: 'text-sky-400', icon: 'TY' },
   { key: 'interview_confirmed', label: 'Interview Confirmed', desc: 'Confirm their slot with date, time, and meeting link.', color: 'text-teal-400', icon: 'C' },
   { key: 'trial_invitation', label: 'Paid Trial Invitation', desc: 'Invite to a 1-week paid working trial with briefing.', color: 'text-[#ff7a00]', icon: 'T' },
   { key: 'role_offered', label: 'Selected for the Role', desc: 'Congratulations - they got the job!', color: 'text-amber-400', icon: 'O' },
-  { key: 'role_rejected', label: 'Not Selected (Final)', desc: 'Final rejection after interview stage.', color: 'text-rose-400', icon: '🚫' },
-  { key: 'custom', label: 'Custom Email', desc: 'Write your own branded email from scratch.', color: 'text-violet-400', icon: '✏️' },
+  { key: 'role_rejected', label: 'Not Selected (Final)', desc: 'Final rejection after interview stage.', color: 'text-rose-400', icon: 'R' },
+  { key: 'custom', label: 'Custom Email', desc: 'Write your own branded email from scratch.', color: 'text-violet-400', icon: 'W' },
 ] as const
 
 type CareersTab = 'listings' | 'applications' | 'emails'

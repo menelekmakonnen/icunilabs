@@ -1244,7 +1244,7 @@ export default function CRMSection() {
                             <div className="flex flex-wrap gap-1.5">
                               {tpChecked.map((tp: string) => (
                                 <span key={tp} className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                  ✔ {tp.replace(/_/g, ' ')}
+                                  [check] {tp.replace(/_/g, ' ')}
                                 </span>
                               ))}
                               {tpSkipped.map((tp: string) => (

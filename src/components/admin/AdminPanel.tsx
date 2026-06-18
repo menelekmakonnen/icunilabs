@@ -104,7 +104,7 @@ export default function AdminPanel() {
   // Department scope mapping (frontend mirror of backend DEPARTMENT_SCOPE)
   const DEPT_SCOPE: Record<string, string[]> = {
     'Admin':      ['dashboard', 'mail', 'clients', 'meetings', 'referrals', 'invoices', 'sla', 'new-project', 'contracts', 'ecosystem', 'projects', 'settings'],
-    'Sales':      ['dashboard', 'mail', 'clients', 'meetings', 'referrals'],
+    'Sales':      ['dashboard', 'mail', 'clients', 'meetings', 'referrals', 'contracts'],
     'Product':    ['dashboard', 'mail', 'new-project', 'contracts', 'ecosystem', 'sla']
   }
 

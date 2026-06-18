@@ -255,7 +255,7 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
             {/* Custom option */}
             <button onClick={() => selectTpl('custom')}
               className={`w-full text-left px-3.5 py-2.5 rounded-xl border transition-all text-xs cursor-pointer ${tplId === 'custom' ? 'bg-neutral-500/10 border-neutral-400/30 text-white' : 'border-neutral-700/40 text-neutral-500 hover:text-white hover:border-neutral-600'}`}>
-              <div className="font-semibold">✍️ Custom Email</div>
+              <div className="font-semibold">Custom Email</div>
               <div className="text-[10px] opacity-60 mt-0.5">Write your own branded email from scratch</div>
             </button>
 
@@ -337,8 +337,8 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
             <div className="grid grid-cols-2 gap-3">
               <div><label className={lbl}>Type</label>
                 <select value={extras.meetingType || 'online'} onChange={e => setExtra('meetingType', e.target.value)} className={clsSm}>
-                  <option value="online">🖥️ Online (Google Meet)</option>
-                  <option value="in_person">📍 In-Person</option>
+                  <option value="online">Online (Google Meet)</option>
+                  <option value="in_person">In-Person</option>
                 </select></div>
               <div><label className={lbl}>{extras.meetingType === 'in_person' ? 'Location' : 'Google Meet Link'}</label>
                 <input value={extras.meetingType === 'in_person' ? (extras.location || '') : (extras.meetLink || '')}
@@ -424,7 +424,7 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
         {/* Post-Meeting Thank You */}
         {tplId === 'client:post_meeting_thankyou' && (
           <div className="space-y-3 border-t border-neutral-800/50 pt-3">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400 flex items-center gap-1.5">🙏 Thank You Details</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400 flex items-center gap-1.5">Thank You Details</div>
             <div><label className={lbl}>Meeting Date (for greeting)</label>
               <input type="date" value={extras.meetingDate || ''} onChange={e => setExtra('meetingDate', fmtDate(e.target.value))} className={clsSm} /></div>
             <div><label className={lbl}>Discussion Summary</label>

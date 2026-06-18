@@ -934,7 +934,7 @@ export default function AnalyticsSection() {
                       <div className="an-journey-meta-device" style={{
                         color: j.device === 'phone' ? '#8b5cf6' : j.device === 'tablet' ? '#ff7a00' : '#00bfff'
                       }}>
-                        {j.device === 'phone' ? '📱' : j.device === 'tablet' ? '📋' : '💻'} {j.device}
+                        {j.device === 'phone' ? 'Phone' : j.device === 'tablet' ? 'Tablet' : 'Desktop'} 
                       </div>
                       {j.city && <div className="an-journey-meta-city">{j.city}</div>}
                     </div>
