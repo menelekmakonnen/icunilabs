@@ -14,8 +14,18 @@ const TEMPLATE_GROUPS: { key: string; label: string; color: string }[] = [
   { key: 'custom', label: 'Custom', color: '#94a3b8' },
 ]
 
-// Fallback alias when the API hasn't loaded yet
-const DEFAULT_ALIAS = { alias: 'labs@icuni.org', name: 'ICUNI Labs', can_send: true }
+// All @icuni.org send aliases (always available regardless of API)
+const ICUNI_ALIASES = [
+  { alias: 'labs@icuni.org', name: 'ICUNI Labs', can_send: true },
+  { alias: 'hello@icuni.org', name: 'ICUNI Hello', can_send: true },
+  { alias: 'donotreply@icuni.org', name: 'Do Not Reply', can_send: true },
+  { alias: 'feedback@icuni.org', name: 'Feedback', can_send: true },
+  { alias: 'jobs@icuni.org', name: 'ICUNI Jobs', can_send: true },
+  { alias: 'tech.issue@icuni.org', name: 'Tech Issues', can_send: true },
+  { alias: 'menelek@icuni.org', name: 'Menelek', can_send: true },
+  { alias: 'josephine.johnson@icuni.org', name: 'Josephine Johnson', can_send: true },
+  { alias: 'doreen.ahiafor@icuni.org', name: 'Doreen Ahiafor', can_send: true },
+]
 
 interface Props {
   initialTemplateId?: string | null
@@ -61,9 +71,13 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
 
   const aliases = useMemo(() => {
     const loaded = Array.isArray(emailAliases) ? emailAliases.filter((a: any) => a.can_send) : []
-    // Always ensure at least the default alias is available
-    if (loaded.length === 0) return [DEFAULT_ALIAS]
-    return loaded
+    // Merge API-loaded aliases with hardcoded ICUNI aliases (deduplicate by alias)
+    const seen = new Set<string>()
+    const merged: any[] = []
+    for (const a of [...ICUNI_ALIASES, ...loaded]) {
+      if (!seen.has(a.alias)) { seen.add(a.alias); merged.push(a) }
+    }
+    return merged
   }, [emailAliases])
 
   // Handle initialTemplateId from parent
@@ -381,10 +395,32 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
               <div>
                 <label className={lbl}>CC</label>
                 <input value={cc} onChange={e => setCc(e.target.value)} className={clsSm} placeholder="email@example.com (comma-separate)" />
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {ICUNI_ALIASES.map(a => (
+                    <button key={'cc-' + a.alias} type="button"
+                      onClick={() => {
+                        const existing = cc.split(',').map(e => e.trim()).filter(Boolean)
+                        if (!existing.includes(a.alias)) setCc([...existing, a.alias].join(', '))
+                      }}
+                      className="text-[9px] px-2 py-0.5 rounded-full bg-neutral-800/60 text-neutral-500 hover:text-[#00bfff] hover:bg-neutral-800 border border-neutral-700/40 cursor-pointer transition-colors"
+                    >{a.alias.replace('@icuni.org', '')}</button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label className={lbl}>BCC</label>
                 <input value={bcc} onChange={e => setBcc(e.target.value)} className={clsSm} placeholder="email@example.com (comma-separate)" />
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {ICUNI_ALIASES.map(a => (
+                    <button key={'bcc-' + a.alias} type="button"
+                      onClick={() => {
+                        const existing = bcc.split(',').map(e => e.trim()).filter(Boolean)
+                        if (!existing.includes(a.alias)) setBcc([...existing, a.alias].join(', '))
+                      }}
+                      className="text-[9px] px-2 py-0.5 rounded-full bg-neutral-800/60 text-neutral-500 hover:text-[#00bfff] hover:bg-neutral-800 border border-neutral-700/40 cursor-pointer transition-colors"
+                    >{a.alias.replace('@icuni.org', '')}</button>
+                  ))}
+                </div>
                 <p className="text-[9px] text-neutral-600 mt-1">Tip: CC/mailing an @icuni.org address will auto-BCC their personal login email.</p>
               </div>
             </div>
