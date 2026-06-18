@@ -269,22 +269,22 @@ function LetterheadPreview({
       position: 'relative',
     }}>
       {/* ── Top accent bar ── */}
-      <div style={{ height: '4px', background: 'linear-gradient(90deg, #1e3a5f 0%, #3b82f6 35%, #8b5cf6 65%, #1e3a5f 100%)' }} />
+      <div style={{ height: '4px', background: 'linear-gradient(90deg, #ff7a00 0%, #ff9a3c 25%, #00bfff 75%, #0099cc 100%)' }} />
 
       {/* ── Header area ── */}
-      <div style={{ padding: '28px 52px 22px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb' }}>
+      <div style={{ padding: '28px 52px 22px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '2px solid #00bfff' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img src="/icuni_logo.png" alt="ICUNI Labs" style={{ height: '36px', width: 'auto', objectFit: 'contain' }} crossOrigin="anonymous" />
             <div>
               <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em', fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>ICUNI Labs</div>
-              <div style={{ fontSize: '8.5px', color: '#64748b', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '1px', fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>Custom Software, Automation & AI</div>
+              <div style={{ fontSize: '8.5px', color: '#ff7a00', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '1px', fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>Custom Software, Automation & AI</div>
             </div>
           </div>
         </div>
         <div style={{ textAlign: 'right', paddingTop: '4px' }}>
           {!isBlank && (
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: "'Inter', 'Helvetica Neue', sans-serif", marginBottom: '4px' }}>{title}</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#00bfff', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: "'Inter', 'Helvetica Neue', sans-serif", marginBottom: '4px' }}>{title}</div>
           )}
           <div style={{ fontSize: '10px', color: '#64748b', fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>{today}</div>
         </div>
@@ -339,7 +339,7 @@ function LetterheadPreview({
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: '40px' }}>
               {/* ICUNI Labs side */}
               <div style={{ flex: 1 }}>
-                <div style={{ borderBottom: '2px dotted #94a3b8', height: '44px', marginBottom: '8px' }} />
+                <div style={{ borderBottom: '2px dotted #00bfff', height: '44px', marginBottom: '8px' }} />
                 <div style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>Menelek Makonnen</div>
                 <div style={{ fontSize: '9.5px', color: '#64748b', marginTop: '1px' }}>Director, ICUNI Labs</div>
                 <div style={{
@@ -350,7 +350,7 @@ function LetterheadPreview({
               </div>
               {/* Recipient side */}
               <div style={{ flex: 1 }}>
-                <div style={{ borderBottom: '2px dotted #94a3b8', height: '44px', marginBottom: '8px' }} />
+                <div style={{ borderBottom: '2px dotted #ff7a00', height: '44px', marginBottom: '8px' }} />
                 <div style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>{recipientName || '[Name]'}</div>
                 <div style={{ fontSize: '9.5px', color: '#64748b', marginTop: '1px' }}>{RECIPIENT_TYPES.find(r => r.id === recipientType)?.label || 'Recipient'}</div>
                 <div style={{
@@ -366,7 +366,7 @@ function LetterheadPreview({
 
       {/* ── Footer ── */}
       <div style={{
-        borderTop: '1px solid #e5e7eb',
+        borderTop: '2px solid #ff7a00',
         margin: '0 52px',
         padding: '16px 0 24px',
       }}>
@@ -386,7 +386,7 @@ function LetterheadPreview({
       </div>
 
       {/* ── Bottom accent bar ── */}
-      <div style={{ height: '3px', background: 'linear-gradient(90deg, #1e3a5f 0%, #3b82f6 35%, #8b5cf6 65%, #1e3a5f 100%)' }} />
+      <div style={{ height: '3px', background: 'linear-gradient(90deg, #ff7a00 0%, #ff9a3c 25%, #00bfff 75%, #0099cc 100%)' }} />
     </div>
   )
 }
