@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, ExternalLink, Monitor, X, ChevronRight, Zap, Shield, Clock, DollarSign } from 'lucide-react'
 import { DEMOS, CategoryIcon } from './demoData'
 import { handleLinkClick } from '../../router'
+import SEO from '../SEO'
 
 export default function DemoDetailPage({ demoId }: { demoId: string }) {
   const demo = DEMOS.find(d => d.id === demoId)
@@ -19,6 +20,11 @@ export default function DemoDetailPage({ demoId }: { demoId: string }) {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50">
+      <SEO
+        title={demo.title}
+        description={demo.tagline + ' — ' + demo.description}
+        path={`/demo/${demoId}`}
+      />
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">

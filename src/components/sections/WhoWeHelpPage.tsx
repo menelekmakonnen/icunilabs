@@ -4,10 +4,16 @@ import { handleLinkClick } from '../../router';
 import { personas } from '../../data/personaData';
 import MainLayout from '../layout/MainLayout';
 import WhoWeHelpHeroSVG from '../animations/WhoWeHelpHeroSVG';
+import SEO from '../SEO';
 
 export default function WhoWeHelpPage() {
     return (
         <MainLayout>
+            <SEO
+                title="Who We Help — Industries We Serve"
+                description="ICUNI Labs builds custom digital systems for founders, operations managers, creative studios, and growing businesses across every industry."
+                path="/who-we-help"
+            />
             {/* Hero */}
             <section className="pt-28 pb-16 md:pt-36 md:pb-24 relative z-10 overflow-hidden">
                 <div className="max-w-7xl mx-auto px-6">

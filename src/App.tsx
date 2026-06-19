@@ -1,5 +1,6 @@
 
 import { useState, useEffect, lazy, Suspense } from 'react';
+import SEO from './components/SEO';
 import MainLayout from './components/layout/MainLayout';
 import Navbar from './components/layout/Navbar';
 import Hero from './components/sections/Hero';
@@ -167,6 +168,7 @@ function App() {
   // ── Homepage (eagerly loaded — critical path) ──
   return (
     <MainLayout>
+      <SEO path="/" />
       <Hero />
       <Problem />
       <OperationsExplainer />

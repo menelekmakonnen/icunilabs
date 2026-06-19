@@ -4,6 +4,7 @@ import type { ProjectData } from '../../data/portfolioData';
 import { portfolioProjects } from '../../data/portfolioData';
 import ScrollNavigation from '../layout/ScrollNavigation';
 import { handleLinkClick } from '../../router';
+import SEO from '../SEO';
 
 interface ProjectDetailProps {
     project: ProjectData;
@@ -18,6 +19,12 @@ export default function ProjectDetail({ project }: ProjectDetailProps) {
 
     return (
         <div className="min-h-screen bg-neutral-950 text-neutral-50 selection:bg-neutral-800 selection:text-white relative overflow-hidden">
+            <SEO
+                title={project.title}
+                description={project.subtitle + ' — ' + project.description}
+                path={`/project/${project.id}`}
+                image={project.imageUrl}
+            />
             {/* Background elements with Hero Image */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div

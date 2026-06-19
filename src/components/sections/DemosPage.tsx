@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ExternalLink, Play, Monitor, ChevronRight, X } from 'lucide-react'
 import { DEMOS, CategoryIcon } from './demoData'
 import { navigateTo, handleLinkClick } from '../../router'
+import SEO from '../SEO'
 
 function DemoBgSVG() {
   return (
@@ -20,6 +21,11 @@ export default function DemosPage() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50 selection:bg-neutral-800 selection:text-white">
+      <SEO
+        title="Live Demos — See Our Systems in Action"
+        description="Try live demos of custom business systems built by ICUNI Labs. Property management, print shops, construction, swimming schools, and more. No login required."
+        path="/demos"
+      />
       {/* Hero */}
       <section className="relative pt-28 pb-16 px-6 overflow-hidden">
         <DemoBgSVG />

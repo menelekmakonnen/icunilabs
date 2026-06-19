@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, Clock, DollarSign, Send, ChevronRight, Briefcase, Mi
 import { AboutSVG, RequirementsSVG, BenefitsSVG, TabToggle } from './JobsSVG';
 import QualificationFlow from './QualificationFlow';
 import { handleLinkClick } from '../../router';
+import SEO from '../SEO';
 
 const API = import.meta.env.VITE_APPS_SCRIPT_URL;
 const inp = "w-full bg-neutral-900/50 border border-neutral-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-[#00bfff] focus:ring-1 focus:ring-[#00bfff] transition-all placeholder:text-neutral-600";
@@ -156,6 +157,11 @@ function Listing(){
   const [view, setView] = useState<'grid'|'row'>('grid');
   return(
     <div className="min-h-screen bg-neutral-950 text-neutral-50 pt-24 pb-20">
+      <SEO
+        title="Careers — Join ICUNI Labs"
+        description="Join ICUNI Labs as a Growth Associate, developer, or designer. Build custom software for real businesses. Paid trials, flexible work, real impact."
+        path="/jobs"
+      />
       <div className="max-w-5xl mx-auto px-6">
         <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}}>
           <div className="flex items-center justify-between mb-6">

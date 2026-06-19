@@ -4,6 +4,7 @@ import { LogOut, Plus, X, Users, TrendingUp, Clock, DollarSign, ChevronRight, Ar
 import ReferralProcessSVG from './ReferralProcessSVG';
 import { personas } from '../../data/personaData';
 import { handleLinkClick } from '../../router';
+import SEO from '../SEO';
 
 const API_URL = import.meta.env.VITE_APPS_SCRIPT_URL;
 
@@ -155,6 +156,11 @@ export default function ReferralPortal({ demoMode }: { demoMode?: boolean } = {}
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-50 selection:bg-neutral-800 selection:text-white">
+      <SEO
+        title="Referral Programme — Earn With ICUNI Labs"
+        description="Refer businesses to ICUNI Labs and earn commission on every signed project. Join our referral programme — no experience required."
+        path="/referral"
+      />
       <AnimatePresence mode="wait">
         {view === 'auth' ? (
           <AuthView key="auth" onLogin={handleLogin} />

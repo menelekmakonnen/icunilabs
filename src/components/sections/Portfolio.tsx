@@ -6,6 +6,7 @@ import { portfolioProjects, TOTAL_PROJECT_COUNT } from '../../data/portfolioData
 import FilterDrawer from '../layout/FilterDrawer';
 import ScrollNavigation from '../layout/ScrollNavigation';
 import { handleLinkClick } from '../../router';
+import SEO from '../SEO';
 
 export default function Portfolio() {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -92,6 +93,11 @@ export default function Portfolio() {
 
     return (
         <div className="min-h-screen bg-neutral-950 text-neutral-50 selection:bg-neutral-800 selection:text-white relative overflow-hidden">
+            <SEO
+                title="Portfolio — 80+ Custom Systems Built"
+                description="Explore our portfolio of 80+ custom business systems — from print shop management to construction logistics, swim schools to warehouse automation. Built in Ghana, used worldwide."
+                path="/portfolio"
+            />
             {/* Background */}
             <div className="fixed inset-0 pointer-events-none z-0">
                 <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-900/10 blur-[120px] rounded-full" />

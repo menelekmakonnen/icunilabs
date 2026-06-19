@@ -2,43 +2,73 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://labs.icuni.org/</loc>
-    <lastmod>2026-05-22</lastmod>
+    <lastmod>2026-06-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://labs.icuni.org/contact</loc>
-    <lastmod>2026-05-22</lastmod>
-    <changefreq>monthly</changefreq>
+    <loc>https://labs.icuni.org/portfolio</loc>
+    <lastmod>2026-06-19</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://labs.icuni.org/portfolio</loc>
-    <lastmod>2026-05-22</lastmod>
+    <loc>https://labs.icuni.org/demos</loc>
+    <lastmod>2026-06-19</lastmod>
     <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://labs.icuni.org/contact</loc>
+    <lastmod>2026-06-19</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://labs.icuni.org/demos</loc>
-    <lastmod>2026-05-22</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://labs.icuni.org/who-we-help</loc>
-    <lastmod>2026-05-22</lastmod>
+    <lastmod>2026-06-19</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://labs.icuni.org/jobs</loc>
-    <lastmod>2026-05-22</lastmod>
+    <lastmod>2026-06-19</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://labs.icuni.org/referral</loc>
-    <lastmod>2026-05-22</lastmod>
+    <lastmod>2026-06-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://labs.icuni.org/growth-associate</loc>
+    <lastmod>2026-06-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://labs.icuni.org/founders</loc>
+    <lastmod>2026-06-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://labs.icuni.org/operations</loc>
+    <lastmod>2026-06-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://labs.icuni.org/creative-ops</loc>
+    <lastmod>2026-06-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://labs.icuni.org/ai-adoption</loc>
+    <lastmod>2026-06-19</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
