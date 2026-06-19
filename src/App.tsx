@@ -1,4 +1,3 @@
-
 import { useState, useEffect, lazy, Suspense } from 'react';
 import SEO from './components/SEO';
 import MainLayout from './components/layout/MainLayout';
@@ -79,7 +78,7 @@ function App() {
   // ── Route matching ──
 
   if (currentPath === '/_ops' || currentPath.startsWith('/_ops/')) {
-    return <Suspense fallback={<LazyFallback />}><AdminPanel /></Suspense>;
+    return <Suspense fallback={<LazyFallback />}><SEO title="Admin" noIndex /><AdminPanel /></Suspense>;
   }
 
   if (currentPath === '/referral') {
@@ -132,6 +131,7 @@ function App() {
   if (currentPath === '/portal') {
     return (
       <Suspense fallback={<LazyFallback />}>
+        <SEO title="Client Portal" noIndex />
         <Navbar />
         <ClientPortal />
       </Suspense>

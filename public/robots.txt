@@ -3,5 +3,7 @@ User-agent: *
 Allow: /
 Disallow: /_ops
 Disallow: /api/
+Disallow: /portal
+Disallow: /showcase
 
 Sitemap: https://labs.icuni.org/sitemap.xml
