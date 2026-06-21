@@ -229,6 +229,37 @@ export default function MeetingsSection() {
   }, [allMeetings, sortKey])
 
 
+  // ─── Board-level stage movement (forward/back, persists) ───
+  const [cardBusy, setCardBusy] = useState<string | null>(null)
+  const moveCardStage = async (meeting: any, dir: number) => {
+    const curIdx = STAGES.findIndex(s => s.id === (meeting.stage || 'booked'))
+    const nextIdx = curIdx + dir
+    if (nextIdx < 0 || nextIdx >= STAGES.length) return
+    const targetStage = STAGES[nextIdx].id
+    setCardBusy(meeting.meeting_id)
+    try {
+      let id = meeting.meeting_id
+      // Materialise call-derived meetings so the change has a real row to persist to.
+      if (meeting._inferred || String(id).startsWith('call-')) {
+        const c = clientMap?.[meeting.client_id]
+        const created = await adminActions.createMeeting({
+          client_id: meeting.client_id,
+          client_name: meeting.client_name || c?.name || 'Client',
+          client_company: meeting.client_company || c?.company || '',
+          client_email: meeting.client_email || c?.email || c?.contact_email || '',
+          date: meeting.date || '', time: meeting.time || '',
+          type: meeting.type || 'online',
+          location_or_link: meeting.location_or_link || '',
+          booked_by: meeting.booked_by || '',
+        })
+        id = created?.meeting_id
+        if (!id) { setCardBusy(null); return }
+      }
+      await adminActions.updateMeeting(id, { stage: targetStage })
+      await adminActions.loadMeetings()
+    } finally { setCardBusy(null) }
+  }
+
   // ─── CREATE MEETING MODAL ───
   const [form, setForm] = useState({ client_id: '', client_email: '', date: '', time: '', type: 'online' as 'online' | 'in_person', location_or_link: '', attendees: [] as { name: string; email: string; role: string }[] })
 
@@ -375,6 +406,21 @@ export default function MeetingsSection() {
                         </div>
                         <div className="mtg-card__booker">
                           Booked by {resolveStaffName(m.booked_by || '')}
+                        </div>
+                        {/* Move forward / back in the pipeline — persists */}
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-800/60">
+                          <button onClick={(e) => { e.stopPropagation(); moveCardStage(m, -1) }}
+                            disabled={cardBusy === m.meeting_id || STAGES.findIndex(s => s.id === (m.stage || 'booked')) <= 0}
+                            title="Move back a stage"
+                            className="text-[10px] text-neutral-500 hover:text-amber-400 disabled:opacity-30 disabled:cursor-default cursor-pointer flex items-center gap-0.5 transition-colors">
+                            <ChevronLeft className="w-3 h-3" /> Back
+                          </button>
+                          <button onClick={(e) => { e.stopPropagation(); moveCardStage(m, 1) }}
+                            disabled={cardBusy === m.meeting_id || STAGES.findIndex(s => s.id === (m.stage || 'booked')) >= STAGES.length - 1}
+                            title="Move forward a stage"
+                            className="text-[10px] text-neutral-500 hover:text-[#00bfff] disabled:opacity-30 disabled:cursor-default cursor-pointer flex items-center gap-0.5 transition-colors">
+                            Forward <ChevronRight className="w-3 h-3" />
+                          </button>
                         </div>
                       </motion.div>
                       )
@@ -1284,6 +1330,20 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
     setBusy(false)
   }
 
+  // Free movement through the pipeline (forward OR backward) — persists.
+  const moveToStage = async (targetStage: string) => {
+    if (busy || targetStage === m.stage) return
+    setBusy(true)
+    setSyncWarning(null)
+    const id = await ensureRealMeeting()
+    if (!id) { setSyncWarning('Could not move this meeting — please refresh and try again.'); setBusy(false); return }
+    const ok = await adminActions.updateMeeting(id, { stage: targetStage })
+    if (ok === false) { setSyncWarning('The stage change did not save. Please try again.'); setBusy(false); return }
+    setM((prev: any) => ({ ...prev, stage: targetStage }))
+    await adminActions.loadMeetings()
+    setBusy(false)
+  }
+
   const sendConfirmation = async () => {
     setBusy(true)
     setSyncWarning(null)
@@ -1414,12 +1474,13 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
           </div>
         </div>
 
-        {/* Stage Bar */}
+        {/* Stage Bar — click any stage to move the meeting there (forward or back) */}
         <div className="px-5 py-3 border-b border-neutral-800/50">
           <div className="mtg-stage-bar">
             {STAGES.map((s, i, arr) => (
               <div key={s.id} className="flex items-center" style={{ flex: i < arr.length - 1 ? 1 : 0 }}>
-                <div className="mtg-stage-node">
+                <button type="button" onClick={() => moveToStage(s.id)} disabled={busy} title={`Move to ${s.label}`}
+                  className="mtg-stage-node" style={{ background: 'transparent', border: 'none', padding: 0, cursor: busy ? 'default' : 'pointer' }}>
                   <div className={`mtg-stage-dot ${i === stageIdx ? 'mtg-stage-dot--active' : ''} ${i < stageIdx ? 'mtg-stage-dot--past' : ''}`}
                     style={{
                       borderColor: i <= stageIdx ? s.color : undefined,
@@ -1427,7 +1488,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
                       boxShadow: i === stageIdx ? `0 0 8px ${s.color}40` : undefined,
                     }} />
                   <span className={`mtg-stage-label ${i === stageIdx ? 'mtg-stage-label--active' : ''}`}>{s.label}</span>
-                </div>
+                </button>
                 {i < arr.length - 1 && (
                   <div className={`mtg-stage-connector ${i < stageIdx ? 'mtg-stage-connector--past' : ''}`}
                     style={i < stageIdx ? { background: `linear-gradient(90deg, ${s.color}, ${arr[i + 1].color})` } : undefined} />
@@ -1435,6 +1496,7 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
               </div>
             ))}
           </div>
+          <p className="text-[9px] text-neutral-600 text-center mt-1.5">Click a stage to move this meeting forward or back</p>
         </div>
 
         {/* Body */}
