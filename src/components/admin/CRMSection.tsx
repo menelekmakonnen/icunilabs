@@ -18,7 +18,7 @@ const AVATAR_COLORS = ['#00bfff','#8b5cf6','#ff7a00','#10b981','#ef4444','#f59e0
 function getAvatarColor(name: string) { let h = 0; for (let i = 0; i < (name||'').length; i++) h = name.charCodeAt(i) + ((h << 5) - h); return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length] }
 function getInitials(name: string) { const clean = (name || '').replace(/[^a-zA-Z\s]/g, '').trim(); if (!clean) return '\u2022'; return clean.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) }
 function fmtMoney(v: number) { return `GH₵${(v||0).toLocaleString()}` }
-function fmtDate(d: string) { if (!d) return 'Ã¢â‚¬â€'; try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) } catch { return d } }
+function fmtDate(d: string) { if (!d) return '—'; try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) } catch { return d } }
 function fmtCountdown(target: string) {
   const diff = new Date(target).getTime() - Date.now()
   if (diff <= 0) return { text: 'NOW', urgency: 'now' as const }
@@ -40,7 +40,7 @@ function stageClass(stage: string): string {
   return ''
 }
 
-/** Procedural person silhouette SVG Ã¢â‚¬â€ unique hue per name */
+/** Procedural person silhouette SVG — unique hue per name */
 function PersonAvatar({ name, size = 80 }: { name: string; size?: number }) {
   const color = getAvatarColor(name)
   return (
@@ -172,7 +172,7 @@ export default function CRMSection() {
   const [batchLocation, setBatchLocation] = useState('')
   const [batchSelfImage, setBatchSelfImage] = useState<string>('')
   const [detailTab, setDetailTab] = useState<'overview'|'projects'|'invoices'|'notes'|'activity'|'email'|'calls'|'contacts'>('overview')
-  // Ã¢â€â‚¬Ã¢â€â‚¬ Contacts tab state Ã¢â€â‚¬Ã¢â€â‚¬
+  // ──── Contacts tab state ────
   const [contactsList, setContactsList] = useState<any[]>([])
   const [contactsLoading, setContactsLoading] = useState(false)
   const [showAddContact, setShowAddContact] = useState(false)
@@ -333,7 +333,7 @@ export default function CRMSection() {
     })
   }, [filtered, sortConfig])
 
-  // "Others" tab Ã¢â‚¬â€ contacts added by other team members
+  // "Others" tab — contacts added by other team members
   const othersClients = useMemo(() => {
     if (!user?.email) return []
     return activeClients
@@ -391,7 +391,7 @@ export default function CRMSection() {
     }
   }
 
-  // Derive client calls from global callLogs (reactive Ã¢â‚¬â€ updates when callLogs change)
+  // Derive client calls from global callLogs (reactive — updates when callLogs change)
   const clientCallsForActive = useMemo(() => {
     if (!activeClient?.client_id) return []
     return (allCallLogs || [])
@@ -402,6 +402,10 @@ export default function CRMSection() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
+    const hasIdentity = form.name.trim() || form.company.trim()
+    const hasContact = form.email.trim() || form.phone.trim()
+    if (!hasIdentity) { alert('Please provide either a Company Name or a Full Name.'); return }
+    if (!hasContact) { alert('Please provide either an Email or a Phone number.'); return }
     setBusyAdd(true)
     try {
       const ok = await adminActions.createClient(form)
@@ -451,7 +455,7 @@ export default function CRMSection() {
   }
 
   const openStagePopup = (clientId: string, stage: string, _direction: 'advance'|'regress') => {
-    // Instant stage change Ã¢â‚¬â€ no popup required
+    // Instant stage change — no popup required
     void _direction
     handleAdvanceStage(clientId, stage)
   }
@@ -502,7 +506,7 @@ export default function CRMSection() {
     await adminActions.updateClientTags(activeClient.client_id, updated)
   }
 
-  // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â CLIENT DETAIL VIEW Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+  // ═══ CLIENT DETAIL VIEW ═══
   if (activeClient) {
     const c = activeClient
     const tabs = [
@@ -580,7 +584,7 @@ export default function CRMSection() {
                     adminActions.loadClients()
                   }}
                   className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border cursor-pointer transition-all ${isPublic ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20' : 'text-neutral-500 bg-neutral-800/50 border-neutral-700/50 hover:bg-neutral-800'}`}
-                  title={isPublic ? 'Visible to all staff Ã¢â‚¬â€ click to make private' : 'Only visible to you Ã¢â‚¬â€ click to make public'}
+                  title={isPublic ? 'Visible to all staff — click to make private' : 'Only visible to you — click to make public'}
                 >
                   {isPublic ? <Globe className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
                   {isPublic ? 'Public' : 'Private'}
@@ -661,7 +665,7 @@ export default function CRMSection() {
                 ))}
               </div>
 
-              {/* Ã¢â€â‚¬Ã¢â€â‚¬ Call Summary Quick Card Ã¢â€â‚¬Ã¢â€â‚¬ */}
+              {/* ──── Call Summary Quick Card ──── */}
               {(() => {
                 const calls = clientCallsForActive
                 if (calls.length === 0) return (
@@ -777,8 +781,8 @@ export default function CRMSection() {
                   <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-2">Contact Info</p>
                   <div className="space-y-1.5 text-sm">
                     <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Email:</span>{c.email}</p>
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Phone:</span>{c.phone || 'Ã¢â‚¬â€'}</p>
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Company:</span>{c.company || 'Ã¢â‚¬â€'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Phone:</span>{c.phone || '—'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Company:</span>{c.company || '—'}</p>
                     {c.address && <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Location:</span>{c.address}</p>}
                     {c.website && <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Web:</span><a href={c.website} target="_blank" rel="noreferrer" className="text-[#00bfff] hover:underline">{c.website}</a></p>}
                   </div>
@@ -786,9 +790,9 @@ export default function CRMSection() {
                 <div className="crm-metric">
                   <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-2">Details</p>
                   <div className="space-y-1.5 text-sm">
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Industry:</span>{c.industry || 'Ã¢â‚¬â€'}</p>
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Source:</span>{c.source || 'Ã¢â‚¬â€'}</p>
-                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Profile:</span>{c.buyer_profile ? personas.find(p => p.id === c.buyer_profile)?.title || c.buyer_profile : 'Ã¢â‚¬â€'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Industry:</span>{c.industry || '—'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Source:</span>{c.source || '—'}</p>
+                    <p className="text-neutral-300"><span className="text-neutral-600 mr-2">Profile:</span>{c.buyer_profile ? personas.find(p => p.id === c.buyer_profile)?.title || c.buyer_profile : '—'}</p>
                     {c.self_image && (
                       <p className="text-neutral-300 flex items-center gap-2"><span className="text-neutral-600 mr-2">Self-Image:</span>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
@@ -827,7 +831,7 @@ export default function CRMSection() {
                   <div className="mt-2 flex items-center gap-2">
                     <svg className="w-3.5 h-3.5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                     <span className="text-[10px] text-amber-500/80 font-bold">Laugh Factor</span>
-                    <span className="text-[10px] text-neutral-500">They laughed when describing it Ã¢â‚¬â€ high-value signal</span>
+                    <span className="text-[10px] text-neutral-500">They laughed when describing it — high-value signal</span>
                   </div>
                 )}
               </div>
@@ -864,7 +868,7 @@ export default function CRMSection() {
               </button>
 
               {(c.projects || []).length === 0 ? (
-                <p className="text-neutral-600 text-sm text-center py-8">No projects yet Ã¢â‚¬â€ add one above</p>
+                <p className="text-neutral-600 text-sm text-center py-8">No projects yet — add one above</p>
               ) : (c.projects || []).map((p: any) => {
                 const stepPct = Math.min(((parseFloat(p.step) || 0) / 10) * 100, 100)
                 return (
@@ -950,7 +954,7 @@ export default function CRMSection() {
                 <div key={inv.invoice_id} className="crm-card !cursor-default flex items-center justify-between">
                   <div>
                     <p className="text-sm font-bold text-[#ff7a00] font-mono">{inv.invoice_id}</p>
-                    <p className="text-xs text-neutral-500 mt-0.5">{inv.type} Ã¢â‚¬â€ Due: {fmtDate(inv.due_date)}</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">{inv.type} — Due: {fmtDate(inv.due_date)}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-white">{fmtMoney(Number(inv.total))}</p>
@@ -978,12 +982,12 @@ export default function CRMSection() {
                 ) : (c.notes_list || []).map((n: any, i: number) => (
                   <div key={n.note_id || i} className="crm-timeline-item note" style={{ animationDelay: `${i * 0.05}s` }}>
                     <p className="text-sm text-white">{n.content}</p>
-                    <p className="text-[10px] text-neutral-600 mt-1">{n.author} Ã¢â‚¬â€ {fmtDate(n.created_at)}</p>
+                    <p className="text-[10px] text-neutral-600 mt-1">{n.author} — {fmtDate(n.created_at)}</p>
                   </div>
                 ))}
               </div>
 
-              {/* Ã¢â€â‚¬Ã¢â€â‚¬ Call Intelligence Summaries Ã¢â€â‚¬Ã¢â€â‚¬ */}
+              {/* ──── Call Intelligence Summaries ──── */}
               {clientCallsForActive.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-3 pt-3 border-t border-neutral-800">
@@ -1009,7 +1013,7 @@ export default function CRMSection() {
                               <span className="text-[10px] text-neutral-600">{dMin}:{String(dSec).padStart(2, '0')}</span>
                             </div>
                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${call.outcome === 'meeting_booked' ? 'bg-emerald-500/15 text-emerald-400' : call.outcome === 'no_interest' ? 'bg-red-500/15 text-red-400' : 'bg-neutral-800 text-neutral-400'}`}>
-                              {outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || 'Ã¢â‚¬â€'}
+                              {outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || '—'}
                             </span>
                           </div>
 
@@ -1173,12 +1177,12 @@ export default function CRMSection() {
                 const outcomeLabels: Record<string, string> = {
                   meeting_booked: 'Meeting Booked',
                   callback_scheduled: 'Callback Scheduled',
-                  interested_will_revert: 'Interested Ã¢â‚¬â€ Will Revert',
+                  interested_will_revert: 'Interested — Will Revert',
                   no_interest: 'No Interest',
                   needs_follow_up: 'Needs Follow-Up',
                 }
                 const outcomeColor = outcomeColors[call.outcome] || '#64748b'
-                const outcomeLabel = outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || 'Ã¢â‚¬â€'
+                const outcomeLabel = outcomeLabels[call.outcome] || call.outcome?.replace(/_/g, ' ') || '—'
 
                 let dataCapture: Record<string, any> = {}
                 try { const raw = call.data_capture || call.data_capture_json; dataCapture = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch { /* ignored */ }
@@ -1204,7 +1208,7 @@ export default function CRMSection() {
                           </div>
                           <div className="flex items-center gap-3 mt-0.5 text-[11px] text-neutral-500">
                             <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{durationStr}</span>
-                            <span>{call.caller_name || (call.caller_email ? resolveStaffName(call.caller_email) : 'Ã¢â‚¬â€')}</span>
+                            <span>{call.caller_name || (call.caller_email ? resolveStaffName(call.caller_email) : '—')}</span>
                             {call.path_loaded && <span className="text-neutral-600">{call.path_loaded.replace(/_/g, ' ')}</span>}
                           </div>
                         </div>
@@ -1221,15 +1225,15 @@ export default function CRMSection() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                           <div>
                             <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Environment</p>
-                            <p className="text-xs text-neutral-300 font-medium">{(call.environment_type || 'Ã¢â‚¬â€').replace(/_/g, ' ')}</p>
+                            <p className="text-xs text-neutral-300 font-medium">{(call.environment_type || '—').replace(/_/g, ' ')}</p>
                           </div>
                           <div>
                             <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Persona</p>
-                            <p className="text-xs text-neutral-300 font-medium">{(call.persona_type || 'Ã¢â‚¬â€').replace(/_/g, ' ')}</p>
+                            <p className="text-xs text-neutral-300 font-medium">{(call.persona_type || '—').replace(/_/g, ' ')}</p>
                           </div>
                           <div>
                             <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Path</p>
-                            <p className="text-xs text-neutral-300 font-medium">{(call.path_loaded || 'Ã¢â‚¬â€').replace(/_/g, ' ')}</p>
+                            <p className="text-xs text-neutral-300 font-medium">{(call.path_loaded || '—').replace(/_/g, ' ')}</p>
                           </div>
                           <div>
                             <p className="text-[9px] text-neutral-700 uppercase tracking-wider mb-0.5">Auto-Advanced</p>
@@ -1356,7 +1360,7 @@ export default function CRMSection() {
     )
   }
 
-  // Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â CLIENTS LIST VIEW (CRM Home) Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â
+  // ═══ CLIENTS LIST VIEW (CRM Home) ═══
   const outstandingTotal = activeClients.reduce((s: number, c: any) => s + Number(c.outstanding || 0), 0)
 
   return (
@@ -1402,10 +1406,10 @@ export default function CRMSection() {
             <input value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-9 pr-3 py-1.5 bg-neutral-900/50 border border-neutral-800 rounded-lg text-white placeholder-neutral-600 focus:outline-none focus:border-[#00bfff] focus:bg-neutral-900 transition-all text-sm" placeholder="Search clients..." />
           </div>
         </div>
-        {/* Action Row: Add buttons + Filter toggle Ã¢â‚¬â€ Contacts mode only */}
+        {/* Action Row: Add buttons + Filter toggle — Contacts mode only */}
         {viewMode === 'contacts' && (
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {/* Link Extractor Ã¢â‚¬â€ prominent, always visible */}
+          {/* Link Extractor — prominent, always visible */}
           <button onClick={() => setShowLinkExtractor(true)}
             className="crm-link-extractor-btn flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#8b5cf6]/15 to-[#00bfff]/15 border border-[#8b5cf6]/30 text-[#8b5cf6] rounded-xl text-xs sm:text-sm font-bold cursor-pointer hover:border-[#8b5cf6]/50 hover:shadow-[0_0_15px_rgba(139,92,246,0.15)] transition-all">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1439,7 +1443,7 @@ export default function CRMSection() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-white font-semibold truncate">{cl.name || 'Unnamed'}</p>
-                      <p className="text-[10px] text-neutral-500 truncate">{cl.company || 'No company'} Ã‚Â· {cl.phone || 'No phone'}</p>
+                      <p className="text-[10px] text-neutral-500 truncate">{cl.company || 'No company'} · {cl.phone || 'No phone'}</p>
                     </div>
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border flex-shrink-0" style={{
                       color: cl.prospect_stage === 'client' ? '#10b981' : cl.prospect_stage === 'qualified' ? '#00bfff' : '#64748b',
@@ -1518,7 +1522,7 @@ export default function CRMSection() {
         </div>
       )}
 
-      {/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â PIPELINE VIEW Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */}
+      {/* ═══ PIPELINE VIEW ═══ */}
       {viewMode === 'pipeline' && (<>
         <div className="pipeline-scroll flex gap-2 sm:gap-3 overflow-x-auto overflow-y-auto pb-4" style={{ maxHeight: 'calc(100vh - 260px)', minHeight: 300 }}>
           {STAGES.filter(s => !s.hidden).map((stage) => {
@@ -1589,7 +1593,7 @@ export default function CRMSection() {
         </div>
       </>)}
 
-      {/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â OTHERS VIEW Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */}
+      {/* ═══ OTHERS VIEW ═══ */}
       {viewMode === 'others' && (<>
         <div className="p-3 bg-[#00bfff]/5 border border-[#00bfff]/15 rounded-xl mb-4 flex items-start gap-2.5">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00bfff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
@@ -1640,7 +1644,7 @@ export default function CRMSection() {
                       <button 
                         onClick={(e) => { e.stopPropagation(); setCallGuideClient(c) }}
                         className="w-8 h-8 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center transition-all cursor-pointer group/call"
-                        title="Start Call Ã¢â‚¬â€ Take Ownership"
+                        title="Start Call — Take Ownership"
                       >
                         <Phone className="w-4 h-4 text-emerald-500 group-hover/call:scale-110 transition-transform" />
                       </button>
@@ -1802,7 +1806,7 @@ export default function CRMSection() {
 
       </div>{/* end flex-1 content column */}
 
-      {/* Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â FILTER SIDEBAR Ã¢â€¢ÂÃ¢â€¢ÂÃ¢â€¢Â */}
+      {/* ═══ FILTER SIDEBAR ═══ */}
       {showFilters && (
         <div className="w-64 sm:w-72 flex-shrink-0 bg-neutral-950/60 border border-neutral-800 rounded-xl p-4 space-y-5 h-fit sticky top-4 crm-fade-in">
           <div className="flex items-center justify-between">
@@ -1927,16 +1931,40 @@ export default function CRMSection() {
               <button onClick={() => setShowAdd(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleAdd} className="space-y-3">
-              <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={inputCls} placeholder="Full name *" required />
-              <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className={inputCls} placeholder="Email *" required />
+              <input value={form.company} onChange={e => setForm({...form, company: e.target.value})} className={inputCls} placeholder={form.name.trim() ? 'Company (optional)' : 'Company name *'} />
+              <input value={form.name} onChange={e => setForm({...form, name: e.target.value})} className={inputCls} placeholder={form.company.trim() ? 'Full name (optional)' : 'Full name *'} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputCls} placeholder="Phone" />
-                <input value={form.company} onChange={e => setForm({...form, company: e.target.value})} className={inputCls} placeholder="Company" />
+                <input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className={inputCls} placeholder={form.phone.trim() ? 'Email (optional)' : 'Email *'} />
+                <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputCls} placeholder={form.email.trim() ? 'Phone (optional)' : 'Phone *'} />
               </div>
               <DuplicateWarning clients={activeClients} fields={{ name: form.name, email: form.email, phone: form.phone, company: form.company }}
                 onPick={(c) => { setShowAdd(false); openClient(c) }} />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input value={form.industry} onChange={e => setForm({...form, industry: e.target.value})} className={inputCls} placeholder="Industry" />
+                <div className="relative">
+                  <input list="industry-options" value={form.industry} onChange={e => setForm({...form, industry: e.target.value})} className={inputCls} placeholder="Industry" autoComplete="off" />
+                  <datalist id="industry-options">
+                    {/* Previous entries from existing clients */}
+                    {[...new Set(activeClients.map((c: any) => c.industry).filter(Boolean))].sort().map((ind: string) => (
+                      <option key={ind} value={ind} />
+                    ))}
+                    {/* Exhaustive standard industries */}
+                    {['Accounting & Auditing', 'Advertising & Marketing', 'Aerospace & Defense', 'Agriculture & Farming', 'Architecture & Design',
+                      'Automotive', 'Banking & Financial Services', 'Biotechnology', 'Broadcasting & Media', 'Chemicals & Materials',
+                      'Civil Engineering', 'Construction & Real Estate', 'Consulting', 'Consumer Electronics', 'E-commerce & Retail',
+                      'Education & Training', 'Energy & Utilities', 'Entertainment & Events', 'Environmental Services', 'Fashion & Apparel',
+                      'Film & Video Production', 'Food & Beverage', 'Government & Public Sector', 'Healthcare & Medical', 'Hospitality & Tourism',
+                      'Human Resources & Recruitment', 'Import & Export', 'Information Technology', 'Insurance', 'Interior Design',
+                      'Investment & Venture Capital', 'Legal Services', 'Logistics & Supply Chain', 'Manufacturing', 'Maritime & Shipping',
+                      'Mining & Metals', 'Music & Recording', 'NGO & Non-Profit', 'Oil & Gas', 'Pharmaceuticals',
+                      'Photography & Videography', 'Print & Publishing', 'Professional Services', 'Property Management', 'Religion & Faith-Based',
+                      'Research & Development', 'Restaurants & Catering', 'Security & Investigations', 'Social Media & Digital', 'Software & SaaS',
+                      'Sports & Fitness', 'Telecommunications', 'Textiles & Garments', 'Transportation', 'Veterinary & Animal Care',
+                      'Warehousing & Distribution', 'Waste Management', 'Water & Sanitation', 'Wholesale & Trading'
+                    ].filter(ind => !activeClients.some((c: any) => c.industry === ind)).map(ind => (
+                      <option key={ind} value={ind} />
+                    ))}
+                  </datalist>
+                </div>
                 <input value={form.source} onChange={e => setForm({...form, source: e.target.value})} className={inputCls} placeholder="Source (e.g. Referral)" />
               </div>
               <input value={form.website} onChange={e => setForm({...form, website: e.target.value})} className={inputCls} placeholder="Website (optional)" />
@@ -1948,7 +1976,8 @@ export default function CRMSection() {
         </div>
       )}
 
-      {/* Add Prospect Modal Ã¢â‚¬â€ enriched with phone, location, buyer profile, SLA seed */}
+
+      {/* Add Prospect Modal — enriched with phone, location, buyer profile, SLA seed */}
       {showAddProspect && (
         <div className={modalBg} onClick={() => { setShowAddProspect(false); setBatchMode(false) }}>
           <div className={`${modalCard} !max-w-md`} onClick={e => e.stopPropagation()}>
@@ -1967,7 +1996,7 @@ export default function CRMSection() {
             </div>
 
             {batchMode ? (
-              /* Ã¢â€â‚¬Ã¢â€â‚¬ Maps Batch Mode Ã¢â€â‚¬Ã¢â€â‚¬ */
+              /* ──── Maps Batch Mode ──── */
               <div className="space-y-3">
                 <div>
                   <label className="text-[10px] text-neutral-600 uppercase tracking-wider block mb-1">Location / Area</label>
@@ -2001,10 +2030,10 @@ export default function CRMSection() {
                 </div>
                 <DuplicateWarning clients={activeClients} fields={{ name: batchName, company: batchName }}
                   onPick={(c) => { setShowAddProspect(false); setBatchMode(false); openClient(c) }} />
-                <p className="text-[10px] text-neutral-600 text-center">Press Enter or click Add Ã¢â‚¬â€ then type the next name. Source auto-set to "Google Maps".</p>
+                <p className="text-[10px] text-neutral-600 text-center">Press Enter or click Add — then type the next name. Source auto-set to "Google Maps".</p>
               </div>
             ) : (
-              /* Ã¢â€â‚¬Ã¢â€â‚¬ Detail Mode Ã¢â€â‚¬Ã¢â€â‚¬ */
+              /* ──── Detail Mode ──── */
               <form onSubmit={handleAddProspect} className="space-y-3">
                 <input value={prospectForm.name} onChange={e => setProspectForm({...prospectForm, name: e.target.value})} className={inputCls} placeholder="Contact name" />
                 <input value={prospectForm.company} onChange={e => setProspectForm({...prospectForm, company: e.target.value})} className={inputCls} placeholder="Company name" />
@@ -2018,7 +2047,7 @@ export default function CRMSection() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <input value={prospectForm.source} onChange={e => setProspectForm({...prospectForm, source: e.target.value})} className={inputCls} placeholder="Source (Google Maps, Referral...)" />
                   <select value={prospectForm.buyer_profile} onChange={e => setProspectForm({...prospectForm, buyer_profile: e.target.value})} className={inputCls}>
-                    <option value="">Ã¢â‚¬â€ Buyer Profile Ã¢â‚¬â€</option>
+                    <option value="">— Buyer Profile —</option>
                     {personas.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                   </select>
                 </div>
