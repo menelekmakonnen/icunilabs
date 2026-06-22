@@ -69,8 +69,8 @@ export default function Portfolio() {
         window.history.replaceState({}, '', tag ? `/portfolio?filter=${encodeURIComponent(tag)}` : '/portfolio');
     };
 
-    // Featured projects for the carousel (first 5)
-    const featured = portfolioProjects.slice(0, 5);
+    // Featured projects for the carousel (first 8 — all flagships)
+    const featured = portfolioProjects.slice(0, 8);
 
     // Auto-advance carousel
     useEffect(() => {
