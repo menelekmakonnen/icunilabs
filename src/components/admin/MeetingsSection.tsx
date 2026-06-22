@@ -238,24 +238,21 @@ export default function MeetingsSection() {
     const targetStage = STAGES[nextIdx].id
     setCardBusy(meeting.meeting_id)
     try {
-      let id = meeting.meeting_id
-      // Materialise call-derived meetings so the change has a real row to persist to.
-      if (meeting._inferred || String(id).startsWith('call-')) {
-        const c = clientMap?.[meeting.client_id]
-        const created = await adminActions.createMeeting({
-          client_id: meeting.client_id,
-          client_name: meeting.client_name || c?.name || 'Client',
-          client_company: meeting.client_company || c?.company || '',
-          client_email: meeting.client_email || c?.email || c?.contact_email || '',
-          date: meeting.date || '', time: meeting.time || '',
-          type: meeting.type || 'online',
-          location_or_link: meeting.location_or_link || '',
-          booked_by: meeting.booked_by || '',
-        })
-        id = created?.meeting_id
-        if (!id) { setCardBusy(null); return }
-      }
-      await adminActions.updateMeeting(id, { stage: targetStage })
+      const c = clientMap?.[meeting.client_id]
+      // Single atomic call — the backend materialises call-derived meetings from
+      // this context, so the move always persists.
+      const res = await adminActions.updateMeeting(meeting.meeting_id, {
+        stage: targetStage,
+        client_id: meeting.client_id,
+        client_name: meeting.client_name || c?.name || 'Client',
+        client_company: meeting.client_company || c?.company || '',
+        client_email: meeting.client_email || c?.email || c?.contact_email || '',
+        date: meeting.date || '', time: meeting.time || '',
+        type: meeting.type || 'online',
+        location_or_link: meeting.location_or_link || '',
+        booked_by: meeting.booked_by || '',
+      })
+      if (!res) { alert('Could not move this meeting — please try again.'); return }
       await adminActions.loadMeetings()
     } finally { setCardBusy(null) }
   }
@@ -1335,11 +1332,23 @@ function MeetingDrawer({ meeting, onClose, users, effectiveUser, clientMap }: { 
     if (busy || targetStage === m.stage) return
     setBusy(true)
     setSyncWarning(null)
-    const id = await ensureRealMeeting()
-    if (!id) { setSyncWarning('Could not move this meeting — please refresh and try again.'); setBusy(false); return }
-    const ok = await adminActions.updateMeeting(id, { stage: targetStage })
-    if (ok === false) { setSyncWarning('The stage change did not save. Please try again.'); setBusy(false); return }
-    setM((prev: any) => ({ ...prev, stage: targetStage }))
+    const client = clientMap?.[m.client_id]
+    // Single atomic call — backend materialises inferred meetings from this context.
+    const res: any = await adminActions.updateMeeting(m.meeting_id, {
+      stage: targetStage,
+      client_id: m.client_id,
+      client_name: m.client_name || client?.name || 'Client',
+      client_company: m.client_company || client?.company || '',
+      client_email: m.client_email || client?.email || client?.contact_email || '',
+      date: editDate || m.date || '',
+      time: editTime || m.time || '',
+      type: m.type || 'online',
+      location_or_link: m.location_or_link || '',
+      booked_by: m.booked_by || '',
+    })
+    if (!res) { setSyncWarning('The stage change did not save. Please try again.'); setBusy(false); return }
+    const newId = (res && res.meeting_id) || m.meeting_id
+    setM((prev: any) => ({ ...prev, meeting_id: newId, _inferred: false, stage: targetStage }))
     await adminActions.loadMeetings()
     setBusy(false)
   }

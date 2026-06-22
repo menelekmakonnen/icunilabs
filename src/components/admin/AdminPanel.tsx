@@ -24,6 +24,8 @@ import ContractsSection from './ContractsSection'
 import FloatingCallBubble from './FloatingCallBubble'
 import SectionErrorBoundary from './SectionErrorBoundary'
 import CalendarSection from './CalendarSection'
+import ContactsSection from './ContactsSection'
+import UpcomingCallsSection from './UpcomingCallsSection'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -32,6 +34,8 @@ const NAV = [
   { id: 'calls', label: 'Calls', icon: Phone },
   { id: 'meetings', label: 'Meetings', icon: Clock },
   { id: 'calendar', label: 'Calendar', icon: Calendar },
+  { id: 'contacts', label: 'Contacts', icon: Users },
+  { id: 'callqueue', label: 'Upcoming Calls', icon: Phone },
   { id: 'clients', label: 'Clients', icon: Users },
   { id: 'referrals', label: 'Referrals', icon: UserCheck },
   { id: 'invoices', label: 'Invoices', icon: FileText },
@@ -158,6 +162,8 @@ export default function AdminPanel() {
       case 'mail': return <MailSection />
       case 'clients': return <CRMSection />
       case 'calendar': return <CalendarSection />
+      case 'contacts': return <ContactsSection />
+      case 'callqueue': return <UpcomingCallsSection />
       case 'projects': return <ProjectsSection />
       case 'invoices': return <InvoicesSection />
       case 'careers': return <CareersSection />

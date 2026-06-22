@@ -1671,9 +1671,10 @@ export const adminActions = {
 
   updateMeeting: async (meeting_id: string, data: Record<string, any>) => {
     try {
-      await apiPost('updateMeeting', { token: state.token, meeting_id, ...data })
+      const result = await apiPost('updateMeeting', { token: state.token, meeting_id, ...data })
       await adminActions.loadMeetings()
-      return true
+      // Returns { meeting_id } — may be a NEW id if an inferred meeting was materialised.
+      return result || { meeting_id }
     } catch (err: any) {
       setState({ error: err.message })
       return false

@@ -29,7 +29,9 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
   { id: 'analytics', label: 'Analytics', icon: AnalyticsIcon },
   // Operations
   { id: 'clients', label: 'Clients', icon: ClientsIcon, section: 'Operations' },
+  { id: 'contacts', label: 'Contacts', icon: TeamIcon },
   { id: 'calls', label: 'Calls', icon: PhoneIcon },
+  { id: 'callqueue', label: 'Upcoming Calls', icon: PhoneIcon },
   { id: 'meetings', label: 'Meetings', icon: MeetingsIcon },
   { id: 'calendar', label: 'Calendar', icon: CalendarIcon },
   { id: 'mail', label: 'Mail Hub', icon: MailIcon },
