@@ -1,12 +1,12 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-    Monitor, Database, Film, Users, Terminal, LineChart, Aperture, Key, Book,
+    Database, Film, Users, Terminal, LineChart, Aperture, Key, Book,
     LayoutTemplate, GraduationCap, Zap, Scissors,
-    Music, Gamepad2, Video, Eye, Layers, Radio,
-    BrainCircuit, Box, Globe, Wallet, Building2, Truck, Shirt, Printer,
+    Music, Gamepad2, Video, Eye, Layers,
+    BrainCircuit, Box, Truck, Shirt, Printer,
     Home, ShoppingCart, Heart, Utensils, Camera, Download, Sparkles,
-    Shield, PenTool, Landmark, Dumbbell, FileText, Calculator, Briefcase,
-    Search, MessageSquare, Play, Palette
+    Shield, Landmark, Dumbbell, FileText, Briefcase,
+    Play
 } from 'lucide-react';
 
 export interface ProjectData {
