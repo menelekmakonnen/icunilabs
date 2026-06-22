@@ -37,7 +37,7 @@ export interface ProjectData {
 
 export const TOTAL_PROJECT_COUNT = 80;
 export const TOTAL_WORKSPACE_COUNT = 4;
-export const PRODUCTION_PROJECT_COUNT = 14;
+export const PRODUCTION_PROJECT_COUNT = 13;
 export const ACTIVE_REVENUE_COUNT = 12;
 
 export const portfolioProjects: ProjectData[] = [
@@ -326,23 +326,7 @@ export const portfolioProjects: ProjectData[] = [
         businessImpact: 'Brought real-time inventory visibility to the warehouse operation, eliminating phantom inventory and reducing stockouts. Waste tracking quantified spoilage for the first time, enabling data-driven decisions about ordering quantities and storage. The PrintShopBridge integration eliminated the inventory mismatches that occurred when both businesses drew from shared stock without communicating.',
         expertDeepDive: 'The Security.gs module at 44KB is one of the most comprehensive security implementations in the ICUNI portfolio — covering session management, IP-based rate limiting, action-level audit trails, role validation on every API call, and anomaly detection for unusual stock movements that might indicate theft or fraud. RetailerOps.gs implements a complete B2B relationship management system: retailer onboarding with credit approval workflows, dynamic credit limits based on payment history, automated order suggestions based on purchase patterns, and aging analysis for outstanding receivables. The PrintShopBridge module implements bidirectional inventory synchronization — when PrintShop reserves stock, Warehouse reduces available inventory in real-time, and vice versa. Notifications.gs handles multi-channel alerts (email, in-app) for low stock, overdue payments, and anomalous transactions. The Cache.gs module implements a stale-while-revalidate pattern to minimize Google Sheets read operations.',
     },
-    {
-        id: 'reconcile-pro',
-        title: 'Reconcile Pro',
-        subtitle: 'Payroll Data Reconciliation Desktop App',
-        description: 'An Electron desktop app for iAdjoa Services — "Truth-merged payroll outputs in minutes." Fuse.js fuzzy matching, SheetJS file I/O, XLSX + CSV output, and NSIS installer for Windows distribution.',
-        tags: ['Electron', 'Desktop App', 'FinTech', 'Payroll'],
-        icon: Calculator,
-        color: 'from-blue-500/20 to-sky-600/20',
-        border: 'group-hover:border-blue-500/50',
-        imageUrl: '/images/covers/reconcile-pro.webp',
-        status: 'Production v2.1.0',
-        tier: 'production',
-        clientProblem: 'iAdjoa Services\' Statutory Compliance Department routinely faced the daunting task of manually comparing disparate legacy payroll lists from multiple systems. Misspelled employee names, inconsistent formatting (date formats, ID number styles), and disjointed database exports turned weekly pension and statutory contribution reconciliation into exhausting, error-prone marathon spreadsheet sessions. A single mismatched record could trigger compliance penalties.',
-        solution: 'Delivered Reconcile Pro as a proper shipped desktop application — "truth-merged payroll outputs in minutes." Fuse.js fuzzy search intelligently matches records despite misspellings and format inconsistencies, surfacing high-confidence matches with configurable threshold scoring. SheetJS (xlsx) handles import and export of Excel and CSV files directly. The application outputs reconciled XLSX + CSV reports with match confidence scores, unmatched records flagged for manual review, and summary statistics. Ships with an NSIS installer for professional Windows distribution (AppId: com.icunilabs.reconcile).',
-        businessImpact: 'Dramatically accelerated weekly auditing sprints from hours to minutes, eliminating severe human-error liabilities from the reconciliation equation. Financial personnel were freed to focus on higher-level analytical tasks instead of cross-referencing spreadsheet rows. This is a properly shipped, distributed desktop application — not a prototype — currently at v2.1.0 after multiple production releases.',
-        expertDeepDive: 'The Fuse.js integration implements weighted fuzzy matching across multiple record fields — employee names receive higher match weight than addresses, while ID numbers use exact matching. The configurable threshold system lets compliance officers adjust sensitivity: a lower threshold catches more potential matches (fewer false negatives) while a higher threshold reduces manual review volume (fewer false positives). SheetJS handles the complexity of reading real-world payroll exports — varying column orders, merged cells, hidden sheets, and inconsistent data types — normalizing everything into a clean internal format before matching. The NSIS installer registers the application with Windows Add/Remove Programs, creates desktop and start menu shortcuts, and handles clean uninstallation. The v2.1.0 release cycle demonstrates ongoing production refinement based on real user feedback from the compliance team.',
-    },
+
     {
         id: 'osa',
         title: 'OSA',
@@ -666,8 +650,8 @@ export const portfolioProjects: ProjectData[] = [
     {
         id: 'comfort',
         title: 'Comfort',
-        subtitle: 'Premium Booking & Safety Platform',
-        description: 'A premium service booking platform for Ghana & Africa with industry-leading safety features — SOS panic button with GPS alerts, Paystack escrow with 15% commission, Tinder-style discovery, real-time GPS tracking via Firebase, and GodMode governance.',
+        subtitle: 'Wellness & Provider Services Platform',
+        description: 'A premium wellness and provider services booking platform for Ghana and Africa — connecting clients with verified wellness practitioners, personal care providers, and lifestyle service professionals through a safety-first architecture with GPS tracking, SOS alerts, and Paystack escrow.',
         tags: ['Google Apps Script', 'Firebase', 'Paystack', 'GPS Tracking', 'Ghana'],
         icon: Shield,
         color: 'from-rose-500/20 to-pink-600/20',
@@ -675,10 +659,10 @@ export const portfolioProjects: ProjectData[] = [
         imageUrl: '/images/covers/comfort.webp',
         status: 'Production',
         tier: 'active',
-        clientProblem: 'Service booking platforms in Ghana and across Africa face a unique challenge that Western platforms don\'t address: physical safety. When clients book in-person services, both parties need trust mechanisms that go beyond reviews. There\'s no platform that combines booking convenience with genuine safety infrastructure — panic buttons, real-time GPS tracking, timed check-ins, and emergency contact alerts. Existing booking platforms treat safety as an afterthought, adding a report button and calling it sufficient.',
-        solution: 'Built Comfort as a premium service booking platform with safety as the primary architectural concern. The SOS emergency system implements a panic button that triggers SMS alerts with GPS coordinates to pre-registered emergency contacts and freezes the active booking. Real-time GPS tracking via Firebase + Google Maps provides live location sharing during active sessions. Timed session check-in/check-out with overdue auto-alerts ensures sessions don\'t extend beyond agreed timeframes. Paystack payment escrow with 15% commission holds funds until service completion. The platform features Phone + OTP authentication, 4-Tier RBAC (Client, Performer, Admin, GodMode), Tinder-style swipe discovery for browsing service providers, a full booking lifecycle (create → approve → pay → track → arrive → review), blocklist functionality, two-way review system with trust scores, referral system, and admin dashboard with revenue reports. A glassmorphic dark theme provides premium visual identity.',
-        businessImpact: 'Creates the safety infrastructure that makes in-person service booking viable in markets where trust is the primary barrier to adoption. The SOS system, GPS tracking, and timed check-ins address genuine safety concerns that prevent potential users from engaging with booking platforms. The 15% commission model on Paystack escrow provides a sustainable revenue stream while the escrow mechanism protects both clients and service providers.',
-        expertDeepDive: 'The safety architecture is the engineering centerpiece. The SOS system chains multiple notification channels: pressing the panic button simultaneously sends SMS via a messaging API with GPS coordinates embedded in a Google Maps link, pushes an alert to the admin dashboard, freezes the active booking (preventing state changes), and logs the incident with timestamp, location, and involved parties to a 14-sheet Google Sheets database. Firebase Realtime Database provides the GPS tracking layer — both client and performer apps push location updates to Firebase, which distributes them to all authorized watchers in real-time via the Google Maps JavaScript API. The timed session system uses GAS time-driven triggers to check for overdue sessions and fire escalating alerts: first a gentle reminder, then an urgent notification, then admin escalation. GodMode provides feature flags (enable/disable platform features without deployment), maintenance mode (graceful degradation during updates), raw database access (direct spreadsheet editing), and a complete audit log.',
+        clientProblem: 'Wellness and personal care providers in Ghana and across Africa operate in a fragmented market with no centralized booking infrastructure. Massage therapists, personal trainers, nutritionists, home care professionals, and lifestyle service providers rely on word-of-mouth and WhatsApp to find clients. When in-person services are booked, both parties need trust mechanisms beyond simple reviews — there is no platform that combines booking convenience with genuine safety infrastructure like real-time tracking, session check-ins, and emergency alerts. Existing platforms treat safety as an afterthought.',
+        solution: 'Built Comfort as a premium wellness and provider services platform with safety as the primary architectural concern. The SOS emergency system implements a panic button that triggers SMS alerts with GPS coordinates to pre-registered emergency contacts and freezes the active booking. Real-time GPS tracking via Firebase + Google Maps provides live location sharing during active sessions. Timed session check-in/check-out with overdue auto-alerts ensures sessions run within agreed timeframes. Paystack payment escrow with 15% commission holds funds until service completion, protecting both clients and providers. The platform features Phone + OTP authentication, 4-Tier RBAC (Client, Provider, Admin, GodMode), swipe-based discovery for browsing verified providers, a full booking lifecycle (create, approve, pay, track, arrive, review), blocklist functionality, two-way review system with trust scores, referral system, and admin dashboard with revenue reports. A glassmorphic dark theme provides a premium visual identity.',
+        businessImpact: 'Creates the trust and safety infrastructure that makes in-person wellness service booking viable in markets where safety is the primary barrier to adoption. The SOS system, GPS tracking, and timed check-ins address genuine concerns that prevent potential users from engaging with booking platforms. The 15% commission model on Paystack escrow provides a sustainable revenue stream while the escrow mechanism protects both clients and service providers from disputes.',
+        expertDeepDive: 'The safety architecture is the engineering centerpiece. The SOS system chains multiple notification channels: pressing the panic button simultaneously sends SMS via a messaging API with GPS coordinates embedded in a Google Maps link, pushes an alert to the admin dashboard, freezes the active booking (preventing state changes), and logs the incident with timestamp, location, and involved parties to a 14-sheet Google Sheets database. Firebase Realtime Database provides the GPS tracking layer — both client and provider apps push location updates to Firebase, which distributes them to all authorized watchers in real-time via the Google Maps JavaScript API. The timed session system uses GAS time-driven triggers to check for overdue sessions and fire escalating alerts: first a gentle reminder, then an urgent notification, then admin escalation. GodMode provides feature flags (enable/disable platform features without deployment), maintenance mode (graceful degradation during updates), raw database access (direct spreadsheet editing), and a complete audit log.',
     },
     {
         id: 'im-hungry',
@@ -792,41 +776,7 @@ export const portfolioProjects: ProjectData[] = [
         businessImpact: 'Saves photography clients hours of tedious individual downloading. A 500-photo wedding gallery that would take 3+ hours to download manually completes in minutes. HD resolution targeting ensures clients receive the full-quality images they paid for, not compressed web-preview versions.',
         expertDeepDive: 'The Chrome Extension (Manifest V3) injects content scripts into Pixieset gallery pages that enumerate all image elements and extract the underlying CDN URLs. Pixieset\'s CDN structure uses resolution-based URL paths (e.g., /large/, /xlarge/, /original/) — PixieGrab attempts the highest resolution first and falls through to lower resolutions if the server returns a 403 or 404. Downloads use the chrome.downloads API with queued execution and configurable concurrency to respect rate limits. The PowerShell companion tools implement the same CDN URL resolution logic for headless/scripted operation, using Invoke-WebRequest with retry logic and exponential backoff for robust downloads over unreliable connections.',
     },
-    {
-        id: 'cleanup-crew',
-        title: 'CleanupCrew',
-        subtitle: 'Intelligent Data Rewrite Tool',
-        description: 'Upload financial spreadsheets, set target totals, and intelligently prune entries while preserving natural date distribution — a self-contained single HTML file (75KB) with SheetJS, Chart.js, and a dark glassmorphic UI.',
-        tags: ['Data Tools', 'Finance', 'Single-File App'],
-        icon: FileText,
-        color: 'from-neutral-500/20 to-gray-600/20',
-        border: 'group-hover:border-neutral-500/50',
-        imageUrl: '/images/covers/cleanup-crew.webp',
-        status: 'Complete',
-        tier: 'spec',
-        githubUrl: 'https://github.com/menelekmakonnen/cleanupcrew.git',
-        clientProblem: 'Financial analysts occasionally need to create sanitized demonstration datasets from real financial data — removing specific entries to reach a target total while ensuring the resulting data looks naturally distributed across dates. Manual pruning introduces obvious patterns (all removals clustered in one period), and automated random removal doesn\'t respect distribution requirements. The tool needed to be completely self-contained with no server dependencies, shareable as a single file.',
-        solution: 'Built CleanupCrew as a self-contained single HTML file (75KB) that handles the complete workflow: upload financial spreadsheets via SheetJS (xlsx), set target totals, and intelligently prune entries using an algorithm that preserves natural date distribution. Chart.js visualizes the before/after distribution to verify the result looks authentic. The dark glassmorphic UI provides a premium visual experience. No installation, no dependencies, no server — just open the HTML file in any browser.',
-        businessImpact: 'Provides a zero-dependency tool for financial data sanitization that can be shared as a single file attachment. The distribution-preserving algorithm ensures pruned datasets look natural under visual and statistical inspection. The self-contained architecture means the tool works on any machine with a web browser — no installation required.',
-        expertDeepDive: 'The pruning algorithm is the engineering core: rather than randomly removing entries, it analyzes the temporal distribution of the source data (entries per day/week/month), calculates the proportional contribution of each time period, and removes entries proportionally across all periods to maintain the original distribution shape. The algorithm iteratively removes the entry whose removal brings the total closest to the target while minimizing distribution distortion — a greedy optimization that converges quickly. SheetJS handles the XLSX parsing and generation, supporting complex workbook structures with multiple sheets, merged cells, and formatted data. Chart.js renders side-by-side bar charts showing the before/after date distribution for visual verification. The entire application — including SheetJS and Chart.js libraries — is inlined into a single 75KB HTML file using base64-encoded dependencies and inline scripts.',
-    },
-    {
-        id: 'leti-arts',
-        title: 'Leti Arts',
-        subtitle: 'Gaming Studio Website',
-        description: 'A corporate website for Africa\'s pioneering game development and interactive media studio (since 2009) — multi-page static site covering About, Blog, Careers, Community, Consulting, Games, and Talent, built from a 58KB specification.',
-        tags: ['Static Site', 'Gaming', 'Corporate Solutions'],
-        icon: Gamepad2,
-        color: 'from-purple-500/20 to-indigo-600/20',
-        border: 'group-hover:border-purple-500/50',
-        imageUrl: '/images/covers/leti-arts.webp',
-        status: 'Complete',
-        tier: 'spec',
-        clientProblem: 'Leti Arts — Africa\'s pioneering game development studio, active since 2009 — needed a corporate website that properly represented their position as an industry leader. Their digital presence didn\'t reflect the breadth of their operations across game development, interactive media, consulting, and talent development. The website needed to serve multiple audiences: gamers discovering their titles, enterprises seeking consulting partnerships, and talent looking for careers in African game development.',
-        solution: 'Designed and specified a multi-page corporate website from a comprehensive 58KB specification document covering seven sections: About (company history and mission), Blog (industry insights and company updates), Careers (job listings and culture), Community (player engagement and events), Consulting (enterprise services and case studies), Games (portfolio showcase with trailers and screenshots), and Talent (team profiles and recruitment pipeline). The specification defines information architecture, content requirements, visual design direction, and interaction patterns for each section.',
-        businessImpact: 'Provides Leti Arts with a digital presence that matches their pioneering status in African game development. The multi-section architecture serves all audience segments — gamers, enterprise clients, and prospective talent — from a single cohesive website. The 58KB specification ensures development can proceed with minimal ambiguity and revision cycles.',
-        expertDeepDive: 'The 58KB specification document follows ICUNI\'s product specification methodology — a structured approach to website design that defines information architecture (site map, navigation structure, page hierarchy), content strategy (content types, editorial calendar, SEO requirements), visual design system (typography, color palette, spacing, component library), interaction patterns (hover states, transitions, mobile gestures), and technical requirements (performance budgets, accessibility standards, analytics integration). The multi-page static site architecture prioritizes SEO and performance over framework complexity — each page is independently loadable and cacheable, with shared navigation and footer components. The Games section implements a portfolio showcase pattern with filterable categories, media galleries (screenshots, trailers), and structured metadata for each title.',
-    },
+
     {
         id: 'metaphor',
         title: 'Metaphor',
