@@ -252,7 +252,24 @@ let state: AdminState = {
 
 const listeners = new Set<() => void>()
 
+// Fields that MUST always be arrays — validated in setState to prevent
+// non-array API responses from crashing downstream .filter()/.forEach()/.map()
+const ARRAY_FIELDS = new Set([
+  'users','clients','projects','invoices','jobs','applications',
+  'referrers','referrals','referrerMaterials','referrerNotifications',
+  'logs','slaStatuses','slaCosts','callFollowUpSLA','slaNotifications',
+  'blogPosts','portfolio','clientActivity','callLogs','competitorIntel',
+  'meetings','projectRegistry','inbox','emailAliases','emailTemplates',
+  'myContracts','allContracts',
+])
+
 function setState(partial: Partial<AdminState>) {
+  // Safety: coerce any non-array value for known array fields back to []
+  for (const key of Object.keys(partial)) {
+    if (ARRAY_FIELDS.has(key) && !Array.isArray((partial as any)[key])) {
+      (partial as any)[key] = []
+    }
+  }
   state = { ...state, ...partial }
   listeners.forEach(l => l())
 }
@@ -433,14 +450,14 @@ export const adminActions = {
   loadUsers: async () => {
     try {
       const users = await apiPost('getUsers', { token: state.token })
-      setState({ users: users || [] })
+      setState({ users: Array.isArray(users) ? users : [] })
     } catch (err: any) { setState({ error: err.message }) }
   },
 
   loadClients: async () => {
     try {
       const clients = await apiPost('getClients', { token: state.token })
-      const raw = clients || []
+      const raw = Array.isArray(clients) ? clients : []
 
       // Debug: log prospect_stage values from server
       if (raw.length > 0) {
@@ -466,14 +483,14 @@ export const adminActions = {
   loadProjects: async () => {
     try {
       const projects = await apiPost('getProjects', { token: state.token })
-      setState({ projects: projects || [] })
+      setState({ projects: Array.isArray(projects) ? projects : [] })
     } catch (err: any) { setState({ error: err.message }) }
   },
 
   loadInvoices: async () => {
     try {
       const invoices = await apiPost('getInvoices', { token: state.token })
-      setState({ invoices: invoices || [] })
+      setState({ invoices: Array.isArray(invoices) ? invoices : [] })
     } catch (err: any) { setState({ error: err.message }) }
   },
 
@@ -1651,8 +1668,9 @@ export const adminActions = {
   loadMeetings: async () => {
     try {
       const result = await apiPost('getMeetings', { token: state.token })
-      setState({ meetings: result?.meetings || [] })
-      return result?.meetings || []
+      const meetings = Array.isArray(result?.meetings) ? result.meetings : []
+      setState({ meetings })
+      return meetings
     } catch (err: any) { setState({ error: err.message }); return [] }
   },
 
