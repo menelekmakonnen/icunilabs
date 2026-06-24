@@ -59,9 +59,10 @@ export default function AdminPanel() {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
-  const [adminTheme, setAdminTheme] = useState(() =>
-    localStorage.getItem('icuni_admin_theme') || 'modern'
-  )
+  const [adminTheme, setAdminTheme] = useState(() => {
+    try { return localStorage.getItem('icuni_admin_theme') || 'modern' }
+    catch { return 'modern' }
+  })
 
   // ── Session validation — must be called before any early returns (React hook rules) ──
   useEffect(() => { adminActions.validateSession() }, [])
@@ -407,7 +408,7 @@ export default function AdminPanel() {
               </div>
             )}
             {isElevated && (
-              <button onClick={() => { setShowImpersonate(!showImpersonate); setShowActAs(false); if (!users.length) adminActions.loadUsers() }}
+              <button onClick={() => { setShowImpersonate(!showImpersonate); setShowActAs(false); if (!users?.length) adminActions.loadUsers() }}
                 className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer border border-neutral-800">
                 <UserCircle className="w-3.5 h-3.5" />Impersonate
               </button>
@@ -435,10 +436,10 @@ export default function AdminPanel() {
             </div>
             <p className="text-xs text-neutral-500 mb-4">View the app as this user sees it. Useful for demoing and troubleshooting.</p>
             <div className="max-h-64 overflow-y-auto space-y-1">
-              {users.length === 0 ? (
+              {!users?.length ? (
                 <p className="text-sm text-neutral-600 text-center py-4">Loading users...</p>
               ) : (
-                users.map((u: any) => (
+                (users || []).map((u: any) => (
                   <button key={u.id} onClick={async () => {
                     setShowImpersonate(false)
                     // Server-side impersonation: creates a time-limited token and writes the audit log.

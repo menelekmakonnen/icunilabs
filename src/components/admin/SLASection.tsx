@@ -445,7 +445,7 @@ export default function SLASection() {
       <div>
         <div className="flex gap-2 mb-6">
           <button onClick={() => setTab('status')} className="px-4 py-2 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors font-medium">SLA Dashboard</button>
-          <button className="px-4 py-2 rounded-lg text-sm bg-neutral-800 text-white font-bold">Costs ({slaCosts.length})</button>
+          <button className="px-4 py-2 rounded-lg text-sm bg-neutral-800 text-white font-bold">Costs ({(slaCosts || []).length})</button>
         </div>
         <DataTable title="SLA Costs" subtitle="Financial impact of SLA breaches" loading={loading} data={slaCosts}
           columns={[
@@ -492,7 +492,7 @@ export default function SLASection() {
           <div className="flex gap-2">
             <button onClick={() => setTab('status')} className="px-4 py-2 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors font-medium">Dashboard</button>
             <button className="px-4 py-2 rounded-lg text-sm bg-neutral-800 text-white font-bold">Follow-Ups ({activeSLAs.length})</button>
-            <button onClick={() => setTab('costs')} className="px-4 py-2 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors font-medium">Costs ({slaCosts.length})</button>
+            <button onClick={() => setTab('costs')} className="px-4 py-2 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors font-medium">Costs ({(slaCosts || []).length})</button>
           </div>
         </div>
 
@@ -531,7 +531,7 @@ export default function SLASection() {
               {personSummary.map(p => (
                 <div key={p.email} className="flex items-center gap-4 p-3 rounded-xl border border-neutral-800/50 hover:bg-neutral-800/30 transition-all">
                   <div className="w-9 h-9 rounded-lg bg-neutral-800 flex items-center justify-center text-xs font-black text-white">
-                    {p.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    {(p.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate">{p.name}</p>
@@ -791,7 +791,7 @@ export default function SLASection() {
             Follow-Ups ({(callFollowUpSLA || []).filter((s: any) => s.status === 'active' || s.status === 'postponed').length})
           </button>
           <button onClick={() => setTab('costs')} className="px-4 py-2 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer transition-colors font-medium">
-            Costs ({slaCosts.length})
+            Costs ({(slaCosts || []).length})
           </button>
         </div>
       </div>

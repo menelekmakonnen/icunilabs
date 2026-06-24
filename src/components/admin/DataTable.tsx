@@ -36,7 +36,9 @@ export default function DataTable({ title, subtitle, columns, data, loading, sea
   const [page, setPage] = useState(0)
   const perPage = 15
 
-  const filtered = data.filter(row => {
+  const safeData = Array.isArray(data) ? data : []
+
+  const filtered = safeData.filter(row => {
     if (!search) return true
     const keys = searchKeys || columns.map(c => c.key)
     return keys.some(k => String(row[k] || '').toLowerCase().includes(search.toLowerCase()))

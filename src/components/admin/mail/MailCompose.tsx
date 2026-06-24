@@ -277,9 +277,9 @@ export default function MailCompose({ initialTemplateId, onTemplateConsumed }: P
 
   // ── Recipients ──
   const getGroup = (g: string) => {
-    if (g === 'clients') return clients.filter((c: any) => c.email && c.status !== 'deleted').map((c: any) => ({ email: c.email, name: c.name || '' }))
-    if (g === 'referrers') return referrers.filter((r: any) => r.email).map((r: any) => ({ email: r.email, name: r.name || '' }))
-    if (g === 'team') return teamUsers.filter((u: any) => u.email).map((u: any) => ({ email: u.email, name: u.name || '' }))
+    if (g === 'clients') return (clients || []).filter((c: any) => c.email && c.status !== 'deleted').map((c: any) => ({ email: c.email, name: c.name || '' }))
+    if (g === 'referrers') return (referrers || []).filter((r: any) => r.email).map((r: any) => ({ email: r.email, name: r.name || '' }))
+    if (g === 'team') return (teamUsers || []).filter((u: any) => u.email).map((u: any) => ({ email: u.email, name: u.name || '' }))
     return []
   }
 

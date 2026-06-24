@@ -193,7 +193,7 @@ export default function StarterclassSection() {
   if (!data) return null
 
   // Filter registrations
-  const regs = data.registrations.filter(r => {
+  const regs = (data.registrations || []).filter(r => {
     if (filter !== 'all' && r.payment_status !== filter) return false
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
@@ -261,12 +261,12 @@ export default function StarterclassSection() {
             <StatCard label="Total Registrations" value={data.total_registrations} icon={Users} color="text-[#00bfff]" />
             <StatCard label="Confirmed" value={data.confirmed_payments} icon={Check} color="text-emerald-400" />
             <StatCard label="Pending Verification" value={data.pending_verifications} icon={CreditCard} color="text-amber-400" />
-            <StatCard label="Revenue (GHS)" value={`₵${data.revenue_ghs.toLocaleString()}`} icon={CreditCard} color="text-purple-400" />
+            <StatCard label="Revenue (GHS)" value={`₵${(data.revenue_ghs ?? 0).toLocaleString()}`} icon={CreditCard} color="text-purple-400" />
           </div>
 
           {/* By Event */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            {Object.entries(data.by_event).map(([eventId, stats]) => (
+            {Object.entries(data.by_event || {}).map(([eventId, stats]) => (
               <div key={eventId} className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4">
                 <h4 className="text-sm font-bold text-white mb-3">{eventId}</h4>
                 <div className="grid grid-cols-3 gap-3">
@@ -308,11 +308,11 @@ export default function StarterclassSection() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-[10px] text-neutral-500 uppercase tracking-wider">GHS</div>
-                <div className="text-xl font-bold text-white">₵{data.revenue_ghs.toLocaleString()}</div>
+                <div className="text-xl font-bold text-white">₵{(data.revenue_ghs ?? 0).toLocaleString()}</div>
               </div>
               <div>
                 <div className="text-[10px] text-neutral-500 uppercase tracking-wider">GBP</div>
-                <div className="text-xl font-bold text-white">£{data.revenue_gbp.toLocaleString()}</div>
+                <div className="text-xl font-bold text-white">£{(data.revenue_gbp ?? 0).toLocaleString()}</div>
               </div>
             </div>
           </div>
@@ -406,7 +406,7 @@ export default function StarterclassSection() {
       {/* ── Events Tab ── */}
       {tab === 'events' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {data.events.map(event => (
+          {(data.events || []).map(event => (
             <div key={event.event_id} className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="text-sm font-bold text-white">{event.name}</h4>

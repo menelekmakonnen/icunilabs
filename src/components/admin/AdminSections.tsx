@@ -49,7 +49,7 @@ export function ClientsSection() {
 
   useEffect(() => { adminActions.loadClients() }, [])
 
-  const filtered = segment === 'all' ? clients : clients.filter((c: any) => c.buyer_profile === segment)
+  const filtered = segment === 'all' ? (clients || []) : (clients || []).filter((c: any) => c.buyer_profile === segment)
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -69,7 +69,7 @@ export function ClientsSection() {
             style={segment === seg.id ? { borderLeft: `3px solid ${seg.color}` } : { borderLeft: '3px solid transparent' }}>
             <div className="flex items-center justify-between">
               <span className="truncate">{seg.label}</span>
-              {seg.id !== 'all' && <span className="text-xs text-neutral-600 ml-1">({clients.filter((c: any) => c.buyer_profile === seg.id).length})</span>}
+              {seg.id !== 'all' && <span className="text-xs text-neutral-600 ml-1">({(clients || []).filter((c: any) => c.buyer_profile === seg.id).length})</span>}
             </div>
           </button>
         ))}
@@ -293,7 +293,7 @@ export function ProjectsSection() {
   return (
     <div>
       <div className="flex gap-2 mb-4">
-        <button onClick={() => setTab('pipeline')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Client Pipeline ({projects.length})</button>
+        <button onClick={() => setTab('pipeline')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Client Pipeline ({(projects || []).length})</button>
         <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">Portfolio ({portfolioData.length})</button>
       </div>
       <DataTable title="Portfolio Projects" subtitle={`${portfolioData.length} projects from the public portfolio`} loading={false} data={portfolioData}
@@ -477,7 +477,7 @@ const STATIC_JOBS = [{
 export function CareersSection() {
   const { jobs: apiJobs, applications, loading } = useAdminStore()
   // Merge: prefer API data, fall back to static if API returns empty
-  const usingStaticJobs = apiJobs.length === 0
+  const usingStaticJobs = !apiJobs?.length
   const jobs = usingStaticJobs ? STATIC_JOBS : apiJobs
   const [tab, setTab] = useState<CareersTab>('listings')
   // Listing CRUD
@@ -787,7 +787,7 @@ export function CareersSection() {
 
   if (tab === 'listings') return (
     <div>
-      <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', applications.length)}{tabBtn('emails', 'Manual Emails')}</div>
+      <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', (applications || []).length)}{tabBtn('emails', 'Manual Emails')}</div>
       {usingStaticJobs && !loading && (
         <div className="mb-4 px-4 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs">
           Live listings unavailable — showing recent roles from built-in fallback data. Edits made here may not reach the backend until the connection recovers.
@@ -820,7 +820,7 @@ export function CareersSection() {
   // ── APPLICATIONS TAB ──
   if (tab === 'applications') return (
     <div>
-      <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', applications.length)}{tabBtn('emails', 'Manual Emails')}</div>
+      <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', (applications || []).length)}{tabBtn('emails', 'Manual Emails')}</div>
       <DataTable title="Applications" subtitle="Manage applicants and send communications" loading={loading} data={applications}
         onAdd={() => setShowAddApplicant(true)} addLabel="Add Applicant"
         selectable
@@ -833,7 +833,7 @@ export function CareersSection() {
         onSelectAll={(selected) => {
           if (selected) {
             const next = new Set(selectedApplicants)
-            applications.forEach((a: any) => next.add(a._rowIndex || a.email))
+            (applications || []).forEach((a: any) => next.add(a._rowIndex || a.email))
             setSelectedApplicants(next)
           } else {
             setSelectedApplicants(new Set())
@@ -1035,7 +1035,7 @@ export function CareersSection() {
               <div>
                 <h3 className="text-sm font-bold text-white">Batch Email — {selectedApplicants.size} Recipients</h3>
                 <p className="text-[10px] text-neutral-500 mt-0.5 truncate max-w-md">
-                  {applications.filter((a: any) => selectedApplicants.has(a._rowIndex || a.email)).map((a: any) => a.name).join(', ')}
+                  {(applications || []).filter((a: any) => selectedApplicants.has(a._rowIndex || a.email)).map((a: any) => a.name).join(', ')}
                 </p>
               </div>
               <button onClick={() => !batchSending && setShowBatchEmail(false)} className="text-neutral-500 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
@@ -1092,7 +1092,7 @@ export function CareersSection() {
                     </div>
                   ) : (
                     <button onClick={async () => {
-                      const recipients = applications.filter((a: any) => selectedApplicants.has(a._rowIndex || a.email)).map((a: any) => ({ email: a.email, name: a.name || '' }))
+                      const recipients = (applications || []).filter((a: any) => selectedApplicants.has(a._rowIndex || a.email)).map((a: any) => ({ email: a.email, name: a.name || '' }))
                       if (!recipients.length) return
                       setBatchSending(true)
                       const result = await adminActions.sendApplicantEmail(batchTemplate, recipients, buildExtras(batchTemplate))
@@ -1139,7 +1139,7 @@ export function CareersSection() {
   // ── MANUAL EMAILS TAB ──
   return (
     <div>
-      <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', applications.length)}{tabBtn('emails', 'Manual Emails')}</div>
+      <div className="flex gap-2 mb-4">{tabBtn('listings', 'Listings')}{tabBtn('applications', 'Applications', (applications || []).length)}{tabBtn('emails', 'Manual Emails')}</div>
 
       <div className="grid lg:grid-cols-[1fr_1fr] gap-6">
         {/* Left: compose */}
@@ -1348,8 +1348,8 @@ export function ReferralsSection() {
       <div>
         <div className="flex gap-2 mb-4">
           <button className={tabCls('referrers')}>Referrers</button>
-          <button onClick={() => setTab('pipeline')} className={tabCls('pipeline')}>Pipeline ({referrals.length})</button>
-          <button onClick={() => setTab('materials')} className={tabCls('materials')}>Materials ({referrerMaterials.length})</button>
+          <button onClick={() => setTab('pipeline')} className={tabCls('pipeline')}>Pipeline ({(referrals || []).length})</button>
+          <button onClick={() => setTab('materials')} className={tabCls('materials')}>Materials ({(referrerMaterials || []).length})</button>
           <button onClick={() => setTab('notifications')} className={tabCls('notifications')}>Notifications</button>
           <button onClick={() => setTab('emails')} className={tabCls('emails')}>Emails</button>
         </div>
@@ -1379,7 +1379,7 @@ export function ReferralsSection() {
       <div>
         <div className="flex gap-2 mb-4">
           <button onClick={() => setTab('referrers')} className={tabCls('referrers')}>Referrers</button>
-          <button className={tabCls('pipeline')}>Pipeline ({referrals.length})</button>
+          <button className={tabCls('pipeline')}>Pipeline ({(referrals || []).length})</button>
           <button onClick={() => setTab('materials')} className={tabCls('materials')}>Materials</button>
           <button onClick={() => setTab('notifications')} className={tabCls('notifications')}>Notifications</button>
           <button onClick={() => setTab('emails')} className={tabCls('emails')}>Emails</button>
@@ -1474,7 +1474,7 @@ export function ReferralsSection() {
         <div className="flex gap-2 mb-4">
           <button onClick={() => setTab('referrers')} className={tabCls('referrers')}>Referrers</button>
           <button onClick={() => setTab('pipeline')} className={tabCls('pipeline')}>Pipeline</button>
-          <button className={tabCls('materials')}>Materials ({referrerMaterials.length})</button>
+          <button className={tabCls('materials')}>Materials ({(referrerMaterials || []).length})</button>
           <button onClick={() => setTab('notifications')} className={tabCls('notifications')}>Notifications</button>
           <button onClick={() => setTab('emails')} className={tabCls('emails')}>Emails</button>
         </div>
@@ -1722,7 +1722,7 @@ export function UsersSection() {
   const isElevated = ['Godmode', 'SuperAdmin'].includes(currentUser?.role || '')
 
   // Filter to admin/staff only — Clients and Referrers have their own pages
-  const adminUsers = users.filter((u: any) => ['Godmode', 'SuperAdmin', 'Admin', 'Sales', 'Product'].includes(u.role))
+  const adminUsers = (users || []).filter((u: any) => ['Godmode', 'SuperAdmin', 'Admin', 'Sales', 'Product'].includes(u.role))
 
   useEffect(() => { adminActions.loadUsers() }, [])
 
@@ -2084,7 +2084,7 @@ export function SLASection() {
     <div>
       <div className="flex gap-2 mb-4">
         <button className="px-3 py-1.5 rounded-lg text-sm bg-neutral-800 text-white font-medium">SLA Status</button>
-        <button onClick={() => setTab('costs')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Costs ({slaCosts.length})</button>
+        <button onClick={() => setTab('costs')} className="px-3 py-1.5 rounded-lg text-sm text-neutral-500 hover:text-white cursor-pointer">Costs ({(slaCosts || []).length})</button>
       </div>
       <DataTable title="SLA Status" subtitle="Real-time project SLA monitoring" loading={loading} data={slaStatuses}
         columns={[

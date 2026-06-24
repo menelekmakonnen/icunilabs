@@ -896,7 +896,7 @@
     min-width: max-content;
   }
 
-  .pipeline-scroll .min-w-\\[260px\\] {
+  .pipeline-scroll .min-w-\[260px\] {
     min-width: 220px;
   }
 

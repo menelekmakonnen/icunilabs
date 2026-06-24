@@ -193,7 +193,7 @@ export default function EcosystemSection() {
 
   const inputCls = "w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:border-[#00bfff]/50 focus:outline-none transition-colors"
 
-  if (loading && projectRegistry.length === 0) {
+  if (loading && (projectRegistry || []).length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <svg className="animate-spin w-8 h-8 text-[#00bfff]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2a10 10 0 0 1 10 10" /></svg>
@@ -201,8 +201,8 @@ export default function EcosystemSection() {
     )
   }
 
-  const activeProjects = projectRegistry.filter((p: any) => p.status !== 'archived')
-  const archivedProjects = projectRegistry.filter((p: any) => p.status === 'archived')
+  const activeProjects = (projectRegistry || []).filter((p: any) => p.status !== 'archived')
+  const archivedProjects = (projectRegistry || []).filter((p: any) => p.status === 'archived')
 
   const TABS = [
     ...(isGodmode ? [{ id: 'control_center' as const, label: 'GodMode Control Center', count: 4 }] : []),
@@ -280,7 +280,7 @@ export default function EcosystemSection() {
                             {key === 'labs' && <span className="text-[9px] bg-[#00bfff]/10 text-[#00bfff] px-1.5 py-0.5 rounded font-mono uppercase tracking-wider">Central Console</span>}
                           </h3>
                           <a href={info.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-neutral-500 hover:text-neutral-300 flex items-center gap-1 mt-0.5">
-                            {info.url.replace(/^https?:\/\//, '')}
+                            {(info.url || '').replace(/^https?:\/\//, '')}
                           </a>
                         </div>
                       </div>
@@ -297,7 +297,7 @@ export default function EcosystemSection() {
 
                     {/* Stats List */}
                     <div className="mt-4 grid grid-cols-3 gap-2 bg-neutral-900/30 p-3 rounded-lg border border-neutral-900">
-                      {Object.entries(info.stats).map(([statKey, statVal]) => (
+                      {Object.entries(info.stats || {}).map(([statKey, statVal]) => (
                         <div key={statKey}>
                           <div className="text-[9px] text-neutral-500 uppercase font-semibold truncate">{statKey.replace(/([A-Z])/g, ' $1')}</div>
                           <div className="text-sm font-bold text-white mt-0.5">
@@ -305,7 +305,7 @@ export default function EcosystemSection() {
                           </div>
                         </div>
                       ))}
-                      {Object.keys(info.stats).length === 0 && (
+                      {Object.keys(info.stats || {}).length === 0 && (
                         <div className="col-span-3 text-center py-2 text-xs text-neutral-600 font-medium">No stats loaded</div>
                       )}
                     </div>

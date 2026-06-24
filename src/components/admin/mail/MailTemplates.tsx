@@ -28,7 +28,7 @@ export default function MailTemplates({ onUseTemplate }: { onUseTemplate: (id: s
   const [tplForm, setTplForm] = useState<any>({ name: '', desc: '', category: 'custom', html: '' })
   const ref = useRef<HTMLIFrameElement>(null)
 
-  const filtered = emailTemplates.filter((t: any) => cat === 'all' || t.category === cat)
+  const filtered = (emailTemplates || []).filter((t: any) => cat === 'all' || t.category === cat)
 
   const preview = async (id: string) => {
     setPreviewId(id)
@@ -62,7 +62,7 @@ export default function MailTemplates({ onUseTemplate }: { onUseTemplate: (id: s
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
           <FileText className="w-5 h-5 text-[#00bfff]" />Templates
-          <span className="text-sm font-normal text-neutral-500 ml-1">({emailTemplates.length})</span>
+          <span className="text-sm font-normal text-neutral-500 ml-1">({(emailTemplates || []).length})</span>
         </h3>
         <div className="flex gap-1.5 flex-wrap">
           {CATS.map(c => (

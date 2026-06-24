@@ -786,7 +786,7 @@ function SubmittedContractsView() {
     adminActions.loadAllContracts()
   }, [])
 
-  const filtered = allContracts.filter(c => {
+  const filtered = (allContracts || []).filter(c => {
     if (filter === 'all') return true
     return (c.status || 'draft').toLowerCase() === filter
   })
@@ -830,7 +830,7 @@ function SubmittedContractsView() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-lg font-bold text-white">Submitted Contracts</h2>
-          <p className="text-xs text-neutral-500">{allContracts.length} contracts on record</p>
+          <p className="text-xs text-neutral-500">{(allContracts || []).length} contracts on record</p>
         </div>
         <div className="flex items-center gap-1">
           <Filter className="w-3.5 h-3.5 text-neutral-600 mr-1" />
@@ -931,7 +931,7 @@ function NonStaffView() {
         <p className="text-xs text-neutral-500">Contracts sent to you by ICUNI Labs. Review, sign, and download.</p>
       </div>
 
-      {myContracts.length === 0 ? (
+      {(myContracts || []).length === 0 ? (
         <div className="text-center py-20">
           <FileText className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
           <p className="text-sm text-neutral-500">No contracts yet.</p>
@@ -939,7 +939,7 @@ function NonStaffView() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {myContracts.map((c: any) => {
+          {(myContracts || []).map((c: any) => {
             const cStatus = (c.status || 'pending').toLowerCase()
             const created = c.created_at ? new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '--'
             const cTitle = c.title || c.contractData?.title || 'Contract'

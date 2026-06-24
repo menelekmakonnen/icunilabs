@@ -837,14 +837,14 @@ export default function CRMSection() {
               </div>
 
               {/* Recent Activity Preview */}
-              {clientActivity.length > 0 && (
+              {(clientActivity || []).length > 0 && (
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider">Recent Activity</p>
                     <button onClick={() => setDetailTab('activity')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer">View All</button>
                   </div>
                   <div className="crm-timeline">
-                    {clientActivity.slice(0, 4).map((a: any, i: number) => (
+                    {(clientActivity || []).slice(0, 4).map((a: any, i: number) => (
                       <div key={i} className={`crm-timeline-item ${a.type === 'note' ? 'note' : a.type === 'payment_received' ? 'payment' : a.type === 'invoice_sent' ? 'invoice' : ''}`}>
                         <p className="text-sm text-white font-medium">{a.title}</p>
                         <p className="text-xs text-neutral-500 mt-0.5">{a.detail}</p>
@@ -1080,11 +1080,11 @@ export default function CRMSection() {
 
           {detailTab === 'activity' && (
             <div className="crm-fade-in">
-              {clientActivity.length === 0 ? (
+              {(clientActivity || []).length === 0 ? (
                 <p className="text-neutral-600 text-sm text-center py-12">No activity recorded yet</p>
               ) : (
                 <div className="crm-timeline">
-                  {clientActivity.map((a: any, i: number) => (
+                  {(clientActivity || []).map((a: any, i: number) => (
                     <div key={i} className={`crm-timeline-item ${a.type === 'note' ? 'note' : a.type === 'payment_received' ? 'payment' : a.type === 'invoice_sent' ? 'invoice' : ''}`}
                       style={{ animationDelay: `${i * 0.04}s` }}>
                       <div className="flex items-center gap-2 mb-0.5">

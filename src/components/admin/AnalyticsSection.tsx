@@ -60,7 +60,8 @@ function DonutChart({ data, colors }: { data: { label: string; value: number }[]
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || total === 0) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     const dpr = window.devicePixelRatio || 1
     canvas.width = 160 * dpr; canvas.height = 160 * dpr
     ctx.scale(dpr, dpr)
@@ -115,7 +116,8 @@ function TrendChart({ data }: { data: { date: string; views: number; visitors: n
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || data.length < 2) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     const dpr = window.devicePixelRatio || 1
     const w = canvas.clientWidth, h = canvas.clientHeight
     canvas.width = w * dpr; canvas.height = h * dpr
@@ -193,7 +195,8 @@ function HeatmapCanvas({ clicks }: { clicks: { x: number; y: number }[] }) {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || clicks.length === 0) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     const dpr = window.devicePixelRatio || 1
     const w = canvas.clientWidth, h = canvas.clientHeight
     canvas.width = w * dpr; canvas.height = h * dpr
@@ -272,7 +275,8 @@ function LocationMap({ locations }: { locations: { city: string; lat: number; ln
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || locations.length === 0) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     const dpr = window.devicePixelRatio || 1
     const w = canvas.clientWidth, h = canvas.clientHeight
     canvas.width = w * dpr; canvas.height = h * dpr
@@ -418,7 +422,8 @@ function Sparkline({ values, color = '#00bfff' }: { values: number[]; color?: st
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || values.length < 2) return
-    const ctx = canvas.getContext('2d')!
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     const dpr = window.devicePixelRatio || 1
     canvas.width = 100 * dpr; canvas.height = 40 * dpr
     ctx.scale(dpr, dpr)
@@ -631,17 +636,20 @@ export default function AnalyticsSection() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
-    let filters: Record<string, any> = {}
-    if (datePreset === 'custom') {
-      filters = { from_date: customFrom || undefined, to_date: customTo || undefined }
-    } else {
-      const range = getDateRange(datePreset)
-      filters = { from_date: range.from, to_date: range.to }
+    try {
+      let filters: Record<string, any> = {}
+      if (datePreset === 'custom') {
+        filters = { from_date: customFrom || undefined, to_date: customTo || undefined }
+      } else {
+        const range = getDateRange(datePreset)
+        filters = { from_date: range.from, to_date: range.to }
+      }
+      if (isGodMode) await adminActions.loadAnalytics(filters)
+      await adminActions.loadCallLogs({ page_size: 500 })
+      await adminActions.loadUsers()
+    } finally {
+      setLoading(false)
     }
-    if (isGodMode) await adminActions.loadAnalytics(filters)
-    await adminActions.loadCallLogs({ page_size: 500 })
-    await adminActions.loadUsers()
-    setLoading(false)
   }, [datePreset, customFrom, customTo, isGodMode])
 
   useEffect(() => { loadData() }, [loadData])

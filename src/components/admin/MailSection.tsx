@@ -105,7 +105,7 @@ export default function MailSection() {
   useEffect(() => {
     if (!initialLoaded) return
     if (aliases.length > 0 && activeMailboxes.length === 0) {
-      const def = companyEmail || aliasKey(aliases[0])
+      const def = companyEmail || (aliases.length > 0 ? aliasKey(aliases[0]) : '')
       setActiveMailboxes([def])
       adminActions.loadInbox(def, 0, '', folder)
     }
@@ -234,14 +234,14 @@ export default function MailSection() {
                 </div>
               ))}
             </div>
-          ) : inbox.length === 0 ? (
+          ) : (inbox || []).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <div className="w-16 h-16 rounded-full bg-neutral-900/60 flex items-center justify-center"><Inbox className="w-8 h-8 text-neutral-700" /></div>
               <p className="text-sm text-neutral-600">No emails found</p>
             </div>
           ) : (
             <div className="space-y-1">
-              {inbox.map((t: any) => {
+              {(inbox || []).map((t: any) => {
                 const name = extractName(t.from)
                 const initial = name.charAt(0).toUpperCase()
                 return (
@@ -270,7 +270,7 @@ export default function MailSection() {
           <div className="flex items-center justify-between pt-2">
             <button onClick={() => changePage(Math.max(0, page - 1))} disabled={page === 0} className="text-xs text-neutral-500 hover:text-white disabled:opacity-20 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-neutral-800/50 transition-all">Previous</button>
             <span className="text-[11px] text-neutral-600 font-medium">Page {page + 1}</span>
-            <button onClick={() => changePage(page + 1)} disabled={inbox.length < 20} className="text-xs text-neutral-500 hover:text-white disabled:opacity-20 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-neutral-800/50 transition-all">Next</button>
+            <button onClick={() => changePage(page + 1)} disabled={(inbox || []).length < 20} className="text-xs text-neutral-500 hover:text-white disabled:opacity-20 cursor-pointer px-3 py-1.5 rounded-lg hover:bg-neutral-800/50 transition-all">Next</button>
           </div>
         </div>
       )}
@@ -380,7 +380,7 @@ function MailboxManager({ aliases }: { aliases: any[] }) {
         <label className="text-[11px] font-medium text-neutral-500 uppercase tracking-wider mb-1.5 block">Select Team Member</label>
         <select value={selUser} onChange={e => { setSelUser(e.target.value); loadBoxes(e.target.value) }} className={cls}>
           <option value="">Choose a user...</option>
-          {users.filter((u: any) => u.status === 'Active').map((u: any) => (
+          {(users || []).filter((u: any) => u.status === 'Active').map((u: any) => (
             <option key={u.id || u.email} value={u.email}>{u.name} ({u.email}){u.company_email ? ` — ${u.company_email}` : ''}</option>
           ))}
         </select>

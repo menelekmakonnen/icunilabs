@@ -593,7 +593,7 @@ function GrowthCommandCenter({ role, userEmail, userName }: GrowthDashProps) {
   // ── Pipeline summary ──
   const pipeline = useMemo(() => {
     const stages: Record<string, number> = {}
-    const src = isGodmode ? clients : clients.filter((c: any) => c.added_by === userEmail)
+    const src = isGodmode ? (clients || []) : (clients || []).filter((c: any) => c.added_by === userEmail)
     src.forEach((c: any) => {
       const st = c.prospect_stage || 'new_lead'
       if (st !== 'won' && st !== 'lost' && st !== 'disqualified') stages[st] = (stages[st] || 0) + 1
@@ -878,15 +878,15 @@ function AdminOverviewDashboard() {
   const s = useAdminStore()
   useEffect(() => { adminActions.loadDashboard() }, [])
 
-  const activeProjects = s.projects.filter((p: any) => p.status === 'active').length
-  const pendingInvoices = s.invoices.filter((i: any) => i.status === 'pending' || i.status === 'partial').length
-  const totalRevenue = s.invoices.filter((i: any) => i.status === 'paid').reduce((sum: number, i: any) => sum + Number(i.total || 0), 0)
-  const breached = s.slaStatuses.filter((st: any) => st.breached).length
+  const activeProjects = (s.projects || []).filter((p: any) => p.status === 'active').length
+  const pendingInvoices = (s.invoices || []).filter((i: any) => i.status === 'pending' || i.status === 'partial').length
+  const totalRevenue = (s.invoices || []).filter((i: any) => i.status === 'paid').reduce((sum: number, i: any) => sum + Number(i.total || 0), 0)
+  const breached = (s.slaStatuses || []).filter((st: any) => st.breached).length
   const weekAgo = useMemo(() => new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0], [])
 
   const projectTypes = useMemo(() => {
     const map = new Map<string, number>()
-    s.projects.forEach((p: any) => { const t = p.type || 'Other'; map.set(t, (map.get(t) || 0) + 1) })
+    ;(s.projects || []).forEach((p: any) => { const t = p.type || 'Other'; map.set(t, (map.get(t) || 0) + 1) })
     return Array.from(map.entries()).map(([type, count]) => ({ type, count })).sort((a, b) => b.count - a.count)
   }, [s.projects])
 
@@ -899,7 +899,7 @@ function AdminOverviewDashboard() {
   })
 
   const recentProspects = useMemo(() =>
-    s.clients.filter((c: any) => { const stage = c.prospect_stage || 'new_lead'; return stage !== 'won' && stage !== 'lost' })
+    (s.clients || []).filter((c: any) => { const stage = c.prospect_stage || 'new_lead'; return stage !== 'won' && stage !== 'lost' })
       .sort((a: any, b: any) => new Date(b.last_activity || 0).getTime() - new Date(a.last_activity || 0).getTime())
       .slice(0, 5), [s.clients])
 
@@ -914,7 +914,7 @@ function AdminOverviewDashboard() {
     won: '#10b981', lost: '#475569'
   }
 
-  const allContacts = s.clients.filter((c: any) => (c.status || '').toLowerCase() !== 'deleted')
+  const allContacts = (s.clients || []).filter((c: any) => (c.status || '').toLowerCase() !== 'deleted')
   const payingClients = allContacts.filter((c: any) => ['won', 'client'].includes((c.prospect_stage || '').toLowerCase())).length
   const pipelineCount = allContacts.length - payingClients
 
@@ -984,7 +984,7 @@ function AdminOverviewDashboard() {
             <button onClick={() => adminActions.setSection('clients')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">Open CRM</button>
           </div>
           {(() => {
-            const prospects = s.clients.filter((c: any) => {
+            const prospects = (s.clients || []).filter((c: any) => {
               const stage = c.prospect_stage || 'new_lead'
               return ['prospect', 'new_lead', 'contacted', 'qualified'].includes(stage)
             })
@@ -1015,7 +1015,7 @@ function AdminOverviewDashboard() {
             <Flame className="w-4 h-4 text-amber-500" /> Challenge Hit Rate
           </h3>
           {(() => {
-            const contacted = s.clients.filter((c: any) => {
+            const contacted = (s.clients || []).filter((c: any) => {
               const stage = c.prospect_stage || 'new_lead'
               return !['prospect', 'new_lead'].includes(stage) && stage !== 'lost'
             })
@@ -1079,8 +1079,8 @@ function AdminOverviewDashboard() {
             <button onClick={() => adminActions.setSection('sla')} className="text-xs text-[#00bfff] hover:text-white cursor-pointer transition-colors">View All</button>
           </div>
           <div className="space-y-2 max-h-[250px] overflow-y-auto">
-            {s.slaStatuses.length === 0 && <p className="text-sm text-neutral-600 py-4 text-center">No active SLAs</p>}
-            {s.slaStatuses.slice(0, 8).map((sla: any, i: number) => {
+            {(s.slaStatuses || []).length === 0 && <p className="text-sm text-neutral-600 py-4 text-center">No active SLAs</p>}
+            {(s.slaStatuses || []).slice(0, 8).map((sla: any, i: number) => {
               const pct = Math.min(Math.round((sla.severity || 0) * 100), 150)
               const color = pct >= 100 ? '#ef4444' : pct >= 75 ? '#d97706' : '#22c55e'
               return (
@@ -1106,8 +1106,8 @@ function AdminOverviewDashboard() {
       <div className={card}>
         <h3 className="text-sm font-bold text-neutral-400 uppercase tracking-wider mb-3">Recent Activity</h3>
         <div className="space-y-1 max-h-[300px] overflow-y-auto">
-          {s.logs.length === 0 && <p className="text-sm text-neutral-600 py-4 text-center">No recent activity</p>}
-          {s.logs.slice(0, 20).map((log: any, i: number) => (
+          {(s.logs || []).length === 0 && <p className="text-sm text-neutral-600 py-4 text-center">No recent activity</p>}
+          {(s.logs || []).slice(0, 20).map((log: any, i: number) => (
             <div key={i} className="flex items-center gap-3 py-2 px-2 rounded hover:bg-neutral-800/30 text-sm">
               <div className="w-1.5 h-1.5 rounded-full bg-[#00bfff] shrink-0" />
               <span className="text-neutral-400 truncate flex-1">{log.user_name || 'System'}: {log.detail || log.action}</span>

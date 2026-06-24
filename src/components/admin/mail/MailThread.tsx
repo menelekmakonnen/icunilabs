@@ -104,7 +104,7 @@ export default function MailThread({ thread, aliases, onClose }: { thread: any; 
       return
     }
     // Set the from alias to the template's default if available
-    const tpl = emailTemplates.find((t: any) => t.id === tplId)
+    const tpl = (emailTemplates || []).find((t: any) => t.id === tplId)
     if (tpl?.from) setReplyFrom(tpl.from)
     // Preview the template
     const preview = await adminActions.previewBrandedEmail({ templateId: tplId, recipientName: extractName(msgs[0]?.from || 'Recipient') })
@@ -219,7 +219,7 @@ export default function MailThread({ thread, aliases, onClose }: { thread: any; 
                           <Paperclip className="w-3.5 h-3.5 text-neutral-500" />
                           <span className="text-xs text-neutral-400">{a.name}</span>
                           {isCV && <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold uppercase">CV</span>}
-                          <span className="text-[10px] text-neutral-600">{(a.size / 1024).toFixed(0)}KB</span>
+                          <span className="text-[10px] text-neutral-600">{((a.size || 0) / 1024).toFixed(0)}KB</span>
                         </div>
                       )
                     })}
@@ -281,7 +281,7 @@ export default function MailThread({ thread, aliases, onClose }: { thread: any; 
                     <div key={j} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-neutral-800/60 border border-neutral-700/40">
                       <Paperclip className="w-3.5 h-3.5 text-neutral-500" />
                       <span className="text-xs text-neutral-400">{a.name}</span>
-                      <span className="text-[10px] text-neutral-600">{(a.size / 1024).toFixed(0)}KB</span>
+                      <span className="text-[10px] text-neutral-600">{((a.size || 0) / 1024).toFixed(0)}KB</span>
                     </div>
                   ))}
                 </div>

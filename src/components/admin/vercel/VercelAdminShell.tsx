@@ -206,7 +206,7 @@ export default function VercelAdminShell({ onSwitchTheme }: VercelAdminShellProp
           onShowImpersonate={() => {
             setShowImpersonate(!showImpersonate)
             setShowActAs(false)
-            if (!users.length) adminActions.loadUsers()
+            if (!users?.length) adminActions.loadUsers()
           }}
           showActAs={showActAs}
           showImpersonate={showImpersonate}
@@ -254,10 +254,10 @@ export default function VercelAdminShell({ onSwitchTheme }: VercelAdminShellProp
               View the app as this user sees it. Useful for demoing and troubleshooting.
             </p>
             <div style={{ maxHeight: 256, overflowY: 'auto' }}>
-              {users.length === 0 ? (
+              {!users?.length ? (
                 <p style={{ fontSize: 13, color: 'var(--v-text-tertiary)', textAlign: 'center', padding: 16 }}>Loading users...</p>
               ) : (
-                users.map((u: any) => (
+                (users || []).map((u: any) => (
                   <button
                     key={u.id}
                     onClick={async () => {

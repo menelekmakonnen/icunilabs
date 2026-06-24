@@ -91,15 +91,21 @@ interface AdminState {
 }
 
 async function apiPost(action: string, payload: Record<string, any> = {}): Promise<any> {
+  if (!API_URL) throw new Error('API URL not configured')
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify({ action, ...payload }),
   })
   const text = await res.text()
-  const data = JSON.parse(text)
-  if (data.status && data.status >= 400) throw new Error(data.message || 'Request failed')
-  return data.data
+  let data: any
+  try {
+    data = JSON.parse(text)
+  } catch {
+    throw new Error(`Invalid API response for "${action}" (not JSON)`)
+  }
+  if (data?.status && data.status >= 400) throw new Error(data?.message || 'Request failed')
+  return data?.data ?? null
 }
 
 // ─── STAGE PERSISTENCE (localStorage fallback) ───────────────
@@ -1778,7 +1784,7 @@ export const adminActions = {
   getAvailableSlots: async (type: string = 'online') => {
     try {
       const result = await apiPost('getAvailableSlots', { token: state.token, type })
-      return result?.slots || []
+      return Array.isArray(result?.slots) ? result.slots : []
     } catch (err: any) {
       setState({ error: err.message })
       return []
@@ -1789,7 +1795,7 @@ export const adminActions = {
   getCalendarEvents: async (from?: string, to?: string): Promise<any[]> => {
     try {
       const result = await apiPost('getCalendarEvents', { token: state.token, from, to })
-      return result?.events || []
+      return Array.isArray(result?.events) ? result.events : []
     } catch (err: any) { setState({ error: err.message }); return [] }
   },
 
@@ -1813,7 +1819,7 @@ export const adminActions = {
   loadContacts: async (client_id?: string) => {
     try {
       const result = await apiPost('getContacts', { token: state.token, client_id })
-      return result?.contacts || []
+      return Array.isArray(result?.contacts) ? result.contacts : []
     } catch (err: any) {
       setState({ error: err.message })
       return []
