@@ -108,15 +108,21 @@ export default function UpcomingCallsSection() {
   const doReschedule = async (s: any) => {
     if (!rDate) return
     setBusyId(s.sla_id)
-    const due = rTime ? `${rDate} at ${rTime}` : rDate
-    await adminActions.postponeFollowUp(s.sla_id, due)
-    setRescheduleId(null); setRDate(''); setRTime('')
-    setBusyId(null)
+    try {
+      const due = rTime ? `${rDate} at ${rTime}` : rDate
+      await adminActions.postponeFollowUp(s.sla_id, due)
+      setRescheduleId(null); setRDate(''); setRTime('')
+    } finally {
+      setBusyId(null)
+    }
   }
   const doComplete = async (s: any) => {
     setBusyId(s.sla_id)
-    await adminActions.completeFollowUp(s.sla_id)
-    setBusyId(null)
+    try {
+      await adminActions.completeFollowUp(s.sla_id)
+    } finally {
+      setBusyId(null)
+    }
   }
 
   return (

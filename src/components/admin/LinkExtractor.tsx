@@ -283,7 +283,7 @@ export default function LinkExtractor({ onClose, onOpenClient }: Props) {
       }
 
       setBulkResults(result.results || [])
-      setBulkSelected(new Set(result.results.map((_: BulkResult, i: number) => i)))
+      setBulkSelected(new Set((result.results || []).map((_: BulkResult, i: number) => i)))
       setBulkPhase('results')
       setBulkMsg(result.message || '')
     } catch {

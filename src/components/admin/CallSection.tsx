@@ -211,11 +211,11 @@ export default function CallSection() {
     }
 
     if (!start && !end) {
-      if (outcomeFilter) return callLogs.filter((log: any) => log.outcome === outcomeFilter)
-      return callLogs
+      if (outcomeFilter) return (callLogs || []).filter((log: any) => log.outcome === outcomeFilter)
+      return callLogs || []
     }
 
-    return callLogs.filter(log => {
+    return (callLogs || []).filter(log => {
       const d = new Date(log.call_start)
       if (start && d < start) return false
       if (end && d >= end) return false
@@ -286,7 +286,7 @@ export default function CallSection() {
     // Daily attempt/conversation targets (computed from today's calls in all logs)
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)
-    const todayLogs = callLogs.filter((l: any) => {
+    const todayLogs = (callLogs || []).filter((l: any) => {
       try { return new Date(l.call_start) >= todayStart } catch { return false }
     })
     let todayAttempts = 0, todayConversations = 0
@@ -311,7 +311,7 @@ export default function CallSection() {
 
   // ── Actionable Follow-ups ──
   const actionableLogs = useMemo(() => {
-    return callLogs
+    return (callLogs || [])
       .filter((log: any) => ['needs_follow_up', 'callback_scheduled', 'interested_will_revert'].includes(log.outcome))
       .sort((a: any, b: any) => new Date(b.call_start).getTime() - new Date(a.call_start).getTime())
   }, [callLogs])
@@ -335,7 +335,7 @@ export default function CallSection() {
           `"${(OUTCOME_LABELS[log.outcome] || log.outcome || '').replace(/"/g, '""')}"`,
           log.duration_seconds || 0,
           `"${(log.call_notes || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`,
-          `"${(log.pipeline_auto_advanced || '').replace(/"/g, '""')}"`,
+          `"${String(log.pipeline_auto_advanced || '').replace(/"/g, '""')}"`,
           ptsChecked,
           log.talking_points_total || 0
         ].join(',')
@@ -599,7 +599,7 @@ export default function CallSection() {
                           {log.client_name || 'Unknown Prospect'}
                         </span>
                         <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${log.outcome === 'callback_scheduled' ? 'bg-amber-500/10 text-amber-500' : log.outcome === 'needs_follow_up' ? 'bg-[#00bfff]/10 text-[#00bfff]' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                          {(OUTCOME_LABELS[log.outcome] || log.outcome).replace(/_/g, ' ')}
+                          {(OUTCOME_LABELS[log.outcome] || log.outcome || '').replace(/_/g, ' ')}
                         </span>
                       </div>
                       
@@ -844,7 +844,7 @@ export default function CallSection() {
                           {(() => {
                             let dc: Record<string, any> = {}
                             try { const raw = log.data_capture || log.data_capture_json; dc = typeof raw === 'string' ? JSON.parse(raw) : (raw || {}) } catch { /* ignored */ }
-                            const entries = Object.entries(dc).filter(([, v]) => v)
+                            const entries = Object.entries(dc || {}).filter(([, v]) => v)
                             if (entries.length === 0) return null
                             return (
                               <div>

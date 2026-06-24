@@ -15,7 +15,7 @@ export default function FloatingCallBubble() {
   useEffect(() => {
     if (!floatingCall) return
     const update = () => {
-      const diff = Math.floor((Date.now() - floatingCall.callStartTime) / 1000)
+      const diff = Math.floor((Date.now() - (floatingCall.callStartTime || Date.now())) / 1000)
       const m = Math.floor(diff / 60).toString().padStart(2, '0')
       const s = (diff % 60).toString().padStart(2, '0')
       setElapsed(`${m}:${s}`)

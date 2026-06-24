@@ -116,7 +116,7 @@ function TrendChart({ data }: { data: { date: string; views: number; visitors: n
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || data.length < 2) return
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d')!
     if (!ctx) return
     const dpr = window.devicePixelRatio || 1
     const w = canvas.clientWidth, h = canvas.clientHeight

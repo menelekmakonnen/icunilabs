@@ -42,7 +42,7 @@ const DEFAULTS: InvoiceData = {
 
 function sumCol(groups: Group[], col: 'systemValue' | 'yourPrice') {
   let t = 0
-  groups.forEach(g => g.rows.forEach(r => { const v = r[col].replace(/[^0-9.]/g, ''); if (v) t += parseFloat(v) }))
+  groups.forEach(g => (g.rows || []).forEach(r => { const v = (r[col] || '').replace(/[^0-9.]/g, ''); if (v) t += parseFloat(v) }))
   return t
 }
 
@@ -273,7 +273,7 @@ export default function InvoiceBuilder() {
                 {d.featureGroups.map((g, gi) => [
                   <tr key={`g${gi}`} className="inv-feat__grp"><td colSpan={3} style={{ color: g.color }}>{g.label}</td></tr>,
                   ...g.rows.map((r, ri) => {
-                    const pl = r.yourPrice.toLowerCase()
+                    const pl = (r.yourPrice || '').toLowerCase()
                     const cls = pl === 'free' ? 'inv-price--free' : pl === 'included' ? 'inv-price--inc' : ''
                     return <tr key={`r${gi}-${ri}`} className="inv-feat__row"><td>{r.feature}</td><td>{r.systemValue}</td><td className={cls}>{r.yourPrice}</td></tr>
                   })

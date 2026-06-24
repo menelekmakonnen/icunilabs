@@ -45,8 +45,12 @@ export default function ContactsTab({
     let cancelled = false
     const load = async () => {
       setContactsLoading(true)
-      const list = await adminActions.loadContacts(clientId)
-      if (!cancelled) { setContactsList(list || []); setContactsLoading(false) }
+      try {
+        const list = await adminActions.loadContacts(clientId)
+        if (!cancelled) { setContactsList(Array.isArray(list) ? list : []) }
+      } finally {
+        if (!cancelled) { setContactsLoading(false) }
+      }
     }
     load()
     return () => { cancelled = true }
@@ -54,32 +58,39 @@ export default function ContactsTab({
 
   const reload = async () => {
     const list = await adminActions.loadContacts(clientId)
-    setContactsList(list || [])
+    setContactsList(Array.isArray(list) ? list : [])
   }
 
   const handleAddContact = async () => {
     if (!contactForm.name.trim()) return
     setBusyContactSave(true)
-    const result = await adminActions.addContact({
-      client_id: clientId,
-      name: contactForm.name,
-      role: contactForm.role,
-      email: contactForm.email,
-      phone: contactForm.phone,
-      notes: contactForm.notes,
-    })
-    setBusyContactSave(false)
-    if (result) {
-      setShowAddContact(false)
-      setContactForm({ name: '', role: '', email: '', phone: '', notes: '' })
-      await reload()
+    try {
+      const result = await adminActions.addContact({
+        client_id: clientId,
+        name: contactForm.name,
+        role: contactForm.role,
+        email: contactForm.email,
+        phone: contactForm.phone,
+        notes: contactForm.notes,
+      })
+      if (result) {
+        setShowAddContact(false)
+        setContactForm({ name: '', role: '', email: '', phone: '', notes: '' })
+        await reload()
+      }
+    } finally {
+      setBusyContactSave(false)
     }
   }
 
   const handleDeleteContact = async (contactId: string) => {
     if (!confirm('Delete this contact?')) return
-    await adminActions.deleteContact(contactId)
-    await reload()
+    try {
+      await adminActions.deleteContact(contactId)
+      await reload()
+    } catch (err) {
+      console.error('Failed to delete contact:', err)
+    }
   }
 
   const startEdit = (contact: any) => {
@@ -98,23 +109,30 @@ export default function ContactsTab({
   const handleSaveEdit = async () => {
     if (!editingId || !editForm.name.trim()) return
     setBusyEdit(true)
-    await adminActions.updateContact(editingId, {
-      name: editForm.name,
-      role: editForm.role,
-      email: editForm.email,
-      phone: editForm.phone,
-      notes: editForm.notes,
-    })
-    setBusyEdit(false)
-    setEditingId(null)
-    await reload()
+    try {
+      await adminActions.updateContact(editingId, {
+        name: editForm.name,
+        role: editForm.role,
+        email: editForm.email,
+        phone: editForm.phone,
+        notes: editForm.notes,
+      })
+      setEditingId(null)
+      await reload()
+    } finally {
+      setBusyEdit(false)
+    }
   }
 
   const handleTogglePrimary = async (contact: any) => {
     const id = contact.contact_id || contact.id
     const newVal = contact.is_primary === 'true' || contact.is_primary === true ? 'false' : 'true'
-    await adminActions.updateContact(id, { is_primary: newVal })
-    await reload()
+    try {
+      await adminActions.updateContact(id, { is_primary: newVal })
+      await reload()
+    } catch (err) {
+      console.error('Failed to toggle primary:', err)
+    }
   }
 
   return (

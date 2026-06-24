@@ -533,7 +533,7 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
     if (client?.client_id) {
       adminActions.loadContacts(client.client_id).then((list: any) => {
         setKnownContacts(list || [])
-      })
+      }).catch(() => setKnownContacts([]))
     }
   }, [client?.client_id])
 
@@ -824,9 +824,14 @@ export default function CallGuide({ client, onClose, onMinimise }: CallGuideProp
       self_image_pivoted: pivotHappened,
     }
 
-    const result = await adminActions.saveCallLog(data)
-    setSaving(false)
-    if (result) { stopTranscription(); onClose() }
+    try {
+      const result = await adminActions.saveCallLog(data)
+      if (result) { stopTranscription(); onClose() }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const toggleSection = (id: string) => setCollapsed(p => ({ ...p, [id]: !p[id] }))

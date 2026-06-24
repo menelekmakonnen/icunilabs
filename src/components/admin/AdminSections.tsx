@@ -833,7 +833,7 @@ export function CareersSection() {
         onSelectAll={(selected) => {
           if (selected) {
             const next = new Set(selectedApplicants)
-            (applications || []).forEach((a: any) => next.add(a._rowIndex || a.email))
+            ;(applications || []).forEach((a: any) => next.add(a._rowIndex || a.email))
             setSelectedApplicants(next)
           } else {
             setSelectedApplicants(new Set())

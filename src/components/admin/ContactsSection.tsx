@@ -39,9 +39,12 @@ export default function ContactsSection() {
 
   const load = async () => {
     setLoading(true)
-    const list = await adminActions.loadContacts()
-    setContacts(Array.isArray(list) ? list : [])
-    setLoading(false)
+    try {
+      const list = await adminActions.loadContacts()
+      setContacts(Array.isArray(list) ? list : [])
+    } finally {
+      setLoading(false)
+    }
   }
   useEffect(() => { adminActions.loadClients(); load() }, [])
 
@@ -89,32 +92,44 @@ export default function ContactsSection() {
   const handleAdd = async () => {
     if (!form.client_id || !form.name.trim()) return
     setBusy(true)
-    await adminActions.addContact({ ...form, role: form.role || 'other' })
-    setShowAdd(false); setForm(EMPTY_FORM)
-    await load()
-    setBusy(false)
+    try {
+      await adminActions.addContact({ ...form, role: form.role || 'other' })
+      setShowAdd(false); setForm(EMPTY_FORM)
+      await load()
+    } finally {
+      setBusy(false)
+    }
   }
   const startEdit = (c: any) => { setEditingId(c.contact_id); setEditForm({ name: c.name || '', role: c.role || 'other', email: c.email || '', phone: c.phone || '', whatsapp: c.whatsapp || '', notes: c.notes || '', is_primary: isPrimary(c) ? 'true' : 'false' }) }
   const saveEdit = async () => {
     if (!editingId) return
     setBusy(true)
-    await adminActions.updateContact(editingId, editForm)
-    setEditingId(null)
-    await load()
-    setBusy(false)
+    try {
+      await adminActions.updateContact(editingId, editForm)
+      setEditingId(null)
+      await load()
+    } finally {
+      setBusy(false)
+    }
   }
   const remove = async (c: any) => {
     if (!confirm(`Delete contact "${c.name}"?`)) return
     setBusy(true)
-    await adminActions.deleteContact(c.contact_id)
-    await load()
-    setBusy(false)
+    try {
+      await adminActions.deleteContact(c.contact_id)
+      await load()
+    } finally {
+      setBusy(false)
+    }
   }
   const togglePrimary = async (c: any) => {
     setBusy(true)
-    await adminActions.updateContact(c.contact_id, { is_primary: isPrimary(c) ? 'false' : 'true' })
-    await load()
-    setBusy(false)
+    try {
+      await adminActions.updateContact(c.contact_id, { is_primary: isPrimary(c) ? 'false' : 'true' })
+      await load()
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (

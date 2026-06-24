@@ -39,15 +39,15 @@ interface LivePreviewProps {
 }
 
 // ─── HELPERS ────────────────────────────────────────────
-const isHtml = (s: string) => /<[a-z][\s\S]*>/i.test(s)
+const isHtml = (s: string) => { if (!s) return false; return /<[a-z][\s\S]*>/i.test(s) }
 const splitLines = (s: string) => s.split('\n').filter(l => l.trim())
 
 // ─── JOB PREVIEW ────────────────────────────────────────
 function JobPreview({ data }: { data: JobPreviewData }) {
   const desc = data.full_description || ''
   const paragraphs = isHtml(desc) ? [] : splitLines(desc)
-  const reqs = isHtml(data.requirements) ? [] : splitLines(data.requirements)
-  const bens = isHtml(data.benefits) ? [] : splitLines(data.benefits)
+  const reqs = isHtml(data.requirements || '') ? [] : splitLines(data.requirements || '')
+  const bens = isHtml(data.benefits || '') ? [] : splitLines(data.benefits || '')
   const perks = data.perks ? data.perks.split(/[,\n]/).map(p => p.trim()).filter(Boolean) : []
 
   return (
@@ -112,14 +112,14 @@ function JobPreview({ data }: { data: JobPreviewData }) {
         )}
 
         {/* Requirements */}
-        {(reqs.length > 0 || isHtml(data.requirements)) && (
+        {(reqs.length > 0 || isHtml(data.requirements || '')) && (
           <section>
             <h2 className="text-sm font-bold mb-3 flex items-center gap-2">
               <span className="w-5 h-5 rounded bg-[#00bfff]/10 flex items-center justify-center"><ChevronRight className="w-3 h-3 text-[#00bfff]" /></span>
               What We Need From You
             </h2>
-            {isHtml(data.requirements) ? (
-              <SafeHtml className="prose-preview text-xs text-neutral-300" html={data.requirements} />
+            {isHtml(data.requirements || '') ? (
+              <SafeHtml className="prose-preview text-xs text-neutral-300" html={data.requirements || ''} />
             ) : (
               <div className="space-y-1">
                 {reqs.map((r, i) => (
@@ -134,14 +134,14 @@ function JobPreview({ data }: { data: JobPreviewData }) {
         )}
 
         {/* Benefits */}
-        {(bens.length > 0 || isHtml(data.benefits)) && (
+        {(bens.length > 0 || isHtml(data.benefits || '')) && (
           <section>
             <h2 className="text-sm font-bold mb-3 flex items-center gap-2">
               <span className="w-5 h-5 rounded bg-[#ff7a00]/10 flex items-center justify-center"><ChevronRight className="w-3 h-3 text-[#ff7a00]" /></span>
               What You Get
             </h2>
-            {isHtml(data.benefits) ? (
-              <SafeHtml className="prose-preview text-xs text-neutral-300" html={data.benefits} />
+            {isHtml(data.benefits || '') ? (
+              <SafeHtml className="prose-preview text-xs text-neutral-300" html={data.benefits || ''} />
             ) : (
               <div className="space-y-1">
                 {bens.map((b, i) => (

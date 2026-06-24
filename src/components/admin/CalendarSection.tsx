@@ -155,7 +155,7 @@ export default function CalendarSection() {
     return cursor.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
   }, [view, cursor])
 
-  const doSync = async () => { setSyncing(true); await adminActions.syncCalendar(); await adminActions.loadMeetings(); setSyncing(false) }
+  const doSync = async () => { setSyncing(true); try { await adminActions.syncCalendar(); await adminActions.loadMeetings() } finally { setSyncing(false) } }
 
   const openItem = (it: CalItem) => {
     if (it.type === 'meeting') { adminActions.setSection('meetings'); return }
