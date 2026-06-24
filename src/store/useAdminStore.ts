@@ -1448,7 +1448,7 @@ export const adminActions = {
   loadCallLogs: async (filters?: Record<string, any>) => {
     try {
       const result = await apiPost('getCallLogs', { token: state.token, ...(filters || {}) })
-      const logs = result?.logs || result || []
+      const logs = Array.isArray(result?.logs) ? result.logs : Array.isArray(result) ? result : []
       // Only update global store when loading unfiltered data (no client_id/caller_email filter)
       const isFiltered = filters && (filters.client_id || filters.caller_email)
       if (!isFiltered && Array.isArray(logs) && (logs.length > 0 || state.callLogs.length === 0)) {

@@ -41,7 +41,7 @@ export default function CallSection() {
 
   // Sales associates only see their own calls; everyone else sees all
   const callLogs = useMemo(() => {
-    if (!rawCallLogs) return []
+    if (!Array.isArray(rawCallLogs)) return []
     if (isSalesOnly && effectiveUser?.email) {
       return rawCallLogs.filter((l: any) => l.caller_email === effectiveUser.email)
     }
